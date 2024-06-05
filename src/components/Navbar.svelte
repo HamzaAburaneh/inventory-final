@@ -1,0 +1,24 @@
+<script>
+	let isOpen = false;
+
+	function toggleMenu() {
+		isOpen = !isOpen;
+	}
+</script>
+
+<nav class="bg-gray-800 p-4">
+	<div class="container mx-auto flex justify-between items-center">
+		<a href="/" class="text-white text-xl">Brand</a>
+		<button class="text-white md:hidden" on:click={toggleMenu}> ☰ </button>
+		<ul class="hidden md:flex space-x-4">
+			<li><a href="/" class="text-white">Home</a></li>
+			<li><a href="/about" class="text-white">About</a></li>
+			<li><a href="/contact" class="text-white">Contact</a></li>
+		</ul>
+		<ul class={`md:hidden ${isOpen ? 'block' : 'hidden'} space-y-4 mt-4`}>
+			<li><a href="/" class="text-white">Home</a></li>
+			<li><a href="/about" class="text-white">About</a></li>
+			<li><a href="/contact" class="text-white">Contact</a></li>
+		</ul>
+	</div>
+</nav>
