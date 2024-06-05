@@ -1,3 +1,4 @@
+<!-- src/routes/+page.svelte -->
 <script>
 	// Removed the import of ThemeToggle as per your comment
 </script>
@@ -7,8 +8,8 @@
 	<!-- Rest of your app content -->
 </main>
 
-<div data-theme="dark">
-	<h1 class="text-2xl font-bold text-white">Hello, Tailwind!</h1>
+<div class="text-container">
+	<h1 class="text-2xl font-bold" style="color: var(--text-color);">Hello, Tailwind!</h1>
 </div>
 
 <h1 class="text-2xl font-bold my-4">Welcome to SvelteKit</h1>
@@ -16,3 +17,9 @@
 	Visit <a href="https://kit.svelte.dev" class="text-blue-500 underline">kit.svelte.dev</a> to read the
 	documentation
 </p>
+
+<style>
+	.text-container {
+		color: var(--text-color);
+	}
+</style>
