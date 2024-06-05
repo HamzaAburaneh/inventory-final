@@ -39,6 +39,10 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"svelte-themes": "^1.0.10"
+		"firebase": "^10.12.2",
+		"flowbite": "^2.3.0",
+		"postcss-load-config": "^5.1.0",
+		"svelte-themes": "^1.0.10",
+		"sweetalert2": "^11.11.1"
 	}
 }
