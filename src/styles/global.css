@@ -68,6 +68,8 @@ input::placeholder {
 }
 .table th,
 .table td {
+	padding: 0.5rem;
+	text-align: left;
 	border: 1px solid var(--table-border);
 	border-radius: var(--border-radius);
 }

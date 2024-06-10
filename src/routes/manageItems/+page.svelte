@@ -296,34 +296,34 @@
 
 	<table class="table-auto w-full border-collapse">
 		<thead>
-			<tr class="" style="background-color: var(--table-header-bg);">
-				<th class="px-4 py-2" on:click={() => sortBy('name')}
+			<tr style="background-color: var(--table-header-bg);">
+				<th class="px-4 py-2 text-left" on:click={() => sortBy('name')}
 					>Name <span>{sortIcon('name')}</span></th
 				>
-				<th class="px-4 py-2" on:click={() => sortBy('barcode')}
+				<th class="px-4 py-2 text-left" on:click={() => sortBy('barcode')}
 					>Barcode <span>{sortIcon('barcode')}</span></th
 				>
-				<th class="px-4 py-2" on:click={() => sortBy('count')}
+				<th class="px-4 py-2 text-left" on:click={() => sortBy('count')}
 					>Count <span>{sortIcon('count')}</span></th
 				>
-				<th class="px-4 py-2" on:click={() => sortBy('lowCount')}
+				<th class="px-4 py-2 text-left" on:click={() => sortBy('lowCount')}
 					>LowCount <span>{sortIcon('lowCount')}</span></th
 				>
-				<th class="px-4 py-2" on:click={() => sortBy('cost')}
+				<th class="px-4 py-2 text-left" on:click={() => sortBy('cost')}
 					>Cost <span>{sortIcon('cost')}</span></th
 				>
-				<th class="px-4 py-2" on:click={() => sortBy('storageType')}
+				<th class="px-4 py-2 text-left" on:click={() => sortBy('storageType')}
 					>Storage Type <span>{sortIcon('storageType')}</span></th
 				>
 				<th class="px-4 py-2"></th>
 			</tr>
-			<tr class="" style="background-color: var(--table-description-bg);">
-				<th class="px-4 py-2 text-sm">Click to edit</th>
-				<th class="px-4 py-2 text-sm">Click to edit</th>
-				<th class="px-4 py-2 text-sm">Not editable</th>
-				<th class="px-4 py-2 text-sm">Click to edit</th>
-				<th class="px-4 py-2 text-sm">Click to edit</th>
-				<th class="px-4 py-2 text-sm">Click to edit</th>
+			<tr style="background-color: var(--table-description-bg);">
+				<th class="px-4 py-2 text-sm text-left">Click to edit</th>
+				<th class="px-4 py-2 text-sm text-left">Click to edit</th>
+				<th class="px-4 py-2 text-sm text-left">Not editable</th>
+				<th class="px-4 py-2 text-sm text-left">Click to edit</th>
+				<th class="px-4 py-2 text-sm text-left">Click to edit</th>
+				<th class="px-4 py-2 text-sm text-left">Click to edit</th>
 				<th class="px-4 py-2"></th>
 			</tr>
 		</thead>
@@ -350,9 +350,10 @@
 						class="px-4 py-2 cursor-pointer"
 						on:click={() => handleEditStorageType(item.id, item.storageType)}>{item.storageType}</td
 					>
-					<td class="px-4 py-2">
-						<button class="btn btn-danger" on:click={() => handleDelete(item.id)}>Delete</button>
-					</td>
+					<td class="px-4 py-2"
+						><button class="btn btn-danger" on:click={() => handleDelete(item.id)}>Delete</button
+						></td
+					>
 				</tr>
 			{/each}
 		</tbody>
@@ -377,6 +378,8 @@
 	}
 	.table th,
 	.table td {
+		padding: 0.5rem;
+		text-align: left;
 		border: 1px solid var(--table-border);
 	}
 	.table th {
