@@ -333,30 +333,67 @@
 		<tbody>
 			{#each items as item (item.id)}
 				<tr class="border-b" style="border-color: var(--border-color);">
-					<td class="px-4 py-2 cursor-pointer" on:click={() => handleEditName(item.id, item.name)}
-						>{item.name}</td
-					>
-					<td
-						class="px-4 py-2 cursor-pointer"
-						on:click={() => handleEditBarcode(item.id, item.barcode)}>{item.barcode}</td
-					>
+					<td class="px-4 py-2">
+						<div class="cell-content">
+							<span>{item.name}</span>
+							<button
+								class="icon-button"
+								on:click={() => handleEditName(item.id, item.name)}
+								aria-label="Edit Name"
+							>
+								<i class="fas fa-edit"></i>
+							</button>
+						</div>
+					</td>
+					<td class="px-4 py-2">
+						<div class="cell-content">
+							<span>{item.barcode}</span>
+							<button
+								class="icon-button"
+								on:click={() => handleEditBarcode(item.id, item.barcode)}
+								aria-label="Edit Barcode"
+							>
+								<i class="fas fa-edit"></i>
+							</button>
+						</div>
+					</td>
 					<td class="px-4 py-2">{item.count}</td>
-					<td
-						class="px-4 py-2 cursor-pointer"
-						on:click={() => handleEditLowCount(item.id, item.lowCount)}
-						>{item.lowCount != null ? item.lowCount : ''}</td
-					>
-					<td class="px-4 py-2 cursor-pointer" on:click={() => handleEditCost(item.id, item.cost)}
-						>{item.cost != null ? item.cost : ''}</td
-					>
-					<td
-						class="px-4 py-2 cursor-pointer"
-						on:click={() => handleEditStorageType(item.id, item.storageType)}>{item.storageType}</td
-					>
-					<td class="px-4 py-2"
-						><button class="btn btn-danger" on:click={() => handleDelete(item.id)}>Delete</button
-						></td
-					>
+					<td class="px-4 py-2">
+						<div class="cell-content">
+							<span>{item.lowCount != null ? item.lowCount : ''}</span>
+							<button
+								class="icon-button"
+								on:click={() => handleEditLowCount(item.id, item.lowCount)}
+								aria-label="Edit Low Count"
+							>
+								<i class="fas fa-edit"></i>
+							</button>
+						</div>
+					</td>
+					<td class="px-4 py-2">
+						<div class="cell-content">
+							<span>{item.cost != null ? item.cost : ''}</span>
+							<button
+								class="icon-button"
+								on:click={() => handleEditCost(item.id, item.cost)}
+								aria-label="Edit Cost"
+							>
+								<i class="fas fa-edit"></i>
+							</button>
+						</div>
+					</td>
+					<td class="px-4 py-2">
+						<div class="cell-content">
+							<span>{item.storageType}</span>
+							<button
+								class="icon-button"
+								on:click={() => handleEditStorageType(item.id, item.storageType)}
+								aria-label="Edit Storage Type"
+							>
+								<i class="fas fa-edit"></i>
+							</button>
+						</div>
+					</td>
 				</tr>
 			{/each}
 		</tbody>
@@ -388,9 +425,42 @@
 	.table th {
 		background-color: var(--table-header-bg);
 		color: var(--table-header-text);
+		border-bottom: 2px solid var(--table-border);
 	}
 	.table td {
 		background-color: var(--table-cell-bg);
 		color: var(--table-cell-text);
+		border-bottom: 1px solid var(--table-border);
+	}
+	.cell-content {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.cell-content span {
+		flex-grow: 1;
+	}
+
+	.icon-button {
+		background: none;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+	}
+
+	.icon-button:hover {
+		color: var(--icon-hover-color); /* Change the color of the button and icon on hover */
+	}
+
+	.icon-button:hover .fa-edit {
+		color: var(--icon-hover-color); /* Ensure the icon inside the button also changes color */
+	}
+
+	.icon-button .fa-edit {
+		color: var(--icon-color);
+		margin-left: 8px; /* Increase margin for better spacing */
 	}
 </style>
