@@ -284,19 +284,19 @@
 	</div>
 
 	<div class="mb-4">
-		<label for="search" class="form-label">Search</label>
+		<label for="search" class="form-label">Search: </label>
 		<input
 			id="search"
 			class="form-control"
 			bind:value={searchValue}
-			placeholder="Search"
+			placeholder="Search Items"
 			on:input={handleSearch}
 		/>
 	</div>
 
 	<table class="table-auto w-full border-collapse">
 		<thead>
-			<tr class="bg-gray-100 dark:bg-gray-700">
+			<tr class="" style="background-color: var(--table-header-bg);">
 				<th class="px-4 py-2" on:click={() => sortBy('name')}
 					>Name <span>{sortIcon('name')}</span></th
 				>
@@ -317,7 +317,7 @@
 				>
 				<th class="px-4 py-2"></th>
 			</tr>
-			<tr class="bg-gray-50 dark:bg-gray-600">
+			<tr class="" style="background-color: var(--table-description-bg);">
 				<th class="px-4 py-2 text-sm">Click to edit</th>
 				<th class="px-4 py-2 text-sm">Click to edit</th>
 				<th class="px-4 py-2 text-sm">Not editable</th>
@@ -329,7 +329,7 @@
 		</thead>
 		<tbody>
 			{#each items as item (item.id)}
-				<tr class="border-b dark:border-gray-700">
+				<tr class="border-b" style="border-color: var(--border-color);">
 					<td class="px-4 py-2 cursor-pointer" on:click={() => handleEditName(item.id, item.name)}
 						>{item.name}</td
 					>
