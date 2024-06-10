@@ -8,10 +8,6 @@
 	<!-- Rest of your app content -->
 </main>
 
-<div class="text-container">
-	<h1 class="text-2xl font-bold" style="color: var(--text-color);">Hello, Tailwind!</h1>
-</div>
-
 <h1 class="text-2xl font-bold my-4">Welcome to SvelteKit</h1>
 <p class="text-lg">
 	Visit <a href="https://kit.svelte.dev" class="text-blue-500 underline">kit.svelte.dev</a> to read the
@@ -19,7 +15,4 @@
 </p>
 
 <style>
-	.text-container {
-		color: var(--text-color);
-	}
 </style>

@@ -8,14 +8,10 @@ type Theme = {
 
 export const themes: Record<string, Theme> = {
 	light: {
-		'--background-color': '#ffffff',
-		'--text-color': '#000000',
 		'--icon-filter':
 			'invert(0%) sepia(100%) saturate(1000%) hue-rotate(30deg) brightness(100%) contrast(100%)' // Filter for light mode
 	},
 	dark: {
-		'--background-color': '#121212',
-		'--text-color': '#ffffff',
 		'--icon-filter':
 			'invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%)' // Filter for dark mode
 	}

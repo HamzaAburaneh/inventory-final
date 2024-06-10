@@ -238,7 +238,10 @@
 	}
 </script>
 
-<div class="container mx-auto p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+<div
+	class="container mx-auto p-4 rounded-lg shadow-md"
+	style="background-color: var(--container-bg);"
+>
 	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
 		<div class="form-group">
 			<label for="name" class="form-label">Name</label>
@@ -364,7 +367,6 @@
 	}
 	.form-label {
 		margin-bottom: 0.5rem;
-		color: var(--text-color);
 	}
 	.form-control {
 		padding: 0.5rem;
