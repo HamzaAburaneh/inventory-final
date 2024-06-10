@@ -21,15 +21,15 @@
 [data-theme='dark'] {
 	--background-color: #292929;
 	--text-color: #ffffff; /* Ensure this is black */
-	--input-bg: #1d1d1d;
-	--input-text: #ff0000;
 	--container-bg-dark: #121212; /* Black background for dark mode */
-	--border-color-dark: #000000; /* Black border for dark mode */
-
-	--border-color: var(--border-color-dark);
 	--container-bg: var(--container-bg-dark);
+	--input-bg: #1d1d1d;
+	--input-text: #6d697a;
+	--placeholder-text: #6d697a;
+	--border-color: #4a4e6d;
 	--table-border: #444444;
 	--table-header-bg: #222222;
+	--table-description-bg: #333333;
 	--table-header-text: #ffffff;
 	--table-cell-bg: #333333;
 	--table-cell-text: #ffffff;
@@ -63,6 +63,9 @@ input {
 	border-radius: var(--border-radius);
 }
 
+input::placeholder {
+	color: var(--placeholder-text);
+}
 .table th,
 .table td {
 	border: 1px solid var(--table-border);
