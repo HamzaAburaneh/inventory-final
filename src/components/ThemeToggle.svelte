@@ -1,4 +1,3 @@
-<!-- src/components/ThemeToggle.svelte -->
 <script lang="ts">
 	import { theme } from '../themes';
 	import { get } from 'svelte/store';
@@ -6,7 +5,6 @@
 
 	let currentTheme = get(theme);
 
-	// Function to toggle the theme
 	function toggleTheme() {
 		currentTheme = currentTheme === 'light' ? 'dark' : 'light';
 		theme.set(currentTheme);
@@ -15,14 +13,12 @@
 		}
 	}
 
-	// Reactive statement to update the data-theme attribute
 	$: {
 		if (typeof document !== 'undefined') {
 			document.documentElement.setAttribute('data-theme', currentTheme);
 		}
 	}
 
-	// Ensure the correct theme is set on mount
 	onMount(() => {
 		if (typeof document !== 'undefined') {
 			document.documentElement.setAttribute('data-theme', currentTheme);
@@ -30,6 +26,23 @@
 	});
 </script>
 
-<button on:click={toggleTheme}>
-	{currentTheme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+<button on:click={toggleTheme} class="text-white">
+	{#if currentTheme === 'light'}
+		<img src="/icons/moon.svg" alt="Switch to Light Mode" class="icon" />
+	{:else}
+		<img src="/icons/sun.svg" alt="Switch to Dark Mode" class="icon" />
+	{/if}
 </button>
+
+<style>
+	button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.icon {
+		width: 24px;
+		height: 24px;
+		filter: var(--icon-filter);
+	}
+</style>
