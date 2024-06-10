@@ -461,6 +461,6 @@
 
 	.icon-button .fa-edit {
 		color: var(--icon-color);
-		margin-left: 8px; /* Increase margin for better spacing */
+		margin-left: 10px; /* Increase margin for better spacing */
 	}
 </style>
