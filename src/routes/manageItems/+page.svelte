@@ -245,15 +245,21 @@
 	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
 		<div class="form-group">
 			<label for="name" class="form-label">Name</label>
-			<input id="name" class="form-control" bind:value={name} placeholder="Name" />
+			<input id="name" class="form-control" bind:value={name} placeholder="Enter item name" />
 		</div>
 		<div class="form-group">
 			<label for="barcode" class="form-label">Barcode</label>
-			<input id="barcode" class="form-control" bind:value={barcode} placeholder="Barcode" />
+			<input id="barcode" class="form-control" bind:value={barcode} placeholder="Enter barcode" />
 		</div>
 		<div class="form-group">
 			<label for="count" class="form-label">Count</label>
-			<input id="count" class="form-control" bind:value={count} type="number" placeholder="Count" />
+			<input
+				id="count"
+				class="form-control"
+				bind:value={count}
+				type="number"
+				placeholder="Enter item count"
+			/>
 		</div>
 		<div class="form-group">
 			<label for="lowCount" class="form-label">Low Count</label>
@@ -262,12 +268,18 @@
 				class="form-control"
 				bind:value={lowCount}
 				type="number"
-				placeholder="Low Count"
+				placeholder="Enter low stock threshold"
 			/>
 		</div>
 		<div class="form-group">
 			<label for="cost" class="form-label">Cost</label>
-			<input id="cost" class="form-control" bind:value={cost} type="number" placeholder="Cost" />
+			<input
+				id="cost"
+				class="form-control"
+				bind:value={cost}
+				type="number"
+				placeholder="Enter item cost"
+			/>
 		</div>
 		<div class="form-group">
 			<label for="storageType" class="form-label">Storage type</label>
@@ -315,15 +327,6 @@
 				<th class="px-4 py-2 text-left" on:click={() => sortBy('storageType')}
 					>Storage Type <span>{sortIcon('storageType')}</span></th
 				>
-				<th class="px-4 py-2"></th>
-			</tr>
-			<tr style="background-color: var(--table-description-bg);">
-				<th class="px-4 py-2 text-sm text-left">Click to edit</th>
-				<th class="px-4 py-2 text-sm text-left">Click to edit</th>
-				<th class="px-4 py-2 text-sm text-left">Not editable</th>
-				<th class="px-4 py-2 text-sm text-left">Click to edit</th>
-				<th class="px-4 py-2 text-sm text-left">Click to edit</th>
-				<th class="px-4 py-2 text-sm text-left">Click to edit</th>
 				<th class="px-4 py-2"></th>
 			</tr>
 		</thead>
