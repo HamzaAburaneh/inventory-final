@@ -4,15 +4,15 @@
 @tailwind utilities;
 
 :root {
-	--background-color: #ffffff;
+	--background-color: #acb0d3;
 	--text-color: #000000;
-	--container-bg: #ffffff;
+	--container-bg: #e7e7e7;
 	--input-bg: #ffffff;
 	--icon-color: #000000;
 	--icon-hover-color: #009700;
 	--input-text: #000000;
 	--placeholder-text: #6d697a;
-	--border-color: #dddddd;
+	--border-color: #ffffff;
 	--table-border: #dddddd;
 	--table-header-bg: #f9f9f9;
 	--table-description-bg: #333333;
@@ -20,6 +20,7 @@
 	--table-cell-bg: #ffffff;
 	--table-cell-text: #000000;
 	--border-radius: 8px; /* Default border radius for light theme */
+	--nav-color: #5f6dbb;
 }
 
 [data-theme='dark'] {
@@ -39,6 +40,7 @@
 	--table-cell-bg: #333333;
 	--table-cell-text: #ffffff;
 	--border-radius: 16px; /* Border radius for dark theme */
+	--nav-color: #121212;
 }
 
 body {
