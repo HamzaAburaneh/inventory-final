@@ -27,6 +27,7 @@
 	--background-color: #292929;
 	--text-color: #ffffff; /* Ensure this is black */
 	--container-bg: #121212; /* Black background for dark mode */
+	--add-item-color: #60ffaf;
 	--input-bg: #1d1d1d;
 	--icon-color: #ffffff;
 	--icon-hover-color: #60ffaf;

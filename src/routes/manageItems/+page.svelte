@@ -291,7 +291,7 @@
 			</select>
 		</div>
 		<div class="form-group col-span-full">
-			<button class="btn btn-primary w-full" on:click={handleAdd}>Add Item</button>
+			<button class="btn btn-primary w-full" id="add-item" on:click={handleAdd}>Add Item</button>
 		</div>
 	</div>
 
@@ -306,7 +306,7 @@
 		/>
 	</div>
 
-	<table class="table-auto w-full border-collapse">
+	<table class="custom-table table-auto w-full border-collapse">
 		<thead>
 			<tr style="background-color: var(--table-header-bg);">
 				<th class="px-4 py-2 text-left" on:click={() => sortBy('name')}
@@ -332,12 +332,16 @@
 		</thead>
 		<tbody>
 			{#each items as item (item.id)}
-				<tr class="border-b" style="border-color: var(--border-color);">
+				<tr
+					class="border-b hover:bg-opacity-20 hover:bg-amber-300"
+					style="border-color: var(--border-color);"
+				>
 					<td class="px-4 py-2">
 						<div class="cell-content">
 							<span>{item.name}</span>
 							<button
 								class="icon-button"
+								title="Edit Name"
 								on:click={() => handleEditName(item.id, item.name)}
 								aria-label="Edit Name"
 							>
@@ -350,6 +354,7 @@
 							<span>{item.barcode}</span>
 							<button
 								class="icon-button"
+								title="Edit Barcode"
 								on:click={() => handleEditBarcode(item.id, item.barcode)}
 								aria-label="Edit Barcode"
 							>
@@ -363,6 +368,7 @@
 							<span>{item.lowCount != null ? item.lowCount : ''}</span>
 							<button
 								class="icon-button"
+								title="Edit Low Count"
 								on:click={() => handleEditLowCount(item.id, item.lowCount)}
 								aria-label="Edit Low Count"
 							>
@@ -375,6 +381,7 @@
 							<span>{item.cost != null ? item.cost : ''}</span>
 							<button
 								class="icon-button"
+								title="Edit Cost"
 								on:click={() => handleEditCost(item.id, item.cost)}
 								aria-label="Edit Cost"
 							>
@@ -387,12 +394,23 @@
 							<span>{item.storageType}</span>
 							<button
 								class="icon-button"
+								title="Edit Storage Type"
 								on:click={() => handleEditStorageType(item.id, item.storageType)}
 								aria-label="Edit Storage Type"
 							>
 								<i class="fas fa-edit"></i>
 							</button>
 						</div>
+					</td>
+					<td class="px-4 py-2 text-center">
+						<button
+							class="delete-button"
+							title="Delete Item"
+							on:click={() => handleDelete(item.id)}
+							aria-label="Delete Item"
+						>
+							<i class="fas fa-trash-alt"></i>
+						</button>
 					</td>
 				</tr>
 			{/each}
@@ -401,14 +419,64 @@
 </div>
 
 <style>
-	/* Add your custom styles here */
+	#add-item {
+		background-color: #47fd99;
+		color: #000;
+		font-weight: 700;
+		border-radius: 1rem;
+		width: 50%;
+		align-self: center;
+		padding: 0.75rem 1.5rem;
+		border: none;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		transition:
+			background-color 0.3s ease,
+			transform 0.3s ease,
+			box-shadow 0.3s ease;
+		cursor: pointer;
+		text-align: center;
+		transform-origin: center;
+		position: relative;
+		overflow: hidden;
+	}
+
+	#add-item:hover {
+		transform: scale(1.1);
+		box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+	}
+
+	#add-item:active {
+		transform: scale(1.05);
+	}
+
+	#add-item::before {
+		content: '';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 300%;
+		height: 300%;
+		background: rgba(255, 255, 255, 0.15);
+		transform: translate(-50%, -50%) rotate(45deg);
+		transition: all 0.3s ease;
+		opacity: 0;
+	}
+
+	#add-item:hover::before {
+		opacity: 1;
+		width: 400%;
+		height: 400%;
+	}
+
 	.form-group {
 		display: flex;
 		flex-direction: column;
 	}
+
 	.form-label {
 		margin-bottom: 0.5rem;
 	}
+
 	.form-control {
 		padding: 0.5rem;
 		border: 1px solid var(--border-color);
@@ -416,22 +484,23 @@
 		background-color: var(--input-bg);
 		color: var(--input-text);
 	}
-	.table th,
-	.table td {
+
+	.custom-table th,
+	.custom-table td {
 		padding: 0.5rem;
 		text-align: left;
-		border: 1px solid var(--table-border);
+		font-weight: 700;
 	}
-	.table th {
-		background-color: var(--table-header-bg);
-		color: var(--table-header-text);
-		border-bottom: 2px solid var(--table-border);
+
+	.custom-table th {
+		cursor: pointer;
+		border-bottom: 2px solid var(--border-color);
 	}
-	.table td {
-		background-color: var(--table-cell-bg);
-		color: var(--table-cell-text);
-		border-bottom: 1px solid var(--table-border);
+
+	.custom-table td {
+		border-bottom: 2px solid var(--border-color);
 	}
+
 	.cell-content {
 		display: flex;
 		justify-content: space-between;
@@ -442,25 +511,51 @@
 		flex-grow: 1;
 	}
 
-	.icon-button {
+	.icon-button,
+	.delete-button {
+		position: relative;
 		background: none;
 		border: none;
 		padding: 0;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
-	}
-
-	.icon-button:hover {
-		color: var(--icon-hover-color); /* Change the color of the button and icon on hover */
-	}
-
-	.icon-button:hover .fa-edit {
-		color: var(--icon-hover-color); /* Ensure the icon inside the button also changes color */
-	}
-
-	.icon-button .fa-edit {
 		color: var(--icon-color);
-		margin-left: 10px; /* Increase margin for better spacing */
+	}
+
+	.icon-button:hover,
+	.delete-button:hover {
+		color: var(--icon-hover-color);
+	}
+
+	.delete-button {
+		color: darkred;
+	}
+
+	.delete-button:hover {
+		color: red;
+	}
+
+	.icon-button[title]::after {
+		content: attr(title);
+		position: absolute;
+		left: 50%;
+		bottom: 100%;
+		transform: translateX(-50%);
+		background: rgba(0, 0, 0, 0.75);
+		color: #fff;
+		padding: 0.5rem;
+		border-radius: 0.25rem;
+		white-space: nowrap;
+		opacity: 0;
+		transition: opacity 0.2s ease-in-out;
+		pointer-events: none;
+	}
+
+	.icon-button:hover[title]::after {
+		opacity: 1;
+	}
+	.is-invalid {
+		border-color: red;
 	}
 </style>
