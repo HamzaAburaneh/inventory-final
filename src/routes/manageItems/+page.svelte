@@ -15,17 +15,41 @@
 	import type { Item } from '../../types';
 	import Swal from 'sweetalert2';
 
+	let errors = {
+		name: '',
+		barcode: '',
+		count: '',
+		lowCount: '',
+		cost: '',
+		storageType: ''
+	};
 	let items: Item[] = [];
 	let name = '';
 	let barcode = '';
-	let count: number = 0;
-	let lowCount: number | null = null;
+	let count: string = ''; // Initialize count as an empty string
+	let lowCount: string = ''; // Initialize lowCount as an empty string
 	let cost: number | null = null;
 	let storageType: '' | 'freezer' | 'refrigerator' | 'dry storage' = '';
 	let searchValue = '';
 
 	let currentSortColumn: keyof Item;
 	let sortAscending = true;
+
+	const validateName = () => {
+		errors.name = name.trim().length < 3 ? 'Name must be at least 3 characters' : '';
+	};
+
+	function handleInput(event: Event, setValue: (value: string) => void, validate: () => void) {
+		const inputValue = (event.target as HTMLInputElement).value;
+		const sanitizedValue = inputValue.replace(/\D/g, ''); // Remove non-digit characters
+		setValue(sanitizedValue);
+		validate();
+	}
+
+	const validateCount = () => {
+		const countValue = parseInt(count);
+		errors.count = isNaN(countValue) || countValue < 0 ? 'Count must be a positive number' : '';
+	};
 
 	onMount(async () => {
 		items = await getItems();
@@ -245,7 +269,20 @@
 	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
 		<div class="form-group">
 			<label for="name" class="form-label">Name</label>
-			<input id="name" class="form-control" bind:value={name} placeholder="Enter item name" />
+			<div class="input-group">
+				<input
+					id="name"
+					class="form-control"
+					bind:value={name}
+					placeholder="Enter item name"
+					on:input={validateName}
+					on:blur={validateName}
+					class:is-invalid={errors.name}
+				/>
+				{#if errors.name}
+					<div class="error-message">{errors.name}</div>
+				{/if}
+			</div>
 		</div>
 		<div class="form-group">
 			<label for="barcode" class="form-label">Barcode</label>
@@ -253,24 +290,40 @@
 		</div>
 		<div class="form-group">
 			<label for="count" class="form-label">Count</label>
-			<input
-				id="count"
-				class="form-control"
-				bind:value={count}
-				type="number"
-				placeholder="Enter item count"
-			/>
+			<div class="input-group">
+				<input
+					id="count"
+					class="form-control"
+					bind:value={count}
+					type="text"
+					pattern="^[0-9]*$"
+					placeholder="Enter item count"
+					on:input={(event) => handleInput(event, (value) => (count = value), validateCount)}
+					class:is-invalid={errors.count}
+				/>
+				{#if errors.count}
+					<div class="error-message">{errors.count}</div>
+				{/if}
+			</div>
 		</div>
+
 		<div class="form-group">
 			<label for="lowCount" class="form-label">Low Count</label>
 			<input
 				id="lowCount"
 				class="form-control"
 				bind:value={lowCount}
-				type="number"
+				type="text"
+				pattern="^[0-9]*$"
 				placeholder="Enter low stock threshold"
+				on:input={(event) => handleInput(event, (value) => (lowCount = value), validateCount)}
+				class:is-invalid={errors.lowCount}
 			/>
+			{#if errors.lowCount}
+				<div class="error-message">{errors.lowCount}</div>
+			{/if}
 		</div>
+
 		<div class="form-group">
 			<label for="cost" class="form-label">Cost</label>
 			<input
@@ -557,5 +610,14 @@
 	}
 	.is-invalid {
 		border-color: red;
+	}
+	.input-group {
+		position: relative;
+	}
+
+	.error-message {
+		position: absolute;
+		color: #ff0019;
+		font-size: 0.875rem;
 	}
 </style>
