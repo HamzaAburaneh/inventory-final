@@ -152,26 +152,21 @@
 	};
 </script>
 
-<div
-	class="container mx-auto p-4 rounded-lg shadow-md"
-	style="background-color: var(--container-bg);"
->
+<div class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4">
 	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
 		<div class="form-group">
 			<label for="name" class="form-label">Name</label>
-			<div class="input-group">
-				<input
-					id="name"
-					class="form-control"
-					bind:value={name}
-					placeholder="Enter item name"
-					on:input={() => validateField('name', name)}
-					class:is-invalid={errors.name}
-				/>
-				{#if errors.name}
-					<div class="error-message">{errors.name}</div>
-				{/if}
-			</div>
+			<input
+				id="name"
+				class="form-control"
+				bind:value={name}
+				placeholder="Enter item name"
+				on:input={() => validateField('name', name)}
+				class:is-invalid={errors.name}
+			/>
+			{#if errors.name}
+				<div class="error-message">{errors.name}</div>
+			{/if}
 		</div>
 		<div class="form-group">
 			<label for="barcode" class="form-label">Barcode</label>
@@ -179,26 +174,24 @@
 		</div>
 		<div class="form-group">
 			<label for="count" class="form-label">Count</label>
-			<div class="input-group">
-				<input
-					id="count"
-					class="form-control"
-					type="text"
-					bind:value={count}
-					pattern="^[0-9]*$"
-					placeholder="Enter item count"
-					on:input={(event) =>
-						handleInput(
-							event,
-							(value) => (count = value),
-							(value) => validateField('count', value)
-						)}
-					class:is-invalid={errors.count}
-				/>
-				{#if errors.count}
-					<div class="error-message">{errors.count}</div>
-				{/if}
-			</div>
+			<input
+				id="count"
+				class="form-control"
+				type="text"
+				bind:value={count}
+				pattern="^[0-9]*$"
+				placeholder="Enter item count"
+				on:input={(event) =>
+					handleInput(
+						event,
+						(value) => (count = value),
+						(value) => validateField('count', value)
+					)}
+				class:is-invalid={errors.count}
+			/>
+			{#if errors.count}
+				<div class="error-message">{errors.count}</div>
+			{/if}
 		</div>
 		<div class="form-group">
 			<label for="lowCount" class="form-label">Low Count</label>
@@ -256,7 +249,7 @@
 	</div>
 	<table class="custom-table table-auto w-full border-collapse">
 		<thead>
-			<tr style="background-color: var(--table-header-bg);">
+			<tr class="table-header">
 				<th class="px-4 py-2 text-left" on:click={() => sortBy('name')}
 					>Name <span>{sortIcon('name')}</span></th
 				>
@@ -280,10 +273,7 @@
 		</thead>
 		<tbody>
 			{#each items as item (item.id)}
-				<tr
-					class="border-b hover:bg-opacity-20 hover:bg-amber-300"
-					style="border-color: var(--border-color);"
-				>
+				<tr class="table-row">
 					<td class="px-4 py-2">
 						<div class="cell-content">
 							<span>{item.name}</span>
@@ -367,54 +357,44 @@
 </div>
 
 <style>
+	.container {
+		margin-top: 20px;
+		padding: 2rem;
+		max-width: 90%;
+		background-color: var(--container-bg);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+		border-radius: 8px;
+	}
 	.form-group {
 		display: flex;
 		flex-direction: column;
 		margin-bottom: 1.5rem;
-		position: relative;
 	}
-
 	.form-label {
 		margin-bottom: 0.5rem;
 	}
-
 	.form-control {
 		padding: 0.5rem;
 		border: 1px solid var(--border-color);
 		border-radius: 0.375rem;
 		background-color: var(--input-bg);
 		color: var(--input-text);
-		font-weight: normal; /* Ensure font weight is normal */
 	}
-
 	.form-control:focus {
 		outline: none;
-		border-color: var(--focus-border-color); /* Add your desired focus border color */
-		box-shadow: 0 0 0 2px var(--focus-border-color); /* Optional: Add a custom focus shadow */
-		color: var(--input-text); /* Ensure text color remains clear */
-		font-weight: normal; /* Ensure font weight remains normal */
+		border-color: var(--focus-border-color);
+		box-shadow: 0 0 0 2px var(--focus-border-color);
 	}
-
-	.input-group {
-		position: relative;
-	}
-
 	.error-message {
-		position: absolute;
-		top: 100%;
-		left: 0;
+		margin-top: 0.25rem;
 		color: #ff0019;
 		font-size: 0.875rem;
-		margin-top: 0.25rem;
 	}
-
 	#add-item {
 		background-color: #47fd99;
 		color: #000;
 		font-weight: 700;
 		border-radius: 1rem;
-		width: 50%;
-		align-self: center;
 		padding: 0.75rem 1.5rem;
 		border: none;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -424,68 +404,32 @@
 			box-shadow 0.3s ease;
 		cursor: pointer;
 		text-align: center;
-		transform-origin: center;
-		position: relative;
-		overflow: hidden;
 	}
-
 	#add-item:hover {
-		transform: scale(1.1);
+		transform: scale(1.05);
 		box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
 	}
-
 	#add-item:active {
-		transform: scale(1.05);
+		transform: scale(1.02);
 	}
-
-	#add-item::before {
-		content: '';
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		width: 300%;
-		height: 300%;
-		background: rgba(255, 255, 255, 0.15);
-		transform: translate(-50%, -50%) rotate(45deg);
-		transition: all 0.3s ease;
-		opacity: 0;
-	}
-
-	#add-item:hover::before {
-		opacity: 1;
-		width: 400%;
-		height: 400%;
-	}
-
 	.custom-table th,
 	.custom-table td {
-		padding: 0.5rem;
+		padding: 0.75rem;
 		text-align: left;
-		font-weight: 700;
 	}
-
 	.custom-table th {
-		cursor: pointer;
 		border-bottom: 2px solid var(--border-color);
 	}
-
 	.custom-table td {
-		border-bottom: 2px solid var(--border-color);
+		border-bottom: 1px solid var(--border-color);
 	}
-
 	.cell-content {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 	}
-
-	.cell-content span {
-		flex-grow: 1;
-	}
-
 	.icon-button,
 	.delete-button {
-		position: relative;
 		background: none;
 		border: none;
 		padding: 0;
@@ -494,20 +438,16 @@
 		align-items: center;
 		color: var(--icon-color);
 	}
-
 	.icon-button:hover,
 	.delete-button:hover {
 		color: var(--icon-hover-color);
 	}
-
 	.delete-button {
 		color: darkred;
 	}
-
 	.delete-button:hover {
 		color: red;
 	}
-
 	.icon-button[title]::after {
 		content: attr(title);
 		position: absolute;
@@ -523,16 +463,7 @@
 		transition: opacity 0.2s ease-in-out;
 		pointer-events: none;
 	}
-
 	.icon-button:hover[title]::after {
 		opacity: 1;
-	}
-	.is-invalid {
-		border-color: red;
-	}
-
-	.is-invalid:focus {
-		border-color: red;
-		box-shadow: none; /* Optional: Remove any shadow if present */
 	}
 </style>

@@ -8,7 +8,7 @@
 	}
 </script>
 
-<nav class="p-4" style="background-color: var(--nav-color);">
+<nav class="navbar p-4">
 	<div class="container mx-auto flex justify-between items-center">
 		<a href="/" class="text-white text-xl">Brand</a>
 		<button class="text-white md:hidden" on:click={toggleMenu}> ☰ </button>
@@ -26,3 +26,9 @@
 		</ul>
 	</div>
 </nav>
+
+<style>
+	.navbar {
+		background-color: var(--nav-color);
+	}
+</style>

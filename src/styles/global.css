@@ -74,6 +74,7 @@ input {
 input::placeholder {
 	color: var(--placeholder-text);
 }
+
 .table th,
 .table td {
 	padding: 0.5rem;
