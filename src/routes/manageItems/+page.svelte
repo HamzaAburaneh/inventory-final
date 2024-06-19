@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import Swal from 'sweetalert2';
 	import {
 		getItems,
 		addItem,
@@ -13,7 +14,6 @@
 		applySorting
 	} from '../../lib/items';
 	import type { Item } from '../../types';
-	import Swal from 'sweetalert2';
 
 	let errors = {
 		name: '',
@@ -23,37 +23,126 @@
 		cost: '',
 		storageType: ''
 	};
+
 	let items: Item[] = [];
 	let name = '';
 	let barcode = '';
-	let count: string = ''; // Initialize count as an empty string
-	let lowCount: string = ''; // Initialize lowCount as an empty string
+	let count: string = '';
+	let lowCount: string = '';
 	let cost: number | null = null;
 	let storageType: '' | 'freezer' | 'refrigerator' | 'dry storage' = '';
 	let searchValue = '';
-
 	let currentSortColumn: keyof Item;
 	let sortAscending = true;
-
-	const validateName = () => {
-		errors.name = name.trim().length < 3 ? 'Name must be at least 3 characters' : '';
-	};
-
-	function handleInput(event: Event, setValue: (value: string) => void, validate: () => void) {
-		const inputValue = (event.target as HTMLInputElement).value;
-		const sanitizedValue = inputValue.replace(/\D/g, ''); // Remove non-digit characters
-		setValue(sanitizedValue);
-		validate();
-	}
-
-	const validateCount = () => {
-		const countValue = parseInt(count);
-		errors.count = isNaN(countValue) || countValue < 0 ? 'Count must be a positive number' : '';
-	};
 
 	onMount(async () => {
 		items = await getItems();
 	});
+
+	const validateField = (field: string, value: any) => {
+		switch (field) {
+			case 'name':
+				errors.name = value.trim().length < 3 ? 'Name must be at least 3 characters' : '';
+				break;
+			case 'count':
+			case 'lowCount':
+				const intValue = parseInt(value);
+				errors[field] = isNaN(intValue) || intValue < 0 ? 'Must be a positive number' : '';
+				break;
+			default:
+				break;
+		}
+	};
+
+	const handleInput = (
+		event: Event,
+		setValue: (value: string) => void,
+		validate: (value: string) => void
+	) => {
+		const inputValue = (event.target as HTMLInputElement).value;
+		const sanitizedValue = inputValue.replace(/\D/g, '');
+		setValue(sanitizedValue);
+		validate(sanitizedValue);
+	};
+
+	const updateItemsAndSort = (updatedItems: Item[]) => {
+		items = applySorting(updatedItems, currentSortColumn, sortAscending);
+	};
+
+	const handleAdd = async () => {
+		const newItem = { name, barcode, count, lowCount, cost, storageType };
+		const id = await addItem(newItem);
+		const item: Item = { id, ...newItem };
+
+		updateItemsAndSort([...items, item]);
+		resetForm();
+	};
+
+	const resetForm = () => {
+		name = '';
+		barcode = '';
+		count = '';
+		lowCount = '';
+		cost = null;
+		storageType = '';
+	};
+
+	const handleDelete = async (id: string) => {
+		await deleteItem(id);
+		updateItemsAndSort(items.filter((item) => item.id !== id));
+	};
+
+	const handleEdit = async (
+		id: string,
+		field: keyof Item,
+		oldValue: any,
+		inputType: string = 'text'
+	) => {
+		const result = await Swal.fire({
+			title: `Edit ${field.charAt(0).toUpperCase() + field.slice(1)}`,
+			input: inputType,
+			inputValue: oldValue != null ? oldValue.toString() : '',
+			showCancelButton: true,
+			confirmButtonText: 'Confirm'
+		});
+		if (result.isConfirmed) {
+			const newValue = result.value;
+			await updateItem(id, field, newValue);
+		}
+	};
+
+	const updateItem = async (id: string, field: keyof Item, value: any) => {
+		switch (field) {
+			case 'cost':
+				await editItemCost(id, Number(value));
+				break;
+			case 'barcode':
+				await editItemBarcode(id, value);
+				break;
+			case 'name':
+				await editItemName(id, value);
+				break;
+			case 'lowCount':
+				await editItemLowCount(id, Number(value));
+				break;
+			case 'storageType':
+				await editItemStorageType(id, value);
+				break;
+			default:
+				break;
+		}
+		updateItemsAndSort(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+	};
+
+	const handleSearch = async () => {
+		updateItemsAndSort(await searchItems(searchValue));
+	};
+
+	const sortBy = (column: keyof Item) => {
+		sortAscending = currentSortColumn === column ? !sortAscending : true;
+		currentSortColumn = column;
+		updateItemsAndSort(items);
+	};
 
 	$: sortIcon = (column) => {
 		if (currentSortColumn === column) {
@@ -61,205 +150,6 @@
 		}
 		return '↕';
 	};
-
-	async function handleAdd() {
-		const itemWithoutId = {
-			name,
-			barcode,
-			count,
-			lowCount,
-			cost,
-			storageType
-		};
-
-		const id = await addItem(itemWithoutId);
-		const item: Item = {
-			id,
-			...itemWithoutId
-		};
-
-		let updatedItems = [...items, item];
-		updatedItems = applySorting(updatedItems, currentSortColumn, sortAscending);
-		updateItemsAndSort(updatedItems);
-
-		name = '';
-		barcode = '';
-		count = 0;
-		lowCount = null;
-		cost = null;
-		storageType = '';
-	}
-
-	async function handleDelete(id: string) {
-		await deleteItem(id);
-		const updatedItems = items.filter((item) => item.id !== id);
-		updateItemsAndSort(updatedItems);
-	}
-
-	async function handleEditCost(id: string, oldCost: number | null) {
-		if (oldCost == null) {
-			oldCost = 0;
-		}
-		await Swal.fire({
-			title: 'Edit Cost',
-			input: 'number',
-			inputValue: oldCost.toString(),
-			inputAttributes: {
-				autocapitalize: 'off'
-			},
-			showCancelButton: true,
-			confirmButtonText: 'Confirm',
-			showLoaderOnConfirm: true,
-			preConfirm: async (newCost) => {
-				if (newCost) {
-					await editItemCost(id, Number(newCost));
-					const updatedItems = items.map((item) => {
-						if (item.id === id) {
-							return { ...item, cost: Number(newCost) };
-						}
-						return item;
-					});
-					updateItemsAndSort(updatedItems);
-				}
-			},
-			allowOutsideClick: () => !Swal.isLoading()
-		});
-	}
-
-	async function handleEditBarcode(id: string, oldBarcode: string) {
-		await Swal.fire({
-			title: 'Edit Barcode',
-			input: 'text',
-			inputValue: oldBarcode,
-			inputAttributes: {
-				autocapitalize: 'off'
-			},
-			showCancelButton: true,
-			confirmButtonText: 'Confirm',
-			showLoaderOnConfirm: true,
-			preConfirm: async (newBarcode) => {
-				if (newBarcode) {
-					await editItemBarcode(id, newBarcode);
-					const updatedItems = items.map((item) => {
-						if (item.id === id) {
-							return { ...item, barcode: newBarcode };
-						}
-						return item;
-					});
-					updateItemsAndSort(updatedItems);
-				}
-			},
-			allowOutsideClick: () => !Swal.isLoading()
-		});
-	}
-
-	async function handleEditName(id: string, oldName: string) {
-		await Swal.fire({
-			title: 'Edit Name',
-			input: 'text',
-			inputValue: oldName,
-			inputAttributes: {
-				autocapitalize: 'off'
-			},
-			showCancelButton: true,
-			confirmButtonText: 'Confirm',
-			showLoaderOnConfirm: true,
-			preConfirm: async (newName) => {
-				if (newName) {
-					await editItemName(id, newName);
-					const updatedItems = items.map((item) => {
-						if (item.id === id) {
-							return { ...item, name: newName };
-						}
-						return item;
-					});
-					updateItemsAndSort(updatedItems);
-				}
-			},
-			allowOutsideClick: () => !Swal.isLoading()
-		});
-	}
-
-	async function handleEditStorageType(id: string, oldStorageType: string) {
-		await Swal.fire({
-			title: 'Edit Storage Type',
-			input: 'select',
-			inputOptions: {
-				'': 'Select Storage Type',
-				Dry: 'Dry Storage',
-				Refrigerator: 'Refrigerator',
-				Freezer: 'Freezer'
-			},
-			inputAttributes: {
-				autocapitalize: 'off'
-			},
-			showCancelButton: true,
-			confirmButtonText: 'Confirm',
-			showLoaderOnConfirm: true,
-			preConfirm: async (newStorageType) => {
-				if (newStorageType) {
-					await editItemStorageType(id, newStorageType);
-					const updatedItems = items.map((item) => {
-						if (item.id === id) {
-							return { ...item, storageType: newStorageType };
-						}
-						return item;
-					});
-					updateItemsAndSort(updatedItems);
-				}
-			},
-			allowOutsideClick: () => !Swal.isLoading()
-		});
-	}
-
-	async function handleEditLowCount(id: string, oldLowCount: number | null) {
-		if (oldLowCount == null) {
-			oldLowCount = 0;
-		}
-		await Swal.fire({
-			title: 'Edit Low Count',
-			input: 'number',
-			inputValue: oldLowCount.toString(),
-			inputAttributes: {
-				autocapitalize: 'off'
-			},
-			showCancelButton: true,
-			confirmButtonText: 'Confirm',
-			showLoaderOnConfirm: true,
-			preConfirm: async (newLowCount) => {
-				if (newLowCount) {
-					await editItemLowCount(id, Number(newLowCount));
-					const updatedItems = items.map((item) => {
-						if (item.id === id) {
-							return { ...item, lowCount: Number(newLowCount) };
-						}
-						return item;
-					});
-					updateItemsAndSort(updatedItems);
-				}
-			},
-			allowOutsideClick: () => !Swal.isLoading()
-		});
-	}
-
-	async function handleSearch() {
-		const searchedItems = await searchItems(searchValue);
-		updateItemsAndSort(searchedItems);
-	}
-
-	async function sortBy(column: keyof Item) {
-		if (currentSortColumn === column) {
-			sortAscending = !sortAscending;
-		} else {
-			currentSortColumn = column;
-			sortAscending = true;
-		}
-		updateItemsAndSort(items);
-	}
-
-	function updateItemsAndSort(updatedItems: Item[]) {
-		items = applySorting(updatedItems, currentSortColumn, sortAscending);
-	}
 </script>
 
 <div
@@ -275,8 +165,7 @@
 					class="form-control"
 					bind:value={name}
 					placeholder="Enter item name"
-					on:input={validateName}
-					on:blur={validateName}
+					on:input={() => validateField('name', name)}
 					class:is-invalid={errors.name}
 				/>
 				{#if errors.name}
@@ -294,11 +183,16 @@
 				<input
 					id="count"
 					class="form-control"
-					bind:value={count}
 					type="text"
+					bind:value={count}
 					pattern="^[0-9]*$"
 					placeholder="Enter item count"
-					on:input={(event) => handleInput(event, (value) => (count = value), validateCount)}
+					on:input={(event) =>
+						handleInput(
+							event,
+							(value) => (count = value),
+							(value) => validateField('count', value)
+						)}
 					class:is-invalid={errors.count}
 				/>
 				{#if errors.count}
@@ -306,36 +200,39 @@
 				{/if}
 			</div>
 		</div>
-
 		<div class="form-group">
 			<label for="lowCount" class="form-label">Low Count</label>
 			<input
 				id="lowCount"
 				class="form-control"
-				bind:value={lowCount}
 				type="text"
+				bind:value={lowCount}
 				pattern="^[0-9]*$"
 				placeholder="Enter low stock threshold"
-				on:input={(event) => handleInput(event, (value) => (lowCount = value), validateCount)}
+				on:input={(event) =>
+					handleInput(
+						event,
+						(value) => (lowCount = value),
+						(value) => validateField('lowCount', value)
+					)}
 				class:is-invalid={errors.lowCount}
 			/>
 			{#if errors.lowCount}
 				<div class="error-message">{errors.lowCount}</div>
 			{/if}
 		</div>
-
 		<div class="form-group">
 			<label for="cost" class="form-label">Cost</label>
 			<input
 				id="cost"
 				class="form-control"
-				bind:value={cost}
 				type="number"
+				bind:value={cost}
 				placeholder="Enter item cost"
 			/>
 		</div>
 		<div class="form-group">
-			<label for="storageType" class="form-label">Storage type</label>
+			<label for="storageType" class="form-label">Storage Type</label>
 			<select id="storageType" bind:value={storageType} class="form-control">
 				<option value="">Select storage type...</option>
 				<option value="Freezer">Freezer</option>
@@ -347,7 +244,6 @@
 			<button class="btn btn-primary w-full" id="add-item" on:click={handleAdd}>Add Item</button>
 		</div>
 	</div>
-
 	<div class="mb-4">
 		<label for="search" class="form-label">Search: </label>
 		<input
@@ -358,7 +254,6 @@
 			on:input={handleSearch}
 		/>
 	</div>
-
 	<table class="custom-table table-auto w-full border-collapse">
 		<thead>
 			<tr style="background-color: var(--table-header-bg);">
@@ -372,7 +267,7 @@
 					>Count <span>{sortIcon('count')}</span></th
 				>
 				<th class="px-4 py-2 text-left" on:click={() => sortBy('lowCount')}
-					>LowCount <span>{sortIcon('lowCount')}</span></th
+					>Low Count <span>{sortIcon('lowCount')}</span></th
 				>
 				<th class="px-4 py-2 text-left" on:click={() => sortBy('cost')}
 					>Cost <span>{sortIcon('cost')}</span></th
@@ -395,7 +290,7 @@
 							<button
 								class="icon-button"
 								title="Edit Name"
-								on:click={() => handleEditName(item.id, item.name)}
+								on:click={() => handleEdit(item.id, 'name', item.name)}
 								aria-label="Edit Name"
 							>
 								<i class="fas fa-edit"></i>
@@ -408,7 +303,7 @@
 							<button
 								class="icon-button"
 								title="Edit Barcode"
-								on:click={() => handleEditBarcode(item.id, item.barcode)}
+								on:click={() => handleEdit(item.id, 'barcode', item.barcode)}
 								aria-label="Edit Barcode"
 							>
 								<i class="fas fa-edit"></i>
@@ -422,7 +317,7 @@
 							<button
 								class="icon-button"
 								title="Edit Low Count"
-								on:click={() => handleEditLowCount(item.id, item.lowCount)}
+								on:click={() => handleEdit(item.id, 'lowCount', item.lowCount)}
 								aria-label="Edit Low Count"
 							>
 								<i class="fas fa-edit"></i>
@@ -435,7 +330,7 @@
 							<button
 								class="icon-button"
 								title="Edit Cost"
-								on:click={() => handleEditCost(item.id, item.cost)}
+								on:click={() => handleEdit(item.id, 'cost', item.cost)}
 								aria-label="Edit Cost"
 							>
 								<i class="fas fa-edit"></i>
@@ -448,7 +343,7 @@
 							<button
 								class="icon-button"
 								title="Edit Storage Type"
-								on:click={() => handleEditStorageType(item.id, item.storageType)}
+								on:click={() => handleEdit(item.id, 'storageType', item.storageType)}
 								aria-label="Edit Storage Type"
 							>
 								<i class="fas fa-edit"></i>
@@ -472,6 +367,47 @@
 </div>
 
 <style>
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		margin-bottom: 1.5rem;
+		position: relative;
+	}
+
+	.form-label {
+		margin-bottom: 0.5rem;
+	}
+
+	.form-control {
+		padding: 0.5rem;
+		border: 1px solid var(--border-color);
+		border-radius: 0.375rem;
+		background-color: var(--input-bg);
+		color: var(--input-text);
+		font-weight: normal; /* Ensure font weight is normal */
+	}
+
+	.form-control:focus {
+		outline: none;
+		border-color: var(--focus-border-color); /* Add your desired focus border color */
+		box-shadow: 0 0 0 2px var(--focus-border-color); /* Optional: Add a custom focus shadow */
+		color: var(--input-text); /* Ensure text color remains clear */
+		font-weight: normal; /* Ensure font weight remains normal */
+	}
+
+	.input-group {
+		position: relative;
+	}
+
+	.error-message {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		color: #ff0019;
+		font-size: 0.875rem;
+		margin-top: 0.25rem;
+	}
+
 	#add-item {
 		background-color: #47fd99;
 		color: #000;
@@ -519,23 +455,6 @@
 		opacity: 1;
 		width: 400%;
 		height: 400%;
-	}
-
-	.form-group {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.form-label {
-		margin-bottom: 0.5rem;
-	}
-
-	.form-control {
-		padding: 0.5rem;
-		border: 1px solid var(--border-color);
-		border-radius: 0.375rem;
-		background-color: var(--input-bg);
-		color: var(--input-text);
 	}
 
 	.custom-table th,
@@ -611,13 +530,9 @@
 	.is-invalid {
 		border-color: red;
 	}
-	.input-group {
-		position: relative;
-	}
 
-	.error-message {
-		position: absolute;
-		color: #ff0019;
-		font-size: 0.875rem;
+	.is-invalid:focus {
+		border-color: red;
+		box-shadow: none; /* Optional: Remove any shadow if present */
 	}
 </style>
