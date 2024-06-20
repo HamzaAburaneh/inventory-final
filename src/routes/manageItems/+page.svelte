@@ -29,7 +29,7 @@
 	let barcode = '';
 	let count: string = '';
 	let lowCount: string = '';
-	let cost: number | null = null;
+	let cost: string = '';
 	let storageType: '' | 'freezer' | 'refrigerator' | 'dry storage' = '';
 	let searchValue = '';
 	let currentSortColumn: keyof Item;
@@ -49,28 +49,52 @@
 				const intValue = parseInt(value);
 				errors[field] = isNaN(intValue) || intValue < 0 ? 'Must be a positive number' : '';
 				break;
+			case 'cost':
+				const floatValue = parseFloat(value);
+				errors.cost = isNaN(floatValue) || floatValue < 0 ? 'Must be a non-negative number' : '';
+				break;
 			default:
 				break;
 		}
 	};
-
 	const handleInput = (
 		event: Event,
 		setValue: (value: string) => void,
-		validate: (value: string) => void
+		validate: (value: string) => void,
+		allowDecimal: boolean = false
 	) => {
-		const inputValue = (event.target as HTMLInputElement).value;
-		const sanitizedValue = inputValue.replace(/\D/g, '');
-		setValue(sanitizedValue);
-		validate(sanitizedValue);
-	};
+		const inputElement = event.target as HTMLInputElement;
+		let inputValue = inputElement.value;
 
+		if (allowDecimal) {
+			// Allow one decimal point and up to two decimal places
+			inputValue = inputValue.replace(/[^\d.]/g, '');
+			const parts = inputValue.split('.');
+			if (parts.length > 2) {
+				parts.pop();
+				inputValue = parts.join('.');
+			}
+			if (parts[1] && parts[1].length > 2) {
+				inputValue = `${parts[0]}.${parts[1].slice(0, 2)}`;
+			}
+		} else {
+			// For non-decimal fields, only allow digits
+			inputValue = inputValue.replace(/\D/g, '');
+		}
+
+		setValue(inputValue);
+		validate(inputValue);
+
+		// Update the input value to reflect the sanitized value
+		inputElement.value = inputValue;
+	};
 	const updateItemsAndSort = (updatedItems: Item[]) => {
 		items = applySorting(updatedItems, currentSortColumn, sortAscending);
 	};
 
 	const handleAdd = async () => {
-		const newItem = { name, barcode, count, lowCount, cost, storageType };
+		const parsedCost = cost ? parseFloat(parseFloat(cost).toFixed(2)) : null;
+		const newItem = { name, barcode, count, lowCount, cost: parsedCost, storageType };
 		const id = await addItem(newItem);
 		const item: Item = { id, ...newItem };
 
@@ -83,10 +107,17 @@
 		barcode = '';
 		count = '';
 		lowCount = '';
-		cost = null;
+		cost = '';
 		storageType = '';
+		errors = {
+			name: '',
+			barcode: '',
+			count: '',
+			lowCount: '',
+			cost: '',
+			storageType: ''
+		};
 	};
-
 	const handleDelete = async (id: string) => {
 		await deleteItem(id);
 		updateItemsAndSort(items.filter((item) => item.id !== id));
@@ -219,10 +250,21 @@
 			<input
 				id="cost"
 				class="form-control"
-				type="number"
+				type="text"
 				bind:value={cost}
 				placeholder="Enter item cost"
+				on:input={(event) =>
+					handleInput(
+						event,
+						(value) => (cost = value),
+						(value) => validateField('cost', value),
+						true // Allow decimal input
+					)}
+				class:is-invalid={errors.cost}
 			/>
+			{#if errors.cost}
+				<div class="error-message">{errors.cost}</div>
+			{/if}
 		</div>
 		<div class="form-group">
 			<label for="storageType" class="form-label">Storage Type</label>
