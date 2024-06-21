@@ -454,13 +454,13 @@
 	}
 	.input-wrapper {
 		position: relative;
-		width: 100%; /* Add this */
+		width: 100%;
 	}
 	.form-label {
 		margin-bottom: 0.5rem;
 	}
 	.form-control {
-		width: 100%; /* Add this */
+		width: 100%;
 		padding: 0.5rem;
 		border: 1px solid var(--border-color);
 		border-radius: 0.375rem;
@@ -474,7 +474,11 @@
 		box-shadow: 0 0 0 2px var(--focus-border-color);
 	}
 	.form-control::placeholder {
-		color: var(--input-text); /* Replace this with your desired color */
+		color: var(--input-text);
+	}
+	.form-control select {
+		background-color: var(--input-bg);
+		color: rgb(255, 255, 255);
 	}
 	.error-message {
 		position: absolute;
@@ -483,14 +487,14 @@
 		margin-top: 0.25rem;
 		color: #ff0019;
 		font-size: 0.875rem;
-		width: 100%; /* Add this to ensure the error message does not cause shrinkage */
+		width: 100%;
 	}
 	#add-item {
-		background-color: #47fd99;
+		background-color: #ddd12d;
 		color: #000;
 		font-weight: 700;
 		border-radius: 1rem;
-		padding: 0.75rem 1.5rem;
+		padding: 0.5rem 1rem;
 		border: none;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 		transition:
@@ -499,6 +503,9 @@
 			box-shadow 0.3s ease;
 		cursor: pointer;
 		text-align: center;
+		font-size: 0.875rem;
+		max-width: 200px;
+		margin: 0 auto;
 	}
 	#add-item:hover {
 		transform: scale(1.05);
@@ -506,6 +513,12 @@
 	}
 	#add-item:active {
 		transform: scale(1.02);
+	}
+	@media (min-width: 640px) {
+		#add-item {
+			font-size: 1rem;
+			padding: 0.75rem 1.5rem;
+		}
 	}
 	.custom-table th,
 	.custom-table td {

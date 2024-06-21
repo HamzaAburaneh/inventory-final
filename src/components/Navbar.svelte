@@ -8,7 +8,7 @@
 	}
 </script>
 
-<nav class="navbar p-4">
+<nav class="navbar p-4 border-b">
 	<div class="container mx-auto flex justify-between items-center">
 		<a href="/" class="text-white text-xl">Brand</a>
 		<button class="text-white md:hidden" on:click={toggleMenu}> ☰ </button>
@@ -30,5 +30,8 @@
 <style>
 	.navbar {
 		background-color: var(--nav-color);
+		border-color: var(--nav-border-color);
+		/* add shadow to the bottom big */
+		box-shadow: 0 10px 20px #121212;
 	}
 </style>

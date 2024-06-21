@@ -21,17 +21,18 @@
 	--table-cell-text: #000000;
 	--border-radius: 8px; /* Default border radius for light theme */
 	--nav-color: #5f6dbb;
+	--nav-border-color: #2c2c2c;
 }
 
 [data-theme='dark'] {
-	--background-color: #1b1b1e;
+	--background-color: #1a1a1a;
 	--text-color: #ffffff; /* Ensure this is black */
 	--container-bg: #121212; /* Black background for dark mode */
 	--add-item-color: #60ffaf;
 	--input-bg: #1d1d1d;
 	--icon-color: #ffffff;
 	--icon-hover-color: #60ffaf;
-	--input-text: #6d697a;
+	--input-text: #747474;
 	--placeholder-text: #6d697a;
 	--border-color: #000000;
 	--table-border-color: #2c2c2cdc;
@@ -42,6 +43,7 @@
 	--table-cell-text: #ffffff;
 	--border-radius: 16px; /* Border radius for dark theme */
 	--nav-color: #121212;
+	--nav-border-color: #ffffff6c;
 }
 
 body {
