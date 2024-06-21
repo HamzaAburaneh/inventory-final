@@ -19,6 +19,14 @@ export async function getItems(): Promise<Item[]> {
 
 export async function addItem(item: Omit<Item, 'id'>): Promise<string> {
 	const itemCollection = collection(db, 'items');
+
+	// Check for duplicates
+	const q = query(itemCollection, where('name', '==', item.name));
+	const querySnapshot = await getDocs(q);
+	if (!querySnapshot.empty) {
+		throw new Error('Item with this name already exists.');
+	}
+
 	const docRef = await addDoc(itemCollection, item);
 	return docRef.id;
 }

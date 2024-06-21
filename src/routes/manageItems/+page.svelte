@@ -93,13 +93,31 @@
 	};
 
 	const handleAdd = async () => {
-		const parsedCost = cost ? parseFloat(parseFloat(cost).toFixed(2)) : null;
-		const newItem = { name, barcode, count, lowCount, cost: parsedCost, storageType };
-		const id = await addItem(newItem);
-		const item: Item = { id, ...newItem };
+		try {
+			// Client-side check for duplicates
+			if (items.some((item) => item.name.toLowerCase() === name.toLowerCase())) {
+				await Swal.fire({
+					icon: 'error',
+					title: 'Duplicate Item',
+					text: 'Item with this name already exists.'
+				});
+				return;
+			}
 
-		updateItemsAndSort([...items, item]);
-		resetForm();
+			const parsedCost = cost ? parseFloat(parseFloat(cost).toFixed(2)) : null;
+			const newItem = { name, barcode, count, lowCount, cost: parsedCost, storageType };
+			const id = await addItem(newItem);
+			const item: Item = { id, ...newItem };
+
+			updateItemsAndSort([...items, item]);
+			resetForm();
+		} catch (error) {
+			await Swal.fire({
+				icon: 'error',
+				title: 'Error',
+				text: error.message
+			});
+		}
 	};
 
 	const resetForm = () => {
@@ -420,12 +438,16 @@
 		border: 1px solid var(--border-color);
 		border-radius: 0.375rem;
 		background-color: var(--input-bg);
-		color: var(--input-text);
+		color: rgb(255, 255, 255);
 	}
 	.form-control:focus {
+		color: #fff;
 		outline: none;
 		border-color: var(--focus-border-color);
 		box-shadow: 0 0 0 2px var(--focus-border-color);
+	}
+	.form-control::placeholder {
+		color: var(--input-text); /* Replace this with your desired color */
 	}
 	.error-message {
 		margin-top: 0.25rem;
