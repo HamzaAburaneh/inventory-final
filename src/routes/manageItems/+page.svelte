@@ -214,93 +214,105 @@
 	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
 		<div class="form-group">
 			<label for="name" class="form-label">Name</label>
-			<input
-				id="name"
-				class="form-control"
-				bind:value={name}
-				placeholder="Enter item name"
-				on:input={() => validateField('name', name)}
-				class:is-invalid={errors.name}
-			/>
-			{#if errors.name}
-				<div class="error-message">{errors.name}</div>
-			{/if}
+			<div class="input-wrapper">
+				<input
+					id="name"
+					class="form-control"
+					bind:value={name}
+					placeholder="Enter item name"
+					on:input={() => validateField('name', name)}
+					class:is-invalid={errors.name}
+				/>
+				{#if errors.name}
+					<div class="error-message">{errors.name}</div>
+				{/if}
+			</div>
 		</div>
 		<div class="form-group">
 			<label for="barcode" class="form-label">Barcode</label>
-			<input id="barcode" class="form-control" bind:value={barcode} placeholder="Enter barcode" />
+			<div class="input-wrapper">
+				<input id="barcode" class="form-control" bind:value={barcode} placeholder="Enter barcode" />
+			</div>
 		</div>
 		<div class="form-group">
 			<label for="count" class="form-label">Count</label>
-			<input
-				id="count"
-				class="form-control"
-				type="text"
-				bind:value={count}
-				pattern="^[0-9]*$"
-				placeholder="Enter item count"
-				on:input={(event) =>
-					handleInput(
-						event,
-						(value) => (count = value),
-						(value) => validateField('count', value)
-					)}
-				class:is-invalid={errors.count}
-			/>
-			{#if errors.count}
-				<div class="error-message">{errors.count}</div>
-			{/if}
+			<div class="input-wrapper">
+				<input
+					id="count"
+					class="form-control"
+					type="text"
+					bind:value={count}
+					pattern="^[0-9]*$"
+					placeholder="Enter item count"
+					on:input={(event) =>
+						handleInput(
+							event,
+							(value) => (count = value),
+							(value) => validateField('count', value)
+						)}
+					class:is-invalid={errors.count}
+				/>
+				{#if errors.count}
+					<div class="error-message">{errors.count}</div>
+				{/if}
+			</div>
 		</div>
 		<div class="form-group">
 			<label for="lowCount" class="form-label">Low Count</label>
-			<input
-				id="lowCount"
-				class="form-control"
-				type="text"
-				bind:value={lowCount}
-				pattern="^[0-9]*$"
-				placeholder="Enter low stock threshold"
-				on:input={(event) =>
-					handleInput(
-						event,
-						(value) => (lowCount = value),
-						(value) => validateField('lowCount', value)
-					)}
-				class:is-invalid={errors.lowCount}
-			/>
-			{#if errors.lowCount}
-				<div class="error-message">{errors.lowCount}</div>
-			{/if}
+			<div class="input-wrapper">
+				<input
+					id="lowCount"
+					class="form-control"
+					type="text"
+					bind:value={lowCount}
+					pattern="^[0-9]*$"
+					placeholder="Enter low stock threshold"
+					on:input={(event) =>
+						handleInput(
+							event,
+							(value) => (lowCount = value),
+							(value) => validateField('lowCount', value)
+						)}
+					class:is-invalid={errors.lowCount}
+				/>
+				{#if errors.lowCount}
+					<div class="error-message">{errors.lowCount}</div>
+				{/if}
+			</div>
 		</div>
 		<div class="form-group">
 			<label for="cost" class="form-label">Cost</label>
-			<input
-				id="cost"
-				class="form-control"
-				type="text"
-				bind:value={cost}
-				placeholder="Enter item cost"
-				on:input={(event) =>
-					handleInput(
-						event,
-						(value) => (cost = value),
-						(value) => validateField('cost', value),
-						true // Allow decimal input
-					)}
-				class:is-invalid={errors.cost}
-			/>
-			{#if errors.cost}
-				<div class="error-message">{errors.cost}</div>
-			{/if}
+			<div class="input-wrapper">
+				<input
+					id="cost"
+					class="form-control"
+					type="text"
+					bind:value={cost}
+					placeholder="Enter item cost"
+					on:input={(event) =>
+						handleInput(
+							event,
+							(value) => (cost = value),
+							(value) => validateField('cost', value),
+							true // Allow decimal input
+						)}
+					class:is-invalid={errors.cost}
+				/>
+				{#if errors.cost}
+					<div class="error-message">{errors.cost}</div>
+				{/if}
+			</div>
 		</div>
 		<div class="form-group">
 			<label for="storageType" class="form-label">Storage Type</label>
-			<select id="storageType" bind:value={storageType} class="form-control">
-				<option value="">Select storage type...</option>
-				<option value="Freezer">Freezer</option>
-				<option value="Refrigerator">Refrigerator</option>
-				<option value="Dry">Dry Storage</option>
-			</select>
+			<div class="input-wrapper">
+				<select id="storageType" bind:value={storageType} class="form-control">
+					<option value="">Select storage type...</option>
+					<option value="Freezer">Freezer</option>
+					<option value="Refrigerator">Refrigerator</option>
+					<option value="Dry">Dry Storage</option>
+				</select>
+			</div>
 		</div>
 		<div class="form-group col-span-full">
 			<button class="btn btn-primary w-full" id="add-item" on:click={handleAdd}>Add Item</button>
@@ -435,14 +447,20 @@
 		border-radius: 8px;
 	}
 	.form-group {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		margin-bottom: 1.5rem;
+	}
+	.input-wrapper {
+		position: relative;
+		width: 100%; /* Add this */
 	}
 	.form-label {
 		margin-bottom: 0.5rem;
 	}
 	.form-control {
+		width: 100%; /* Add this */
 		padding: 0.5rem;
 		border: 1px solid var(--border-color);
 		border-radius: 0.375rem;
@@ -459,9 +477,13 @@
 		color: var(--input-text); /* Replace this with your desired color */
 	}
 	.error-message {
+		position: absolute;
+		top: 100%;
+		left: 0;
 		margin-top: 0.25rem;
 		color: #ff0019;
 		font-size: 0.875rem;
+		width: 100%; /* Add this to ensure the error message does not cause shrinkage */
 	}
 	#add-item {
 		background-color: #47fd99;
