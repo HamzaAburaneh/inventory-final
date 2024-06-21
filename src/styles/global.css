@@ -13,7 +13,7 @@
 	--input-text: #000000;
 	--placeholder-text: #6d697a;
 	--border-color: #ffffff;
-	--table-border: #dddddd;
+	--table-border-color: #ff0000;
 	--table-header-bg: #f9f9f9;
 	--table-description-bg: #333333;
 	--table-header-text: #000000;
@@ -24,7 +24,7 @@
 }
 
 [data-theme='dark'] {
-	--background-color: #353535;
+	--background-color: #1b1b1e;
 	--text-color: #ffffff; /* Ensure this is black */
 	--container-bg: #121212; /* Black background for dark mode */
 	--add-item-color: #60ffaf;
@@ -34,7 +34,7 @@
 	--input-text: #6d697a;
 	--placeholder-text: #6d697a;
 	--border-color: #000000;
-	--table-border: #444444;
+	--table-border-color: #2c2c2cdc;
 	--table-header-bg: #222222;
 	--table-description-bg: #333333;
 	--table-header-text: #ffffff;
@@ -79,7 +79,7 @@ input::placeholder {
 .table td {
 	padding: 0.5rem;
 	text-align: left;
-	border: 1px solid var(--table-border);
+	border: 1px solid var(--table-border-color);
 	border-radius: var(--border-radius);
 }
 

@@ -95,7 +95,16 @@
 	const handleAdd = async () => {
 		try {
 			// Client-side check for duplicates
-			if (items.some((item) => item.name.toLowerCase() === name.toLowerCase())) {
+
+			//make a case if the item name is empty, same var
+			if (name.trim() === '') {
+				await Swal.fire({
+					icon: 'error',
+					title: 'Empty Item Name',
+					text: 'Item name cannot be empty.'
+				});
+				return;
+			} else if (items.some((item) => item.name.toLowerCase() === name.toLowerCase())) {
 				await Swal.fire({
 					icon: 'error',
 					title: 'Duplicate Item',
@@ -482,10 +491,10 @@
 		text-align: left;
 	}
 	.custom-table th {
-		border-bottom: 2px solid var(--border-color);
+		border-bottom: 2px solid var(--table-border-color);
 	}
 	.custom-table td {
-		border-bottom: 1px solid var(--border-color);
+		border-bottom: 1px solid var(--table-border-color);
 	}
 	.cell-content {
 		display: flex;
