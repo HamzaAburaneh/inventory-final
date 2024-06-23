@@ -211,7 +211,7 @@
 </script>
 
 <div class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4">
-	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+	<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
 		<div class="form-group">
 			<label for="name" class="form-label">Name</label>
 			<div class="input-wrapper">
@@ -228,12 +228,14 @@
 				{/if}
 			</div>
 		</div>
+
 		<div class="form-group">
 			<label for="barcode" class="form-label">Barcode</label>
 			<div class="input-wrapper">
 				<input id="barcode" class="form-control" bind:value={barcode} placeholder="Enter barcode" />
 			</div>
 		</div>
+
 		<div class="form-group">
 			<label for="count" class="form-label">Count</label>
 			<div class="input-wrapper">
@@ -257,6 +259,7 @@
 				{/if}
 			</div>
 		</div>
+
 		<div class="form-group">
 			<label for="lowCount" class="form-label">Low Count</label>
 			<div class="input-wrapper">
@@ -280,6 +283,7 @@
 				{/if}
 			</div>
 		</div>
+
 		<div class="form-group">
 			<label for="cost" class="form-label">Cost</label>
 			<div class="input-wrapper">
@@ -303,6 +307,7 @@
 				{/if}
 			</div>
 		</div>
+
 		<div class="form-group">
 			<label for="storageType" class="form-label">Storage Type</label>
 			<div class="input-wrapper">
@@ -314,10 +319,12 @@
 				</select>
 			</div>
 		</div>
+
 		<div class="form-group col-span-full">
 			<button class="btn btn-primary w-full" id="add-item" on:click={handleAdd}>Add Item</button>
 		</div>
 	</div>
+
 	<div class="mb-4">
 		<label for="search" class="form-label">Search: </label>
 		<input
@@ -490,7 +497,7 @@
 		width: 100%;
 	}
 	#add-item {
-		background-color: #ddd12d;
+		background-color: #e6d600;
 		color: #000;
 		font-weight: 700;
 		border-radius: 1rem;
