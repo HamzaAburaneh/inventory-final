@@ -208,6 +208,10 @@
 		}
 		return '↕';
 	};
+	const clearSearch = () => {
+		searchValue = '';
+		handleSearch();
+	};
 </script>
 
 <div class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4">
@@ -325,16 +329,36 @@
 		</div>
 	</div>
 
-	<div class="mb-4">
-		<label for="search" class="form-label">Search: </label>
-		<input
-			id="search"
-			class="form-control"
-			bind:value={searchValue}
-			placeholder="Search Items"
-			on:input={handleSearch}
-		/>
+	<div class="search-container mb-4 relative">
+		<div class="search-wrapper relative flex">
+			<input
+				id="search"
+				class="form-control search-input"
+				bind:value={searchValue}
+				placeholder="Search Items"
+				on:input={handleSearch}
+			/>
+			{#if searchValue}
+				<button class="clear-button flex items-center justify-center" on:click={clearSearch}>
+					<svg
+						class="h-5 w-5 text-gray-500"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+						xmlns="http://www.w3.org/2000/svg"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						></path>
+					</svg>
+				</button>
+			{/if}
+		</div>
 	</div>
+
 	<table class="custom-table table-auto w-full border-collapse">
 		<thead>
 			<tr class="table-header">
@@ -445,6 +469,73 @@
 </div>
 
 <style>
+	.search-container {
+		display: flex;
+		justify-content: center;
+		width: 100%;
+	}
+
+	.search-wrapper {
+		width: 50%;
+		display: flex;
+		transition: width 0.3s ease;
+		position: relative; /* Make wrapper relative to position button inside */
+	}
+
+	.search-input {
+		flex-grow: 1;
+		padding: 0.5rem 1rem;
+		border: 1px solid var(--border-color);
+		border-radius: 0.375rem;
+		background-color: var(--input-bg);
+		color: rgb(255, 255, 255);
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		transition:
+			box-shadow 0.3s ease,
+			transform 0.3s ease;
+	}
+
+	.search-input:focus {
+		outline: none;
+		border-color: var(--focus-border-color);
+		box-shadow:
+			0 0 0 2px var(--focus-border-color),
+			0 6px 8px rgba(0, 0, 0, 0.1);
+		transform: scale(1.02);
+	}
+
+	.search-input::placeholder {
+		color: var(--input-text);
+	}
+
+	.clear-button {
+		background: none;
+		border: none;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--icon-color);
+		transition: color 0.3s ease;
+		width: 2rem; /* Adjust the width to make the button consistent */
+		height: 100%; /* Make it fill the height of the input */
+		position: absolute;
+		right: 0; /* Position it closer to the right edge */
+		top: 0;
+		border-left: none; /* Remove border */
+		background-color: transparent; /* Make background transparent */
+		padding: 0;
+	}
+
+	.clear-button svg {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.clear-button:hover {
+		color: var(--icon-hover-color);
+	}
+
 	.container {
 		margin-top: 20px;
 		padding: 2rem;
@@ -457,7 +548,7 @@
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		margin-bottom: 1.5rem;
+		margin-bottom: 0.5rem;
 	}
 	.input-wrapper {
 		position: relative;
