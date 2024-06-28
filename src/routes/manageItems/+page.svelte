@@ -209,136 +209,126 @@
 	};
 </script>
 
-<div
-	class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4"
-	transition:slide={{ duration: 300 }}
->
-	<div transition:slide={{ duration: 300 }}>
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-			<div class="form-group">
-				<label for="name" class="form-label">Name</label>
-				<div class="input-wrapper">
-					<input
-						id="name"
-						class="form-control"
-						bind:value={name}
-						placeholder="Enter item name"
-						on:input={() => validateField('name', name)}
-						class:is-invalid={errors.name}
-					/>
-					{#if errors.name}
-						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
-							{errors.name}
-						</div>
-					{/if}
-				</div>
+<div class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4">
+	<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+		<div class="form-group">
+			<label for="name" class="form-label">Name</label>
+			<div class="input-wrapper">
+				<input
+					id="name"
+					class="form-control"
+					bind:value={name}
+					placeholder="Enter item name"
+					on:input={() => validateField('name', name)}
+					class:is-invalid={errors.name}
+				/>
+				{#if errors.name}
+					<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
+						{errors.name}
+					</div>
+				{/if}
 			</div>
+		</div>
 
-			<div class="form-group">
-				<label for="barcode" class="form-label">Barcode</label>
-				<div class="input-wrapper">
-					<input
-						id="barcode"
-						class="form-control"
-						bind:value={barcode}
-						placeholder="Enter barcode"
-					/>
-				</div>
+		<div class="form-group">
+			<label for="barcode" class="form-label">Barcode</label>
+			<div class="input-wrapper">
+				<input id="barcode" class="form-control" bind:value={barcode} placeholder="Enter barcode" />
 			</div>
+		</div>
 
-			<div class="form-group">
-				<label for="count" class="form-label">Count</label>
-				<div class="input-wrapper">
-					<input
-						id="count"
-						class="form-control"
-						type="text"
-						bind:value={count}
-						pattern="^[0-9]*$"
-						placeholder="Enter item count"
-						on:input={(event) =>
-							handleInput(
-								event,
-								(value) => (count = value),
-								(value) => validateField('count', value)
-							)}
-						class:is-invalid={errors.count}
-					/>
-					{#if errors.count}
-						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
-							{errors.count}
-						</div>
-					{/if}
-				</div>
+		<div class="form-group">
+			<label for="count" class="form-label">Count</label>
+			<div class="input-wrapper">
+				<input
+					id="count"
+					class="form-control"
+					type="text"
+					bind:value={count}
+					pattern="^[0-9]*$"
+					placeholder="Enter item count"
+					on:input={(event) =>
+						handleInput(
+							event,
+							(value) => (count = value),
+							(value) => validateField('count', value)
+						)}
+					class:is-invalid={errors.count}
+				/>
+				{#if errors.count}
+					<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
+						{errors.count}
+					</div>
+				{/if}
 			</div>
+		</div>
 
-			<div class="form-group">
-				<label for="lowCount" class="form-label">Low Count</label>
-				<div class="input-wrapper">
-					<input
-						id="lowCount"
-						class="form-control"
-						type="text"
-						bind:value={lowCount}
-						pattern="^[0-9]*$"
-						placeholder="Enter low stock threshold"
-						on:input={(event) =>
-							handleInput(
-								event,
-								(value) => (lowCount = value),
-								(value) => validateField('lowCount', value)
-							)}
-						class:is-invalid={errors.lowCount}
-					/>
-					{#if errors.lowCount}
-						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
-							{errors.lowCount}
-						</div>
-					{/if}
-				</div>
+		<div class="form-group">
+			<label for="lowCount" class="form-label">Low Count</label>
+			<div class="input-wrapper">
+				<input
+					id="lowCount"
+					class="form-control"
+					type="text"
+					bind:value={lowCount}
+					pattern="^[0-9]*$"
+					placeholder="Enter low stock threshold"
+					on:input={(event) =>
+						handleInput(
+							event,
+							(value) => (lowCount = value),
+							(value) => validateField('lowCount', value)
+						)}
+					class:is-invalid={errors.lowCount}
+				/>
+				{#if errors.lowCount}
+					<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
+						{errors.lowCount}
+					</div>
+				{/if}
 			</div>
+		</div>
 
-			<div class="form-group">
-				<label for="cost" class="form-label">Cost</label>
-				<div class="input-wrapper">
-					<input
-						id="cost"
-						class="form-control"
-						type="text"
-						bind:value={cost}
-						placeholder="Enter item cost"
-						on:input={(event) =>
-							handleInput(
-								event,
-								(value) => (cost = value),
-								(value) => validateField('cost', value),
-								true // Allow decimal input
-							)}
-						class:is-invalid={errors.cost}
-					/>
-					{#if errors.cost}
-						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
-							{errors.cost}
-						</div>
-					{/if}
-				</div>
+		<div class="form-group">
+			<label for="cost" class="form-label">Cost</label>
+			<div class="input-wrapper">
+				<input
+					id="cost"
+					class="form-control"
+					type="text"
+					bind:value={cost}
+					placeholder="Enter item cost"
+					on:input={(event) =>
+						handleInput(
+							event,
+							(value) => (cost = value),
+							(value) => validateField('cost', value),
+							true // Allow decimal input
+						)}
+					class:is-invalid={errors.cost}
+				/>
+				{#if errors.cost}
+					<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
+						{errors.cost}
+					</div>
+				{/if}
 			</div>
+		</div>
 
-			<div class="form-group">
-				<label for="storageType" class="form-label">Storage Type</label>
-				<div class="input-wrapper">
-					<select id="storageType" bind:value={storageType} class="form-control">
-						<option value="">Select storage type...</option>
-						<option value="Freezer">Freezer</option>
-						<option value="Refrigerator">Refrigerator</option>
-						<option value="Dry">Dry Storage</option>
-					</select>
-				</div>
+		<div class="form-group">
+			<label for="storageType" class="form-label">Storage Type</label>
+			<div class="input-wrapper">
+				<select id="storageType" bind:value={storageType} class="form-control">
+					<option value="">Select storage type...</option>
+					<option value="Freezer">Freezer</option>
+					<option value="Refrigerator">Refrigerator</option>
+					<option value="Dry">Dry Storage</option>
+				</select>
 			</div>
+		</div>
 
-			<div class="form-group col-span-full">
-				<button class="btn btn-primary w-full" id="add-item" on:click={handleAdd}>Add Item</button>
-			</div>
+		<div class="form-group col-span-full">
+			<button class="btn btn-primary w-full" id="add-item" on:click={handleAdd}>Add Item</button>
 		</div>
 	</div>
 
