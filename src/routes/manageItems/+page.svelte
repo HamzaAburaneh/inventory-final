@@ -14,7 +14,8 @@
 		applySorting
 	} from '../../lib/items';
 	import type { Item } from '../../types';
-
+	import { fade, slide, fly } from 'svelte/transition';
+	import { flip } from 'svelte/animate';
 	let errors = {
 		name: '',
 		barcode: '',
@@ -67,7 +68,6 @@
 		let inputValue = inputElement.value;
 
 		if (allowDecimal) {
-			// Allow one decimal point and up to two decimal places
 			inputValue = inputValue.replace(/[^\d.]/g, '');
 			const parts = inputValue.split('.');
 			if (parts.length > 2) {
@@ -78,14 +78,12 @@
 				inputValue = `${parts[0]}.${parts[1].slice(0, 2)}`;
 			}
 		} else {
-			// For non-decimal fields, only allow digits
 			inputValue = inputValue.replace(/\D/g, '');
 		}
 
 		setValue(inputValue);
 		validate(inputValue);
 
-		// Update the input value to reflect the sanitized value
 		inputElement.value = inputValue;
 	};
 	const updateItemsAndSort = (updatedItems: Item[]) => {
@@ -94,9 +92,6 @@
 
 	const handleAdd = async () => {
 		try {
-			// Client-side check for duplicates
-
-			//make a case if the item name is empty, same var
 			if (name.trim() === '') {
 				await Swal.fire({
 					icon: 'error',
@@ -214,118 +209,136 @@
 	};
 </script>
 
-<div class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4">
-	<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-		<div class="form-group">
-			<label for="name" class="form-label">Name</label>
-			<div class="input-wrapper">
-				<input
-					id="name"
-					class="form-control"
-					bind:value={name}
-					placeholder="Enter item name"
-					on:input={() => validateField('name', name)}
-					class:is-invalid={errors.name}
-				/>
-				{#if errors.name}
-					<div class="error-message">{errors.name}</div>
-				{/if}
+<div
+	class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4"
+	transition:slide={{ duration: 300 }}
+>
+	<div transition:slide={{ duration: 300 }}>
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+			<div class="form-group">
+				<label for="name" class="form-label">Name</label>
+				<div class="input-wrapper">
+					<input
+						id="name"
+						class="form-control"
+						bind:value={name}
+						placeholder="Enter item name"
+						on:input={() => validateField('name', name)}
+						class:is-invalid={errors.name}
+					/>
+					{#if errors.name}
+						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
+							{errors.name}
+						</div>
+					{/if}
+				</div>
 			</div>
-		</div>
 
-		<div class="form-group">
-			<label for="barcode" class="form-label">Barcode</label>
-			<div class="input-wrapper">
-				<input id="barcode" class="form-control" bind:value={barcode} placeholder="Enter barcode" />
+			<div class="form-group">
+				<label for="barcode" class="form-label">Barcode</label>
+				<div class="input-wrapper">
+					<input
+						id="barcode"
+						class="form-control"
+						bind:value={barcode}
+						placeholder="Enter barcode"
+					/>
+				</div>
 			</div>
-		</div>
 
-		<div class="form-group">
-			<label for="count" class="form-label">Count</label>
-			<div class="input-wrapper">
-				<input
-					id="count"
-					class="form-control"
-					type="text"
-					bind:value={count}
-					pattern="^[0-9]*$"
-					placeholder="Enter item count"
-					on:input={(event) =>
-						handleInput(
-							event,
-							(value) => (count = value),
-							(value) => validateField('count', value)
-						)}
-					class:is-invalid={errors.count}
-				/>
-				{#if errors.count}
-					<div class="error-message">{errors.count}</div>
-				{/if}
+			<div class="form-group">
+				<label for="count" class="form-label">Count</label>
+				<div class="input-wrapper">
+					<input
+						id="count"
+						class="form-control"
+						type="text"
+						bind:value={count}
+						pattern="^[0-9]*$"
+						placeholder="Enter item count"
+						on:input={(event) =>
+							handleInput(
+								event,
+								(value) => (count = value),
+								(value) => validateField('count', value)
+							)}
+						class:is-invalid={errors.count}
+					/>
+					{#if errors.count}
+						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
+							{errors.count}
+						</div>
+					{/if}
+				</div>
 			</div>
-		</div>
 
-		<div class="form-group">
-			<label for="lowCount" class="form-label">Low Count</label>
-			<div class="input-wrapper">
-				<input
-					id="lowCount"
-					class="form-control"
-					type="text"
-					bind:value={lowCount}
-					pattern="^[0-9]*$"
-					placeholder="Enter low stock threshold"
-					on:input={(event) =>
-						handleInput(
-							event,
-							(value) => (lowCount = value),
-							(value) => validateField('lowCount', value)
-						)}
-					class:is-invalid={errors.lowCount}
-				/>
-				{#if errors.lowCount}
-					<div class="error-message">{errors.lowCount}</div>
-				{/if}
+			<div class="form-group">
+				<label for="lowCount" class="form-label">Low Count</label>
+				<div class="input-wrapper">
+					<input
+						id="lowCount"
+						class="form-control"
+						type="text"
+						bind:value={lowCount}
+						pattern="^[0-9]*$"
+						placeholder="Enter low stock threshold"
+						on:input={(event) =>
+							handleInput(
+								event,
+								(value) => (lowCount = value),
+								(value) => validateField('lowCount', value)
+							)}
+						class:is-invalid={errors.lowCount}
+					/>
+					{#if errors.lowCount}
+						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
+							{errors.lowCount}
+						</div>
+					{/if}
+				</div>
 			</div>
-		</div>
 
-		<div class="form-group">
-			<label for="cost" class="form-label">Cost</label>
-			<div class="input-wrapper">
-				<input
-					id="cost"
-					class="form-control"
-					type="text"
-					bind:value={cost}
-					placeholder="Enter item cost"
-					on:input={(event) =>
-						handleInput(
-							event,
-							(value) => (cost = value),
-							(value) => validateField('cost', value),
-							true // Allow decimal input
-						)}
-					class:is-invalid={errors.cost}
-				/>
-				{#if errors.cost}
-					<div class="error-message">{errors.cost}</div>
-				{/if}
+			<div class="form-group">
+				<label for="cost" class="form-label">Cost</label>
+				<div class="input-wrapper">
+					<input
+						id="cost"
+						class="form-control"
+						type="text"
+						bind:value={cost}
+						placeholder="Enter item cost"
+						on:input={(event) =>
+							handleInput(
+								event,
+								(value) => (cost = value),
+								(value) => validateField('cost', value),
+								true // Allow decimal input
+							)}
+						class:is-invalid={errors.cost}
+					/>
+					{#if errors.cost}
+						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
+							{errors.cost}
+						</div>
+					{/if}
+				</div>
 			</div>
-		</div>
 
-		<div class="form-group">
-			<label for="storageType" class="form-label">Storage Type</label>
-			<div class="input-wrapper">
-				<select id="storageType" bind:value={storageType} class="form-control">
-					<option value="">Select storage type...</option>
-					<option value="Freezer">Freezer</option>
-					<option value="Refrigerator">Refrigerator</option>
-					<option value="Dry">Dry Storage</option>
-				</select>
+			<div class="form-group">
+				<label for="storageType" class="form-label">Storage Type</label>
+				<div class="input-wrapper">
+					<select id="storageType" bind:value={storageType} class="form-control">
+						<option value="">Select storage type...</option>
+						<option value="Freezer">Freezer</option>
+						<option value="Refrigerator">Refrigerator</option>
+						<option value="Dry">Dry Storage</option>
+					</select>
+				</div>
 			</div>
-		</div>
 
-		<div class="form-group col-span-full">
-			<button class="btn btn-primary w-full" id="add-item" on:click={handleAdd}>Add Item</button>
+			<div class="form-group col-span-full">
+				<button class="btn btn-primary w-full" id="add-item" on:click={handleAdd}>Add Item</button>
+			</div>
 		</div>
 	</div>
 
@@ -385,7 +398,12 @@
 		</thead>
 		<tbody>
 			{#each items as item (item.id)}
-				<tr class="table-row">
+				<tr
+					class="table-row"
+					in:fade={{ duration: 300 }}
+					out:fade={{ duration: 300 }}
+					animate:flip={{ duration: 300 }}
+				>
 					<td class="px-4 py-2">
 						<div class="cell-content">
 							<span>{item.name}</span>
@@ -433,6 +451,7 @@
 								class="icon-button"
 								title="Edit Cost"
 								on:click={() => handleEdit(item.id, 'cost', item.cost)}
+								svelteCopy
 								aria-label="Edit Cost"
 							>
 								<i class="fas fa-edit"></i>
@@ -479,7 +498,7 @@
 		width: 50%;
 		display: flex;
 		transition: width 0.3s ease;
-		position: relative; /* Make wrapper relative to position button inside */
+		position: relative;
 	}
 
 	.search-input {
@@ -490,9 +509,7 @@
 		background-color: var(--input-bg);
 		color: rgb(255, 255, 255);
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-		transition:
-			box-shadow 0.3s ease,
-			transform 0.3s ease;
+		transition: all 0.3s ease;
 	}
 
 	.search-input:focus {
@@ -517,13 +534,13 @@
 		justify-content: center;
 		color: var(--icon-color);
 		transition: color 0.3s ease;
-		width: 2rem; /* Adjust the width to make the button consistent */
-		height: 100%; /* Make it fill the height of the input */
+		width: 2rem;
+		height: 100%;
 		position: absolute;
-		right: 0; /* Position it closer to the right edge */
+		right: 0;
 		top: 0;
-		border-left: none; /* Remove border */
-		background-color: transparent; /* Make background transparent */
+		border-left: none;
+		background-color: transparent;
 		padding: 0;
 	}
 
@@ -564,12 +581,14 @@
 		border-radius: 0.375rem;
 		background-color: var(--input-bg);
 		color: rgb(255, 255, 255);
+		transition: all 0.3s ease;
 	}
 	.form-control:focus {
 		color: #fff;
 		outline: none;
 		border-color: var(--focus-border-color);
 		box-shadow: 0 0 0 2px var(--focus-border-color);
+		transform: scale(1.02);
 	}
 	.form-control::placeholder {
 		color: var(--input-text);
@@ -643,10 +662,12 @@
 		display: flex;
 		align-items: center;
 		color: var(--icon-color);
+		transition: transform 0.2s ease-in-out;
 	}
 	.icon-button:hover,
 	.delete-button:hover {
 		color: var(--icon-hover-color);
+		transform: scale(1.1);
 	}
 	.delete-button {
 		color: darkred;
