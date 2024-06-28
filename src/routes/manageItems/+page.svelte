@@ -388,12 +388,7 @@
 		</thead>
 		<tbody>
 			{#each items as item (item.id)}
-				<tr
-					class="table-row"
-					in:fade={{ duration: 300 }}
-					out:fade={{ duration: 300 }}
-					animate:flip={{ duration: 300 }}
-				>
+				<tr class="table-row" in:fade={{ duration: 300 }} out:fade={{ duration: 300 }}>
 					<td class="px-4 py-2">
 						<div class="cell-content">
 							<span>{item.name}</span>
