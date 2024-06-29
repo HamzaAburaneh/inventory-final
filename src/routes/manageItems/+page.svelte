@@ -528,7 +528,15 @@
 		background-color: transparent;
 		padding: 0;
 	}
-
+	.form-label {
+		display: block;
+		margin-bottom: 0.5rem;
+		font-weight: 600;
+		color: var(--label-color);
+		font-size: 0.875rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
 	.clear-button svg {
 		width: 1rem;
 		height: 1rem;
@@ -540,11 +548,11 @@
 
 	.container {
 		margin-top: 20px;
-		padding: 2rem;
+		padding: 2.5rem;
 		max-width: 90%;
 		background-color: var(--container-bg);
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-		border-radius: 8px;
+		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+		border-radius: 1rem;
 	}
 	.form-group {
 		position: relative;
@@ -556,18 +564,18 @@
 		position: relative;
 		width: 100%;
 	}
-	.form-label {
-		margin-bottom: 0.5rem;
-	}
+
 	.form-control {
 		width: 100%;
-		padding: 0.5rem;
+		padding: 0.75rem;
 		border: 1px solid var(--border-color);
-		border-radius: 0.375rem;
+		border-radius: 0.5rem;
 		background-color: var(--input-bg);
 		color: rgb(255, 255, 255);
 		transition: all 0.3s ease;
+		font-size: 1rem;
 	}
+
 	.form-control:focus {
 		color: #fff;
 		outline: none;
@@ -599,22 +607,25 @@
 		padding: 0.5rem 1rem;
 		border: none;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-		transition:
-			background-color 0.3s ease,
-			transform 0.3s ease,
-			box-shadow 0.3s ease;
+		transition: all 0.3s ease;
 		cursor: pointer;
 		text-align: center;
 		font-size: 0.875rem;
-		max-width: 200px;
+		max-width: 25%;
 		margin: 0 auto;
+		display: block;
+		font-size: 0.875rem;
+		text-transform: uppercase;
 	}
+
 	#add-item:hover {
-		transform: scale(1.05);
-		box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+		transform: translateY(-4px);
+		box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+		background-color: #f0e000;
 	}
+
 	#add-item:active {
-		transform: scale(1.02);
+		transform: translateY(0);
 	}
 	@media (min-width: 640px) {
 		#add-item {
