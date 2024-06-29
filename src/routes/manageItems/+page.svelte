@@ -42,7 +42,7 @@
 		items = await getItems();
 		itemsLoaded = true;
 	});
-
+	$: placeholderSelected = !storageType;
 	const validateField = (field: string, value: any) => {
 		switch (field) {
 			case 'name':
@@ -330,8 +330,13 @@
 			<div class="form-group">
 				<label for="storageType" class="form-label">Storage Type</label>
 				<div class="input-wrapper">
-					<select id="storageType" bind:value={storageType} class="form-control">
-						<option value="">Select storage type...</option>
+					<select
+						id="storageType"
+						bind:value={storageType}
+						class="form-control"
+						class:placeholder-selected={!storageType}
+					>
+						<option value="" disabled>Select storage type...</option>
 						<option value="Freezer">Freezer</option>
 						<option value="Refrigerator">Refrigerator</option>
 						<option value="Dry">Dry Storage</option>
@@ -485,6 +490,22 @@
 {/if}
 
 <style>
+	/* Style for the select when no option is chosen */
+	select.form-control {
+		color: #ffffff; /* Default color for selected options */
+	}
+
+	select.form-control option {
+		color: #ffffff; /* Color for dropdown options */
+	}
+
+	select.form-control option[value=''] {
+		color: var(--input-text); /* Color for placeholder in dropdown */
+	}
+
+	.placeholder-selected {
+		color: var(--input-text) !important;
+	}
 	.search-container {
 		display: flex;
 		justify-content: center;
@@ -595,6 +616,7 @@
 		box-shadow: 0 0 0 2px var(--focus-border-color);
 		transform: scale(1.02);
 	}
+
 	.form-control::placeholder {
 		color: var(--input-text);
 	}
