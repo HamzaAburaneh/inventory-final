@@ -448,7 +448,6 @@
 									class="icon-button"
 									title="Edit Cost"
 									on:click={() => handleEdit(item.id, 'cost', item.cost)}
-									svelteCopy
 									aria-label="Edit Cost"
 								>
 									<i class="fas fa-edit"></i>
@@ -684,9 +683,12 @@
 	.delete-button:hover {
 		color: red;
 	}
-	.icon-button[title]::after {
+
+	.icon-button[title]::after,
+	.delete-button[title]::after {
 		content: attr(title);
 		position: absolute;
+		font-size: 0.75rem;
 		left: 50%;
 		bottom: 100%;
 		transform: translateX(-50%);
@@ -699,7 +701,8 @@
 		transition: opacity 0.2s ease-in-out;
 		pointer-events: none;
 	}
-	.icon-button:hover[title]::after {
+	.icon-button:hover[title]::after,
+	.delete-button:hover[title]::after {
 		opacity: 1;
 	}
 </style>
