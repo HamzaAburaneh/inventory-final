@@ -14,6 +14,8 @@
 		applySorting
 	} from '../../lib/items';
 	import type { Item } from '../../types';
+	import { fadeAndSlide } from '$lib/transitions';
+	import { quintOut } from 'svelte/easing';
 	import { fade, slide, fly } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
 	let errors = {
@@ -35,9 +37,10 @@
 	let searchValue = '';
 	let currentSortColumn: keyof Item;
 	let sortAscending = true;
-
+	let itemsLoaded = false;
 	onMount(async () => {
 		items = await getItems();
+		itemsLoaded = true;
 	});
 
 	const validateField = (field: string, value: any) => {
@@ -209,268 +212,278 @@
 	};
 </script>
 
-<div class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4">
-	<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-		<div class="form-group">
-			<label for="name" class="form-label">Name</label>
-			<div class="input-wrapper">
+{#if itemsLoaded}
+	<div
+		class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4"
+		in:fadeAndSlide={{ duration: 300, y: 75 }}
+	>
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+			<div class="form-group">
+				<label for="name" class="form-label">Name</label>
+				<div class="input-wrapper">
+					<input
+						id="name"
+						class="form-control"
+						bind:value={name}
+						placeholder="Enter item name"
+						on:input={() => validateField('name', name)}
+						class:is-invalid={errors.name}
+					/>
+					{#if errors.name}
+						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
+							{errors.name}
+						</div>
+					{/if}
+				</div>
+			</div>
+
+			<div class="form-group">
+				<label for="barcode" class="form-label">Barcode</label>
+				<div class="input-wrapper">
+					<input
+						id="barcode"
+						class="form-control"
+						bind:value={barcode}
+						placeholder="Enter barcode"
+					/>
+				</div>
+			</div>
+
+			<div class="form-group">
+				<label for="count" class="form-label">Count</label>
+				<div class="input-wrapper">
+					<input
+						id="count"
+						class="form-control"
+						type="text"
+						bind:value={count}
+						pattern="^[0-9]*$"
+						placeholder="Enter item count"
+						on:input={(event) =>
+							handleInput(
+								event,
+								(value) => (count = value),
+								(value) => validateField('count', value)
+							)}
+						class:is-invalid={errors.count}
+					/>
+					{#if errors.count}
+						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
+							{errors.count}
+						</div>
+					{/if}
+				</div>
+			</div>
+
+			<div class="form-group">
+				<label for="lowCount" class="form-label">Low Count</label>
+				<div class="input-wrapper">
+					<input
+						id="lowCount"
+						class="form-control"
+						type="text"
+						bind:value={lowCount}
+						pattern="^[0-9]*$"
+						placeholder="Enter low stock threshold"
+						on:input={(event) =>
+							handleInput(
+								event,
+								(value) => (lowCount = value),
+								(value) => validateField('lowCount', value)
+							)}
+						class:is-invalid={errors.lowCount}
+					/>
+					{#if errors.lowCount}
+						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
+							{errors.lowCount}
+						</div>
+					{/if}
+				</div>
+			</div>
+
+			<div class="form-group">
+				<label for="cost" class="form-label">Cost</label>
+				<div class="input-wrapper">
+					<input
+						id="cost"
+						class="form-control"
+						type="text"
+						bind:value={cost}
+						placeholder="Enter item cost"
+						on:input={(event) =>
+							handleInput(
+								event,
+								(value) => (cost = value),
+								(value) => validateField('cost', value),
+								true // Allow decimal input
+							)}
+						class:is-invalid={errors.cost}
+					/>
+					{#if errors.cost}
+						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
+							{errors.cost}
+						</div>
+					{/if}
+				</div>
+			</div>
+
+			<div class="form-group">
+				<label for="storageType" class="form-label">Storage Type</label>
+				<div class="input-wrapper">
+					<select id="storageType" bind:value={storageType} class="form-control">
+						<option value="">Select storage type...</option>
+						<option value="Freezer">Freezer</option>
+						<option value="Refrigerator">Refrigerator</option>
+						<option value="Dry">Dry Storage</option>
+					</select>
+				</div>
+			</div>
+
+			<div class="form-group col-span-full">
+				<button class="btn btn-primary w-full" id="add-item" on:click={handleAdd}>Add Item</button>
+			</div>
+		</div>
+
+		<div class="search-container mb-4 relative">
+			<div class="search-wrapper relative flex">
 				<input
-					id="name"
-					class="form-control"
-					bind:value={name}
-					placeholder="Enter item name"
-					on:input={() => validateField('name', name)}
-					class:is-invalid={errors.name}
+					id="search"
+					class="form-control search-input"
+					bind:value={searchValue}
+					placeholder="Search Items"
+					on:input={handleSearch}
 				/>
-				{#if errors.name}
-					<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
-						{errors.name}
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<div class="form-group">
-			<label for="barcode" class="form-label">Barcode</label>
-			<div class="input-wrapper">
-				<input id="barcode" class="form-control" bind:value={barcode} placeholder="Enter barcode" />
-			</div>
-		</div>
-
-		<div class="form-group">
-			<label for="count" class="form-label">Count</label>
-			<div class="input-wrapper">
-				<input
-					id="count"
-					class="form-control"
-					type="text"
-					bind:value={count}
-					pattern="^[0-9]*$"
-					placeholder="Enter item count"
-					on:input={(event) =>
-						handleInput(
-							event,
-							(value) => (count = value),
-							(value) => validateField('count', value)
-						)}
-					class:is-invalid={errors.count}
-				/>
-				{#if errors.count}
-					<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
-						{errors.count}
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<div class="form-group">
-			<label for="lowCount" class="form-label">Low Count</label>
-			<div class="input-wrapper">
-				<input
-					id="lowCount"
-					class="form-control"
-					type="text"
-					bind:value={lowCount}
-					pattern="^[0-9]*$"
-					placeholder="Enter low stock threshold"
-					on:input={(event) =>
-						handleInput(
-							event,
-							(value) => (lowCount = value),
-							(value) => validateField('lowCount', value)
-						)}
-					class:is-invalid={errors.lowCount}
-				/>
-				{#if errors.lowCount}
-					<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
-						{errors.lowCount}
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<div class="form-group">
-			<label for="cost" class="form-label">Cost</label>
-			<div class="input-wrapper">
-				<input
-					id="cost"
-					class="form-control"
-					type="text"
-					bind:value={cost}
-					placeholder="Enter item cost"
-					on:input={(event) =>
-						handleInput(
-							event,
-							(value) => (cost = value),
-							(value) => validateField('cost', value),
-							true // Allow decimal input
-						)}
-					class:is-invalid={errors.cost}
-				/>
-				{#if errors.cost}
-					<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
-						{errors.cost}
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<div class="form-group">
-			<label for="storageType" class="form-label">Storage Type</label>
-			<div class="input-wrapper">
-				<select id="storageType" bind:value={storageType} class="form-control">
-					<option value="">Select storage type...</option>
-					<option value="Freezer">Freezer</option>
-					<option value="Refrigerator">Refrigerator</option>
-					<option value="Dry">Dry Storage</option>
-				</select>
-			</div>
-		</div>
-
-		<div class="form-group col-span-full">
-			<button class="btn btn-primary w-full" id="add-item" on:click={handleAdd}>Add Item</button>
-		</div>
-	</div>
-
-	<div class="search-container mb-4 relative">
-		<div class="search-wrapper relative flex">
-			<input
-				id="search"
-				class="form-control search-input"
-				bind:value={searchValue}
-				placeholder="Search Items"
-				on:input={handleSearch}
-			/>
-			{#if searchValue}
-				<button class="clear-button flex items-center justify-center" on:click={clearSearch}>
-					<svg
-						class="h-5 w-5 text-gray-500"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-						xmlns="http://www.w3.org/2000/svg"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M6 18L18 6M6 6l12 12"
-						></path>
-					</svg>
-				</button>
-			{/if}
-		</div>
-	</div>
-
-	<table class="custom-table table-auto w-full border-collapse">
-		<thead>
-			<tr class="table-header">
-				<th class="px-4 py-2 text-left" on:click={() => sortBy('name')}
-					>Name <span>{sortIcon('name')}</span></th
-				>
-				<th class="px-4 py-2 text-left" on:click={() => sortBy('barcode')}
-					>Barcode <span>{sortIcon('barcode')}</span></th
-				>
-				<th class="px-4 py-2 text-left" on:click={() => sortBy('count')}
-					>Count <span>{sortIcon('count')}</span></th
-				>
-				<th class="px-4 py-2 text-left" on:click={() => sortBy('lowCount')}
-					>Low Count <span>{sortIcon('lowCount')}</span></th
-				>
-				<th class="px-4 py-2 text-left" on:click={() => sortBy('cost')}
-					>Cost <span>{sortIcon('cost')}</span></th
-				>
-				<th class="px-4 py-2 text-left" on:click={() => sortBy('storageType')}
-					>Storage Type <span>{sortIcon('storageType')}</span></th
-				>
-				<th class="px-4 py-2"></th>
-			</tr>
-		</thead>
-		<tbody>
-			{#each items as item (item.id)}
-				<tr class="table-row">
-					<td class="px-4 py-2">
-						<div class="cell-content">
-							<span>{item.name}</span>
-							<button
-								class="icon-button"
-								title="Edit Name"
-								on:click={() => handleEdit(item.id, 'name', item.name)}
-								aria-label="Edit Name"
-							>
-								<i class="fas fa-edit"></i>
-							</button>
-						</div>
-					</td>
-					<td class="px-4 py-2">
-						<div class="cell-content">
-							<span>{item.barcode}</span>
-							<button
-								class="icon-button"
-								title="Edit Barcode"
-								on:click={() => handleEdit(item.id, 'barcode', item.barcode)}
-								aria-label="Edit Barcode"
-							>
-								<i class="fas fa-edit"></i>
-							</button>
-						</div>
-					</td>
-					<td class="px-4 py-2">{item.count}</td>
-					<td class="px-4 py-2">
-						<div class="cell-content">
-							<span>{item.lowCount != null ? item.lowCount : ''}</span>
-							<button
-								class="icon-button"
-								title="Edit Low Count"
-								on:click={() => handleEdit(item.id, 'lowCount', item.lowCount)}
-								aria-label="Edit Low Count"
-							>
-								<i class="fas fa-edit"></i>
-							</button>
-						</div>
-					</td>
-					<td class="px-4 py-2">
-						<div class="cell-content">
-							<span>{item.cost != null ? item.cost : ''}</span>
-							<button
-								class="icon-button"
-								title="Edit Cost"
-								on:click={() => handleEdit(item.id, 'cost', item.cost)}
-								svelteCopy
-								aria-label="Edit Cost"
-							>
-								<i class="fas fa-edit"></i>
-							</button>
-						</div>
-					</td>
-					<td class="px-4 py-2">
-						<div class="cell-content">
-							<span>{item.storageType}</span>
-							<button
-								class="icon-button"
-								title="Edit Storage Type"
-								on:click={() => handleEdit(item.id, 'storageType', item.storageType)}
-								aria-label="Edit Storage Type"
-							>
-								<i class="fas fa-edit"></i>
-							</button>
-						</div>
-					</td>
-					<td class="px-4 py-2 text-center">
-						<button
-							class="delete-button"
-							title="Delete Item"
-							on:click={() => handleDelete(item.id)}
-							aria-label="Delete Item"
+				{#if searchValue}
+					<button class="clear-button flex items-center justify-center" on:click={clearSearch}>
+						<svg
+							class="h-5 w-5 text-gray-500"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+							xmlns="http://www.w3.org/2000/svg"
 						>
-							<i class="fas fa-trash-alt"></i>
-						</button>
-					</td>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M6 18L18 6M6 6l12 12"
+							></path>
+						</svg>
+					</button>
+				{/if}
+			</div>
+		</div>
+
+		<table class="custom-table table-auto w-full border-collapse">
+			<thead>
+				<tr class="table-header">
+					<th class="px-4 py-2 text-left" on:click={() => sortBy('name')}
+						>Name <span>{sortIcon('name')}</span></th
+					>
+					<th class="px-4 py-2 text-left" on:click={() => sortBy('barcode')}
+						>Barcode <span>{sortIcon('barcode')}</span></th
+					>
+					<th class="px-4 py-2 text-left" on:click={() => sortBy('count')}
+						>Count <span>{sortIcon('count')}</span></th
+					>
+					<th class="px-4 py-2 text-left" on:click={() => sortBy('lowCount')}
+						>Low Count <span>{sortIcon('lowCount')}</span></th
+					>
+					<th class="px-4 py-2 text-left" on:click={() => sortBy('cost')}
+						>Cost <span>{sortIcon('cost')}</span></th
+					>
+					<th class="px-4 py-2 text-left" on:click={() => sortBy('storageType')}
+						>Storage Type <span>{sortIcon('storageType')}</span></th
+					>
+					<th class="px-4 py-2"></th>
 				</tr>
-			{/each}
-		</tbody>
-	</table>
-</div>
+			</thead>
+			<tbody>
+				{#each items as item (item.id)}
+					<tr class="table-row">
+						<td class="px-4 py-2">
+							<div class="cell-content">
+								<span>{item.name}</span>
+								<button
+									class="icon-button"
+									title="Edit Name"
+									on:click={() => handleEdit(item.id, 'name', item.name)}
+									aria-label="Edit Name"
+								>
+									<i class="fas fa-edit"></i>
+								</button>
+							</div>
+						</td>
+						<td class="px-4 py-2">
+							<div class="cell-content">
+								<span>{item.barcode}</span>
+								<button
+									class="icon-button"
+									title="Edit Barcode"
+									on:click={() => handleEdit(item.id, 'barcode', item.barcode)}
+									aria-label="Edit Barcode"
+								>
+									<i class="fas fa-edit"></i>
+								</button>
+							</div>
+						</td>
+						<td class="px-4 py-2">{item.count}</td>
+						<td class="px-4 py-2">
+							<div class="cell-content">
+								<span>{item.lowCount != null ? item.lowCount : ''}</span>
+								<button
+									class="icon-button"
+									title="Edit Low Count"
+									on:click={() => handleEdit(item.id, 'lowCount', item.lowCount)}
+									aria-label="Edit Low Count"
+								>
+									<i class="fas fa-edit"></i>
+								</button>
+							</div>
+						</td>
+						<td class="px-4 py-2">
+							<div class="cell-content">
+								<span>{item.cost != null ? item.cost : ''}</span>
+								<button
+									class="icon-button"
+									title="Edit Cost"
+									on:click={() => handleEdit(item.id, 'cost', item.cost)}
+									svelteCopy
+									aria-label="Edit Cost"
+								>
+									<i class="fas fa-edit"></i>
+								</button>
+							</div>
+						</td>
+						<td class="px-4 py-2">
+							<div class="cell-content">
+								<span>{item.storageType}</span>
+								<button
+									class="icon-button"
+									title="Edit Storage Type"
+									on:click={() => handleEdit(item.id, 'storageType', item.storageType)}
+									aria-label="Edit Storage Type"
+								>
+									<i class="fas fa-edit"></i>
+								</button>
+							</div>
+						</td>
+						<td class="px-4 py-2 text-center">
+							<button
+								class="delete-button"
+								title="Delete Item"
+								on:click={() => handleDelete(item.id)}
+								aria-label="Delete Item"
+							>
+								<i class="fas fa-trash-alt"></i>
+							</button>
+						</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
+{/if}
 
 <style>
 	.search-container {
