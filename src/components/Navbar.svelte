@@ -30,7 +30,7 @@
 
 			<li><ThemeToggle /></li>
 		</ul>
-		<ul class={`nav-list mobile ${isOpen ? 'open' : ''}`}>
+		<ul class="nav-list mobile {isOpen ? 'open' : ''}">
 			<li><a href="/" class="nav-link" class:active={$page.url.pathname === '/'}>Home</a></li>
 			<li>
 				<a href="/manageItems" class="nav-link" class:active={$page.url.pathname === '/manageItems'}
@@ -82,7 +82,7 @@
 		position: absolute;
 		width: 100%;
 		height: 2px;
-		bottom: 0;
+		bottom: -16px; /* Adjust this value to place the underline exactly at the bottom */
 		left: 0;
 		background-color: white;
 		transform: scaleX(0);
