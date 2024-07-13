@@ -617,6 +617,14 @@
 		transform: scale(1.02);
 	}
 
+	.form-control:hover {
+		color: #fff;
+		outline: none;
+		border-color: var(--focus-border-color);
+		box-shadow: 0 0 0 2px var(--focus-border-color);
+		transform: scale(1.02);
+	}
+
 	.form-control::placeholder {
 		color: var(--input-text);
 	}
