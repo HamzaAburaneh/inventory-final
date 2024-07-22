@@ -219,11 +219,11 @@
 	>
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
 			<div class="form-group">
-				<label for="name" class="form-label">Name</label>
+				<label for="name" class="form-label"><span>Name</span></label>
 				<div class="input-wrapper">
 					<input
 						id="name"
-						class="form-control"
+						class="form-control-input"
 						bind:value={name}
 						placeholder="Enter item name"
 						on:input={() => validateField('name', name)}
@@ -238,11 +238,11 @@
 			</div>
 
 			<div class="form-group">
-				<label for="barcode" class="form-label">Barcode</label>
+				<label for="barcode" class="form-label"><span>Barcode</span></label>
 				<div class="input-wrapper">
 					<input
 						id="barcode"
-						class="form-control"
+						class="form-control-input"
 						bind:value={barcode}
 						placeholder="Enter barcode"
 					/>
@@ -250,11 +250,11 @@
 			</div>
 
 			<div class="form-group">
-				<label for="count" class="form-label">Count</label>
+				<label for="count" class="form-label"><span>Item Count</span></label>
 				<div class="input-wrapper">
 					<input
 						id="count"
-						class="form-control"
+						class="form-control-input"
 						type="text"
 						bind:value={count}
 						pattern="^[0-9]*$"
@@ -276,11 +276,11 @@
 			</div>
 
 			<div class="form-group">
-				<label for="lowCount" class="form-label">Low Count</label>
+				<label for="lowCount" class="form-label"><span>Low Item</span></label>
 				<div class="input-wrapper">
 					<input
 						id="lowCount"
-						class="form-control"
+						class="form-control-input"
 						type="text"
 						bind:value={lowCount}
 						pattern="^[0-9]*$"
@@ -302,11 +302,11 @@
 			</div>
 
 			<div class="form-group">
-				<label for="cost" class="form-label">Cost</label>
+				<label for="cost" class="form-label"><span>Cost</span></label>
 				<div class="input-wrapper">
 					<input
 						id="cost"
-						class="form-control"
+						class="form-control-input"
 						type="text"
 						bind:value={cost}
 						placeholder="Enter item cost"
@@ -328,12 +328,12 @@
 			</div>
 
 			<div class="form-group">
-				<label for="storageType" class="form-label">Storage Type</label>
+				<label for="storageType" class="form-label"><span>Storage Type</span></label>
 				<div class="input-wrapper">
 					<select
 						id="storageType"
 						bind:value={storageType}
-						class="form-control"
+						class="form-control-input"
 						class:placeholder-selected={!storageType}
 					>
 						<option value="" disabled>Select storage type...</option>
@@ -490,59 +490,71 @@
 {/if}
 
 <style>
-	/* Style for the select when no option is chosen */
-	select.form-control {
-		color: #ffffff; /* Default color for selected options */
+	/* Base styles for form elements */
+	.form-label {
+		display: block;
+		margin-bottom: 0.5rem;
+		font-weight: 600;
+		color: var(--label-color);
+		font-size: 0.875rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
 
-	select.form-control option {
-		color: #ffffff; /* Color for dropdown options */
+	.form-label span {
+		cursor: pointer;
 	}
 
-	select.form-control option[value=''] {
-		color: var(--input-text); /* Color for placeholder in dropdown */
-	}
-
-	.placeholder-selected {
-		color: var(--input-text) !important;
-	}
-	.search-container {
-		display: flex;
-		justify-content: center;
+	.form-control-input {
 		width: 100%;
-	}
-
-	.search-wrapper {
-		width: 50%;
-		display: flex;
-		transition: width 0.3s ease;
-		position: relative;
-	}
-
-	.search-input {
-		flex-grow: 1;
-		padding: 0.5rem 1rem;
+		padding: 0.75rem;
 		border: 1px solid var(--border-color);
-		border-radius: 0.375rem;
+		border-radius: 0.5rem;
 		background-color: var(--input-bg);
-		color: rgb(255, 255, 255);
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		color: #fff;
 		transition: all 0.3s ease;
+		font-size: 1rem;
+		cursor: text;
 	}
 
-	.search-input:focus {
+	.form-control-input:focus {
 		outline: none;
 		border-color: var(--focus-border-color);
-		box-shadow:
-			0 0 0 2px var(--focus-border-color),
-			0 6px 8px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 0 0 2px var(--focus-border-color);
 		transform: scale(1.02);
 	}
 
-	.search-input::placeholder {
+	.form-control-input::placeholder {
 		color: var(--input-text);
 	}
 
+	/* Select element styles */
+	select.form-control-input {
+		cursor: pointer;
+		background-color: var(--input-bg);
+		color: #fff;
+	}
+
+	select.form-control-input option {
+		color: #fff;
+	}
+
+	select.form-control-input option[value=''] {
+		color: var(--input-text);
+	}
+
+	/* Hover effects for input wrapper */
+	.input-wrapper {
+		position: relative;
+		width: 100%;
+	}
+
+	.input-wrapper:hover .form-control-input {
+		border-color: var(--hover-border-color);
+		box-shadow: 0 0 0 2px var(--hover-border-color);
+	}
+
+	/* Clear button styles */
 	.clear-button {
 		background: none;
 		border: none;
@@ -561,15 +573,7 @@
 		background-color: transparent;
 		padding: 0;
 	}
-	.form-label {
-		display: block;
-		margin-bottom: 0.5rem;
-		font-weight: 600;
-		color: var(--label-color);
-		font-size: 0.875rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
+
 	.clear-button svg {
 		width: 1rem;
 		height: 1rem;
@@ -579,6 +583,18 @@
 		color: var(--icon-hover-color);
 	}
 
+	/* Error message styles */
+	.error-message {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		margin-top: 0.25rem;
+		color: #ff0019;
+		font-size: 0.875rem;
+		width: 100%;
+	}
+
+	/* Responsive container */
 	.container {
 		margin-top: 20px;
 		padding: 2.5rem;
@@ -587,17 +603,79 @@
 		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 		border-radius: 1rem;
 	}
+
+	/* Form group styles */
 	.form-group {
 		position: relative;
 		display: flex;
 		flex-direction: column;
 		margin-bottom: 0.5rem;
 	}
-	.input-wrapper {
-		position: relative;
-		width: 100%;
+
+	/* Placeholder styling */
+	.form-control::placeholder,
+	.form-control-input::placeholder {
+		color: var(--input-text);
 	}
 
+	/* Additional styles provided */
+	.select.form-control {
+		color: #ffffff; /* Default color for selected options */
+	}
+
+	.select.form-control option {
+		color: #ffffff; /* Color for dropdown options */
+	}
+
+	.select.form-control option[value=''] {
+		color: var(--input-text); /* Color for placeholder in dropdown */
+	}
+
+	.placeholder-selected {
+		color: var(--input-text) !important;
+	}
+
+	.search-container {
+		display: flex;
+		justify-content: center;
+		width: 100%;
+	}
+	.search-wrapper {
+		width: 65%; /* Ensure the wrapper takes full width */
+		display: flex;
+		transition: width 0.3s ease;
+		position: relative;
+	}
+
+	.search-input {
+		flex-grow: 1;
+		min-width: 200px; /* Set a minimum width */
+		padding: 0.75rem 1rem; /* Adjust padding for better appearance */
+		border: 1px solid var(--border-color);
+		border-radius: 0.375rem;
+		background-color: var(--input-bg);
+		color: #fff;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		transition: all 0.3s ease;
+	}
+
+	.search-input:focus {
+		outline: none;
+		border-color: var(--focus-border-color);
+		box-shadow:
+			0 0 0 2px var(--focus-border-color),
+			0 6px 8px rgba(0, 0, 0, 0.1);
+		transform: scale(1.02);
+	}
+	.search-wrapper:hover .search-input {
+		border-color: var(--hover-border-color);
+		box-shadow: 0 0 0 2px var(--hover-border-color);
+		transform: scale(1.02);
+	}
+
+	.search-input::placeholder {
+		color: var(--input-text);
+	}
 	.form-control {
 		width: 100%;
 		padding: 0.75rem;
@@ -617,7 +695,8 @@
 		transform: scale(1.02);
 	}
 
-	.form-control:hover {
+	.input-wrapper:hover .form-control-input,
+	.form-control-input:focus {
 		color: #fff;
 		outline: none;
 		border-color: var(--focus-border-color);
@@ -625,22 +704,11 @@
 		transform: scale(1.02);
 	}
 
-	.form-control::placeholder {
-		color: var(--input-text);
-	}
 	.form-control select {
 		background-color: var(--input-bg);
 		color: rgb(255, 255, 255);
 	}
-	.error-message {
-		position: absolute;
-		top: 100%;
-		left: 0;
-		margin-top: 0.25rem;
-		color: #ff0019;
-		font-size: 0.875rem;
-		width: 100%;
-	}
+
 	#add-item {
 		background-color: #e6d600;
 		color: #000;
@@ -656,7 +724,6 @@
 		max-width: 25%;
 		margin: 0 auto;
 		display: block;
-		font-size: 0.875rem;
 		text-transform: uppercase;
 	}
 
@@ -669,28 +736,34 @@
 	#add-item:active {
 		transform: translateY(0);
 	}
+
 	@media (min-width: 640px) {
 		#add-item {
 			font-size: 1rem;
 			padding: 0.75rem 1.5rem;
 		}
 	}
+
 	.custom-table th,
 	.custom-table td {
 		padding: 0.75rem;
 		text-align: left;
 	}
+
 	.custom-table th {
 		border-bottom: 2px solid var(--table-border-color);
 	}
+
 	.custom-table td {
 		border-bottom: 1px solid var(--table-border-color);
 	}
+
 	.cell-content {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 	}
+
 	.icon-button,
 	.delete-button {
 		background: none;
@@ -702,14 +775,17 @@
 		color: var(--icon-color);
 		transition: transform 0.2s ease-in-out;
 	}
+
 	.icon-button:hover,
 	.delete-button:hover {
 		color: var(--icon-hover-color);
 		transform: scale(1.1);
 	}
+
 	.delete-button {
 		color: darkred;
 	}
+
 	.delete-button:hover {
 		color: red;
 	}
@@ -731,6 +807,7 @@
 		transition: opacity 0.2s ease-in-out;
 		pointer-events: none;
 	}
+
 	.icon-button:hover[title]::after,
 	.delete-button:hover[title]::after {
 		opacity: 1;
