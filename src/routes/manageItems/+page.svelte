@@ -469,9 +469,9 @@
 	.search-input {
 		width: 100%;
 		padding: 0.75rem;
-		border: 1px solid var(--border-color);
+		border: 1px solid #333; /* Lightened border color */
 		border-radius: 0.5rem;
-		background-color: var(--input-bg);
+		background-color: #222; /* Lightened background color */
 		color: #fff;
 		font-size: 1rem;
 		transition:
@@ -488,14 +488,14 @@
 	.form-control-input::placeholder,
 	.form-control::placeholder,
 	.search-input::placeholder {
-		color: var(--input-text);
+		color: #888; /* Lightened placeholder color */
 	}
 
 	/* Hover and focus states */
 	.input-wrapper:hover .form-control-input:not(:focus),
 	.search-wrapper:hover .search-input:not(:focus) {
-		border-color: var(--hover-border-color);
-		box-shadow: 0 0 0 1px var(--hover-border-color);
+		border-color: #555; /* Lightened hover border color */
+		box-shadow: 0 0 0 1px #555;
 		transform: scale(1.02);
 	}
 
@@ -504,15 +504,15 @@
 	.search-input:focus {
 		transform: scale(1.02);
 		outline: none;
-		border-color: var(--focus-border-color);
-		box-shadow: 0 0 0 1px var(--focus-border-color);
+		border-color: #007bff; /* Focus border color matching button */
+		box-shadow: 0 0 0 1px #007bff;
 	}
 
 	/* Select styles */
 	select.form-control-input,
 	.form-control select {
 		cursor: pointer;
-		background-color: var(--input-bg);
+		background-color: #222;
 		color: #fff;
 	}
 
@@ -523,11 +523,11 @@
 
 	select.form-control-input option[value=''],
 	.select.form-control option[value=''] {
-		color: var(--input-text);
+		color: #888;
 	}
 
 	.placeholder-selected {
-		color: var(--input-text) !important;
+		color: #888 !important;
 	}
 
 	/* Search styles */
