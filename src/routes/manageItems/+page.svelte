@@ -270,7 +270,20 @@
 			</div>
 
 			<div class="form-group col-span-full">
-				<button class="btn btn-primary w-full" id="add-item" on:click={handleAdd}>Add Item</button>
+				<button class="btn btn-primary w-full" id="add-item" on:click={handleAdd}>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="16"
+						height="16"
+						fill="currentColor"
+						class="bi bi-plus"
+						viewBox="0 0 16 16"
+					>
+						<path
+							d="M8 7V1a1 1 0 0 1 2 0v6h6a1 1 0 0 1 0 2H10v6a1 1 0 0 1-2 0V9H2a1 1 0 0 1 0-2h6z"
+						/>
+					</svg>Add Item</button
+				>
 			</div>
 		</div>
 
@@ -460,7 +473,6 @@
 		border-radius: 0.5rem;
 		background-color: var(--input-bg);
 		color: #fff;
-
 		font-size: 1rem;
 		transition:
 			border-color 0.3s ease,
@@ -579,8 +591,8 @@
 
 	/* Add item button styles */
 	#add-item {
-		background-color: #e6d600;
-		color: #000;
+		background-color: #007bff; /* Primary blue color */
+		color: #fff;
 		font-weight: 700;
 		border-radius: 1rem;
 		padding: 0.5rem 1rem;
@@ -591,17 +603,24 @@
 		font-size: 0.875rem;
 		max-width: 25%;
 		margin: 0 auto;
-		display: block;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
 		text-transform: uppercase;
 		transition:
 			all 0.3s ease,
 			transform 0.2s ease;
 	}
 
+	#add-item svg {
+		fill: currentColor;
+	}
+
 	#add-item:hover {
 		transform: translateY(-4px) scale(1.05);
 		box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-		background-color: #f0e000;
+		background-color: #0056b3; /* Darker blue on hover */
 	}
 
 	#add-item:active {
