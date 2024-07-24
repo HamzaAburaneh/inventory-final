@@ -16,6 +16,7 @@
 	import type { Item } from '../../types';
 	import { fadeAndSlide } from '$lib/transitions';
 	import { fly } from 'svelte/transition';
+	import { Pagination } from 'flowbite-svelte';
 
 	let items: Item[] = [];
 	let formData = {
@@ -31,12 +32,27 @@
 	let currentSortColumn: keyof Item;
 	let sortAscending = true;
 	let itemsLoaded = false;
-
+	let currentPage = 1;
+	let pageSize = 10; // instead of itemsPerPage
+	let itemsPerPage = 10;
+	let totalItems: number;
+	let paginatedItems: Item[] = [];
 	onMount(async () => {
 		items = await getItems();
+		updatePaginatedItems();
 		itemsLoaded = true;
 	});
-
+	$: {
+		if (items) {
+			updatePaginatedItems();
+		}
+	}
+	const updatePaginatedItems = () => {
+		const startIndex = (currentPage - 1) * itemsPerPage;
+		const endIndex = startIndex + itemsPerPage;
+		paginatedItems = items.slice(startIndex, endIndex);
+		totalItems = items.length;
+	};
 	const validateField = (field: string, value: any) => {
 		const validations = {
 			name: () => (value.trim().length < 3 ? 'Name must be at least 3 characters' : ''),
@@ -65,6 +81,7 @@
 
 	const updateItemsAndSort = (updatedItems: Item[]) => {
 		items = applySorting(updatedItems, currentSortColumn, sortAscending);
+		updatePaginatedItems();
 	};
 
 	const handleAdd = async () => {
@@ -150,6 +167,24 @@
 	const clearSearch = () => {
 		searchValue = '';
 		handleSearch();
+	};
+	const handlePrevious = () => {
+		if (currentPage > 1) {
+			currentPage--;
+			updatePaginatedItems();
+		}
+	};
+
+	const handleNext = () => {
+		if (currentPage < Math.ceil(totalItems / itemsPerPage)) {
+			currentPage++;
+			updatePaginatedItems();
+		}
+	};
+
+	const handlePageClick = (event: CustomEvent<number>) => {
+		currentPage = event.detail;
+		updatePaginatedItems();
 	};
 </script>
 
@@ -342,7 +377,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				{#each items as item (item.id)}
+				{#each paginatedItems as item (item.id)}
 					<tr class="table-row">
 						<td class="px-4 py-2">
 							<div class="cell-content">
@@ -424,6 +459,17 @@
 				{/each}
 			</tbody>
 		</table>
+		<div class="flex justify-center mt-4">
+			<Pagination
+				{totalItems}
+				{pageSize}
+				{currentPage}
+				showPreviousNext={true}
+				on:previous={handlePrevious}
+				on:next={handleNext}
+				on:click={handlePageClick}
+			/>
+		</div>
 	</div>
 {/if}
 
