@@ -21,6 +21,7 @@
 	--border-radius: 8px; /* Default border radius for light theme */
 	--nav-color: #5f6dbb;
 	--nav-border-color: #2c2c2c;
+	--hover-border-color: #ff0000;
 }
 
 [data-theme='dark'] {
@@ -43,6 +44,7 @@
 	--border-radius: 16px; /* Border radius for dark theme */
 	--nav-color: #121212;
 	--nav-border-color: #ffffff1c;
+	--hover-border-color: #ff0000;
 }
 
 body {

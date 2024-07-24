@@ -415,7 +415,24 @@
 {/if}
 
 <style>
-	/* Base styles for form elements */
+	/* Base styles */
+	.container {
+		margin-top: 20px;
+		padding: 2.5rem;
+		max-width: 90%;
+		background-color: var(--container-bg);
+		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+		border-radius: 1rem;
+	}
+
+	/* Form styles */
+	.form-group {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		margin-bottom: 0.5rem;
+	}
+
 	.form-label {
 		display: block;
 		margin-bottom: 0.5rem;
@@ -430,7 +447,14 @@
 		cursor: pointer;
 	}
 
-	.form-control-input {
+	.input-wrapper {
+		position: relative;
+		width: 100%;
+	}
+
+	.form-control-input,
+	.form-control,
+	.search-input {
 		width: 100%;
 		padding: 0.75rem;
 		border: 1px solid var(--border-color);
@@ -439,44 +463,78 @@
 		color: #fff;
 		transition: all 0.3s ease;
 		font-size: 1rem;
+	}
+
+	.form-control-input,
+	.search-input {
 		cursor: text;
 	}
 
-	.form-control-input:focus {
+	.form-control-input::placeholder,
+	.form-control::placeholder,
+	.search-input::placeholder {
+		color: var(--input-text);
+	}
+
+	/* Hover and focus states */
+	.input-wrapper:hover .form-control-input,
+	.search-wrapper:hover .search-input {
+		border-color: var(--hover-border-color);
+		border-width: 2px;
+		box-shadow: none;
+	}
+
+	.form-control-input:focus,
+	.form-control:focus,
+	.search-input:focus {
 		outline: none;
 		border-color: var(--focus-border-color);
+		border-width: 3px;
 		box-shadow: 0 0 0 2px var(--focus-border-color);
 		transform: scale(1.02);
 	}
 
-	.form-control-input::placeholder {
-		color: var(--input-text);
-	}
-
-	/* Select element styles */
-	select.form-control-input {
+	/* Select styles */
+	select.form-control-input,
+	.form-control select {
 		cursor: pointer;
 		background-color: var(--input-bg);
 		color: #fff;
 	}
 
-	select.form-control-input option {
+	select.form-control-input option,
+	.select.form-control option {
 		color: #fff;
 	}
 
-	select.form-control-input option[value=''] {
+	select.form-control-input option[value=''],
+	.select.form-control option[value=''] {
 		color: var(--input-text);
 	}
 
-	/* Hover effects for input wrapper */
-	.input-wrapper {
-		position: relative;
+	.placeholder-selected {
+		color: var(--input-text) !important;
+	}
+
+	/* Search styles */
+	.search-container {
+		display: flex;
+		justify-content: center;
 		width: 100%;
 	}
 
-	.input-wrapper:hover .form-control-input {
-		border-color: var(--hover-border-color);
-		box-shadow: 0 0 0 2px var(--hover-border-color);
+	.search-wrapper {
+		width: 65%;
+		display: flex;
+		transition: width 0.3s ease;
+		position: relative;
+	}
+
+	.search-input {
+		flex-grow: 1;
+		min-width: 200px;
+		padding: 0.75rem 1rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 	}
 
 	/* Clear button styles */
@@ -494,8 +552,6 @@
 		position: absolute;
 		right: 0;
 		top: 0;
-		border-left: none;
-		background-color: transparent;
 		padding: 0;
 	}
 
@@ -519,121 +575,7 @@
 		width: 100%;
 	}
 
-	/* Responsive container */
-	.container {
-		margin-top: 20px;
-		padding: 2.5rem;
-		max-width: 90%;
-		background-color: var(--container-bg);
-		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-		border-radius: 1rem;
-	}
-
-	/* Form group styles */
-	.form-group {
-		position: relative;
-		display: flex;
-		flex-direction: column;
-		margin-bottom: 0.5rem;
-	}
-
-	/* Placeholder styling */
-	.form-control::placeholder,
-	.form-control-input::placeholder {
-		color: var(--input-text);
-	}
-
-	/* Additional styles provided */
-	.select.form-control {
-		color: #ffffff; /* Default color for selected options */
-	}
-
-	.select.form-control option {
-		color: #ffffff; /* Color for dropdown options */
-	}
-
-	.select.form-control option[value=''] {
-		color: var(--input-text); /* Color for placeholder in dropdown */
-	}
-
-	.placeholder-selected {
-		color: var(--input-text) !important;
-	}
-
-	.search-container {
-		display: flex;
-		justify-content: center;
-		width: 100%;
-	}
-	.search-wrapper {
-		width: 65%; /* Ensure the wrapper takes full width */
-		display: flex;
-		transition: width 0.3s ease;
-		position: relative;
-	}
-
-	.search-input {
-		flex-grow: 1;
-		min-width: 200px; /* Set a minimum width */
-		padding: 0.75rem 1rem; /* Adjust padding for better appearance */
-		border: 1px solid var(--border-color);
-		border-radius: 0.375rem;
-		background-color: var(--input-bg);
-		color: #fff;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-		transition: all 0.3s ease;
-	}
-
-	.search-input:focus {
-		outline: none;
-		border-color: var(--focus-border-color);
-		box-shadow:
-			0 0 0 2px var(--focus-border-color),
-			0 6px 8px rgba(0, 0, 0, 0.1);
-		transform: scale(1.02);
-	}
-	.search-wrapper:hover .search-input {
-		border-color: var(--hover-border-color);
-		box-shadow: 0 0 0 2px var(--hover-border-color);
-		transform: scale(1.02);
-	}
-
-	.search-input::placeholder {
-		color: var(--input-text);
-	}
-	.form-control {
-		width: 100%;
-		padding: 0.75rem;
-		border: 1px solid var(--border-color);
-		border-radius: 0.5rem;
-		background-color: var(--input-bg);
-		color: rgb(255, 255, 255);
-		transition: all 0.3s ease;
-		font-size: 1rem;
-	}
-
-	.form-control:focus {
-		color: #fff;
-		outline: none;
-		border-color: var(--focus-border-color);
-		box-shadow: 0 0 0 2px var(--focus-border-color);
-		transform: scale(1.02);
-	}
-
-	.input-wrapper:hover .form-control-input,
-	.form-control-input:focus {
-		color: #fff;
-		outline: none;
-		border-color: var(--focus-border-color);
-		box-shadow: 0 0 0 2px var(--focus-border-color);
-		transform: scale(1.02);
-	}
-
-	.form-control select {
-		background-color: var(--input-bg);
-		color: rgb(255, 255, 255);
-	}
-
+	/* Add item button styles */
 	#add-item {
 		background-color: #e6d600;
 		color: #000;
@@ -662,13 +604,7 @@
 		transform: translateY(0);
 	}
 
-	@media (min-width: 640px) {
-		#add-item {
-			font-size: 1rem;
-			padding: 0.75rem 1.5rem;
-		}
-	}
-
+	/* Table styles */
 	.custom-table th,
 	.custom-table td {
 		padding: 0.75rem;
@@ -689,6 +625,7 @@
 		align-items: center;
 	}
 
+	/* Icon and delete button styles */
 	.icon-button,
 	.delete-button {
 		background: none;
@@ -736,5 +673,13 @@
 	.icon-button:hover[title]::after,
 	.delete-button:hover[title]::after {
 		opacity: 1;
+	}
+
+	/* Media query */
+	@media (min-width: 640px) {
+		#add-item {
+			font-size: 1rem;
+			padding: 0.75rem 1.5rem;
+		}
 	}
 </style>
