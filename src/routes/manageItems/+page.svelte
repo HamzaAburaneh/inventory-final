@@ -15,109 +15,84 @@
 	} from '../../lib/items';
 	import type { Item } from '../../types';
 	import { fadeAndSlide } from '$lib/transitions';
-	import { quintOut } from 'svelte/easing';
-	import { fade, slide, fly } from 'svelte/transition';
-	import { flip } from 'svelte/animate';
-	let errors = {
+	import { fly } from 'svelte/transition';
+
+	let items: Item[] = [];
+	let formData = {
 		name: '',
 		barcode: '',
 		count: '',
 		lowCount: '',
 		cost: '',
-		storageType: ''
+		storageType: '' as '' | 'freezer' | 'refrigerator' | 'dry storage'
 	};
-
-	let items: Item[] = [];
-	let name = '';
-	let barcode = '';
-	let count: string = '';
-	let lowCount: string = '';
-	let cost: string = '';
-	let storageType: '' | 'freezer' | 'refrigerator' | 'dry storage' = '';
+	let errors = { ...formData };
 	let searchValue = '';
 	let currentSortColumn: keyof Item;
 	let sortAscending = true;
 	let itemsLoaded = false;
+
 	onMount(async () => {
 		items = await getItems();
 		itemsLoaded = true;
 	});
-	$: placeholderSelected = !storageType;
+
 	const validateField = (field: string, value: any) => {
-		switch (field) {
-			case 'name':
-				errors.name = value.trim().length < 3 ? 'Name must be at least 3 characters' : '';
-				break;
-			case 'count':
-			case 'lowCount':
-				const intValue = parseInt(value);
-				errors[field] = isNaN(intValue) || intValue < 0 ? 'Must be a positive number' : '';
-				break;
-			case 'cost':
-				const floatValue = parseFloat(value);
-				errors.cost = isNaN(floatValue) || floatValue < 0 ? 'Must be a non-negative number' : '';
-				break;
-			default:
-				break;
-		}
+		const validations = {
+			name: () => (value.trim().length < 3 ? 'Name must be at least 3 characters' : ''),
+			count: () =>
+				isNaN(parseInt(value)) || parseInt(value) < 0 ? 'Must be a positive number' : '',
+			lowCount: () =>
+				isNaN(parseInt(value)) || parseInt(value) < 0 ? 'Must be a positive number' : '',
+			cost: () =>
+				isNaN(parseFloat(value)) || parseFloat(value) < 0 ? 'Must be a non-negative number' : ''
+		};
+		errors[field] = validations[field] ? validations[field]() : '';
 	};
-	const handleInput = (
-		event: Event,
-		setValue: (value: string) => void,
-		validate: (value: string) => void,
-		allowDecimal: boolean = false
-	) => {
-		const inputElement = event.target as HTMLInputElement;
-		let inputValue = inputElement.value;
 
+	const handleInput = (event: Event, field: string, allowDecimal: boolean = false) => {
+		let value = (event.target as HTMLInputElement).value;
 		if (allowDecimal) {
-			inputValue = inputValue.replace(/[^\d.]/g, '');
-			const parts = inputValue.split('.');
-			if (parts.length > 2) {
-				parts.pop();
-				inputValue = parts.join('.');
-			}
-			if (parts[1] && parts[1].length > 2) {
-				inputValue = `${parts[0]}.${parts[1].slice(0, 2)}`;
-			}
+			value = value.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1');
+			const [integer, decimal] = value.split('.');
+			value = decimal ? `${integer}.${decimal.slice(0, 2)}` : value;
 		} else {
-			inputValue = inputValue.replace(/\D/g, '');
+			value = value.replace(/\D/g, '');
 		}
-
-		setValue(inputValue);
-		validate(inputValue);
-
-		inputElement.value = inputValue;
+		formData[field] = value;
+		validateField(field, value);
 	};
+
 	const updateItemsAndSort = (updatedItems: Item[]) => {
 		items = applySorting(updatedItems, currentSortColumn, sortAscending);
 	};
 
 	const handleAdd = async () => {
+		if (formData.name.trim() === '') {
+			await Swal.fire({
+				icon: 'error',
+				title: 'Empty Item Name',
+				text: 'Item name cannot be empty.'
+			});
+			return;
+		}
+		if (items.some((item) => item.name.toLowerCase() === formData.name.toLowerCase())) {
+			await Swal.fire({
+				icon: 'error',
+				title: 'Duplicate Item',
+				text: 'Item with this name already exists.'
+			});
+			return;
+		}
 		try {
-			if (name.trim() === '') {
-				await Swal.fire({
-					icon: 'error',
-					title: 'Empty Item Name',
-					text: 'Item name cannot be empty.'
-				});
-				return;
-			} else if (items.some((item) => item.name.toLowerCase() === name.toLowerCase())) {
-				await Swal.fire({
-					icon: 'error',
-					title: 'Duplicate Item',
-					text: 'Item with this name already exists.'
-				});
-				return;
-			}
-
-			const parsedCost = cost ? parseFloat(parseFloat(cost).toFixed(2)) : null;
-			const newItem = { name, barcode, count, lowCount, cost: parsedCost, storageType };
+			const newItem = {
+				...formData,
+				cost: formData.cost ? parseFloat(parseFloat(formData.cost).toFixed(2)) : null
+			};
 			const id = await addItem(newItem);
-			const item: Item = { id, ...newItem };
-
-			updateItemsAndSort([...items, item]);
-			resetForm();
+			updateItemsAndSort([...items, { id, ...newItem }]);
+			formData = { name: '', barcode: '', count: '', lowCount: '', cost: '', storageType: '' };
+			errors = { ...formData };
 		} catch (error) {
 			await Swal.fire({
 				icon: 'error',
@@ -127,66 +102,36 @@
 		}
 	};
 
-	const resetForm = () => {
-		name = '';
-		barcode = '';
-		count = '';
-		lowCount = '';
-		cost = '';
-		storageType = '';
-		errors = {
-			name: '',
-			barcode: '',
-			count: '',
-			lowCount: '',
-			cost: '',
-			storageType: ''
-		};
-	};
 	const handleDelete = async (id: string) => {
 		await deleteItem(id);
 		updateItemsAndSort(items.filter((item) => item.id !== id));
 	};
 
-	const handleEdit = async (
-		id: string,
-		field: keyof Item,
-		oldValue: any,
-		inputType: string = 'text'
-	) => {
+	const handleEdit = async (id: string, field: keyof Item, oldValue: any) => {
 		const result = await Swal.fire({
 			title: `Edit ${field.charAt(0).toUpperCase() + field.slice(1)}`,
-			input: inputType,
+			input: 'text',
 			inputValue: oldValue != null ? oldValue.toString() : '',
 			showCancelButton: true,
 			confirmButtonText: 'Confirm'
 		});
 		if (result.isConfirmed) {
-			const newValue = result.value;
-			await updateItem(id, field, newValue);
+			await updateItem(id, field, result.value);
 		}
 	};
 
 	const updateItem = async (id: string, field: keyof Item, value: any) => {
-		switch (field) {
-			case 'cost':
-				await editItemCost(id, Number(value));
-				break;
-			case 'barcode':
-				await editItemBarcode(id, value);
-				break;
-			case 'name':
-				await editItemName(id, value);
-				break;
-			case 'lowCount':
-				await editItemLowCount(id, Number(value));
-				break;
-			case 'storageType':
-				await editItemStorageType(id, value);
-				break;
-			default:
-				break;
-		}
+		const updateFunctions = {
+			cost: editItemCost,
+			barcode: editItemBarcode,
+			name: editItemName,
+			lowCount: editItemLowCount,
+			storageType: editItemStorageType
+		};
+		await updateFunctions[field](
+			id,
+			field === 'cost' || field === 'lowCount' ? Number(value) : value
+		);
 		updateItemsAndSort(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
 	};
 
@@ -200,12 +145,8 @@
 		updateItemsAndSort(items);
 	};
 
-	$: sortIcon = (column) => {
-		if (currentSortColumn === column) {
-			return sortAscending ? '▲' : '▼';
-		}
-		return '↕';
-	};
+	$: sortIcon = (column) => (currentSortColumn === column ? (sortAscending ? '▲' : '▼') : '↕');
+
 	const clearSearch = () => {
 		searchValue = '';
 		handleSearch();
@@ -224,9 +165,9 @@
 					<input
 						id="name"
 						class="form-control-input"
-						bind:value={name}
+						bind:value={formData.name}
 						placeholder="Enter item name"
-						on:input={() => validateField('name', name)}
+						on:input={() => validateField('name', formData.name)}
 						class:is-invalid={errors.name}
 					/>
 					{#if errors.name}
@@ -243,7 +184,7 @@
 					<input
 						id="barcode"
 						class="form-control-input"
-						bind:value={barcode}
+						bind:value={formData.barcode}
 						placeholder="Enter barcode"
 					/>
 				</div>
@@ -256,15 +197,10 @@
 						id="count"
 						class="form-control-input"
 						type="text"
-						bind:value={count}
+						bind:value={formData.count}
 						pattern="^[0-9]*$"
 						placeholder="Enter item count"
-						on:input={(event) =>
-							handleInput(
-								event,
-								(value) => (count = value),
-								(value) => validateField('count', value)
-							)}
+						on:input={(event) => handleInput(event, 'count')}
 						class:is-invalid={errors.count}
 					/>
 					{#if errors.count}
@@ -282,15 +218,10 @@
 						id="lowCount"
 						class="form-control-input"
 						type="text"
-						bind:value={lowCount}
+						bind:value={formData.lowCount}
 						pattern="^[0-9]*$"
 						placeholder="Enter low stock threshold"
-						on:input={(event) =>
-							handleInput(
-								event,
-								(value) => (lowCount = value),
-								(value) => validateField('lowCount', value)
-							)}
+						on:input={(event) => handleInput(event, 'lowCount')}
 						class:is-invalid={errors.lowCount}
 					/>
 					{#if errors.lowCount}
@@ -308,15 +239,9 @@
 						id="cost"
 						class="form-control-input"
 						type="text"
-						bind:value={cost}
+						bind:value={formData.cost}
 						placeholder="Enter item cost"
-						on:input={(event) =>
-							handleInput(
-								event,
-								(value) => (cost = value),
-								(value) => validateField('cost', value),
-								true // Allow decimal input
-							)}
+						on:input={(event) => handleInput(event, 'cost', true)}
 						class:is-invalid={errors.cost}
 					/>
 					{#if errors.cost}
@@ -332,9 +257,9 @@
 				<div class="input-wrapper">
 					<select
 						id="storageType"
-						bind:value={storageType}
+						bind:value={formData.storageType}
 						class="form-control-input"
-						class:placeholder-selected={!storageType}
+						class:placeholder-selected={!formData.storageType}
 					>
 						<option value="" disabled>Select storage type...</option>
 						<option value="Freezer">Freezer</option>
