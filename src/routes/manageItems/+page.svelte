@@ -434,7 +434,6 @@
 	}
 
 	.form-label {
-		display: block;
 		margin-bottom: 0.5rem;
 		font-weight: 600;
 		color: var(--label-color);
@@ -461,8 +460,12 @@
 		border-radius: 0.5rem;
 		background-color: var(--input-bg);
 		color: #fff;
-		transition: all 0.3s ease;
+
 		font-size: 1rem;
+		transition:
+			border-color 0.3s ease,
+			box-shadow 0.3s ease,
+			transform 0.2s ease;
 	}
 
 	.form-control-input,
@@ -477,21 +480,20 @@
 	}
 
 	/* Hover and focus states */
-	.input-wrapper:hover .form-control-input,
-	.search-wrapper:hover .search-input {
+	.input-wrapper:hover .form-control-input:not(:focus),
+	.search-wrapper:hover .search-input:not(:focus) {
 		border-color: var(--hover-border-color);
-		border-width: 2px;
-		box-shadow: none;
+		box-shadow: 0 0 0 1px var(--hover-border-color);
+		transform: scale(1.02);
 	}
 
 	.form-control-input:focus,
 	.form-control:focus,
 	.search-input:focus {
+		transform: scale(1.02);
 		outline: none;
 		border-color: var(--focus-border-color);
-		border-width: 3px;
-		box-shadow: 0 0 0 2px var(--focus-border-color);
-		transform: scale(1.02);
+		box-shadow: 0 0 0 1px var(--focus-border-color);
 	}
 
 	/* Select styles */
@@ -584,7 +586,6 @@
 		padding: 0.5rem 1rem;
 		border: none;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-		transition: all 0.3s ease;
 		cursor: pointer;
 		text-align: center;
 		font-size: 0.875rem;
@@ -592,10 +593,13 @@
 		margin: 0 auto;
 		display: block;
 		text-transform: uppercase;
+		transition:
+			all 0.3s ease,
+			transform 0.2s ease;
 	}
 
 	#add-item:hover {
-		transform: translateY(-4px);
+		transform: translateY(-4px) scale(1.05);
 		box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 		background-color: #f0e000;
 	}

@@ -44,7 +44,8 @@
 	--border-radius: 16px; /* Border radius for dark theme */
 	--nav-color: #121212;
 	--nav-border-color: #ffffff1c;
-	--hover-border-color: #ff0000;
+	--hover-border-color: #3a3a3a;
+	--focus-border-color: #ffffff;
 }
 
 body {
