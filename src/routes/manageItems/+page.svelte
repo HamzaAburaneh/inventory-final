@@ -40,6 +40,12 @@
 
 	onMount(async () => {
 		items = await getItems();
+		if (!items.every((item) => item.id)) {
+			console.error('Some items have empty IDs:', items);
+		}
+		if (new Set(items.map((item) => item.id)).size !== items.length) {
+			console.error('Duplicate IDs found:', items);
+		}
 		updatePaginatedItems();
 		itemsLoaded = true;
 	});
@@ -88,7 +94,17 @@
 	};
 
 	const updateItemsAndSort = (updatedItems: Item[]) => {
-		items = applySorting(updatedItems, currentSortColumn, sortAscending);
+		// Ensure no duplicate IDs are present
+		const uniqueItems = Array.from(new Set(updatedItems.map((item) => item.id))).map(
+			(id) => updatedItems.find((item) => item.id === id)!
+		);
+		if (!uniqueItems.every((item) => item.id)) {
+			console.error('Some unique items have empty IDs:', uniqueItems);
+		}
+		if (new Set(uniqueItems.map((item) => item.id)).size !== uniqueItems.length) {
+			console.error('Duplicate IDs found in uniqueItems:', uniqueItems);
+		}
+		items = applySorting(uniqueItems, currentSortColumn, sortAscending);
 		updatePaginatedItems();
 	};
 
@@ -120,6 +136,9 @@
 				storageType: formData.storageType
 			};
 			const id = await addItem(newItem);
+			if (!id) {
+				throw new Error('Failed to add item: received empty ID.');
+			}
 			newItem.id = id;
 			updateItemsAndSort([...items, newItem]);
 			formData = { name: '', barcode: '', count: '', lowCount: '', cost: '', storageType: '' };
@@ -372,114 +391,115 @@
 				{/if}
 			</div>
 		</div>
-
-		<table class="custom-table table-auto w-full border-collapse">
-			<thead>
-				<tr class="table-header">
-					<th class="px-4 py-2 text-left" on:click={() => sortBy('name')}
-						>Name <span>{sortIcon('name')}</span></th
-					>
-					<th class="px-4 py-2 text-left" on:click={() => sortBy('barcode')}
-						>Barcode <span>{sortIcon('barcode')}</span></th
-					>
-					<th class="px-4 py-2 text-left" on:click={() => sortBy('count')}
-						>Count <span>{sortIcon('count')}</span></th
-					>
-					<th class="px-4 py-2 text-left" on:click={() => sortBy('lowCount')}
-						>Low Count <span>{sortIcon('lowCount')}</span></th
-					>
-					<th class="px-4 py-2 text-left" on:click={() => sortBy('cost')}
-						>Cost <span>{sortIcon('cost')}</span></th
-					>
-					<th class="px-4 py-2 text-left" on:click={() => sortBy('storageType')}
-						>Storage Type <span>{sortIcon('storageType')}</span></th
-					>
-					<th class="px-4 py-2"></th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each paginatedItems as item (item.id)}
-					<tr class="table-row">
-						<td class="px-4 py-2">
-							<div class="cell-content">
-								<span>{item.name}</span>
-								<button
-									class="icon-button"
-									title="Edit Name"
-									on:click={() => handleEdit(item.id, 'name', item.name)}
-									aria-label="Edit Name"
-								>
-									<i class="fas fa-edit"></i>
-								</button>
-							</div>
-						</td>
-						<td class="px-4 py-2">
-							<div class="cell-content">
-								<span>{item.barcode}</span>
-								<button
-									class="icon-button"
-									title="Edit Barcode"
-									on:click={() => handleEdit(item.id, 'barcode', item.barcode)}
-									aria-label="Edit Barcode"
-								>
-									<i class="fas fa-edit"></i>
-								</button>
-							</div>
-						</td>
-						<td class="px-4 py-2">{item.count}</td>
-						<td class="px-4 py-2">
-							<div class="cell-content">
-								<span>{item.lowCount != null ? item.lowCount : ''}</span>
-								<button
-									class="icon-button"
-									title="Edit Low Count"
-									on:click={() => handleEdit(item.id, 'lowCount', item.lowCount)}
-									aria-label="Edit Low Count"
-								>
-									<i class="fas fa-edit"></i>
-								</button>
-							</div>
-						</td>
-						<td class="px-4 py-2">
-							<div class="cell-content">
-								<span>{item.cost != null ? item.cost : ''}</span>
-								<button
-									class="icon-button"
-									title="Edit Cost"
-									on:click={() => handleEdit(item.id, 'cost', item.cost)}
-									aria-label="Edit Cost"
-								>
-									<i class="fas fa-edit"></i>
-								</button>
-							</div>
-						</td>
-						<td class="px-4 py-2">
-							<div class="cell-content">
-								<span>{item.storageType}</span>
-								<button
-									class="icon-button"
-									title="Edit Storage Type"
-									on:click={() => handleEdit(item.id, 'storageType', item.storageType)}
-									aria-label="Edit Storage Type"
-								>
-									<i class="fas fa-edit"></i>
-								</button>
-							</div>
-						</td>
-						<td class="px-4 py-2 text-center">
-							<button
-								class="delete-button"
-								title="Delete Item"
-								on:click={() => handleDelete(item.id)}
-								aria-label="Delete Item"
-							>
-								<i class="fas fa-trash-alt"></i>
-							</button>
-						</td>
+		<div class="table-container">
+			<table class="custom-table table-auto w-full border-collapse">
+				<thead>
+					<tr class="table-header">
+						<th class="px-4 py-2 text-left" on:click={() => sortBy('name')}
+							>Name <span>{sortIcon('name')}</span></th
+						>
+						<th class="px-4 py-2 text-left" on:click={() => sortBy('barcode')}
+							>Barcode <span>{sortIcon('barcode')}</span></th
+						>
+						<th class="px-4 py-2 text-left" on:click={() => sortBy('count')}
+							>Count <span>{sortIcon('count')}</span></th
+						>
+						<th class="px-4 py-2 text-left" on:click={() => sortBy('lowCount')}
+							>Low Count <span>{sortIcon('lowCount')}</span></th
+						>
+						<th class="px-4 py-2 text-left" on:click={() => sortBy('cost')}
+							>Cost <span>{sortIcon('cost')}</span></th
+						>
+						<th class="px-4 py-2 text-left" on:click={() => sortBy('storageType')}
+							>Storage Type <span>{sortIcon('storageType')}</span></th
+						>
+						<th class="px-4 py-2"></th>
 					</tr>
-				{/each}
-			</tbody>
-		</table>
+				</thead>
+				<tbody>
+					{#each paginatedItems as item (item.id)}
+						<tr class="table-row">
+							<td class="px-4 py-2">
+								<div class="cell-content">
+									<span>{item.name}</span>
+									<button
+										class="icon-button"
+										title="Edit Name"
+										on:click={() => handleEdit(item.id, 'name', item.name)}
+										aria-label="Edit Name"
+									>
+										<i class="fas fa-edit"></i>
+									</button>
+								</div>
+							</td>
+							<td class="px-4 py-2">
+								<div class="cell-content">
+									<span>{item.barcode}</span>
+									<button
+										class="icon-button"
+										title="Edit Barcode"
+										on:click={() => handleEdit(item.id, 'barcode', item.barcode)}
+										aria-label="Edit Barcode"
+									>
+										<i class="fas fa-edit"></i>
+									</button>
+								</div>
+							</td>
+							<td class="px-4 py-2">{item.count}</td>
+							<td class="px-4 py-2">
+								<div class="cell-content">
+									<span>{item.lowCount != null ? item.lowCount : ''}</span>
+									<button
+										class="icon-button"
+										title="Edit Low Count"
+										on:click={() => handleEdit(item.id, 'lowCount', item.lowCount)}
+										aria-label="Edit Low Count"
+									>
+										<i class="fas fa-edit"></i>
+									</button>
+								</div>
+							</td>
+							<td class="px-4 py-2">
+								<div class="cell-content">
+									<span>{item.cost != null ? item.cost : ''}</span>
+									<button
+										class="icon-button"
+										title="Edit Cost"
+										on:click={() => handleEdit(item.id, 'cost', item.cost)}
+										aria-label="Edit Cost"
+									>
+										<i class="fas fa-edit"></i>
+									</button>
+								</div>
+							</td>
+							<td class="px-4 py-2">
+								<div class="cell-content">
+									<span>{item.storageType}</span>
+									<button
+										class="icon-button"
+										title="Edit Storage Type"
+										on:click={() => handleEdit(item.id, 'storageType', item.storageType)}
+										aria-label="Edit Storage Type"
+									>
+										<i class="fas fa-edit"></i>
+									</button>
+								</div>
+							</td>
+							<td class="px-4 py-2 text-center">
+								<button
+									class="delete-button"
+									title="Delete Item"
+									on:click={() => handleDelete(item.id)}
+									aria-label="Delete Item"
+								>
+									<i class="fas fa-trash-alt"></i>
+								</button>
+							</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
 		<div class="flex justify-center mt-4">
 			<Pagination
 				{totalItems}
@@ -574,7 +594,7 @@
 
 	.form-control-input:focus,
 	.form-control:focus,
-	.search-input:focus {
+	search-input:focus {
 		transform: scale(1.02);
 		outline: none;
 		border-color: #007bff; /* Focus border color matching button */
@@ -634,6 +654,16 @@
 
 	.clear-button:hover {
 		color: var(--icon-hover-color);
+	}
+	.fixed-height-table {
+		height: 35rem; /* Set the desired fixed height */
+		overflow-y: auto; /* Add vertical scroll */
+		display: block;
+	}
+
+	.fixed-height-table table {
+		width: 100%;
+		border-collapse: collapse;
 	}
 
 	.error-message {
