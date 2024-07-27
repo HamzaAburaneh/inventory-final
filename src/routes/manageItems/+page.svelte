@@ -15,7 +15,7 @@
 	} from '../../lib/items';
 	import type { Item } from '../../types';
 	import { fadeAndSlide } from '$lib/transitions';
-	import { fly } from 'svelte/transition';
+	import { fly, fade } from 'svelte/transition';
 	import { Pagination } from 'flowbite-svelte';
 
 	let items: Item[] = [];
@@ -122,7 +122,7 @@
 			const id = await addItem(newItem);
 			newItem.id = id;
 			updateItemsAndSort([...items, newItem]);
-			formData = { name: '', barcode: '', count: 0, lowCount: 0, cost: 0, storageType: '' };
+			formData = { name: '', barcode: '', count: '', lowCount: '', cost: '', storageType: '' };
 			errors = {};
 		} catch (error) {
 			if (error instanceof Error) {
@@ -220,14 +220,17 @@
 				<div class="input-wrapper">
 					<input
 						id="name"
-						class="form-control-input"
+						class="form-control-input {errors.name ? 'is-invalid' : ''}"
 						bind:value={formData.name}
 						placeholder="Enter item name"
 						on:input={() => validateField('name', formData.name)}
-						class:is-invalid={errors.name}
 					/>
 					{#if errors.name}
-						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
+						<div
+							class="error-message"
+							in:fly={{ y: -10, duration: 200 }}
+							out:fade={{ duration: 100 }}
+						>
 							{errors.name}
 						</div>
 					{/if}
@@ -239,7 +242,7 @@
 				<div class="input-wrapper">
 					<input
 						id="barcode"
-						class="form-control-input"
+						class="form-control-input {errors.barcode ? 'is-invalid' : ''}"
 						bind:value={formData.barcode}
 						placeholder="Enter barcode"
 					/>
@@ -251,13 +254,12 @@
 				<div class="input-wrapper">
 					<input
 						id="count"
-						class="form-control-input"
+						class="form-control-input {errors.count ? 'is-invalid' : ''}"
 						type="text"
 						bind:value={formData.count}
 						pattern="^[0-9]*$"
 						placeholder="Enter item count"
 						on:input={(event) => handleInput(event, 'count')}
-						class:is-invalid={errors.count}
 					/>
 					{#if errors.count}
 						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
@@ -272,13 +274,12 @@
 				<div class="input-wrapper">
 					<input
 						id="lowCount"
-						class="form-control-input"
+						class="form-control-input {errors.lowCount ? 'is-invalid' : ''}"
 						type="text"
 						bind:value={formData.lowCount}
 						pattern="^[0-9]*$"
 						placeholder="Enter low stock threshold"
 						on:input={(event) => handleInput(event, 'lowCount')}
-						class:is-invalid={errors.lowCount}
 					/>
 					{#if errors.lowCount}
 						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
@@ -293,12 +294,11 @@
 				<div class="input-wrapper">
 					<input
 						id="cost"
-						class="form-control-input"
+						class="form-control-input {errors.cost ? 'is-invalid' : ''}"
 						type="text"
 						bind:value={formData.cost}
 						placeholder="Enter item cost"
 						on:input={(event) => handleInput(event, 'cost', true)}
-						class:is-invalid={errors.cost}
 					/>
 					{#if errors.cost}
 						<div class="error-message" transition:fly={{ y: -10, duration: 200 }}>
@@ -313,8 +313,8 @@
 				<div class="input-wrapper">
 					<select
 						id="storageType"
+						class="form-control-input {errors.storageType ? 'is-invalid' : ''}"
 						bind:value={formData.storageType}
-						class="form-control-input"
 						class:placeholder-selected={!formData.storageType}
 					>
 						<option value="" disabled>Select storage type...</option>
@@ -510,7 +510,7 @@
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		margin-bottom: 0.5rem;
+		margin-bottom: 2rem;
 	}
 	.placeholder-selected {
 		color: #888 !important;
@@ -538,7 +538,7 @@
 	.search-input {
 		width: 100%;
 		padding: 0.75rem;
-		border: 1px solid #333; /* Lightened border color */
+		border: 2px solid #333; /* Lightened border color */
 		border-radius: 0.5rem;
 		background-color: #222; /* Lightened background color */
 		color: #fff;
@@ -547,6 +547,10 @@
 			border-color 0.3s ease,
 			box-shadow 0.3s ease,
 			transform 0.2s ease;
+	}
+
+	.is-invalid {
+		border-color: #ff0019 !important; /* Red error border color */
 	}
 
 	.form-control-input,
@@ -576,7 +580,14 @@
 		border-color: #007bff; /* Focus border color matching button */
 		box-shadow: 0 0 0 1px #007bff;
 	}
-
+	.form-control-input.is-invalid:focus {
+		border-color: #ff0019 !important; /* Red error border color */
+		box-shadow: 0 0 0 1px #ff0019 !important;
+	}
+	.form-control-input.is-invalid:hover {
+		border-color: #ff0019 !important; /* Red error border color */
+		box-shadow: 0 0 0 1px #ff0019 !important;
+	}
 	/* Search styles */
 	.search-container {
 		display: flex;
@@ -625,15 +636,20 @@
 		color: var(--icon-hover-color);
 	}
 
-	/* Error message styles */
 	.error-message {
+		border: 1px solid #ff0019; /* Red error border color */
+		padding: 0.75rem;
 		position: absolute;
 		top: 100%;
 		left: 0;
 		margin-top: 0.25rem;
-		color: #ff0019;
+		padding: 0.5rem;
+		color: #fff;
+		background-color: #ff0019;
+		border-radius: 0.5rem;
 		font-size: 0.875rem;
 		width: 100%;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 	}
 
 	/* Add item button styles */
