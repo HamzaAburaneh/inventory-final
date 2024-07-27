@@ -554,28 +554,6 @@
 		box-shadow: 0 0 0 1px #007bff;
 	}
 
-	/* Select styles */
-	select.form-control-input,
-	.form-control select {
-		cursor: pointer;
-		background-color: #222;
-		color: #fff;
-	}
-
-	select.form-control-input option,
-	.select.form-control option {
-		color: #fff;
-	}
-
-	select.form-control-input option[value=''],
-	.select.form-control option[value=''] {
-		color: #888;
-	}
-
-	.placeholder-selected {
-		color: #888 !important;
-	}
-
 	/* Search styles */
 	.search-container {
 		display: flex;
