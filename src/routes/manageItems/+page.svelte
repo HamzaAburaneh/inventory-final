@@ -19,7 +19,7 @@
 	import { Pagination } from 'flowbite-svelte';
 
 	let items: Item[] = [];
-	let formData = {
+	let formData: Omit<Item, 'id'> = {
 		name: '',
 		barcode: '',
 		count: '',
@@ -27,34 +27,38 @@
 		cost: '',
 		storageType: '' as '' | 'freezer' | 'refrigerator' | 'dry storage'
 	};
-	let errors = { ...formData };
+
+	let errors: Partial<Record<keyof typeof formData, string>> = {};
 	let searchValue = '';
-	let currentSortColumn: keyof Item;
+	let currentSortColumn: keyof Item = 'name';
 	let sortAscending = true;
 	let itemsLoaded = false;
 	let currentPage = 1;
-	let pageSize = 10; // instead of itemsPerPage
 	let itemsPerPage = 10;
-	let totalItems: number;
+	let totalItems = 0;
 	let paginatedItems: Item[] = [];
+
 	onMount(async () => {
 		items = await getItems();
 		updatePaginatedItems();
 		itemsLoaded = true;
 	});
+
 	$: {
 		if (items) {
 			updatePaginatedItems();
 		}
 	}
+
 	const updatePaginatedItems = () => {
 		const startIndex = (currentPage - 1) * itemsPerPage;
 		const endIndex = startIndex + itemsPerPage;
 		paginatedItems = items.slice(startIndex, endIndex);
 		totalItems = items.length;
 	};
-	const validateField = (field: string, value: any) => {
-		const validations = {
+
+	const validateField = (field: keyof typeof formData, value: any) => {
+		const validations: Partial<Record<keyof typeof formData, () => string>> = {
 			name: () => (value.trim().length < 3 ? 'Name must be at least 3 characters' : ''),
 			count: () =>
 				isNaN(parseInt(value)) || parseInt(value) < 0 ? 'Must be a positive number' : '',
@@ -66,7 +70,11 @@
 		errors[field] = validations[field] ? validations[field]() : '';
 	};
 
-	const handleInput = (event: Event, field: string, allowDecimal: boolean = false) => {
+	const handleInput = (
+		event: Event,
+		field: keyof typeof formData,
+		allowDecimal: boolean = false
+	) => {
 		let value = (event.target as HTMLInputElement).value;
 		if (allowDecimal) {
 			value = value.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1');
@@ -102,20 +110,28 @@
 			return;
 		}
 		try {
-			const newItem = {
-				...formData,
-				cost: formData.cost ? parseFloat(parseFloat(formData.cost).toFixed(2)) : null
+			const newItem: Item = {
+				id: '', // Temporary id until assigned by addItem
+				name: formData.name,
+				barcode: formData.barcode,
+				count: formData.count,
+				lowCount: formData.lowCount,
+				cost: formData.cost ? parseFloat(parseFloat(formData.cost).toFixed(2)) : 0,
+				storageType: formData.storageType
 			};
 			const id = await addItem(newItem);
-			updateItemsAndSort([...items, { id, ...newItem }]);
-			formData = { name: '', barcode: '', count: '', lowCount: '', cost: '', storageType: '' };
-			errors = { ...formData };
+			newItem.id = id;
+			updateItemsAndSort([...items, newItem]);
+			formData = { name: '', barcode: '', count: 0, lowCount: 0, cost: 0, storageType: '' };
+			errors = {};
 		} catch (error) {
-			await Swal.fire({
-				icon: 'error',
-				title: 'Error',
-				text: error.message
-			});
+			if (error instanceof Error) {
+				await Swal.fire({
+					icon: 'error',
+					title: 'Error',
+					text: error.message
+				});
+			}
 		}
 	};
 
@@ -126,7 +142,7 @@
 
 	const handleEdit = async (id: string, field: keyof Item, oldValue: any) => {
 		const result = await Swal.fire({
-			title: `Edit ${field.charAt(0).toUpperCase() + field.slice(1)}`,
+			title: `Edit ${String(field).charAt(0).toUpperCase() + String(field).slice(1)}`,
 			input: 'text',
 			inputValue: oldValue != null ? oldValue.toString() : '',
 			showCancelButton: true,
@@ -138,10 +154,13 @@
 	};
 
 	const updateItem = async (id: string, field: keyof Item, value: any) => {
-		const updateFunctions = {
+		const updateFunctions: Record<keyof Item, (id: string, newValue: any) => Promise<void>> = {
 			cost: editItemCost,
 			barcode: editItemBarcode,
 			name: editItemName,
+			count: async (id, newValue) => {
+				/* Implement if necessary */
+			},
 			lowCount: editItemLowCount,
 			storageType: editItemStorageType
 		};
@@ -162,12 +181,14 @@
 		updateItemsAndSort(items);
 	};
 
-	$: sortIcon = (column) => (currentSortColumn === column ? (sortAscending ? '▲' : '▼') : '↕');
+	$: sortIcon = (column: keyof Item) =>
+		currentSortColumn === column ? (sortAscending ? '▲' : '▼') : '↕';
 
 	const clearSearch = () => {
 		searchValue = '';
 		handleSearch();
 	};
+
 	const handlePrevious = () => {
 		if (currentPage > 1) {
 			currentPage--;
@@ -462,12 +483,12 @@
 		<div class="flex justify-center mt-4">
 			<Pagination
 				{totalItems}
-				{pageSize}
+				{itemsPerPage}
 				{currentPage}
 				showPreviousNext={true}
 				on:previous={handlePrevious}
 				on:next={handleNext}
-				on:click={handlePageClick}
+				on:pageClick={handlePageClick}
 			/>
 		</div>
 	</div>
@@ -491,7 +512,9 @@
 		flex-direction: column;
 		margin-bottom: 0.5rem;
 	}
-
+	.placeholder-selected {
+		color: #888 !important;
+	}
 	.form-label {
 		margin-bottom: 0.5rem;
 		font-weight: 600;
