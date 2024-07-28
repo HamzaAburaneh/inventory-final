@@ -695,7 +695,7 @@
 		text-align: center;
 		font-size: 0.875rem;
 		max-width: 25%;
-		margin: 0 auto;
+		margin: 2rem auto 0 auto;
 		display: flex;
 		align-items: center;
 		justify-content: center;
