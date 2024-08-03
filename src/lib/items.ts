@@ -17,7 +17,7 @@ export async function getItems(): Promise<Item[]> {
 	return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Item);
 }
 
-export async function addItem(item: Omit<Item, 'id'>): Promise<string> {
+export async function addItem(item: Omit<Item, 'id'>): Promise<Item> {
 	const itemCollection = collection(db, 'items');
 
 	// Check for duplicates
@@ -28,7 +28,15 @@ export async function addItem(item: Omit<Item, 'id'>): Promise<string> {
 	}
 
 	const docRef = await addDoc(itemCollection, item);
-	return docRef.id;
+	return {
+		id: docRef.id,
+		name: item.name,
+		barcode: item.barcode,
+		count: item.count,
+		lowCount: item.lowCount,
+		cost: item.cost,
+		storageType: item.storageType
+	};
 }
 
 export async function deleteItem(id: string): Promise<void> {

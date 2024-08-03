@@ -126,8 +126,7 @@
 			return;
 		}
 		try {
-			const newItem: Item = {
-				id: '', // Temporary id until assigned by addItem
+			const newItem: Omit<Item, 'id'> = {
 				name: formData.name,
 				barcode: formData.barcode,
 				count: formData.count,
@@ -135,12 +134,8 @@
 				cost: formData.cost ? parseFloat(parseFloat(formData.cost).toFixed(2)) : 0,
 				storageType: formData.storageType
 			};
-			const id = await addItem(newItem);
-			if (!id) {
-				throw new Error('Failed to add item: received empty ID.');
-			}
-			newItem.id = id;
-			updateItemsAndSort([...items, newItem]);
+			const addedItem = await addItem(newItem);
+			updateItemsAndSort([...items, addedItem]);
 			formData = { name: '', barcode: '', count: '', lowCount: '', cost: '', storageType: '' };
 			errors = {};
 		} catch (error) {
