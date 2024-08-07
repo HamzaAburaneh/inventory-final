@@ -16,7 +16,9 @@
 	import type { Item } from '../../types';
 	import { fadeAndSlide } from '$lib/transitions';
 	import { fly, fade } from 'svelte/transition';
-	import { Pagination } from 'flowbite-svelte';
+	import { Tabulator } from 'tabulator-tables';
+
+	import 'tabulator-tables/dist/css/tabulator_site_dark.css';
 
 	let items: Item[] = [];
 	let formData: Omit<Item, 'id'> = {
@@ -30,38 +32,60 @@
 
 	let errors: Partial<Record<keyof typeof formData, string>> = {};
 	let searchValue = '';
-	let currentSortColumn: keyof Item = 'name';
-	let sortAscending = true;
 	let itemsLoaded = false;
-	let currentPage = 1;
-	let itemsPerPage = 10;
-	let totalItems = 0;
-	let paginatedItems: Item[] = [];
+	let table: Tabulator;
 
 	onMount(async () => {
 		items = await getItems();
-		if (!items.every((item) => item.id)) {
-			console.error('Some items have empty IDs:', items);
-		}
-		if (new Set(items.map((item) => item.id)).size !== items.length) {
-			console.error('Duplicate IDs found:', items);
-		}
-		updatePaginatedItems();
 		itemsLoaded = true;
 	});
 
-	$: {
-		if (items) {
-			updatePaginatedItems();
-		}
+	function initTable() {
+		table = new Tabulator('#items-table', {
+			data: items,
+			layout: 'fitColumns',
+			pagination: 'local',
+			paginationSize: 10,
+			columns: [
+				{
+					title: 'Name',
+					field: 'name',
+					sorter: 'string',
+					editor: 'input',
+					editorParams: { selectContents: true }
+				},
+				{ title: 'Barcode', field: 'barcode', sorter: 'string', editor: 'input' },
+				{ title: 'Count', field: 'count', sorter: 'number', editor: 'number' },
+				{ title: 'Low Count', field: 'lowCount', sorter: 'number', editor: 'number' },
+				{ title: 'Cost', field: 'cost', sorter: 'number', editor: 'number', formatter: 'money' },
+				{
+					title: 'Storage Type',
+					field: 'storageType',
+					sorter: 'string',
+					editor: 'select',
+					editorParams: {
+						values: ['Freezer', 'Refrigerator', 'Dry Storage']
+					}
+				},
+				{
+					title: 'Actions',
+					formatter: function (cell, formatterParams, onRendered) {
+						return '<button class="delete-button"><i class="fas fa-trash-alt"></i></button>';
+					},
+					cellClick: function (e, cell) {
+						handleDelete(cell.getRow().getData().id);
+					}
+				}
+			],
+			cellEdited: function (cell) {
+				let row = cell.getRow();
+				let id = row.getData().id;
+				let field = cell.getColumn().getField() as keyof Item;
+				let value = cell.getValue();
+				updateItem(id, field, value);
+			}
+		});
 	}
-
-	const updatePaginatedItems = () => {
-		const startIndex = (currentPage - 1) * itemsPerPage;
-		const endIndex = startIndex + itemsPerPage;
-		paginatedItems = items.slice(startIndex, endIndex);
-		totalItems = items.length;
-	};
 
 	const validateField = (field: keyof typeof formData, value: any) => {
 		const validations: Partial<Record<keyof typeof formData, () => string>> = {
@@ -93,21 +117,6 @@
 		validateField(field, value);
 	};
 
-	const updateItemsAndSort = (updatedItems: Item[]) => {
-		// Ensure no duplicate IDs are present
-		const uniqueItems = Array.from(new Set(updatedItems.map((item) => item.id))).map(
-			(id) => updatedItems.find((item) => item.id === id)!
-		);
-		if (!uniqueItems.every((item) => item.id)) {
-			console.error('Some unique items have empty IDs:', uniqueItems);
-		}
-		if (new Set(uniqueItems.map((item) => item.id)).size !== uniqueItems.length) {
-			console.error('Duplicate IDs found in uniqueItems:', uniqueItems);
-		}
-		items = applySorting(uniqueItems, currentSortColumn, sortAscending);
-		updatePaginatedItems();
-	};
-
 	const handleAdd = async () => {
 		if (formData.name.trim() === '') {
 			await Swal.fire({
@@ -135,7 +144,8 @@
 				storageType: formData.storageType
 			};
 			const addedItem = await addItem(newItem);
-			updateItemsAndSort([...items, addedItem]);
+			items = [...items, addedItem];
+			table.setData(items);
 			formData = { name: '', barcode: '', count: '', lowCount: '', cost: '', storageType: '' };
 			errors = {};
 		} catch (error) {
@@ -151,20 +161,8 @@
 
 	const handleDelete = async (id: string) => {
 		await deleteItem(id);
-		updateItemsAndSort(items.filter((item) => item.id !== id));
-	};
-
-	const handleEdit = async (id: string, field: keyof Item, oldValue: any) => {
-		const result = await Swal.fire({
-			title: `Edit ${String(field).charAt(0).toUpperCase() + String(field).slice(1)}`,
-			input: 'text',
-			inputValue: oldValue != null ? oldValue.toString() : '',
-			showCancelButton: true,
-			confirmButtonText: 'Confirm'
-		});
-		if (result.isConfirmed) {
-			await updateItem(id, field, result.value);
-		}
+		items = items.filter((item) => item.id !== id);
+		table.setData(items);
 	};
 
 	const updateItem = async (id: string, field: keyof Item, value: any) => {
@@ -182,44 +180,18 @@
 			id,
 			field === 'cost' || field === 'lowCount' ? Number(value) : value
 		);
-		updateItemsAndSort(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+		items = items.map((item) => (item.id === id ? { ...item, [field]: value } : item));
+		table.setData(items);
 	};
 
 	const handleSearch = async () => {
-		updateItemsAndSort(await searchItems(searchValue));
+		const searchResults = await searchItems(searchValue);
+		table.setData(searchResults);
 	};
-
-	const sortBy = (column: keyof Item) => {
-		sortAscending = currentSortColumn === column ? !sortAscending : true;
-		currentSortColumn = column;
-		updateItemsAndSort(items);
-	};
-
-	$: sortIcon = (column: keyof Item) =>
-		currentSortColumn === column ? (sortAscending ? '▲' : '▼') : '↕';
 
 	const clearSearch = () => {
 		searchValue = '';
-		handleSearch();
-	};
-
-	const handlePrevious = () => {
-		if (currentPage > 1) {
-			currentPage--;
-			updatePaginatedItems();
-		}
-	};
-
-	const handleNext = () => {
-		if (currentPage < Math.ceil(totalItems / itemsPerPage)) {
-			currentPage++;
-			updatePaginatedItems();
-		}
-	};
-
-	const handlePageClick = (event: CustomEvent<number>) => {
-		currentPage = event.detail;
-		updatePaginatedItems();
+		table.setData(items);
 	};
 </script>
 
@@ -350,7 +322,7 @@
 						viewBox="0 0 16 16"
 					>
 						<path
-							d="M8 7V1a1 1 0 0 1 2 0v6h6a1 1 0 0 1 0 2H10v6a1 1 0 0 1-2 0V9H2a1 1 0 0 1 0-2h6z"
+							d="M8 7V1a1 1 0 0 1 2 0v6h6a1 1 0 0 1 0 2H10v6a 1 1 0 0 1-2 0V9H2a1 1 0 0 1 0-2h6z"
 						/>
 					</svg>Add Item</button
 				>
@@ -386,126 +358,7 @@
 				{/if}
 			</div>
 		</div>
-		<div class="table-container">
-			<table class="custom-table table-auto w-full border-collapse">
-				<thead>
-					<tr class="table-header">
-						<th class="px-4 py-2 text-left" on:click={() => sortBy('name')}
-							>Name <span>{sortIcon('name')}</span></th
-						>
-						<th class="px-4 py-2 text-left" on:click={() => sortBy('barcode')}
-							>Barcode <span>{sortIcon('barcode')}</span></th
-						>
-						<th class="px-4 py-2 text-left" on:click={() => sortBy('count')}
-							>Count <span>{sortIcon('count')}</span></th
-						>
-						<th class="px-4 py-2 text-left" on:click={() => sortBy('lowCount')}
-							>Low Count <span>{sortIcon('lowCount')}</span></th
-						>
-						<th class="px-4 py-2 text-left" on:click={() => sortBy('cost')}
-							>Cost <span>{sortIcon('cost')}</span></th
-						>
-						<th class="px-4 py-2 text-left" on:click={() => sortBy('storageType')}
-							>Storage Type <span>{sortIcon('storageType')}</span></th
-						>
-						<th class="px-4 py-2"></th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each paginatedItems as item (item.id)}
-						<tr class="table-row">
-							<td class="px-4 py-2">
-								<div class="cell-content">
-									<span>{item.name}</span>
-									<button
-										class="icon-button"
-										title="Edit Name"
-										on:click={() => handleEdit(item.id, 'name', item.name)}
-										aria-label="Edit Name"
-									>
-										<i class="fas fa-edit"></i>
-									</button>
-								</div>
-							</td>
-							<td class="px-4 py-2">
-								<div class="cell-content">
-									<span>{item.barcode}</span>
-									<button
-										class="icon-button"
-										title="Edit Barcode"
-										on:click={() => handleEdit(item.id, 'barcode', item.barcode)}
-										aria-label="Edit Barcode"
-									>
-										<i class="fas fa-edit"></i>
-									</button>
-								</div>
-							</td>
-							<td class="px-4 py-2">{item.count}</td>
-							<td class="px-4 py-2">
-								<div class="cell-content">
-									<span>{item.lowCount != null ? item.lowCount : ''}</span>
-									<button
-										class="icon-button"
-										title="Edit Low Count"
-										on:click={() => handleEdit(item.id, 'lowCount', item.lowCount)}
-										aria-label="Edit Low Count"
-									>
-										<i class="fas fa-edit"></i>
-									</button>
-								</div>
-							</td>
-							<td class="px-4 py-2">
-								<div class="cell-content">
-									<span>{item.cost != null ? item.cost : ''}</span>
-									<button
-										class="icon-button"
-										title="Edit Cost"
-										on:click={() => handleEdit(item.id, 'cost', item.cost)}
-										aria-label="Edit Cost"
-									>
-										<i class="fas fa-edit"></i>
-									</button>
-								</div>
-							</td>
-							<td class="px-4 py-2">
-								<div class="cell-content">
-									<span>{item.storageType}</span>
-									<button
-										class="icon-button"
-										title="Edit Storage Type"
-										on:click={() => handleEdit(item.id, 'storageType', item.storageType)}
-										aria-label="Edit Storage Type"
-									>
-										<i class="fas fa-edit"></i>
-									</button>
-								</div>
-							</td>
-							<td class="px-4 py-2 text-center">
-								<button
-									class="delete-button"
-									title="Delete Item"
-									on:click={() => handleDelete(item.id)}
-									aria-label="Delete Item"
-								>
-									<i class="fas fa-trash-alt"></i>
-								</button>
-							</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
-		<div class="flex justify-center mt-4">
-			<Pagination
-				{totalItems}
-				{itemsPerPage}
-				{currentPage}
-				showPreviousNext={true}
-				on:previous={handlePrevious}
-				on:next={handleNext}
-				on:pageClick={handlePageClick}
-			/>
-		</div>
+		<div id="items-table" use:initTable></div>
 	</div>
 {/if}
 
