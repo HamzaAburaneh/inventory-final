@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import type { Item } from '../../types';
+	import type { Item } from '../types';
 	import { Pagination } from 'flowbite-svelte';
+	import { fade, fly } from 'svelte/transition';
 
 	export let items: Item[] = [];
 	export let currentSortColumn: keyof Item = 'name';
@@ -13,7 +14,6 @@
 
 	$: totalItems = items.length;
 	$: paginatedItems = items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
 	const handleEdit = (id: string, field: keyof Item, oldValue: any) => {
 		dispatch('edit', { id, field, oldValue });
 	};
@@ -73,7 +73,7 @@
 		</thead>
 		<tbody>
 			{#each paginatedItems as item (item.id)}
-				<tr class="table-row">
+				<tr class="table-row" in:fly={{ y: 20, duration: 300 }} out:fade={{ duration: 300 }}>
 					<td class="px-4 py-2">
 						<div class="cell-content">
 							<span>{item.name}</span>
@@ -170,6 +170,13 @@
 </div>
 
 <style>
+	.table-row {
+		transition: background-color 0.3s ease;
+	}
+
+	.table-row:hover {
+		background-color: var(--row-hover-color, #f0f0f0);
+	}
 	.custom-table {
 		width: 100%;
 		border-collapse: collapse;
