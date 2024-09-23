@@ -275,7 +275,14 @@
 
 		<SearchBar {searchValue} onSearch={handleSearch} onClear={handleClearSearch} />
 		<!-- Update this line to use paginatedItems instead of items -->
-		<Table {paginatedItems} onEdit={handleEdit} onDelete={handleDelete} {sortBy} {sortIcon} />
+		<Table
+			{paginatedItems}
+			onEdit={handleEdit}
+			onDelete={handleDelete}
+			{sortBy}
+			{currentSortColumn}
+			{sortAscending}
+		/>
 		<div class="flex justify-center mt-4">
 			<Pagination
 				{totalItems}

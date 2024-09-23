@@ -3,7 +3,8 @@
 	export let onEdit;
 	export let onDelete;
 	export let sortBy;
-	export let sortIcon;
+	export let currentSortColumn;
+	export let sortAscending;
 </script>
 
 <table class="custom-table table-auto w-full border-collapse">
@@ -11,32 +12,74 @@
 		<tr class="table-header">
 			<th class="px-4 py-2 text-left" on:click={() => sortBy('name')}>
 				<div class="header">
-					Name <span>{sortIcon('name')}</span>
+					Name
+					<i
+						class="fas fa-sort{currentSortColumn === 'name'
+							? sortAscending
+								? '-up'
+								: '-down'
+							: ''}"
+					></i>
 				</div>
 			</th>
 			<th class="px-4 py-2 text-left" on:click={() => sortBy('barcode')}>
 				<div class="header">
-					Barcode <span>{sortIcon('barcode')}</span>
+					Barcode
+					<i
+						class="fas fa-sort{currentSortColumn === 'barcode'
+							? sortAscending
+								? '-up'
+								: '-down'
+							: ''}"
+					></i>
 				</div>
 			</th>
 			<th class="px-4 py-2 text-left" on:click={() => sortBy('count')}>
 				<div class="header">
-					Count <span>{sortIcon('count')}</span>
+					Count
+					<i
+						class="fas fa-sort{currentSortColumn === 'count'
+							? sortAscending
+								? '-up'
+								: '-down'
+							: ''}"
+					></i>
 				</div>
 			</th>
 			<th class="px-4 py-2 text-left" on:click={() => sortBy('lowCount')}>
 				<div class="header">
-					Low Count <span>{sortIcon('lowCount')}</span>
+					Low Count
+					<i
+						class="fas fa-sort{currentSortColumn === 'lowCount'
+							? sortAscending
+								? '-up'
+								: '-down'
+							: ''}"
+					></i>
 				</div>
 			</th>
 			<th class="px-4 py-2 text-left" on:click={() => sortBy('cost')}>
 				<div class="header">
-					Cost <span>{sortIcon('cost')}</span>
+					Cost
+					<i
+						class="fas fa-sort{currentSortColumn === 'cost'
+							? sortAscending
+								? '-up'
+								: '-down'
+							: ''}"
+					></i>
 				</div>
 			</th>
 			<th class="px-4 py-2 text-left" on:click={() => sortBy('storageType')}>
 				<div class="header">
-					Storage Type <span>{sortIcon('storageType')}</span>
+					Storage Type
+					<i
+						class="fas fa-sort{currentSortColumn === 'storageType'
+							? sortAscending
+								? '-up'
+								: '-down'
+							: ''}"
+					></i>
 				</div>
 			</th>
 			<th class="px-4 py-2"></th>
@@ -127,6 +170,21 @@
 </table>
 
 <style>
+	.header i {
+		margin-left: 5px;
+		opacity: 0.5;
+	}
+
+	.header:hover i {
+		opacity: 1;
+	}
+
+	/* You may want to adjust the existing .header styles */
+	.header {
+		display: flex;
+		align-items: center;
+		cursor: pointer;
+	}
 	.custom-table th,
 	.custom-table td {
 		padding: 0.75rem;
