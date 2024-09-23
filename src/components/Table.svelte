@@ -10,22 +10,34 @@
 	<thead>
 		<tr class="table-header">
 			<th class="px-4 py-2 text-left" on:click={() => sortBy('name')}>
-				Name <span>{sortIcon('name')}</span>
+				<div class="header">
+					Name <span>{sortIcon('name')}</span>
+				</div>
 			</th>
 			<th class="px-4 py-2 text-left" on:click={() => sortBy('barcode')}>
-				Barcode <span>{sortIcon('barcode')}</span>
+				<div class="barheadercodeHeader">
+					Barcode <span>{sortIcon('barcode')}</span>
+				</div>
 			</th>
 			<th class="px-4 py-2 text-left" on:click={() => sortBy('count')}>
-				Count <span>{sortIcon('count')}</span>
+				<div class="header">
+					Count <span>{sortIcon('count')}</span>
+				</div>
 			</th>
 			<th class="px-4 py-2 text-left" on:click={() => sortBy('lowCount')}>
-				Low Count <span>{sortIcon('lowCount')}</span>
+				<div class="header">
+					Low Count <span>{sortIcon('lowCount')}</span>
+				</div>
 			</th>
 			<th class="px-4 py-2 text-left" on:click={() => sortBy('cost')}>
-				Cost <span>{sortIcon('cost')}</span>
+				<div class="header">
+					Cost <span>{sortIcon('cost')}</span>
+				</div>
 			</th>
 			<th class="px-4 py-2 text-left" on:click={() => sortBy('storageType')}>
-				Storage Type <span>{sortIcon('storageType')}</span>
+				<div class="header">
+					Storage Type <span>{sortIcon('storageType')}</span>
+				</div>
 			</th>
 			<th class="px-4 py-2"></th>
 		</tr>
@@ -120,9 +132,19 @@
 		padding: 0.75rem;
 		text-align: left;
 	}
-
 	.custom-table th {
+		cursor: default; /* Default cursor for the entire header */
 		border-bottom: 2px solid var(--table-border-color);
+	}
+
+	.custom-table th .header {
+		display: inline; /* Ensure the clickable area is only on the text and icon */
+		cursor: pointer; /* Make the text and icon inside clickable */
+	}
+
+	.custom-table th .header:hover {
+		color: var(--icon-hover-color); /* Change color when the text or icon is hovered */
+		transition: color 0.3s ease;
 	}
 
 	.custom-table td {
