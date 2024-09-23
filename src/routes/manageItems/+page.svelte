@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte';
 	import Swal from 'sweetalert2';
 	import ItemForm from '../../components/ItemForm.svelte';
+	import SearchBar from '../../components/SearchBar.svelte';
+	import Table from '../../components/Table.svelte';
 	import {
 		getItems,
 		addItem,
@@ -215,8 +217,21 @@
 		updateItemsAndSort(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
 	};
 
-	const handleSearch = async () => {
-		updateItemsAndSort(await searchItems(searchValue));
+	const handleSearch = async (value: string) => {
+		searchValue = value;
+		if (searchValue.trim()) {
+			// Filter items directly within handleSearch
+			items = await searchItems(searchValue);
+		} else {
+			// If search is cleared, get all items again
+			items = await getItems();
+		}
+		updatePaginatedItems(); // Update paginated view
+	};
+
+	const handleClearSearch = () => {
+		searchValue = '';
+		handleSearch('');
 	};
 
 	const sortBy = (column: keyof Item) => {
@@ -227,11 +242,6 @@
 
 	$: sortIcon = (column: keyof Item) =>
 		currentSortColumn === column ? (sortAscending ? '▲' : '▼') : '↕';
-
-	const clearSearch = () => {
-		searchValue = '';
-		handleSearch();
-	};
 
 	const handlePrevious = () => {
 		if (currentPage > 1) {
@@ -260,144 +270,8 @@
 	>
 		<ItemForm on:add={handleItemAdd} />
 
-		<div class="search-container mb-4 relative">
-			<div class="search-wrapper relative flex">
-				<input
-					id="search"
-					class="form-control search-input"
-					bind:value={searchValue}
-					placeholder="Search Items"
-					on:input={handleSearch}
-				/>
-				{#if searchValue}
-					<button class="clear-button flex items-center justify-center" on:click={clearSearch}>
-						<svg
-							class="h-5 w-5 text-gray-500"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-							xmlns="http://www.w3.org/2000/svg"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M6 18L18 6M6 6l12 12"
-							></path>
-						</svg>
-					</button>
-				{/if}
-			</div>
-		</div>
-		<div class="table-container">
-			<table class="custom-table table-auto w-full border-collapse">
-				<thead>
-					<tr class="table-header">
-						<th class="px-4 py-2 text-left" on:click={() => sortBy('name')}
-							>Name <span>{sortIcon('name')}</span></th
-						>
-						<th class="px-4 py-2 text-left" on:click={() => sortBy('barcode')}
-							>Barcode <span>{sortIcon('barcode')}</span></th
-						>
-						<th class="px-4 py-2 text-left" on:click={() => sortBy('count')}
-							>Count <span>{sortIcon('count')}</span></th
-						>
-						<th class="px-4 py-2 text-left" on:click={() => sortBy('lowCount')}
-							>Low Count <span>{sortIcon('lowCount')}</span></th
-						>
-						<th class="px-4 py-2 text-left" on:click={() => sortBy('cost')}
-							>Cost <span>{sortIcon('cost')}</span></th
-						>
-						<th class="px-4 py-2 text-left" on:click={() => sortBy('storageType')}
-							>Storage Type <span>{sortIcon('storageType')}</span></th
-						>
-						<th class="px-4 py-2"></th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each paginatedItems as item (item.id)}
-						<tr class="table-row">
-							<td class="px-4 py-2">
-								<div class="cell-content">
-									<span>{item.name}</span>
-									<button
-										class="icon-button"
-										title="Edit Name"
-										on:click={() => handleEdit(item.id, 'name', item.name)}
-										aria-label="Edit Name"
-									>
-										<i class="fas fa-edit"></i>
-									</button>
-								</div>
-							</td>
-							<td class="px-4 py-2">
-								<div class="cell-content">
-									<span>{item.barcode}</span>
-									<button
-										class="icon-button"
-										title="Edit Barcode"
-										on:click={() => handleEdit(item.id, 'barcode', item.barcode)}
-										aria-label="Edit Barcode"
-									>
-										<i class="fas fa-edit"></i>
-									</button>
-								</div>
-							</td>
-							<td class="px-4 py-2">{item.count}</td>
-							<td class="px-4 py-2">
-								<div class="cell-content">
-									<span>{item.lowCount != null ? item.lowCount : ''}</span>
-									<button
-										class="icon-button"
-										title="Edit Low Count"
-										on:click={() => handleEdit(item.id, 'lowCount', item.lowCount)}
-										aria-label="Edit Low Count"
-									>
-										<i class="fas fa-edit"></i>
-									</button>
-								</div>
-							</td>
-							<td class="px-4 py-2">
-								<div class="cell-content">
-									<span>{item.cost != null ? item.cost : ''}</span>
-									<button
-										class="icon-button"
-										title="Edit Cost"
-										on:click={() => handleEdit(item.id, 'cost', item.cost)}
-										aria-label="Edit Cost"
-									>
-										<i class="fas fa-edit"></i>
-									</button>
-								</div>
-							</td>
-							<td class="px-4 py-2">
-								<div class="cell-content">
-									<span>{item.storageType}</span>
-									<button
-										class="icon-button"
-										title="Edit Storage Type"
-										on:click={() => handleEdit(item.id, 'storageType', item.storageType)}
-										aria-label="Edit Storage Type"
-									>
-										<i class="fas fa-edit"></i>
-									</button>
-								</div>
-							</td>
-							<td class="px-4 py-2 text-center">
-								<button
-									class="delete-button"
-									title="Delete Item"
-									on:click={() => handleDelete(item.id)}
-									aria-label="Delete Item"
-								>
-									<i class="fas fa-trash-alt"></i>
-								</button>
-							</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
+		<SearchBar {searchValue} onSearch={handleSearch} onClear={handleClearSearch} />
+		<Table {items} onEdit={handleEdit} onDelete={handleDelete} {sortBy} {sortIcon} />
 		<div class="flex justify-center mt-4">
 			<Pagination
 				{totalItems}
@@ -421,144 +295,5 @@
 		background-color: var(--container-bg);
 		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 		border-radius: 1rem;
-	}
-
-	/* Search styles */
-	.search-container {
-		display: flex;
-		justify-content: center;
-		width: 100%;
-	}
-
-	.search-wrapper {
-		width: 65%;
-		display: flex;
-		transition: width 0.3s ease;
-		position: relative;
-	}
-
-	.search-input {
-		flex-grow: 1;
-		min-width: 200px;
-		padding: 0.75rem 1rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-	}
-
-	/* Clear button styles */
-	.clear-button {
-		background: none;
-		border: none;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: var(--icon-color);
-		transition: color 0.3s ease;
-		width: 2rem;
-		height: 100%;
-		position: absolute;
-		right: 0;
-		top: 0;
-		padding: 0;
-	}
-
-	.clear-button svg {
-		width: 1rem;
-		height: 1rem;
-	}
-
-	.clear-button:hover {
-		color: var(--icon-hover-color);
-	}
-
-	/* Table styles */
-	.custom-table th,
-	.custom-table td {
-		padding: 0.75rem;
-		text-align: left;
-	}
-
-	.custom-table th {
-		border-bottom: 2px solid var(--table-border-color);
-	}
-
-	.custom-table td {
-		border-bottom: 1px solid var(--table-border-color);
-	}
-
-	.cell-content {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	/* Icon and delete button styles */
-	.icon-button,
-	.delete-button {
-		background: none;
-		border: none;
-		padding: 0;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		color: var(--icon-color);
-		transition: transform 0.2s ease-in-out;
-	}
-
-	.icon-button:hover,
-	.delete-button:hover {
-		color: var(--icon-hover-color);
-		transform: scale(1.1);
-	}
-
-	.delete-button {
-		color: darkred;
-	}
-
-	.delete-button:hover {
-		color: red;
-	}
-
-	.icon-button[title]::after,
-	.delete-button[title]::after {
-		content: attr(title);
-		position: absolute;
-		font-size: 0.75rem;
-		left: 50%;
-		bottom: 100%;
-		transform: translateX(-50%);
-		background: rgba(0, 0, 0, 0.75);
-		color: #fff;
-		padding: 0.5rem;
-		border-radius: 0.25rem;
-		white-space: nowrap;
-		opacity: 0;
-		transition: opacity 0.2s ease-in-out;
-		pointer-events: none;
-	}
-
-	.icon-button:hover[title]::after,
-	.delete-button:hover[title]::after {
-		opacity: 1;
-	}
-
-	/* Fixed height table styles */
-	.fixed-height-table {
-		height: 35rem;
-		overflow-y: auto;
-		display: block;
-	}
-
-	.fixed-height-table table {
-		width: 100%;
-		border-collapse: collapse;
-	}
-
-	/* Media query */
-	@media (min-width: 640px) {
-		#add-item {
-			font-size: 1rem;
-			padding: 0.75rem 1.5rem;
-		}
 	}
 </style>
