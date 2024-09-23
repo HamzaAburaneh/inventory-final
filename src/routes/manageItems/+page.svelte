@@ -136,6 +136,7 @@
 		if (new Set(uniqueItems.map((item) => item.id)).size !== uniqueItems.length) {
 			console.error('Duplicate IDs found in uniqueItems:', uniqueItems);
 		}
+		// Apply sorting before paginating
 		items = applySorting(uniqueItems, currentSortColumn, sortAscending);
 		updatePaginatedItems();
 	};
@@ -227,12 +228,13 @@
 			items = await getItems();
 		}
 		totalItems = items.length; // Update total items after filtering
-		updatePaginatedItems(); // Update paginated view
+		updateItemsAndSort(items); // Apply sorting after fetching items
 	};
 
 	const handleClearSearch = () => {
 		searchValue = '';
-		handleSearch('');
+		handleSearch(''); // Call handleSearch to reset the items
+		updateItemsAndSort(items); // Reapply the sorting after clearing the search
 	};
 
 	const sortBy = (column: keyof Item) => {

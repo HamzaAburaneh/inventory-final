@@ -133,9 +133,10 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		position: relative;
 	}
 
-	/* Icon and delete button styles */
+	/* Initially hide the icons */
 	.icon-button,
 	.delete-button {
 		background: none;
@@ -146,8 +147,24 @@
 		align-items: center;
 		color: var(--icon-color);
 		transition: transform 0.2s ease-in-out;
+		opacity: 0; /* Hide icons by default */
+		pointer-events: none; /* Prevent interaction with hidden icons */
 	}
 
+	/* Visual indication for row hover */
+	.table-row:hover {
+		background-color: var(--hover-bg-color); /* Add row hover background color */
+		transition: background-color 0.3s ease;
+	}
+
+	/* Show icons on row hover */
+	.table-row:hover .icon-button,
+	.table-row:hover .delete-button {
+		opacity: 1;
+		pointer-events: all; /* Allow interaction when visible */
+	}
+
+	/* Icon and button hover effect */
 	.icon-button:hover,
 	.delete-button:hover {
 		color: var(--icon-hover-color);
@@ -162,6 +179,7 @@
 		color: red;
 	}
 
+	/* Tooltip styling for icons */
 	.icon-button[title]::after,
 	.delete-button[title]::after {
 		content: attr(title);
