@@ -1,5 +1,5 @@
 <script lang="ts">
-	export let items = [];
+	export let paginatedItems = [];
 	export let onEdit;
 	export let onDelete;
 	export let sortBy;
@@ -31,7 +31,7 @@
 		</tr>
 	</thead>
 	<tbody>
-		{#each items as item (item.id)}
+		{#each paginatedItems as item (item.id)}
 			<tr class="table-row">
 				<td class="px-4 py-2">
 					<div class="cell-content">

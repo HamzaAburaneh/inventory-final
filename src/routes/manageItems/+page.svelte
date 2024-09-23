@@ -226,6 +226,7 @@
 			// If search is cleared, get all items again
 			items = await getItems();
 		}
+		totalItems = items.length; // Update total items after filtering
 		updatePaginatedItems(); // Update paginated view
 	};
 
@@ -251,12 +252,12 @@
 	};
 
 	const handleNext = () => {
-		if (currentPage < Math.ceil(totalItems / itemsPerPage)) {
+		const maxPage = Math.ceil(totalItems / itemsPerPage);
+		if (currentPage < maxPage) {
 			currentPage++;
 			updatePaginatedItems();
 		}
 	};
-
 	const handlePageClick = (event: CustomEvent<number>) => {
 		currentPage = event.detail;
 		updatePaginatedItems();
@@ -271,7 +272,8 @@
 		<ItemForm on:add={handleItemAdd} />
 
 		<SearchBar {searchValue} onSearch={handleSearch} onClear={handleClearSearch} />
-		<Table {items} onEdit={handleEdit} onDelete={handleDelete} {sortBy} {sortIcon} />
+		<!-- Update this line to use paginatedItems instead of items -->
+		<Table {paginatedItems} onEdit={handleEdit} onDelete={handleDelete} {sortBy} {sortIcon} />
 		<div class="flex justify-center mt-4">
 			<Pagination
 				{totalItems}
