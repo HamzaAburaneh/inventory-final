@@ -7,169 +7,200 @@
 	export let sortAscending;
 </script>
 
-<table class="custom-table table-auto w-full border-collapse">
-	<thead>
-		<tr class="table-header">
-			<th class="px-4 py-2 text-left" on:click={() => sortBy('name')}>
-				<div class="header">
-					Name
-					<i
-						class="fas fa-sort{currentSortColumn === 'name'
-							? sortAscending
-								? '-up'
-								: '-down'
-							: ''}"
-					></i>
-				</div>
-			</th>
-			<th class="px-4 py-2 text-left" on:click={() => sortBy('barcode')}>
-				<div class="header">
-					Barcode
-					<i
-						class="fas fa-sort{currentSortColumn === 'barcode'
-							? sortAscending
-								? '-up'
-								: '-down'
-							: ''}"
-					></i>
-				</div>
-			</th>
-			<th class="px-4 py-2 text-left" on:click={() => sortBy('count')}>
-				<div class="header">
-					Count
-					<i
-						class="fas fa-sort{currentSortColumn === 'count'
-							? sortAscending
-								? '-up'
-								: '-down'
-							: ''}"
-					></i>
-				</div>
-			</th>
-			<th class="px-4 py-2 text-left" on:click={() => sortBy('lowCount')}>
-				<div class="header">
-					Low Count
-					<i
-						class="fas fa-sort{currentSortColumn === 'lowCount'
-							? sortAscending
-								? '-up'
-								: '-down'
-							: ''}"
-					></i>
-				</div>
-			</th>
-			<th class="px-4 py-2 text-left" on:click={() => sortBy('cost')}>
-				<div class="header">
-					Cost
-					<i
-						class="fas fa-sort{currentSortColumn === 'cost'
-							? sortAscending
-								? '-up'
-								: '-down'
-							: ''}"
-					></i>
-				</div>
-			</th>
-			<th class="px-4 py-2 text-left" on:click={() => sortBy('storageType')}>
-				<div class="header">
-					Storage Type
-					<i
-						class="fas fa-sort{currentSortColumn === 'storageType'
-							? sortAscending
-								? '-up'
-								: '-down'
-							: ''}"
-					></i>
-				</div>
-			</th>
-			<th class="px-4 py-2"></th>
-		</tr>
-	</thead>
-	<tbody>
-		{#each paginatedItems as item (item.id)}
-			<tr class="table-row">
-				<td class="px-4 py-2">
-					<div class="cell-content">
-						<span>{item.name}</span>
-						<button
-							class="icon-button"
-							title="Edit Name"
-							on:click={() => onEdit(item.id, 'name', item.name)}
-							aria-label="Edit Name"
-						>
-							<i class="fas fa-edit"></i>
-						</button>
+<div class="fixed-height-table">
+	<table class="custom-table table-auto w-full border-collapse">
+		<thead>
+			<tr class="table-header">
+				<th class="px-4 py-2 text-left fixed-width-name" on:click={() => sortBy('name')}>
+					<div class="header">
+						Name
+						<i
+							class="fas fa-sort{currentSortColumn === 'name'
+								? sortAscending
+									? '-up'
+									: '-down'
+								: ''}"
+						></i>
 					</div>
-				</td>
-				<td class="px-4 py-2">
-					<div class="cell-content">
-						<span>{item.barcode}</span>
-						<button
-							class="icon-button"
-							title="Edit Barcode"
-							on:click={() => onEdit(item.id, 'barcode', item.barcode)}
-							aria-label="Edit Barcode"
-						>
-							<i class="fas fa-edit"></i>
-						</button>
+				</th>
+				<th class="px-4 py-2 text-left fixed-width-barcode" on:click={() => sortBy('barcode')}>
+					<div class="header">
+						Barcode
+						<i
+							class="fas fa-sort{currentSortColumn === 'barcode'
+								? sortAscending
+									? '-up'
+									: '-down'
+								: ''}"
+						></i>
 					</div>
-				</td>
-				<td class="px-4 py-2">{item.count}</td>
-				<td class="px-4 py-2">
-					<div class="cell-content">
-						<span>{item.lowCount != null ? item.lowCount : ''}</span>
-						<button
-							class="icon-button"
-							title="Edit Low Count"
-							on:click={() => onEdit(item.id, 'lowCount', item.lowCount)}
-							aria-label="Edit Low Count"
-						>
-							<i class="fas fa-edit"></i>
-						</button>
+				</th>
+				<th class="px-4 py-2 text-left fixed-width-count" on:click={() => sortBy('count')}>
+					<div class="header">
+						Count
+						<i
+							class="fas fa-sort{currentSortColumn === 'count'
+								? sortAscending
+									? '-up'
+									: '-down'
+								: ''}"
+						></i>
 					</div>
-				</td>
-				<td class="px-4 py-2">
-					<div class="cell-content">
-						<span>{item.cost != null ? item.cost : ''}</span>
-						<button
-							class="icon-button"
-							title="Edit Cost"
-							on:click={() => onEdit(item.id, 'cost', item.cost)}
-							aria-label="Edit Cost"
-						>
-							<i class="fas fa-edit"></i>
-						</button>
+				</th>
+				<th class="px-4 py-2 text-left fixed-width-lowCount" on:click={() => sortBy('lowCount')}>
+					<div class="header">
+						Low Count
+						<i
+							class="fas fa-sort{currentSortColumn === 'lowCount'
+								? sortAscending
+									? '-up'
+									: '-down'
+								: ''}"
+						></i>
 					</div>
-				</td>
-				<td class="px-4 py-2">
-					<div class="cell-content">
-						<span>{item.storageType}</span>
-						<button
-							class="icon-button"
-							title="Edit Storage Type"
-							on:click={() => onEdit(item.id, 'storageType', item.storageType)}
-							aria-label="Edit Storage Type"
-						>
-							<i class="fas fa-edit"></i>
-						</button>
+				</th>
+				<th class="px-4 py-2 text-left fixed-width-cost" on:click={() => sortBy('cost')}>
+					<div class="header">
+						Cost
+						<i
+							class="fas fa-sort{currentSortColumn === 'cost'
+								? sortAscending
+									? '-up'
+									: '-down'
+								: ''}"
+						></i>
 					</div>
-				</td>
-				<td class="px-4 py-2 text-center">
-					<button
-						class="delete-button"
-						title="Delete Item"
-						on:click={() => onDelete(item.id)}
-						aria-label="Delete Item"
-					>
-						<i class="fas fa-trash-alt"></i>
-					</button>
-				</td>
+				</th>
+				<th
+					class="px-4 py-2 text-left fixed-width-storageType"
+					on:click={() => sortBy('storageType')}
+				>
+					<div class="header">
+						Storage Type
+						<i
+							class="fas fa-sort{currentSortColumn === 'storageType'
+								? sortAscending
+									? '-up'
+									: '-down'
+								: ''}"
+						></i>
+					</div>
+				</th>
+				<th class="px-4 py-2 fixed-width-actions"></th>
 			</tr>
-		{/each}
-	</tbody>
-</table>
+		</thead>
+		<tbody>
+			{#each paginatedItems as item (item.id)}
+				<tr class="table-row">
+					<td class="px-4 py-2">
+						<div class="cell-content">
+							<span>{item.name}</span>
+							<button
+								class="icon-button"
+								title="Edit Name"
+								on:click={() => onEdit(item.id, 'name', item.name)}
+								aria-label="Edit Name"
+							>
+								<i class="fas fa-edit"></i>
+							</button>
+						</div>
+					</td>
+					<td class="px-4 py-2">
+						<div class="cell-content">
+							<span>{item.barcode}</span>
+							<button
+								class="icon-button"
+								title="Edit Barcode"
+								on:click={() => onEdit(item.id, 'barcode', item.barcode)}
+								aria-label="Edit Barcode"
+							>
+								<i class="fas fa-edit"></i>
+							</button>
+						</div>
+					</td>
+					<td class="px-4 py-2">{item.count}</td>
+					<td class="px-4 py-2">
+						<div class="cell-content">
+							<span>{item.lowCount != null ? item.lowCount : ''}</span>
+							<button
+								class="icon-button"
+								title="Edit Low Count"
+								on:click={() => onEdit(item.id, 'lowCount', item.lowCount)}
+								aria-label="Edit Low Count"
+							>
+								<i class="fas fa-edit"></i>
+							</button>
+						</div>
+					</td>
+					<td class="px-4 py-2">
+						<div class="cell-content">
+							<span>{item.cost != null ? item.cost : ''}</span>
+							<button
+								class="icon-button"
+								title="Edit Cost"
+								on:click={() => onEdit(item.id, 'cost', item.cost)}
+								aria-label="Edit Cost"
+							>
+								<i class="fas fa-edit"></i>
+							</button>
+						</div>
+					</td>
+					<td class="px-4 py-2">
+						<div class="cell-content">
+							<span>{item.storageType}</span>
+							<button
+								class="icon-button"
+								title="Edit Storage Type"
+								on:click={() => onEdit(item.id, 'storageType', item.storageType)}
+								aria-label="Edit Storage Type"
+							>
+								<i class="fas fa-edit"></i>
+							</button>
+						</div>
+					</td>
+					<td class="px-4 py-2 text-center">
+						<button
+							class="delete-button"
+							title="Delete Item"
+							on:click={() => onDelete(item.id)}
+							aria-label="Delete Item"
+						>
+							<i class="fas fa-trash-alt"></i>
+						</button>
+					</td>
+				</tr>
+			{/each}
+		</tbody>
+	</table>
+</div>
 
 <style>
+	.fixed-height-table {
+		height: 400px;
+		overflow-y: auto;
+	}
+	.fixed-width-name {
+		width: 20%; /* Adjust as needed */
+	}
+	.fixed-width-barcode {
+		width: 15%; /* Adjust as needed */
+	}
+	.fixed-width-count {
+		width: 15%; /* Adjust as needed */
+	}
+	.fixed-width-lowCount {
+		width: 15%; /* Adjust as needed */
+	}
+	.fixed-width-cost {
+		width: 15%; /* Adjust as needed */
+	}
+	.fixed-width-storageType {
+		width: 15%; /* Adjust as needed */
+	}
+	.fixed-width-actions {
+		width: 5%; /* Adjust as needed */
+	}
+
 	.header i {
 		margin-left: 5px;
 		opacity: 0.5;

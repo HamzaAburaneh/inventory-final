@@ -49,6 +49,7 @@
 		if (new Set(items.map((item) => item.id)).size !== items.length) {
 			console.error('Duplicate IDs found:', items);
 		}
+		items = applySorting(items, currentSortColumn, sortAscending);
 		updatePaginatedItems();
 		itemsLoaded = true;
 	});
@@ -284,15 +285,19 @@
 			{sortAscending}
 		/>
 		<div class="flex justify-center mt-4">
-			<Pagination
-				{totalItems}
-				{itemsPerPage}
-				{currentPage}
-				showPreviousNext={true}
-				on:previous={handlePrevious}
-				on:next={handleNext}
-				on:pageClick={handlePageClick}
-			/>
+			<div class="flex items-center space-x-2">
+				<span>Page {currentPage} of {Math.ceil(totalItems / itemsPerPage)}</span>
+				<!-- Show current page and total pages -->
+				<Pagination
+					{totalItems}
+					{itemsPerPage}
+					{currentPage}
+					showPreviousNext={true}
+					on:previous={handlePrevious}
+					on:next={handleNext}
+					on:pageClick={handlePageClick}
+				/>
+			</div>
 		</div>
 	</div>
 {/if}
