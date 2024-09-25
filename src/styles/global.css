@@ -4,25 +4,28 @@
 @tailwind utilities;
 
 :root {
-	--background-color: #acb0d3;
-	--text-color: #000000;
-	--container-bg: #e7e7e7;
-	--input-bg: #ffffff;
-	--icon-color: #000000;
-	--icon-hover-color: #009700;
-	--input-text: #000000;
-	--placeholder-text: #6d697a;
-	--border-color: #ffffff;
-	--table-border-color: #ff0000;
-	--table-header-bg: #f9f9f9;
-	--table-description-bg: #333333;
-	--table-header-text: #000000;
+	--background-color: #f9f9f9;
+	--text-color: #1a1a1a; /* Ensures text is black */
+	--container-bg: #ffffff;
+	--add-item-color: #28a745; /* A pleasant green for action items */
+	--input-bg: #f0f0f0;
+	--icon-color: #6c757d;
+	--icon-hover-color: #007bff;
+	--input-text: #495057;
+	--placeholder-text: #6c757d;
+	--border-color: #ced4da;
+	--table-border-color: #dee2e6;
+	--hover-bg-color: #e9ecef;
+	--table-header-bg: #f8f9fa;
+	--table-description-bg: #f8f9fa;
+	--table-header-text: #212529;
 	--table-cell-bg: #ffffff;
-	--table-cell-text: #000000;
-	--border-radius: 8px; /* Default border radius for light theme */
-	--nav-color: #5f6dbb;
-	--nav-border-color: #2c2c2c;
-	--hover-border-color: #ff0000;
+	--table-cell-text: #212529;
+	--border-radius: 8px; /* Adjusted border radius for light theme */
+	--nav-color: #f8f9fa;
+	--nav-border-color: #dee2e6;
+	--hover-border-color: #ced4da;
+	--focus-border-color: #66afe9;
 }
 
 [data-theme='dark'] {

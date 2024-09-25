@@ -228,7 +228,9 @@
 			// If search is cleared, get all items again
 			items = await getItems();
 		}
+
 		totalItems = items.length; // Update total items after filtering
+		currentPage = 1; // Reset the current page to 1 after search
 		updateItemsAndSort(items); // Apply sorting after fetching items
 	};
 
