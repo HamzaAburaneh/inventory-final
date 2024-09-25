@@ -237,7 +237,7 @@
 	}
 
 	.custom-table td {
-		border-bottom: 1px solid var(--table-border-color);
+		border: 1px solid var(--table-border-color);
 	}
 
 	.cell-content {
