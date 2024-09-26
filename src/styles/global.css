@@ -9,10 +9,13 @@
 	--container-bg: #ffffff;
 	--add-item-color: #28a745; /* A pleasant green for action items */
 	--input-bg: #f0f0f0;
+	--nav-text-color: #000000;
 	--icon-color: #6c757d;
 	--icon-hover-color: #007bff;
 	--input-text: #495057;
+	--input-hover-border-color: #66afe9;
 	--placeholder-text: #6c757d;
+	--input-border-color: #ced4da;
 	--border-color: #ced4da;
 	--table-border-color: #dee2e6;
 	--hover-bg-color: #e9ecef;
@@ -33,10 +36,13 @@
 	--text-color: #ffffff; /* Ensure this is black */
 	--container-bg: #121212; /* Black background for dark mode */
 	--add-item-color: #60ffaf;
+	--nav-text-color: #ffffff;
 	--input-bg: #1d1d1d;
+	--input-border-color: #2c2c2c;
 	--icon-color: #ffffff;
 	--icon-hover-color: #60ffaf;
 	--input-text: #747474;
+	--input-hover-border-color: #7c7c7c;
 	--placeholder-text: #6d697a;
 	--border-color: #000000;
 	--table-border-color: #2c2c2cdc;

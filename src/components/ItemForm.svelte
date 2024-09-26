@@ -230,10 +230,10 @@
 	.form-control-input {
 		width: 100%;
 		padding: 0.75rem;
-		border: 2px solid #333;
+		border: 2px solid var(--input-border-color);
 		border-radius: 0.5rem;
-		background-color: #222;
-		color: #fff;
+		background-color: var(--input-bg-color);
+		color: var(--text-color);
 		font-size: 1rem;
 		transition:
 			border-color 0.3s ease,
@@ -251,8 +251,8 @@
 
 	/* Hover and focus states */
 	.input-wrapper:hover .form-control-input:not(:focus) {
-		border-color: #555;
-		box-shadow: 0 0 0 1px #555;
+		border-color: var(--input-hover-border-color);
+		box-shadow: 0 0 0 1px var(--input-hover-border-color);
 		transform: scale(1.02);
 	}
 

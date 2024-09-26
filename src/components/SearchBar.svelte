@@ -59,8 +59,8 @@
 		padding: 0.75rem;
 		border: 2px solid #333; /* Lightened border color */
 		border-radius: 0.5rem;
-		background-color: #222; /* Lightened background color */
-		color: #fff;
+		background-color: var(--input-bg); /* Lightened background color */
+		color: var(--text-color);
 		font-size: 1rem;
 		transition:
 			border-color 0.3s ease,

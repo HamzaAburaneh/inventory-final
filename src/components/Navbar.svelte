@@ -52,7 +52,7 @@
 	}
 
 	.brand {
-		color: white;
+		color: var(--nav-text-color);
 		font-size: 1.5rem;
 		font-weight: bold;
 		text-decoration: none;
@@ -69,7 +69,7 @@
 	}
 
 	.nav-link {
-		color: white;
+		color: var(--nav-text-color);
 		text-decoration: none;
 		font-size: 1rem;
 		padding: 0.5rem 0;
@@ -84,7 +84,7 @@
 		height: 2px;
 		bottom: -16px; /* Adjust this value to place the underline exactly at the bottom */
 		left: 0;
-		background-color: white;
+		background-color: var(--nav-text-color);
 		transform: scaleX(0);
 		transform-origin: bottom right;
 		transition: transform 0.3s ease;
@@ -92,7 +92,7 @@
 
 	.nav-link:hover,
 	.nav-link.active {
-		color: #f0f0f0;
+		color: var(--nav-text-color);
 	}
 
 	.nav-link:hover::after,
