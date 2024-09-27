@@ -11,6 +11,27 @@ import {
 import { db } from '../firebase';
 import type { Item } from '../types';
 
+export async function updateItemCount(id: string, newCount: number): Promise<void> {
+	const itemDoc = doc(db, 'items', id);
+	await updateDoc(itemDoc, { count: newCount });
+}
+
+export async function resetItemCount(id: string): Promise<void> {
+	const itemDoc = doc(db, 'items', id);
+	await updateDoc(itemDoc, { count: 0 });
+}
+
+export async function resetAllCounts(): Promise<void> {
+	const itemsQuery = collection(db, 'items');
+	const snapshot = await getDocs(itemsQuery);
+	const batch = db.batch();
+
+	snapshot.forEach((doc) => {
+		batch.update(doc.ref, { count: 0 });
+	});
+
+	await batch.commit();
+}
 export async function getItems(): Promise<Item[]> {
 	const itemsQuery = collection(db, 'items');
 	const snapshot = await getDocs(itemsQuery);

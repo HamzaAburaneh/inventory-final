@@ -27,6 +27,13 @@
 					>Item Manager</a
 				>
 			</li>
+			<li>
+				<a
+					href="/manageTransactions"
+					class="nav-link"
+					class:active={$page.url.pathname === '/manageTransactions'}>Manage Transactions</a
+				>
+			</li>
 
 			<li><ThemeToggle /></li>
 		</ul>
@@ -35,6 +42,13 @@
 			<li>
 				<a href="/manageItems" class="nav-link" class:active={$page.url.pathname === '/manageItems'}
 					>Item Manager</a
+				>
+			</li>
+			<li>
+				<a
+					href="/manageTransactions"
+					class="nav-link"
+					class:active={$page.url.pathname === '/manageTransactions'}>Manage Transactions</a
 				>
 			</li>
 
