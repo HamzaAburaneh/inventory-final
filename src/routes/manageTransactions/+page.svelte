@@ -11,40 +11,43 @@
 	} from '../../lib/items';
 	import type { Item } from '../../types';
 
-	let items: Item[] = [];
+	let allItems: Item[] = [];
 	let searchValue = '';
 	let selectedItem: Item | null = null;
 
 	let currentPage = 1;
-	let itemsPerPage = 10; // Number of items per page
-	let paginatedItems: Item[] = [];
+	let itemsPerPage = 10;
+	let totalPages: number;
 
-	// Update paginated items whenever the items array changes or page changes
-	$: paginatedItems = paginateItems(items);
+	$: filteredItems = searchValue.trim()
+		? allItems.filter((item) => item.name.toLowerCase().includes(searchValue.toLowerCase()))
+		: allItems;
+
+	$: totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+
+	$: paginatedItems = getPaginatedItems(filteredItems, currentPage, itemsPerPage);
+
+	function getPaginatedItems(items: Item[], page: number, perPage: number) {
+		const start = (page - 1) * perPage;
+		const end = start + perPage;
+		return items.slice(start, end);
+	}
 
 	onMount(async () => {
-		items = await getItems();
+		allItems = await getItems();
 	});
 
-	// Handles searching items
-	const handleSearch = async (value: string) => {
+	const handleSearch = (value: string) => {
 		searchValue = value;
-		if (searchValue.trim()) {
-			items = await searchItems(searchValue);
-		} else {
-			items = await getItems();
-		}
 		currentPage = 1; // Reset to first page after search
 	};
 
-	// Increase item count and update dynamically
 	const increaseCount = async (item: Item) => {
 		item.count++;
 		await updateItemCount(item.id, item.count);
 		updateItems(item);
 	};
 
-	// Decrease item count and update dynamically
 	const decreaseCount = async (item: Item) => {
 		if (item.count > 0) {
 			item.count--;
@@ -53,40 +56,28 @@
 		}
 	};
 
-	// Reset item count and update dynamically
 	const resetCount = async (item: Item) => {
 		item.count = 0;
 		await resetItemCount(item.id);
 		updateItems(item);
 	};
 
-	// Reset all counts and refresh items
 	const resetAll = async () => {
 		await resetAllCounts();
-		items = await getItems(); // Refresh items after reset
-		currentPage = 1; // Reset to first page
+		allItems = await getItems();
+		currentPage = 1;
 	};
 
-	// Update item in the items array
 	const updateItems = (updatedItem: Item) => {
-		items = items.map((item) => (item.id === updatedItem.id ? updatedItem : item));
+		allItems = allItems.map((item) => (item.id === updatedItem.id ? updatedItem : item));
 	};
 
-	// Paginate items based on current page and items per page
-	const paginateItems = (items: Item[]) => {
-		const startIndex = (currentPage - 1) * itemsPerPage;
-		const endIndex = startIndex + itemsPerPage;
-		return items.slice(startIndex, endIndex);
-	};
-
-	// Navigate to next page
 	const nextPage = () => {
-		if (currentPage * itemsPerPage < items.length) {
+		if (currentPage < totalPages) {
 			currentPage++;
 		}
 	};
 
-	// Navigate to previous page
 	const previousPage = () => {
 		if (currentPage > 1) {
 			currentPage--;
@@ -109,7 +100,7 @@
 			</tr>
 		</thead>
 		<tbody class="text-gray-400 text-sm font-light">
-			{#each paginatedItems as item}
+			{#each paginatedItems as item (item.id)}
 				<tr class="border-b border-gray-700 hover:bg-gray-800">
 					<td class="py-3 px-6 text-left whitespace-nowrap">{item.name}</td>
 					<td class="py-3 px-6 text-center">{item.count}</td>
@@ -147,11 +138,11 @@
 		>
 			Previous
 		</button>
-		<span>Page {currentPage}</span>
+		<span>Page {currentPage} of {totalPages}</span>
 		<button
 			class="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600"
 			on:click={nextPage}
-			disabled={currentPage * itemsPerPage >= items.length}
+			disabled={currentPage === totalPages}
 		>
 			Next
 		</button>

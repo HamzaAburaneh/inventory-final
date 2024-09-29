@@ -6,7 +6,8 @@ import {
 	getDocs,
 	query,
 	where,
-	updateDoc
+	updateDoc,
+	writeBatch
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Item } from '../types';
@@ -24,10 +25,10 @@ export async function resetItemCount(id: string): Promise<void> {
 export async function resetAllCounts(): Promise<void> {
 	const itemsQuery = collection(db, 'items');
 	const snapshot = await getDocs(itemsQuery);
-	const batch = db.batch();
+	const batch = writeBatch(db); // Use writeBatch(db)
 
-	snapshot.forEach((doc) => {
-		batch.update(doc.ref, { count: 0 });
+	snapshot.forEach((docSnapshot) => {
+		batch.update(docSnapshot.ref, { count: 0 });
 	});
 
 	await batch.commit();
