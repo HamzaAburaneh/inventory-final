@@ -19,6 +19,9 @@
 	let itemsPerPage = 10;
 	let totalPages: number;
 
+	// New variable to store the amount to increase/decrease
+	let changeAmount: number = 1;
+
 	$: filteredItems = searchValue.trim()
 		? allItems.filter((item) => item.name.toLowerCase().includes(searchValue.toLowerCase()))
 		: allItems;
@@ -42,18 +45,11 @@
 		currentPage = 1; // Reset to first page after search
 	};
 
-	const increaseCount = async (item: Item) => {
-		item.count++;
-		await updateItemCount(item.id, item.count);
+	const changeCount = async (item: Item, amount: number) => {
+		const newCount = Math.max(0, item.count + amount);
+		item.count = newCount;
+		await updateItemCount(item.id, newCount);
 		updateItems(item);
-	};
-
-	const decreaseCount = async (item: Item) => {
-		if (item.count > 0) {
-			item.count--;
-			await updateItemCount(item.id, item.count);
-			updateItems(item);
-		}
 	};
 
 	const resetCount = async (item: Item) => {
@@ -91,6 +87,17 @@
 >
 	<SearchBar {searchValue} onSearch={handleSearch} onClear={() => handleSearch('')} />
 
+	<div class="mb-4 mt-4">
+		<label for="changeAmount" class="block text-sm font-medium text-gray-400">Change Amount:</label>
+		<input
+			type="number"
+			id="changeAmount"
+			bind:value={changeAmount}
+			min="1"
+			class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+		/>
+	</div>
+
 	<table class="table-auto w-full mt-4 border-collapse">
 		<thead class="bg-gray-800 text-gray-400 uppercase text-sm leading-normal">
 			<tr>
@@ -107,13 +114,13 @@
 					<td class="py-3 px-6 text-center">
 						<button
 							class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-500 mr-2"
-							on:click={() => increaseCount(item)}
+							on:click={() => changeCount(item, changeAmount)}
 						>
 							Increase
 						</button>
 						<button
 							class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-500 mr-2"
-							on:click={() => decreaseCount(item)}
+							on:click={() => changeCount(item, -changeAmount)}
 						>
 							Decrease
 						</button>
