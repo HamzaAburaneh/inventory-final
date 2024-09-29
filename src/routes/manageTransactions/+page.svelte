@@ -124,7 +124,7 @@
 
 	<!-- Table -->
 	<table class="table-auto w-full mt-4 border-collapse">
-		<thead class="bg-gray-800 text-gray-400 uppercase text-sm leading-normal">
+		<thead class="bg-zinc-800 text-white uppercase text-sm leading-normal">
 			<tr>
 				<th class="py-3 px-6 text-left">Item Name</th>
 				<th class="py-3 px-6 text-center">Count</th>
@@ -132,9 +132,9 @@
 				<th class="py-3 px-6 text-center">Actions</th>
 			</tr>
 		</thead>
-		<tbody class="text-gray-400 text-sm font-light">
+		<tbody class="text-white text-sm font-light">
 			{#each paginatedItems as item (item.id)}
-				<tr class="border-b border-gray-700 hover:bg-gray-800" in:fade={{ duration: 200 }}>
+				<tr class="border-b border-zinc-800 hover:bg-zinc-800" in:fade={{ duration: 200 }}>
 					<td class="py-3 px-6 text-left whitespace-nowrap">{item.name}</td>
 					<td class="py-3 px-6 text-center">
 						<div class="relative inline-block">
@@ -155,24 +155,24 @@
 							type="number"
 							bind:value={item.changeAmount}
 							min="0"
-							class="w-16 rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-center"
+							class="w-16 rounded-md bg-zinc-800 border-zinc-800 hover:border-stone-400 text-white shadow-sm focus:border-stone-400 focus:ring-stone-400 sm:text-sm text-center"
 						/>
 					</td>
 					<td class="py-3 px-6 text-center">
 						<button
-							class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-500 mr-2 transition-transform active:scale-95"
+							class="bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-500 mr-2 transition-transform active:scale-95 hover:shadow-lg"
 							on:click={() => changeCount(item, +item.changeAmount)}
 						>
 							Increase
 						</button>
 						<button
-							class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-500 mr-2 transition-transform active:scale-95"
+							class="bg-red-800 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 mr-2 transition-transform active:scale-95 hover:shadow-lg"
 							on:click={() => changeCount(item, -item.changeAmount)}
 						>
 							Decrease
 						</button>
 						<button
-							class="bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition-transform active:scale-95"
+							class="bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition-transform active:scale-95 hover:shadow-lg"
 							on:click={() => resetCount(item)}
 						>
 							Reset
@@ -186,7 +186,7 @@
 	<!-- Pagination Controls -->
 	<div class="flex justify-between items-center mt-6">
 		<button
-			class="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600 transition-transform active:scale-95"
+			class="bg-zinc-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-zinc-600 transition-transform active:scale-95"
 			on:click={previousPage}
 			disabled={currentPage === 1}
 		>
@@ -194,7 +194,7 @@
 		</button>
 		<span>Page {currentPage} of {totalPages}</span>
 		<button
-			class="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600 transition-transform active:scale-95"
+			class="bg-zinc-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-zinc-600 transition-transform active:scale-95"
 			on:click={nextPage}
 			disabled={currentPage === totalPages}
 		>
