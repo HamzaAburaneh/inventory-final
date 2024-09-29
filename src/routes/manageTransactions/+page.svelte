@@ -4,13 +4,7 @@
 	import { elasticOut } from 'svelte/easing';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import { fadeAndSlide } from '$lib/transitions';
-	import {
-		getItems,
-		searchItems,
-		updateItemCount,
-		resetItemCount,
-		resetAllCounts
-	} from '../../lib/items';
+	import { getItems, updateItemCount, resetItemCount, resetAllCounts } from '../../lib/items';
 	import type { Item } from '../../types';
 
 	let allItems: Item[] = [];
@@ -21,8 +15,11 @@
 	let itemsPerPage = 10;
 	let totalPages: number;
 
-	let changeAmount: number = 1;
-	let lastChangedItem: string | null = null;
+	// Remove the global changeAmount variable
+
+	// New variables for global notification
+	let notificationMessage = '';
+	let showNotification = false;
 
 	$: filteredItems = searchValue.trim()
 		? allItems.filter((item) => item.name.toLowerCase().includes(searchValue.toLowerCase()))
@@ -40,6 +37,8 @@
 
 	onMount(async () => {
 		allItems = await getItems();
+		// Initialize changeAmount for each item
+		allItems = allItems.map((item) => ({ ...item, changeAmount: 0 }));
 	});
 
 	const handleSearch = (value: string) => {
@@ -52,26 +51,44 @@
 		item.count = newCount;
 		await updateItemCount(item.id, newCount);
 		updateItems(item);
-		lastChangedItem = item.id;
+
+		// Set notification message
+		notificationMessage = `Count for "${item.name}" updated successfully!`;
+		showNotification = true;
 		setTimeout(() => {
-			lastChangedItem = null;
-		}, 2000);
+			showNotification = false;
+			notificationMessage = '';
+		}, 3000);
 	};
 
 	const resetCount = async (item: Item) => {
 		item.count = 0;
 		await resetItemCount(item.id);
 		updateItems(item);
-		lastChangedItem = item.id;
+
+		// Set notification message
+		notificationMessage = `Count for "${item.name}" reset successfully!`;
+		showNotification = true;
 		setTimeout(() => {
-			lastChangedItem = null;
-		}, 2000);
+			showNotification = false;
+			notificationMessage = '';
+		}, 3000);
 	};
 
 	const resetAll = async () => {
 		await resetAllCounts();
 		allItems = await getItems();
+		// Reset changeAmount for each item
+		allItems = allItems.map((item) => ({ ...item, changeAmount: 0 }));
 		currentPage = 1;
+
+		// Set notification message
+		notificationMessage = 'All counts have been reset successfully!';
+		showNotification = true;
+		setTimeout(() => {
+			showNotification = false;
+			notificationMessage = '';
+		}, 3000);
 	};
 
 	const updateItems = (updatedItem: Item) => {
@@ -95,24 +112,23 @@
 	class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4"
 	in:fadeAndSlide={{ duration: 300, y: 75 }}
 >
+	<!-- Global Notification -->
+	{#if showNotification}
+		<div class="notification" in:fade out:fade>
+			{notificationMessage}
+		</div>
+	{/if}
+
+	<!-- Search Bar -->
 	<SearchBar {searchValue} onSearch={handleSearch} onClear={() => handleSearch('')} />
 
-	<div class="mb-4 mt-4">
-		<label for="changeAmount" class="block text-sm font-medium text-gray-400">Change Amount:</label>
-		<input
-			type="number"
-			id="changeAmount"
-			bind:value={changeAmount}
-			min="1"
-			class="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-		/>
-	</div>
-
+	<!-- Table -->
 	<table class="table-auto w-full mt-4 border-collapse">
 		<thead class="bg-gray-800 text-gray-400 uppercase text-sm leading-normal">
 			<tr>
 				<th class="py-3 px-6 text-left">Item Name</th>
 				<th class="py-3 px-6 text-center">Count</th>
+				<th class="py-3 px-6 text-center">Change Amount</th>
 				<th class="py-3 px-6 text-center">Actions</th>
 			</tr>
 		</thead>
@@ -133,16 +149,25 @@
 							{/key}
 						</div>
 					</td>
+					<!-- Change Amount input for each row -->
+					<td class="py-3 px-6 text-center">
+						<input
+							type="number"
+							bind:value={item.changeAmount}
+							min="0"
+							class="w-16 rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-center"
+						/>
+					</td>
 					<td class="py-3 px-6 text-center">
 						<button
 							class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-500 mr-2 transition-transform active:scale-95"
-							on:click={() => changeCount(item, changeAmount)}
+							on:click={() => changeCount(item, +item.changeAmount)}
 						>
 							Increase
 						</button>
 						<button
 							class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-500 mr-2 transition-transform active:scale-95"
-							on:click={() => changeCount(item, -changeAmount)}
+							on:click={() => changeCount(item, -item.changeAmount)}
 						>
 							Decrease
 						</button>
@@ -150,17 +175,10 @@
 							class="bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition-transform active:scale-95"
 							on:click={() => resetCount(item)}
 						>
-							Reset Count
+							Reset
 						</button>
 					</td>
 				</tr>
-				{#if lastChangedItem === item.id}
-					<tr in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}>
-						<td colspan="3" class="py-2 px-6 text-center text-green-400">
-							Item count updated successfully!
-						</td>
-					</tr>
-				{/if}
 			{/each}
 		</tbody>
 	</table>
@@ -184,6 +202,7 @@
 		</button>
 	</div>
 
+	<!-- Reset All Counts Button -->
 	<div class="flex justify-center mt-6">
 		<button
 			class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-500 transition-transform active:scale-95"
@@ -203,15 +222,32 @@
 		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 		border-radius: 1rem;
 	}
+
+	/* Global Notification Styles */
+	.notification {
+		position: fixed;
+		top: 20px;
+		left: 50%;
+		transform: translateX(-50%);
+		background-color: #38a169; /* Green background */
+		color: white;
+		padding: 1rem 2rem;
+		border-radius: 0.5rem;
+		z-index: 1000;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	}
+
 	button {
 		transition:
 			background-color 0.3s ease,
 			transform 0.1s ease;
 	}
+
 	button[disabled] {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
+
 	.relative {
 		height: 1.5em;
 	}
