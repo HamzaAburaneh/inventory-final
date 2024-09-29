@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { fade, fly } from 'svelte/transition';
+	import { elasticOut } from 'svelte/easing';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import { fadeAndSlide } from '$lib/transitions';
 	import {
@@ -19,8 +21,8 @@
 	let itemsPerPage = 10;
 	let totalPages: number;
 
-	// New variable to store the amount to increase/decrease
 	let changeAmount: number = 1;
+	let lastChangedItem: string | null = null;
 
 	$: filteredItems = searchValue.trim()
 		? allItems.filter((item) => item.name.toLowerCase().includes(searchValue.toLowerCase()))
@@ -42,7 +44,7 @@
 
 	const handleSearch = (value: string) => {
 		searchValue = value;
-		currentPage = 1; // Reset to first page after search
+		currentPage = 1;
 	};
 
 	const changeCount = async (item: Item, amount: number) => {
@@ -50,12 +52,20 @@
 		item.count = newCount;
 		await updateItemCount(item.id, newCount);
 		updateItems(item);
+		lastChangedItem = item.id;
+		setTimeout(() => {
+			lastChangedItem = null;
+		}, 2000);
 	};
 
 	const resetCount = async (item: Item) => {
 		item.count = 0;
 		await resetItemCount(item.id);
 		updateItems(item);
+		lastChangedItem = item.id;
+		setTimeout(() => {
+			lastChangedItem = null;
+		}, 2000);
 	};
 
 	const resetAll = async () => {
@@ -108,30 +118,49 @@
 		</thead>
 		<tbody class="text-gray-400 text-sm font-light">
 			{#each paginatedItems as item (item.id)}
-				<tr class="border-b border-gray-700 hover:bg-gray-800">
+				<tr class="border-b border-gray-700 hover:bg-gray-800" in:fade={{ duration: 200 }}>
 					<td class="py-3 px-6 text-left whitespace-nowrap">{item.name}</td>
-					<td class="py-3 px-6 text-center">{item.count}</td>
+					<td class="py-3 px-6 text-center">
+						<div class="relative inline-block">
+							{#key item.count}
+								<span
+									in:fly={{ y: -20, duration: 300, easing: elasticOut }}
+									out:fade={{ duration: 200 }}
+									class="absolute left-0 right-0"
+								>
+									{item.count}
+								</span>
+							{/key}
+						</div>
+					</td>
 					<td class="py-3 px-6 text-center">
 						<button
-							class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-500 mr-2"
+							class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-500 mr-2 transition-transform active:scale-95"
 							on:click={() => changeCount(item, changeAmount)}
 						>
 							Increase
 						</button>
 						<button
-							class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-500 mr-2"
+							class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-500 mr-2 transition-transform active:scale-95"
 							on:click={() => changeCount(item, -changeAmount)}
 						>
 							Decrease
 						</button>
 						<button
-							class="bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-500"
+							class="bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition-transform active:scale-95"
 							on:click={() => resetCount(item)}
 						>
 							Reset Count
 						</button>
 					</td>
 				</tr>
+				{#if lastChangedItem === item.id}
+					<tr in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}>
+						<td colspan="3" class="py-2 px-6 text-center text-green-400">
+							Item count updated successfully!
+						</td>
+					</tr>
+				{/if}
 			{/each}
 		</tbody>
 	</table>
@@ -139,7 +168,7 @@
 	<!-- Pagination Controls -->
 	<div class="flex justify-between items-center mt-6">
 		<button
-			class="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600"
+			class="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600 transition-transform active:scale-95"
 			on:click={previousPage}
 			disabled={currentPage === 1}
 		>
@@ -147,7 +176,7 @@
 		</button>
 		<span>Page {currentPage} of {totalPages}</span>
 		<button
-			class="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600"
+			class="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600 transition-transform active:scale-95"
 			on:click={nextPage}
 			disabled={currentPage === totalPages}
 		>
@@ -157,7 +186,7 @@
 
 	<div class="flex justify-center mt-6">
 		<button
-			class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-500"
+			class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-500 transition-transform active:scale-95"
 			on:click={resetAll}
 		>
 			Reset All Counts
@@ -174,13 +203,16 @@
 		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 		border-radius: 1rem;
 	}
-	/* Dark Mode Button Styles */
 	button {
-		transition: background-color 0.3s ease;
+		transition:
+			background-color 0.3s ease,
+			transform 0.1s ease;
 	}
-
 	button[disabled] {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+	.relative {
+		height: 1.5em;
 	}
 </style>
