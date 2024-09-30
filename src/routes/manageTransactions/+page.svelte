@@ -6,18 +6,19 @@
 	import { fadeAndSlide } from '$lib/transitions';
 	import { getItems, updateItemCount, resetItemCount, resetAllCounts } from '../../lib/items';
 	import type { Item } from '../../types';
+	import { applySorting } from '../../lib/items';
 
 	let allItems: Item[] = [];
 	let searchValue = '';
 	let selectedItem: Item | null = null;
 
 	let currentPage = 1;
-	let itemsPerPage = 10;
+	let itemsPerPage: number | 'all' = 10;
+
 	let totalPages: number;
 
-	// Remove the global changeAmount variable
+	let itemsPerPageOptions = [10, 25, 50, 'all'];
 
-	// New variables for global notification
 	let notificationMessage = '';
 	let showNotification = false;
 
@@ -25,21 +26,45 @@
 		? allItems.filter((item) => item.name.toLowerCase().includes(searchValue.toLowerCase()))
 		: allItems;
 
-	$: totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+	$: totalPages = Math.ceil(
+		filteredItems.length / (itemsPerPage === 'all' ? filteredItems.length : itemsPerPage)
+	);
 
 	$: paginatedItems = getPaginatedItems(filteredItems, currentPage, itemsPerPage);
+	$: filterLegend = `${filteredItems.length} results of ${allItems.length} total`;
 
-	function getPaginatedItems(items: Item[], page: number, perPage: number) {
+	$: visiblePageNumbers = getVisiblePageNumbers(currentPage, totalPages);
+
+	function getPaginatedItems(items: Item[], page: number, perPage: number | 'all') {
+		if (perPage === 'all') return items;
 		const start = (page - 1) * perPage;
 		const end = start + perPage;
 		return items.slice(start, end);
 	}
 
+	function getVisiblePageNumbers(current: number, total: number) {
+		if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+
+		if (current <= 4) return [1, 2, 3, 4, 5, '...', total];
+		if (current >= total - 3) return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+
+		return [1, '...', current - 1, current, current + 1, '...', total];
+	}
+
 	onMount(async () => {
 		allItems = await getItems();
-		// Initialize changeAmount for each item
 		allItems = allItems.map((item) => ({ ...item, changeAmount: 0 }));
+		updateItems();
 	});
+
+	let currentSortColumn: keyof Item = 'name';
+	let sortAscending = true;
+
+	const sortBy = (column: keyof Item) => {
+		sortAscending = currentSortColumn === column ? !sortAscending : true;
+		currentSortColumn = column;
+		updateItems();
+	};
 
 	const handleSearch = (value: string) => {
 		searchValue = value;
@@ -50,40 +75,34 @@
 		const newCount = Math.max(0, item.count + amount);
 		item.count = newCount;
 		await updateItemCount(item.id, newCount);
-		updateItems(item);
+		updateItems();
 
-		// Set notification message
-		notificationMessage = `Count for "${item.name}" updated successfully!`;
-		showNotification = true;
-		setTimeout(() => {
-			showNotification = false;
-			notificationMessage = '';
-		}, 3000);
+		showNotificationWithMessage(`Count for "${item.name}" updated successfully!`);
 	};
 
 	const resetCount = async (item: Item) => {
 		item.count = 0;
 		await resetItemCount(item.id);
-		updateItems(item);
+		updateItems();
 
-		// Set notification message
-		notificationMessage = `Count for "${item.name}" reset successfully!`;
-		showNotification = true;
-		setTimeout(() => {
-			showNotification = false;
-			notificationMessage = '';
-		}, 3000);
+		showNotificationWithMessage(`Count for "${item.name}" reset successfully!`);
 	};
 
 	const resetAll = async () => {
 		await resetAllCounts();
 		allItems = await getItems();
-		// Reset changeAmount for each item
 		allItems = allItems.map((item) => ({ ...item, changeAmount: 0 }));
 		currentPage = 1;
 
-		// Set notification message
-		notificationMessage = 'All counts have been reset successfully!';
+		showNotificationWithMessage('All counts have been reset successfully!');
+	};
+
+	const updateItems = () => {
+		allItems = applySorting(allItems, currentSortColumn, sortAscending);
+	};
+
+	const showNotificationWithMessage = (message: string) => {
+		notificationMessage = message;
 		showNotification = true;
 		setTimeout(() => {
 			showNotification = false;
@@ -91,20 +110,17 @@
 		}, 3000);
 	};
 
-	const updateItems = (updatedItem: Item) => {
-		allItems = allItems.map((item) => (item.id === updatedItem.id ? updatedItem : item));
-	};
-
-	const nextPage = () => {
-		if (currentPage < totalPages) {
-			currentPage++;
+	const goToPage = (page: number) => {
+		if (page >= 1 && page <= totalPages) {
+			currentPage = page;
 		}
 	};
 
-	const previousPage = () => {
-		if (currentPage > 1) {
-			currentPage--;
-		}
+	const handleItemsPerPageChange = (event: Event) => {
+		const select = event.target as HTMLSelectElement;
+		itemsPerPage = select.value === 'all' ? 'all' : parseInt(select.value);
+		currentPage = 1;
+		updateItems();
 	};
 </script>
 
@@ -112,22 +128,45 @@
 	class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4"
 	in:fadeAndSlide={{ duration: 300, y: 75 }}
 >
-	<!-- Global Notification -->
 	{#if showNotification}
 		<div class="notification" in:fade out:fade>
 			{notificationMessage}
 		</div>
 	{/if}
 
-	<!-- Search Bar -->
 	<SearchBar {searchValue} onSearch={handleSearch} onClear={() => handleSearch('')} />
 
-	<!-- Table -->
-	<table class="table-auto w-full mt-4 border-collapse">
+	<div class="filter-legend mt-2 text-white">
+		{filterLegend}
+	</div>
+
+	<table class="custom-table table-auto w-full mt-4 border-collapse">
 		<thead class="bg-zinc-800 text-white uppercase text-sm leading-normal">
 			<tr>
-				<th class="py-3 px-6 text-left">Item Name</th>
-				<th class="py-3 px-6 text-center">Count</th>
+				<th class="px-4 py-2 text-left fixed-width-name" on:click={() => sortBy('name')}>
+					<div class="header">
+						Item Name
+						<i
+							class="fas fa-sort{currentSortColumn === 'name'
+								? sortAscending
+									? '-up'
+									: '-down'
+								: ''}"
+						></i>
+					</div>
+				</th>
+				<th class="px-4 py-2 text-left fixed-width-count" on:click={() => sortBy('count')}>
+					<div class="header">
+						Count
+						<i
+							class="fas fa-sort{currentSortColumn === 'count'
+								? sortAscending
+									? '-up'
+									: '-down'
+								: ''}"
+						></i>
+					</div>
+				</th>
 				<th class="py-3 px-6 text-center">Change Amount</th>
 				<th class="py-3 px-6 text-center">Actions</th>
 			</tr>
@@ -149,7 +188,6 @@
 							{/key}
 						</div>
 					</td>
-					<!-- Change Amount input for each row -->
 					<td class="py-3 px-6 text-center">
 						<input
 							type="number"
@@ -183,26 +221,50 @@
 		</tbody>
 	</table>
 
-	<!-- Pagination Controls -->
-	<div class="flex justify-between items-center mt-6">
-		<button
-			class="bg-zinc-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-zinc-600 transition-transform active:scale-95"
-			on:click={previousPage}
-			disabled={currentPage === 1}
-		>
-			Previous
-		</button>
-		<span>Page {currentPage} of {totalPages}</span>
-		<button
-			class="bg-zinc-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-zinc-600 transition-transform active:scale-95"
-			on:click={nextPage}
-			disabled={currentPage === totalPages}
-		>
-			Next
-		</button>
+	<!-- Enhanced Pagination Controls -->
+	<div class="pagination-controls mt-6 flex flex-col sm:flex-row justify-between items-center">
+		<div class="flex items-center space-x-2 mb-4 sm:mb-0">
+			<button
+				class="pagination-button"
+				on:click={() => goToPage(currentPage - 1)}
+				disabled={currentPage === 1}
+			>
+				Previous
+			</button>
+			{#each visiblePageNumbers as pageNum}
+				{#if pageNum === '...'}
+					<span class="pagination-ellipsis">...</span>
+				{:else}
+					<button
+						class="pagination-button"
+						class:active={pageNum === currentPage}
+						on:click={() => goToPage(pageNum)}
+					>
+						{pageNum}
+					</button>
+				{/if}
+			{/each}
+			<button
+				class="pagination-button"
+				on:click={() => goToPage(currentPage + 1)}
+				disabled={currentPage === totalPages}
+			>
+				Next
+			</button>
+		</div>
+		<div class="flex items-center space-x-4">
+			<select
+				bind:value={itemsPerPage}
+				on:change={handleItemsPerPageChange}
+				class="bg-zinc-700 text-white rounded-lg p-2"
+			>
+				{#each itemsPerPageOptions as option}
+					<option value={option}>{option === 'all' ? 'All' : option} per page</option>
+				{/each}
+			</select>
+		</div>
 	</div>
 
-	<!-- Reset All Counts Button -->
 	<div class="flex justify-center mt-6">
 		<button
 			class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-500 transition-transform active:scale-95"
@@ -223,13 +285,12 @@
 		border-radius: 1rem;
 	}
 
-	/* Global Notification Styles */
 	.notification {
 		position: fixed;
 		top: 20px;
 		left: 50%;
 		transform: translateX(-50%);
-		background-color: #38a169; /* Green background */
+		background-color: #38a169;
 		color: white;
 		padding: 1rem 2rem;
 		border-radius: 0.5rem;
@@ -250,5 +311,77 @@
 
 	.relative {
 		height: 1.5em;
+	}
+
+	.header {
+		display: flex;
+		align-items: center;
+		cursor: pointer;
+	}
+
+	.custom-table th,
+	.custom-table td {
+		padding: 0.75rem;
+		text-align: left;
+	}
+
+	.custom-table th {
+		cursor: default;
+		border-bottom: 2px solid var(--table-border-color);
+	}
+
+	.custom-table th .header {
+		display: inline;
+		cursor: pointer;
+	}
+
+	.custom-table th .header:hover {
+		color: var(--icon-hover-color);
+		transition: color 0.3s ease;
+	}
+
+	.custom-table td {
+		cursor: default;
+	}
+
+	.filter-legend {
+		font-size: 0.9rem;
+		color: #a0aec0;
+	}
+
+	.pagination-controls {
+		flex-wrap: wrap;
+	}
+
+	.pagination-button {
+		color: white;
+		font-weight: bold;
+		padding: 0.5rem 0.75rem;
+		border-radius: 0.375rem;
+		transition: background-color 0.3s ease;
+	}
+
+	.pagination-button:hover:not(:disabled) {
+		background-color: #1d4ed8;
+	}
+
+	.pagination-button.active {
+		background-color: #1d4ed8;
+	}
+
+	.pagination-ellipsis {
+		color: white;
+		padding: 0.5rem 0.25rem;
+	}
+
+	@media (max-width: 640px) {
+		.pagination-controls {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.pagination-controls > * {
+			margin-bottom: 1rem;
+		}
 	}
 </style>
