@@ -31,7 +31,7 @@
 	);
 
 	$: paginatedItems = getPaginatedItems(filteredItems, currentPage, itemsPerPage);
-	$: filterLegend = `${filteredItems.length} results of ${allItems.length} total`;
+	$: filterLegend = `${filteredItems.length} results of ${allItems.length} total items.`;
 
 	$: visiblePageNumbers = getVisiblePageNumbers(currentPage, totalPages);
 
@@ -136,8 +136,19 @@
 
 	<SearchBar {searchValue} onSearch={handleSearch} onClear={() => handleSearch('')} />
 
-	<div class="filter-legend mt-2 text-white">
-		{filterLegend}
+	<div class="top-controls flex justify-between items-center mb-4">
+		<div class="filter-legend text-white">
+			{filterLegend}
+		</div>
+		<select
+			bind:value={itemsPerPage}
+			on:change={handleItemsPerPageChange}
+			class="bg-zinc-700 text-white rounded-lg p-2"
+		>
+			{#each itemsPerPageOptions as option}
+				<option value={option}>{option === 'all' ? 'All' : option} per page</option>
+			{/each}
+		</select>
 	</div>
 
 	<table class="custom-table table-auto w-full mt-4 border-collapse">
@@ -252,17 +263,6 @@
 				Next
 			</button>
 		</div>
-		<div class="flex items-center space-x-4">
-			<select
-				bind:value={itemsPerPage}
-				on:change={handleItemsPerPageChange}
-				class="bg-zinc-700 text-white rounded-lg p-2"
-			>
-				{#each itemsPerPageOptions as option}
-					<option value={option}>{option === 'all' ? 'All' : option} per page</option>
-				{/each}
-			</select>
-		</div>
 	</div>
 
 	<div class="flex justify-center mt-6">
@@ -276,6 +276,18 @@
 </div>
 
 <style>
+	.top-controls {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1rem;
+	}
+
+	.filter-legend {
+		font-size: 0.9rem;
+		color: #949494;
+	}
+
 	.container {
 		margin-top: 20px;
 		padding: 2.5rem;
@@ -342,11 +354,6 @@
 
 	.custom-table td {
 		cursor: default;
-	}
-
-	.filter-legend {
-		font-size: 0.9rem;
-		color: #a0aec0;
 	}
 
 	.pagination-controls {
