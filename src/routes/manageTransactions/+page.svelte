@@ -205,24 +205,28 @@
 							bind:value={item.changeAmount}
 							min="0"
 							class="w-16 rounded-md bg-zinc-800 border-zinc-800 hover:border-stone-400 text-white shadow-sm focus:border-stone-400 focus:ring-stone-400 sm:text-sm text-center"
+							on:input={() => (item.changeAmount = Math.max(0, item.changeAmount))}
 						/>
 					</td>
 					<td class="py-3 px-6 text-center">
 						<button
 							class="bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-500 mr-2 transition-transform active:scale-95 hover:shadow-lg"
 							on:click={() => changeCount(item, +item.changeAmount)}
+							disabled={item.changeAmount === 0}
 						>
 							Increase
 						</button>
 						<button
 							class="bg-red-800 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 mr-2 transition-transform active:scale-95 hover:shadow-lg"
 							on:click={() => changeCount(item, -item.changeAmount)}
+							disabled={item.changeAmount === 0}
 						>
 							Decrease
 						</button>
 						<button
 							class="bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition-transform active:scale-95 hover:shadow-lg"
 							on:click={() => resetCount(item)}
+							disabled={item.changeAmount === 0}
 						>
 							Reset
 						</button>
