@@ -82,7 +82,7 @@
 			confirmButtonColor: '#3085d6',
 			cancelButtonColor: '#d33',
 			background: '#1a1a1a',
-			color: '#000000'
+			color: '#FFFFFF'
 		});
 		if (result.isConfirmed) {
 			await updateItem(id, field, result.value);
