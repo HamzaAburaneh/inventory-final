@@ -45,6 +45,10 @@
 				return { backgroundColor: '#374151', color: '#E5E7EB' }; // Dark gray background, light gray text
 		}
 	}
+
+	function formatCost(cost: number | null): string {
+		return cost != null ? `$ ${cost.toFixed(2)}` : '';
+	}
 </script>
 
 <div class="table-wrapper">
@@ -119,7 +123,7 @@
 							</td>
 							<td class="cost-col">
 								<div class="cell-content">
-									<span>{item.cost != null ? item.cost : ''}</span>
+									<span>{formatCost(item.cost)}</span>
 									<button
 										class="icon-button"
 										data-tooltip="Edit Cost"
