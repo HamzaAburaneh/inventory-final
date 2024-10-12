@@ -2,8 +2,6 @@
 	import { onMount } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { elasticOut } from 'svelte/easing';
-	import { theme } from '../../themes';
-
 	import Swal from 'sweetalert2';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Pagination from '../../components/Pagination.svelte';
@@ -14,6 +12,7 @@
 	import { notificationStore } from '../../stores/notificationStore';
 	import type { Item } from '../../types';
 	import { applySorting } from '../../lib/items';
+	import { theme } from '../../themes';
 
 	let currentSortColumn: keyof Item = 'name';
 	let sortAscending = true;
@@ -38,9 +37,7 @@
 			sortAscending = true;
 		}
 	};
-	function getCurrentTheme() {
-		return $theme;
-	}
+
 	const handleSearch = (value: string) => {
 		searchStore.setSearchTerm(value);
 		paginationStore.setCurrentPage(1);
@@ -52,14 +49,14 @@
 	};
 
 	const resetCount = async (item: Item) => {
-		const currentTheme = getCurrentTheme();
+		const currentTheme = $theme;
 		const result = await Swal.fire({
 			title: 'Are you sure?',
 			text: `This will reset the count for "${item.name}" to 0.`,
 			icon: 'warning',
 			showCancelButton: true,
-			confirmButtonColor: '#D97706', // Amber-600
-			cancelButtonColor: '#6B7280', // Gray-500
+			confirmButtonColor: '#D97706',
+			cancelButtonColor: '#6B7280',
 			confirmButtonText: 'Yes, reset it!',
 			background: currentTheme === 'dark' ? '#1F2937' : '#FFFFFF',
 			color: currentTheme === 'dark' ? '#FFFFFF' : '#000000'
@@ -72,14 +69,14 @@
 	};
 
 	const resetAll = async () => {
-		const currentTheme = getCurrentTheme();
+		const currentTheme = $theme;
 		const result = await Swal.fire({
 			title: 'Are you sure?',
 			html: `This will reset the count for <strong style="color: #DC2626;">ALL</strong> items to 0.`,
 			icon: 'warning',
 			showCancelButton: true,
-			confirmButtonColor: '#D97706', // Amber-600
-			cancelButtonColor: '#6B7280', // Gray-500
+			confirmButtonColor: '#D97706',
+			cancelButtonColor: '#6B7280',
 			confirmButtonText: 'Yes, reset all!',
 			background: currentTheme === 'dark' ? '#1F2937' : '#FFFFFF',
 			color: currentTheme === 'dark' ? '#FFFFFF' : '#000000'
@@ -89,12 +86,6 @@
 			await itemStore.resetAllCounts();
 			notificationStore.showNotification('All counts have been reset successfully!', 'success');
 		}
-	};
-
-	const handleItemsPerPageChange = (event: Event) => {
-		const select = event.target as HTMLSelectElement;
-		const newItemsPerPage = select.value === 'all' ? 'all' : parseInt(select.value);
-		paginationStore.setItemsPerPage(newItemsPerPage);
 	};
 
 	const handleChangeAmountInput = (item: Item, event: Event) => {
@@ -122,92 +113,91 @@
 		onClear={() => searchStore.clearSearch()}
 	/>
 
-	<div
-		class="top-controls flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0"
-	>
-		<div class="filter-legend text-white">
-			{filterLegend}
-		</div>
+	<div class="filter-legend text-white mb-4">
+		{filterLegend}
 	</div>
 
-	<div class="table-container">
+	<div class="table-container overflow-x-auto">
 		<table class="custom-table w-full">
 			<thead>
 				<tr>
-					<th class="px-4 py-2 text-left" on:click={() => sortBy('name')}>
-						<div class="header">
+					<th class="w-1/3 px-6 py-3" on:click={() => sortBy('name')}>
+						<div class="header flex items-center cursor-pointer">
 							Item Name
 							<i
-								class="fas fa-sort{currentSortColumn === 'name'
+								class="fas fa-sort ml-2 {currentSortColumn === 'name'
 									? sortAscending
-										? '-up'
-										: '-down'
+										? 'fa-sort-up'
+										: 'fa-sort-down'
 									: ''}"
 							></i>
 						</div>
 					</th>
-					<th class="px-4 py-2 text-left" on:click={() => sortBy('count')}>
-						<div class="header">
+					<th class="w-1/6 px-6 py-3" on:click={() => sortBy('count')}>
+						<div class="header flex items-center justify-center cursor-pointer">
 							Count
 							<i
-								class="fas fa-sort{currentSortColumn === 'count'
+								class="fas fa-sort ml-2 {currentSortColumn === 'count'
 									? sortAscending
-										? '-up'
-										: '-down'
+										? 'fa-sort-up'
+										: 'fa-sort-down'
 									: ''}"
 							></i>
 						</div>
 					</th>
-					<th class="py-3 px-6 text-center">Change Amount</th>
-					<th class="py-3 px-6 text-center">Actions</th>
+					<th class="w-1/6 px-6 py-3">
+						<div class="flex items-center justify-center">Change Amount</div>
+					</th>
+					<th class="w-1/3 px-6 py-3">
+						<div class="flex items-center justify-center">Actions</div>
+					</th>
 				</tr>
 			</thead>
 			<tbody>
 				{#each paginatedItemsList as item (item.id)}
 					<tr class="border-b border-zinc-800 hover:bg-zinc-800" in:fade={{ duration: 200 }}>
-						<td class="py-3 px-6 text-left whitespace-nowrap">{item.name}</td>
-						<td class="py-3 px-6 text-center">
-							<div class="relative inline-block">
+						<td class="px-6 py-4 text-left whitespace-nowrap">{item.name}</td>
+						<td class="px-6 py-4 text-center">
+							<div class="relative inline-block w-full h-6">
 								{#key item.count}
 									<span
-										in:fly={{ y: -20, duration: 300, easing: elasticOut }}
-										out:fade={{ duration: 200 }}
-										class="absolute left-0 right-0"
+										class="absolute inset-0 flex items-center justify-center"
+										transition:fly={{ y: -20, duration: 300, easing: elasticOut }}
 									>
 										{item.count}
 									</span>
 								{/key}
 							</div>
 						</td>
-						<td class="py-3 px-6 text-center">
-							<input
-								type="text"
-								placeholder="0"
-								value={item.changeAmount === 0 ? '' : item.changeAmount}
-								on:input={(e) => handleChangeAmountInput(item, e)}
-								class="w-16 rounded-md bg-zinc-800 border-zinc-800 hover:border-stone-400 text-white shadow-sm focus:border-stone-400 focus:ring-stone-400 sm:text-sm text-center"
-							/>
+						<td class="px-6 py-4">
+							<div class="flex justify-center">
+								<input
+									type="text"
+									placeholder="0"
+									value={item.changeAmount === 0 ? '' : item.changeAmount}
+									on:input={(e) => handleChangeAmountInput(item, e)}
+									class="w-16 rounded-md bg-zinc-800 border-zinc-800 hover:border-stone-400 text-white shadow-sm focus:border-stone-400 focus:ring-stone-400 sm:text-sm text-center"
+								/>
+							</div>
 						</td>
-						<td class="py-3 px-6 text-center">
-							<div
-								class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-2"
-							>
+						<td class="px-6 py-4">
+							<div class="flex justify-center items-center space-x-2">
 								<button
-									class="bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-500 transition-transform active:scale-95 hover:shadow-lg w-full sm:w-auto"
+									class="bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-500 transition-transform active:scale-95 hover:shadow-lg"
 									on:click={() => changeCount(item, +item.changeAmount)}
 									disabled={item.changeAmount === 0}
 								>
 									Increase
 								</button>
 								<button
-									class="bg-red-800 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-transform active:scale-95 hover:shadow-lg w-full sm:w-auto"
+									class="bg-red-800 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-transform active:scale-95 hover:shadow-lg"
 									on:click={() => changeCount(item, -item.changeAmount)}
 									disabled={item.changeAmount === 0}
 								>
 									Decrease
 								</button>
 								<button
-									class="bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition-transform active:scale-95 hover:shadow-lg w-full sm:w-auto"
+									class="bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition-transform active:scale-95 hover:shadow-lg"
 									on:click={() => resetCount(item)}
 									disabled={item.count === 0}
 								>
@@ -240,13 +230,6 @@
 {/if}
 
 <style>
-	.top-controls {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 1rem;
-	}
-
 	.filter-legend {
 		font-size: 0.9rem;
 		color: #949494;
@@ -262,8 +245,8 @@
 	}
 
 	.table-container {
-		height: 700px;
-		overflow: auto;
+		max-height: 700px;
+		overflow-y: auto;
 		margin-bottom: 1rem;
 	}
 
@@ -337,5 +320,6 @@
 
 	.relative {
 		height: 1.5em;
+		width: 100%;
 	}
 </style>
