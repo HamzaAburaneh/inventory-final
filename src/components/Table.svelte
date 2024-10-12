@@ -26,8 +26,25 @@
 		deletingItemId = null;
 	}
 
-	$: sortKey = `${currentSortColumn}-${sortAscending}`;
-	$: uniqueItems = [...new Map(paginatedItems.map((item) => [item.id, item])).values()];
+	function capitalizeWords(str: string): string {
+		return str
+			.split(' ')
+			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+			.join(' ');
+	}
+
+	function getStorageTypeStyle(storageType: string): { backgroundColor: string; color: string } {
+		switch (storageType.toLowerCase()) {
+			case 'freezer':
+				return { backgroundColor: '#1E3A8A', color: '#BFDBFE' }; // Dark blue background, light blue text
+			case 'dry storage':
+				return { backgroundColor: '#92400E', color: '#FDE68A' }; // Brown background, light yellow text
+			case 'refrigerator':
+				return { backgroundColor: '#065F46', color: '#A7F3D0' }; // Dark green background, light green text
+			default:
+				return { backgroundColor: '#374151', color: '#E5E7EB' }; // Dark gray background, light gray text
+		}
+	}
 </script>
 
 <div class="table-wrapper">
@@ -54,7 +71,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				{#each uniqueItems as item (item.id)}
+				{#each paginatedItems as item (item.id)}
 					{#if item.id !== deletingItemId}
 						<tr class="table-row" in:fly={{ y: 20, duration: 300 }} out:fade={{ duration: 300 }}>
 							<td class="name-col">
@@ -116,7 +133,13 @@
 							</td>
 							<td class="storage-col">
 								<div class="cell-content">
-									<span>{item.storageType}</span>
+									<span
+										class="storage-type"
+										style="background-color: {getStorageTypeStyle(item.storageType)
+											.backgroundColor}; color: {getStorageTypeStyle(item.storageType).color};"
+									>
+										{capitalizeWords(item.storageType)}
+									</span>
 									<button
 										class="icon-button"
 										data-tooltip="Edit Storage Type"
@@ -298,5 +321,19 @@
 		font-size: 14px;
 		z-index: 1000;
 		pointer-events: none;
+	}
+
+	.storage-type {
+		padding: 6px 14px;
+		border-radius: 20px;
+		font-size: 0.9rem;
+		font-weight: 600;
+		background-color: #f8f9fa; /* Light background for contrast */
+		color: #333; /* Darker text for readability */
+		box-shadow:
+			0 4px 8px rgba(0, 0, 0, 0.15),
+			0 1px 3px rgba(0, 0, 0, 0.1); /* Softer, layered shadow */
+		border: 1px solid rgba(0, 0, 0, 0.1); /* Optional subtle border */
+		transition: all 0.2s ease-in-out; /* Smooth hover effect */
 	}
 </style>
