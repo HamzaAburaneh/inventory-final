@@ -99,9 +99,15 @@
 
 	const handleChangeAmountInput = (item: Item, event: Event) => {
 		const input = event.target as HTMLInputElement;
-		const value = parseInt(input.value);
-		if (!isNaN(value)) {
-			itemStore.setChangeAmount(item.id, value);
+		const value = input.value.replace(/[^0-9]/g, '');
+
+		if (value === '') {
+			itemStore.setChangeAmount(item.id, 0);
+			input.value = '';
+		} else {
+			const numValue = parseInt(value, 10);
+			itemStore.setChangeAmount(item.id, numValue);
+			input.value = numValue.toString();
 		}
 	};
 </script>
@@ -175,11 +181,11 @@
 						</td>
 						<td class="py-3 px-6 text-center">
 							<input
-								type="number"
-								bind:value={item.changeAmount}
-								min="0"
-								class="w-16 rounded-md bg-zinc-800 border-zinc-800 hover:border-stone-400 text-white shadow-sm focus:border-stone-400 focus:ring-stone-400 sm:text-sm text-center"
+								type="text"
+								placeholder="0"
+								value={item.changeAmount === 0 ? '' : item.changeAmount}
 								on:input={(e) => handleChangeAmountInput(item, e)}
+								class="w-16 rounded-md bg-zinc-800 border-zinc-800 hover:border-stone-400 text-white shadow-sm focus:border-stone-400 focus:ring-stone-400 sm:text-sm text-center"
 							/>
 						</td>
 						<td class="py-3 px-6 text-center">
