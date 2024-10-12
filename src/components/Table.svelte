@@ -197,8 +197,8 @@
 		width: 100%;
 		overflow-x: auto;
 		overflow-y: scroll;
-		max-height: 550px;
-		min-height: 550px;
+		max-height: 650px;
+		min-height: 650px;
 	}
 
 	.custom-table {

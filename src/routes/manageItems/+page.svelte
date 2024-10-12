@@ -122,12 +122,6 @@
 			sortAscending = true;
 		}
 	};
-
-	const handleItemsPerPageChange = (event: Event) => {
-		const select = event.target as HTMLSelectElement;
-		const newItemsPerPage = select.value === 'all' ? 'all' : parseInt(select.value);
-		paginationStore.setItemsPerPage(newItemsPerPage);
-	};
 </script>
 
 {#if itemsLoaded}
@@ -139,21 +133,8 @@
 
 		<SearchBar searchValue={$searchStore} onSearch={handleSearch} onClear={handleClearSearch} />
 
-		<div
-			class="top-controls flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0"
-		>
-			<div class="filter-legend text-white">
-				{filteredItemsList.length} results of {$itemStore.length} total items.
-			</div>
-			<select
-				bind:value={$paginationStore.itemsPerPage}
-				on:change={handleItemsPerPageChange}
-				class="bg-zinc-700 text-white rounded-lg p-2"
-			>
-				{#each $paginationStore.itemsPerPageOptions as option}
-					<option value={option}>{option === 'all' ? 'All' : option} per page</option>
-				{/each}
-			</select>
+		<div class="filter-legend text-white mb-4">
+			{filteredItemsList.length} results of {$itemStore.length} total items.
 		</div>
 
 		<div class="table-container">
@@ -178,13 +159,6 @@
 {/if}
 
 <style>
-	.top-controls {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 1rem;
-	}
-
 	.filter-legend {
 		font-size: 0.9rem;
 		color: #949494;
@@ -200,7 +174,7 @@
 	}
 
 	.table-container {
-		height: 550px;
+		height: 650px;
 		overflow: auto;
 		margin-bottom: 1rem;
 	}
