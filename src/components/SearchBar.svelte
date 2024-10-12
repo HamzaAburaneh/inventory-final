@@ -1,38 +1,58 @@
-<script>
-	export let searchValue = '';
-	export let onSearch;
-	export let onClear;
+<script lang="ts">
+	import { fade, fly } from 'svelte/transition';
 
-	const handleInput = (event) => {
-		const value = event.target.value;
+	export let searchValue = '';
+	export let onSearch: (value: string) => void;
+	export let onClear: () => void;
+
+	function handleInput(event: Event) {
+		const value = (event.target as HTMLInputElement).value;
+		searchValue = value;
 		onSearch(value);
-	};
+	}
+
+	function clearSearch() {
+		searchValue = '';
+		onClear();
+	}
 </script>
 
-<div class="search-container mb-4 relative">
-	<div class="search-wrapper relative flex">
+<div class="search-container" in:fly={{ y: -20, duration: 300 }} out:fade={{ duration: 200 }}>
+	<div class="search-wrapper">
 		<input
 			id="search"
-			class="form-control search-input"
+			class="search-input"
 			bind:value={searchValue}
 			placeholder="Search Items"
 			on:input={handleInput}
 		/>
+		<label for="search" class="search-icon">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<circle cx="11" cy="11" r="8"></circle>
+				<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+			</svg>
+		</label>
 		{#if searchValue}
-			<button class="clear-button flex items-center justify-center" on:click={onClear}>
+			<button class="clear-button" on:click={clearSearch} transition:fade={{ duration: 200 }}>
 				<svg
-					class="h-5 w-5 text-gray-500"
+					xmlns="http://www.w3.org/2000/svg"
+					viewBox="0 0 24 24"
 					fill="none"
 					stroke="currentColor"
-					viewBox="0 0 24 24"
-					xmlns="http://www.w3.org/2000/svg"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
 				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M6 18L18 6M6 6l12 12"
-					></path>
+					<line x1="18" y1="6" x2="6" y2="18"></line>
+					<line x1="6" y1="6" x2="18" y2="18"></line>
 				</svg>
 			</button>
 		{/if}
@@ -40,91 +60,90 @@
 </div>
 
 <style>
-	.search-input:focus {
-		transform: scale(1.02);
-		outline: none;
-		border-color: #007bff; /* Focus border color matching button */
-		box-shadow: 0 0 0 1px #007bff;
+	.search-container {
+		width: 100%;
+		max-width: 600px;
+		margin: 0 auto;
+		padding: 1rem 0;
 	}
 
-	/* Search styles */
-	.search-container {
-		display: flex;
-		justify-content: center;
+	.search-wrapper {
+		position: relative;
 		width: 100%;
 	}
 
 	.search-input {
 		width: 100%;
-		padding: 0.75rem;
-		border: 2px solid #333; /* Lightened border color */
-		border-radius: 0.5rem;
-		background-color: var(--input-bg); /* Lightened background color */
+		padding: 0.75rem 2.5rem 0.75rem 2.5rem;
+		border: 2px solid var(--table-border-color);
+		border-radius: var(--border-radius);
+		background-color: var(--table-cell-bg);
 		color: var(--text-color);
 		font-size: 1rem;
-		transition:
-			border-color 0.3s ease,
-			box-shadow 0.3s ease,
-			transform 0.2s ease;
-		cursor: text;
-		flex-grow: 1;
-		min-width: 200px;
-		padding: 0.75rem 1rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		transition: all 0.3s ease;
+	}
+
+	.search-input:hover {
+		border-color: var(--icon-color);
+	}
+
+	.search-input:focus {
+		outline: none;
+		border-color: var(--icon-hover-color);
+		box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
 	}
 
 	.search-input::placeholder {
-		color: #888; /* Lightened placeholder color */
+		color: var(--placeholder-text);
 	}
 
-	.search-wrapper:hover .search-input:not(:focus) {
-		border-color: #555; /* Lightened hover border color */
-		box-shadow: 0 0 0 1px #555;
-		transform: scale(1.01);
+	.search-icon {
+		position: absolute;
+		left: 0.75rem;
+		top: 50%;
+		transform: translateY(-50%);
+		color: var(--icon-color);
+		pointer-events: none;
+		transition: color 0.3s ease;
 	}
 
-	.search-wrapper {
-		width: 65%;
-		display: flex;
-		transition: width 0.3s ease;
-		position: relative;
+	.search-icon svg {
+		width: 1.25rem;
+		height: 1.25rem;
 	}
 
-	/* Clear button styles */
+	.search-input:focus + .search-icon {
+		color: var(--icon-hover-color);
+	}
+
 	.clear-button {
+		position: absolute;
+		right: 0.75rem;
+		top: 50%;
+		transform: translateY(-50%);
 		background: none;
 		border: none;
 		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
 		color: var(--icon-color);
-		transition:
-			color 0.3s ease,
-			transform 0.3s ease;
-		width: 2rem;
-		height: 100%;
-		position: absolute;
-		right: 0;
-		top: 0;
-		padding: 0;
-	}
-
-	.clear-button svg {
-		width: 1rem;
-		height: 1rem;
-		transition:
-			transform 0.3s ease,
-			fill 0.3s ease;
+		transition: color 0.3s ease;
 	}
 
 	.clear-button:hover {
-		color: var(--icon-hover-color); /* Change color on hover */
-		transform: scale(1.2); /* Grow button on hover */
+		color: var(--icon-hover-color);
 	}
 
-	.clear-button:hover svg {
-		transform: scale(1.2); /* Rotate the X on hover */
-		color: rgb(196, 54, 54);
+	.clear-button svg {
+		width: 1.25rem;
+		height: 1.25rem;
+	}
+
+	@media (max-width: 640px) {
+		.search-container {
+			padding: 0.5rem 0;
+		}
+
+		.search-input {
+			font-size: 0.875rem;
+		}
 	}
 </style>
