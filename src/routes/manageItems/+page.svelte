@@ -4,6 +4,8 @@
 	import ItemForm from '../../components/ItemForm.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Table from '../../components/Table.svelte';
+	import Pagination from '../../components/Pagination.svelte';
+	import { paginationStore, paginatedItems } from '../../stores/paginationStore';
 	import {
 		getItems,
 		addItem,
@@ -35,22 +37,16 @@
 	let currentSortColumn: keyof Item = 'name';
 	let sortAscending = true;
 	let itemsLoaded = false;
-	let currentPage = 1;
-	let itemsPerPage = 10;
-	let totalItems = 0;
-	let paginatedItems: Item[] = [];
 
-	$: totalPages = Math.ceil(totalItems / itemsPerPage);
-	$: visiblePageNumbers = getVisiblePageNumbers(currentPage, totalPages);
+	$: filteredItems = searchValue.trim()
+		? items.filter((item) => item.name.toLowerCase().includes(searchValue.toLowerCase()))
+		: items;
 
-	function getVisiblePageNumbers(current: number, total: number) {
-		if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-
-		if (current <= 4) return [1, 2, 3, 4, 5, '...', total];
-		if (current >= total - 3) return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
-
-		return [1, '...', current - 1, current, current + 1, '...', total];
+	$: {
+		paginationStore.setTotalItems(filteredItems.length);
 	}
+
+	$: paginatedItemsList = $paginatedItems(filteredItems);
 
 	onMount(async () => {
 		items = await getItems();
@@ -61,26 +57,11 @@
 			console.error('Duplicate IDs found:', items);
 		}
 		items = applySorting(items, currentSortColumn, sortAscending);
-		updatePaginatedItems();
 		itemsLoaded = true;
 	});
 
-	$: {
-		if (items) {
-			updatePaginatedItems();
-		}
-	}
-
-	const updatePaginatedItems = () => {
-		const startIndex = (currentPage - 1) * itemsPerPage;
-		const endIndex = startIndex + itemsPerPage;
-		paginatedItems = items.slice(startIndex, endIndex);
-		totalItems = items.length;
-	};
-
 	const handleItemAdd = async (event: CustomEvent<{ formData: Omit<Item, 'id'> }>) => {
 		const { formData } = event.detail;
-
 		if (items.some((item) => item.name.toLowerCase() === formData.name.toLowerCase())) {
 			await Swal.fire({
 				icon: 'error',
@@ -89,7 +70,6 @@
 			});
 			return;
 		}
-
 		try {
 			const newItem: Omit<Item, 'id'> = {
 				...formData,
@@ -151,9 +131,7 @@
 		} else {
 			items = await getItems();
 		}
-
-		totalItems = items.length;
-		currentPage = 1;
+		paginationStore.setCurrentPage(1);
 		updateItemsAndSort(items);
 	};
 
@@ -174,14 +152,12 @@
 			(id) => updatedItems.find((item) => item.id === id)!
 		);
 		items = applySorting(uniqueItems, currentSortColumn, sortAscending);
-		updatePaginatedItems();
 	};
 
-	const goToPage = (page: number) => {
-		if (page >= 1 && page <= totalPages) {
-			currentPage = page;
-			updatePaginatedItems();
-		}
+	const handleItemsPerPageChange = (event: Event) => {
+		const select = event.target as HTMLSelectElement;
+		const newItemsPerPage = select.value === 'all' ? 'all' : parseInt(select.value);
+		paginationStore.setItemsPerPage(newItemsPerPage);
 	};
 </script>
 
@@ -193,8 +169,26 @@
 		<ItemForm on:add={handleItemAdd} />
 
 		<SearchBar {searchValue} onSearch={handleSearch} onClear={handleClearSearch} />
+
+		<div
+			class="top-controls flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0"
+		>
+			<div class="filter-legend text-white">
+				{filteredItems.length} results of {items.length} total items.
+			</div>
+			<select
+				bind:value={$paginationStore.itemsPerPage}
+				on:change={handleItemsPerPageChange}
+				class="bg-zinc-700 text-white rounded-lg p-2"
+			>
+				{#each $paginationStore.itemsPerPageOptions as option}
+					<option value={option}>{option === 'all' ? 'All' : option} per page</option>
+				{/each}
+			</select>
+		</div>
+
 		<Table
-			{paginatedItems}
+			paginatedItems={paginatedItemsList}
 			onEdit={handleEdit}
 			onDelete={handleDelete}
 			{sortBy}
@@ -202,38 +196,7 @@
 			{sortAscending}
 		/>
 
-		<!-- Enhanced Pagination Controls -->
-		<div class="pagination-controls mt-6 flex flex-col sm:flex-row justify-between items-center">
-			<div class="flex items-center space-x-2 mb-4 sm:mb-0">
-				<button
-					class="pagination-button"
-					on:click={() => goToPage(currentPage - 1)}
-					disabled={currentPage === 1}
-				>
-					Previous
-				</button>
-				{#each visiblePageNumbers as pageNum}
-					{#if typeof pageNum === 'number'}
-						<button
-							class="pagination-button"
-							class:active={pageNum === currentPage}
-							on:click={() => goToPage(pageNum)}
-						>
-							{pageNum}
-						</button>
-					{:else}
-						<span class="pagination-ellipsis">...</span>
-					{/if}
-				{/each}
-				<button
-					class="pagination-button"
-					on:click={() => goToPage(currentPage + 1)}
-					disabled={currentPage === totalPages}
-				>
-					Next
-				</button>
-			</div>
-		</div>
+		<Pagination />
 	</div>
 {/if}
 
@@ -248,40 +211,15 @@
 		border-radius: 1rem;
 	}
 
-	/* Pagination styles */
-	.pagination-controls {
-		flex-wrap: wrap;
+	.top-controls {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1rem;
 	}
 
-	.pagination-button {
-		color: white;
-		font-weight: bold;
-		padding: 0.5rem 0.75rem;
-		border-radius: 0.375rem;
-		transition: background-color 0.3s ease;
-	}
-
-	.pagination-button:hover:not(:disabled) {
-		background-color: #1d4ed8;
-	}
-
-	.pagination-button.active {
-		background-color: #1d4ed8;
-	}
-
-	.pagination-ellipsis {
-		color: white;
-		padding: 0.5rem 0.25rem;
-	}
-
-	@media (max-width: 640px) {
-		.pagination-controls {
-			flex-direction: column;
-			align-items: stretch;
-		}
-
-		.pagination-controls > * {
-			margin-bottom: 1rem;
-		}
+	.filter-legend {
+		font-size: 0.9rem;
+		color: #949494;
 	}
 </style>
