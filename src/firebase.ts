@@ -11,11 +11,10 @@ const firebaseConfig: FirebaseOptions = {
 	measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-let app;
 let db: Firestore;
 
 try {
-	app = initializeApp(firebaseConfig);
+	const app = initializeApp(firebaseConfig);
 	db = getFirestore(app);
 } catch (error) {
 	console.error('Error initializing Firebase:', error);

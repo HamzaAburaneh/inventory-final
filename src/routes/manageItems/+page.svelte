@@ -19,7 +19,6 @@
 	import type { Item } from '../../types';
 	import { fadeAndSlide } from '$lib/transitions';
 	import { fly, fade } from 'svelte/transition';
-	import { Pagination } from 'flowbite-svelte';
 
 	let items: Item[] = [];
 	let formData: Omit<Item, 'id'> = {
@@ -40,6 +39,18 @@
 	let itemsPerPage = 10;
 	let totalItems = 0;
 	let paginatedItems: Item[] = [];
+
+	$: totalPages = Math.ceil(totalItems / itemsPerPage);
+	$: visiblePageNumbers = getVisiblePageNumbers(currentPage, totalPages);
+
+	function getVisiblePageNumbers(current: number, total: number) {
+		if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+
+		if (current <= 4) return [1, 2, 3, 4, 5, '...', total];
+		if (current >= total - 3) return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+
+		return [1, '...', current - 1, current, current + 1, '...', total];
+	}
 
 	onMount(async () => {
 		items = await getItems();
@@ -66,7 +77,8 @@
 		paginatedItems = items.slice(startIndex, endIndex);
 		totalItems = items.length;
 	};
-	const handleItemAdd = async (event) => {
+
+	const handleItemAdd = async (event: CustomEvent<{ formData: Omit<Item, 'id'> }>) => {
 		const { formData } = event.detail;
 
 		if (items.some((item) => item.name.toLowerCase() === formData.name.toLowerCase())) {
@@ -85,93 +97,6 @@
 			};
 			const addedItem = await addItem(newItem);
 			updateItemsAndSort([...items, addedItem]);
-		} catch (error) {
-			if (error instanceof Error) {
-				await Swal.fire({
-					icon: 'error',
-					title: 'Error',
-					text: error.message
-				});
-			}
-		}
-	};
-
-	const validateField = (field: keyof typeof formData, value: any) => {
-		const validations: Partial<Record<keyof typeof formData, () => string>> = {
-			name: () => (value.trim().length < 3 ? 'Name must be at least 3 characters' : ''),
-			count: () =>
-				isNaN(parseInt(value)) || parseInt(value) < 0 ? 'Must be a positive number' : '',
-			lowCount: () =>
-				isNaN(parseInt(value)) || parseInt(value) < 0 ? 'Must be a positive number' : '',
-			cost: () =>
-				isNaN(parseFloat(value)) || parseFloat(value) < 0 ? 'Must be a non-negative number' : ''
-		};
-		errors[field] = validations[field] ? validations[field]() : '';
-	};
-
-	const handleInput = (
-		event: Event,
-		field: keyof typeof formData,
-		allowDecimal: boolean = false
-	) => {
-		let value = (event.target as HTMLInputElement).value;
-		if (allowDecimal) {
-			value = value.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1');
-			const [integer, decimal] = value.split('.');
-			value = decimal ? `${integer}.${decimal.slice(0, 2)}` : value;
-		} else {
-			value = value.replace(/\D/g, '');
-		}
-		formData[field] = value;
-		validateField(field, value);
-	};
-
-	const updateItemsAndSort = (updatedItems: Item[]) => {
-		// Ensure no duplicate IDs are present
-		const uniqueItems = Array.from(new Set(updatedItems.map((item) => item.id))).map(
-			(id) => updatedItems.find((item) => item.id === id)!
-		);
-		if (!uniqueItems.every((item) => item.id)) {
-			console.error('Some unique items have empty IDs:', uniqueItems);
-		}
-		if (new Set(uniqueItems.map((item) => item.id)).size !== uniqueItems.length) {
-			console.error('Duplicate IDs found in uniqueItems:', uniqueItems);
-		}
-		// Apply sorting before paginating
-		items = applySorting(uniqueItems, currentSortColumn, sortAscending);
-		updatePaginatedItems();
-	};
-
-	const handleAdd = async () => {
-		if (formData.name.trim() === '') {
-			await Swal.fire({
-				icon: 'error',
-				title: 'Empty Item Name',
-				text: 'Item name cannot be empty.'
-			});
-			return;
-		}
-		if (items.some((item) => item.name.toLowerCase() === formData.name.toLowerCase())) {
-			await Swal.fire({
-				icon: 'error',
-				title: 'Duplicate Item',
-				text: 'Item with this name already exists.'
-			});
-			return;
-		}
-		try {
-			const newItem: Omit<Item, 'id'> = {
-				name: formData.name,
-				barcode: formData.barcode,
-				count: formData.count,
-				lowCount: formData.lowCount,
-				cost: formData.cost ? parseFloat(parseFloat(formData.cost).toFixed(2)) : 0,
-				storageType: formData.storageType
-			};
-			const addedItem = await addItem(newItem);
-			updateItemsAndSort([...items, addedItem]);
-			formData = { name: '', barcode: '', count: '', lowCount: '', cost: '', storageType: '' };
-			errors = {};
 		} catch (error) {
 			if (error instanceof Error) {
 				await Swal.fire({
@@ -222,22 +147,20 @@
 	const handleSearch = async (value: string) => {
 		searchValue = value;
 		if (searchValue.trim()) {
-			// Filter items directly within handleSearch
 			items = await searchItems(searchValue);
 		} else {
-			// If search is cleared, get all items again
 			items = await getItems();
 		}
 
-		totalItems = items.length; // Update total items after filtering
-		currentPage = 1; // Reset the current page to 1 after search
-		updateItemsAndSort(items); // Apply sorting after fetching items
+		totalItems = items.length;
+		currentPage = 1;
+		updateItemsAndSort(items);
 	};
 
 	const handleClearSearch = () => {
 		searchValue = '';
-		handleSearch(''); // Call handleSearch to reset the items
-		updateItemsAndSort(items); // Reapply the sorting after clearing the search
+		handleSearch('');
+		updateItemsAndSort(items);
 	};
 
 	const sortBy = (column: keyof Item) => {
@@ -246,26 +169,19 @@
 		updateItemsAndSort(items);
 	};
 
-	$: sortIcon = (column: keyof Item) =>
-		currentSortColumn === column ? (sortAscending ? '▲' : '▼') : '↕';
-
-	const handlePrevious = () => {
-		if (currentPage > 1) {
-			currentPage--;
-			updatePaginatedItems();
-		}
-	};
-
-	const handleNext = () => {
-		const maxPage = Math.ceil(totalItems / itemsPerPage);
-		if (currentPage < maxPage) {
-			currentPage++;
-			updatePaginatedItems();
-		}
-	};
-	const handlePageClick = (event: CustomEvent<number>) => {
-		currentPage = event.detail;
+	const updateItemsAndSort = (updatedItems: Item[]) => {
+		const uniqueItems = Array.from(new Set(updatedItems.map((item) => item.id))).map(
+			(id) => updatedItems.find((item) => item.id === id)!
+		);
+		items = applySorting(uniqueItems, currentSortColumn, sortAscending);
 		updatePaginatedItems();
+	};
+
+	const goToPage = (page: number) => {
+		if (page >= 1 && page <= totalPages) {
+			currentPage = page;
+			updatePaginatedItems();
+		}
 	};
 </script>
 
@@ -277,7 +193,6 @@
 		<ItemForm on:add={handleItemAdd} />
 
 		<SearchBar {searchValue} onSearch={handleSearch} onClear={handleClearSearch} />
-		<!-- Update this line to use paginatedItems instead of items -->
 		<Table
 			{paginatedItems}
 			onEdit={handleEdit}
@@ -286,19 +201,37 @@
 			{currentSortColumn}
 			{sortAscending}
 		/>
-		<div class="flex justify-center mt-4">
-			<div class="flex items-center space-x-2">
-				<span>Page {currentPage} of {Math.ceil(totalItems / itemsPerPage)}</span>
-				<!-- Show current page and total pages -->
-				<Pagination
-					{totalItems}
-					{itemsPerPage}
-					{currentPage}
-					showPreviousNext={true}
-					on:previous={handlePrevious}
-					on:next={handleNext}
-					on:pageClick={handlePageClick}
-				/>
+
+		<!-- Enhanced Pagination Controls -->
+		<div class="pagination-controls mt-6 flex flex-col sm:flex-row justify-between items-center">
+			<div class="flex items-center space-x-2 mb-4 sm:mb-0">
+				<button
+					class="pagination-button"
+					on:click={() => goToPage(currentPage - 1)}
+					disabled={currentPage === 1}
+				>
+					Previous
+				</button>
+				{#each visiblePageNumbers as pageNum}
+					{#if typeof pageNum === 'number'}
+						<button
+							class="pagination-button"
+							class:active={pageNum === currentPage}
+							on:click={() => goToPage(pageNum)}
+						>
+							{pageNum}
+						</button>
+					{:else}
+						<span class="pagination-ellipsis">...</span>
+					{/if}
+				{/each}
+				<button
+					class="pagination-button"
+					on:click={() => goToPage(currentPage + 1)}
+					disabled={currentPage === totalPages}
+				>
+					Next
+				</button>
 			</div>
 		</div>
 	</div>
@@ -313,5 +246,42 @@
 		background-color: var(--container-bg);
 		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 		border-radius: 1rem;
+	}
+
+	/* Pagination styles */
+	.pagination-controls {
+		flex-wrap: wrap;
+	}
+
+	.pagination-button {
+		color: white;
+		font-weight: bold;
+		padding: 0.5rem 0.75rem;
+		border-radius: 0.375rem;
+		transition: background-color 0.3s ease;
+	}
+
+	.pagination-button:hover:not(:disabled) {
+		background-color: #1d4ed8;
+	}
+
+	.pagination-button.active {
+		background-color: #1d4ed8;
+	}
+
+	.pagination-ellipsis {
+		color: white;
+		padding: 0.5rem 0.25rem;
+	}
+
+	@media (max-width: 640px) {
+		.pagination-controls {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.pagination-controls > * {
+			margin-bottom: 1rem;
+		}
 	}
 </style>
