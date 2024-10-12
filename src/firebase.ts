@@ -1,22 +1,25 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore"; // Add this line
+import { initializeApp, type FirebaseOptions } from 'firebase/app';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyDguX6U3pieLNr1uHWLXCjXoqVIbex4s3c",
-  authDomain: "inventory-manager-764d2.firebaseapp.com",
-  projectId: "inventory-manager-764d2",
-  storageBucket: "inventory-manager-764d2.appspot.com",
-  messagingSenderId: "79810336985",
-  appId: "1:79810336985:web:cd8f4c9aa37cf5b4a286c8",
-  measurementId: "G-3EGPB2HZJ6"
+const firebaseConfig: FirebaseOptions = {
+	apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+	authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+	projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+	storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+	messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+	appId: import.meta.env.VITE_FIREBASE_APP_ID,
+	measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+let app;
+let db: Firestore;
 
-// Initialize Firestore
-const db = getFirestore(app); // Add this line
+try {
+	app = initializeApp(firebaseConfig);
+	db = getFirestore(app);
+} catch (error) {
+	console.error('Error initializing Firebase:', error);
+	throw error;
+}
 
-export { db }; // Export db and analytics
+export { db };
