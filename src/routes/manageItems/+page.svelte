@@ -174,7 +174,7 @@
 	}
 
 	.table-container {
-		height: 650px;
+		height: 670px;
 		overflow: auto;
 		margin-bottom: 1rem;
 	}

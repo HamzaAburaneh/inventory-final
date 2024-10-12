@@ -87,15 +87,6 @@
 		<div class="filter-legend text-white">
 			{filterLegend}
 		</div>
-		<select
-			bind:value={$paginationStore.itemsPerPage}
-			on:change={handleItemsPerPageChange}
-			class="bg-zinc-700 text-white rounded-lg p-2"
-		>
-			{#each $paginationStore.itemsPerPageOptions as option}
-				<option value={option}>{option === 'all' ? 'All' : option} per page</option>
-			{/each}
-		</select>
 	</div>
 
 	<div class="table-container">
