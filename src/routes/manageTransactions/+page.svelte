@@ -230,7 +230,7 @@
 	}
 
 	.table-container {
-		height: 600px;
+		height: 700px;
 		overflow: auto;
 		margin-bottom: 1rem;
 	}
@@ -243,7 +243,7 @@
 	.custom-table th {
 		position: sticky;
 		top: 0;
-		background-color: var(--container-bg); /* Changed to match table background */
+		background-color: var(--container-bg);
 		z-index: 10;
 		box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
 	}
@@ -266,8 +266,12 @@
 	.header {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
 		cursor: pointer;
+	}
+
+	.header i {
+		margin-left: 0.5rem;
+		font-size: 0.8em;
 	}
 
 	.header:hover {
