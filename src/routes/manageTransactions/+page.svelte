@@ -2,6 +2,9 @@
 	import { onMount } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { elasticOut } from 'svelte/easing';
+	import { theme } from '../../themes';
+
+	import Swal from 'sweetalert2';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import { fadeAndSlide } from '$lib/transitions';
@@ -35,7 +38,9 @@
 			sortAscending = true;
 		}
 	};
-
+	function getCurrentTheme() {
+		return $theme;
+	}
 	const handleSearch = (value: string) => {
 		searchStore.setSearchTerm(value);
 		paginationStore.setCurrentPage(1);
@@ -47,13 +52,43 @@
 	};
 
 	const resetCount = async (item: Item) => {
-		await itemStore.resetItemCount(item.id);
-		notificationStore.showNotification(`Count for "${item.name}" reset successfully!`, 'success');
+		const currentTheme = getCurrentTheme();
+		const result = await Swal.fire({
+			title: 'Are you sure?',
+			text: `This will reset the count for "${item.name}" to 0.`,
+			icon: 'warning',
+			showCancelButton: true,
+			confirmButtonColor: '#D97706', // Amber-600
+			cancelButtonColor: '#6B7280', // Gray-500
+			confirmButtonText: 'Yes, reset it!',
+			background: currentTheme === 'dark' ? '#1F2937' : '#FFFFFF',
+			color: currentTheme === 'dark' ? '#FFFFFF' : '#000000'
+		});
+
+		if (result.isConfirmed) {
+			await itemStore.resetItemCount(item.id);
+			notificationStore.showNotification(`Count for "${item.name}" reset successfully!`, 'success');
+		}
 	};
 
 	const resetAll = async () => {
-		await itemStore.resetAllCounts();
-		notificationStore.showNotification('All counts have been reset successfully!', 'success');
+		const currentTheme = getCurrentTheme();
+		const result = await Swal.fire({
+			title: 'Are you sure?',
+			html: `This will reset the count for <strong style="color: #DC2626;">ALL</strong> items to 0.`,
+			icon: 'warning',
+			showCancelButton: true,
+			confirmButtonColor: '#D97706', // Amber-600
+			cancelButtonColor: '#6B7280', // Gray-500
+			confirmButtonText: 'Yes, reset all!',
+			background: currentTheme === 'dark' ? '#1F2937' : '#FFFFFF',
+			color: currentTheme === 'dark' ? '#FFFFFF' : '#000000'
+		});
+
+		if (result.isConfirmed) {
+			await itemStore.resetAllCounts();
+			notificationStore.showNotification('All counts have been reset successfully!', 'success');
+		}
 	};
 
 	const handleItemsPerPageChange = (event: Event) => {
@@ -184,7 +219,7 @@
 
 	<div class="flex justify-center mt-6">
 		<button
-			class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-500 transition-transform active:scale-95"
+			class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-500 transition-transform active:scale-95"
 			on:click={resetAll}
 		>
 			Reset All Counts
