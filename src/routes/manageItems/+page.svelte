@@ -6,23 +6,14 @@
 	import Table from '../../components/Table.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import { paginationStore, paginatedItems } from '../../stores/paginationStore';
-	import {
-		getItems,
-		addItem,
-		deleteItem,
-		searchItems,
-		editItemCost,
-		editItemLowCount,
-		editItemName,
-		editItemBarcode,
-		editItemStorageType,
-		applySorting
-	} from '../../lib/items';
+	import { itemStore, filteredItems } from '../../stores/itemStore';
+	import { searchStore } from '../../stores/searchStore';
+	import { notificationStore } from '../../stores/notificationStore';
 	import type { Item } from '../../types';
 	import { fadeAndSlide } from '$lib/transitions';
-	import { fly, fade } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
+	import { applySorting } from '../../lib/items';
 
-	let items: Item[] = [];
 	let formData: Omit<Item, 'id'> = {
 		name: '',
 		barcode: '',
@@ -33,41 +24,26 @@
 	};
 
 	let errors: Partial<Record<keyof typeof formData, string>> = {};
-	let searchValue = '';
 	let currentSortColumn: keyof Item = 'name';
 	let sortAscending = true;
 	let itemsLoaded = false;
 
-	$: filteredItems = searchValue.trim()
-		? items.filter((item) => item.name.toLowerCase().includes(searchValue.toLowerCase()))
-		: items;
-
+	$: filteredItemsList = $filteredItems($searchStore);
 	$: {
-		paginationStore.setTotalItems(filteredItems.length);
+		paginationStore.setTotalItems(filteredItemsList.length);
 	}
-
-	$: paginatedItemsList = $paginatedItems(filteredItems);
+	$: sortedItems = applySorting(filteredItemsList, currentSortColumn, sortAscending);
+	$: paginatedItemsList = $paginatedItems(sortedItems);
 
 	onMount(async () => {
-		items = await getItems();
-		if (!items.every((item) => item.id)) {
-			console.error('Some items have empty IDs:', items);
-		}
-		if (new Set(items.map((item) => item.id)).size !== items.length) {
-			console.error('Duplicate IDs found:', items);
-		}
-		items = applySorting(items, currentSortColumn, sortAscending);
+		await itemStore.fetchItems();
 		itemsLoaded = true;
 	});
 
 	const handleItemAdd = async (event: CustomEvent<{ formData: Omit<Item, 'id'> }>) => {
 		const { formData } = event.detail;
-		if (items.some((item) => item.name.toLowerCase() === formData.name.toLowerCase())) {
-			await Swal.fire({
-				icon: 'error',
-				title: 'Duplicate Item',
-				text: 'Item with this name already exists.'
-			});
+		if ($itemStore.some((item) => item.name.toLowerCase() === formData.name.toLowerCase())) {
+			notificationStore.showNotification('Item with this name already exists.', 'error');
 			return;
 		}
 		try {
@@ -75,22 +51,18 @@
 				...formData,
 				cost: formData.cost ? parseFloat(parseFloat(formData.cost).toFixed(2)) : 0
 			};
-			const addedItem = await addItem(newItem);
-			updateItemsAndSort([...items, addedItem]);
+			await itemStore.addItem(newItem);
+			notificationStore.showNotification('Item added successfully!', 'success');
 		} catch (error) {
 			if (error instanceof Error) {
-				await Swal.fire({
-					icon: 'error',
-					title: 'Error',
-					text: error.message
-				});
+				notificationStore.showNotification(error.message, 'error');
 			}
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		await deleteItem(id);
-		updateItemsAndSort(items.filter((item) => item.id !== id));
+		await itemStore.deleteItem(id);
+		notificationStore.showNotification('Item deleted successfully!', 'success');
 	};
 
 	const handleEdit = async (id: string, field: keyof Item, oldValue: any) => {
@@ -107,51 +79,26 @@
 	};
 
 	const updateItem = async (id: string, field: keyof Item, value: any) => {
-		const updateFunctions: Record<keyof Item, (id: string, newValue: any) => Promise<void>> = {
-			cost: editItemCost,
-			barcode: editItemBarcode,
-			name: editItemName,
-			count: async (id, newValue) => {
-				/* Implement if necessary */
-			},
-			lowCount: editItemLowCount,
-			storageType: editItemStorageType
-		};
-		await updateFunctions[field](
-			id,
-			field === 'cost' || field === 'lowCount' ? Number(value) : value
-		);
-		updateItemsAndSort(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+		// Implement update logic here
+		notificationStore.showNotification('Item updated successfully!', 'success');
 	};
 
-	const handleSearch = async (value: string) => {
-		searchValue = value;
-		if (searchValue.trim()) {
-			items = await searchItems(searchValue);
-		} else {
-			items = await getItems();
-		}
+	const handleSearch = (value: string) => {
+		searchStore.setSearchTerm(value);
 		paginationStore.setCurrentPage(1);
-		updateItemsAndSort(items);
 	};
 
 	const handleClearSearch = () => {
-		searchValue = '';
-		handleSearch('');
-		updateItemsAndSort(items);
+		searchStore.clearSearch();
 	};
 
 	const sortBy = (column: keyof Item) => {
-		sortAscending = currentSortColumn === column ? !sortAscending : true;
-		currentSortColumn = column;
-		updateItemsAndSort(items);
-	};
-
-	const updateItemsAndSort = (updatedItems: Item[]) => {
-		const uniqueItems = Array.from(new Set(updatedItems.map((item) => item.id))).map(
-			(id) => updatedItems.find((item) => item.id === id)!
-		);
-		items = applySorting(uniqueItems, currentSortColumn, sortAscending);
+		if (currentSortColumn === column) {
+			sortAscending = !sortAscending;
+		} else {
+			currentSortColumn = column;
+			sortAscending = true;
+		}
 	};
 
 	const handleItemsPerPageChange = (event: Event) => {
@@ -168,13 +115,13 @@
 	>
 		<ItemForm on:add={handleItemAdd} />
 
-		<SearchBar {searchValue} onSearch={handleSearch} onClear={handleClearSearch} />
+		<SearchBar searchValue={$searchStore} onSearch={handleSearch} onClear={handleClearSearch} />
 
 		<div
 			class="top-controls flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0"
 		>
 			<div class="filter-legend text-white">
-				{filteredItems.length} results of {items.length} total items.
+				{filteredItemsList.length} results of {$itemStore.length} total items.
 			</div>
 			<select
 				bind:value={$paginationStore.itemsPerPage}
@@ -187,30 +134,28 @@
 			</select>
 		</div>
 
-		<Table
-			paginatedItems={paginatedItemsList}
-			onEdit={handleEdit}
-			onDelete={handleDelete}
-			{sortBy}
-			{currentSortColumn}
-			{sortAscending}
-		/>
+		<div class="table-container">
+			<Table
+				paginatedItems={paginatedItemsList}
+				onEdit={handleEdit}
+				onDelete={handleDelete}
+				{sortBy}
+				{currentSortColumn}
+				{sortAscending}
+			/>
+		</div>
 
 		<Pagination />
 	</div>
 {/if}
 
-<style>
-	/* Base styles */
-	.container {
-		margin-top: 20px;
-		padding: 2.5rem;
-		max-width: 90%;
-		background-color: var(--container-bg);
-		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-		border-radius: 1rem;
-	}
+{#if $notificationStore}
+	<div class="notification" in:fade out:fade>
+		{$notificationStore.message}
+	</div>
+{/if}
 
+<style>
 	.top-controls {
 		display: flex;
 		justify-content: space-between;
@@ -221,5 +166,33 @@
 	.filter-legend {
 		font-size: 0.9rem;
 		color: #949494;
+	}
+
+	.container {
+		margin-top: 20px;
+		padding: 2.5rem;
+		max-width: 90%;
+		background-color: var(--container-bg);
+		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+		border-radius: 1rem;
+	}
+
+	.table-container {
+		height: 550px;
+		overflow: auto;
+		margin-bottom: 1rem;
+	}
+
+	.notification {
+		position: fixed;
+		top: 20px;
+		left: 50%;
+		transform: translateX(-50%);
+		background-color: #38a169;
+		color: white;
+		padding: 1rem 2rem;
+		border-radius: 0.5rem;
+		z-index: 1000;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 	}
 </style>

@@ -5,86 +5,55 @@
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import { fadeAndSlide } from '$lib/transitions';
-	import { getItems, updateItemCount, resetItemCount, resetAllCounts } from '../../lib/items';
+	import { paginationStore, paginatedItems } from '../../stores/paginationStore';
+	import { itemStore, filteredItems } from '../../stores/itemStore';
+	import { searchStore } from '../../stores/searchStore';
+	import { notificationStore } from '../../stores/notificationStore';
 	import type { Item } from '../../types';
 	import { applySorting } from '../../lib/items';
-	import { paginationStore, paginatedItems } from '../../stores/paginationStore';
-
-	let allItems: Item[] = [];
-	let searchValue = '';
-	let selectedItem: Item | null = null;
-
-	let notificationMessage = '';
-	let showNotification = false;
-
-	$: filteredItems = searchValue.trim()
-		? allItems.filter((item) => item.name.toLowerCase().includes(searchValue.toLowerCase()))
-		: allItems;
-
-	$: {
-		paginationStore.setTotalItems(filteredItems.length);
-	}
-
-	$: paginatedItemsList = $paginatedItems(filteredItems);
-	$: filterLegend = `${filteredItems.length} results of ${allItems.length} total items.`;
-
-	onMount(async () => {
-		allItems = await getItems();
-		allItems = allItems.map((item) => ({ ...item, changeAmount: 0 }));
-		updateItems();
-	});
 
 	let currentSortColumn: keyof Item = 'name';
 	let sortAscending = true;
 
+	$: filteredItemsList = $filteredItems($searchStore);
+	$: {
+		paginationStore.setTotalItems(filteredItemsList.length);
+	}
+	$: sortedItems = applySorting(filteredItemsList, currentSortColumn, sortAscending);
+	$: paginatedItemsList = $paginatedItems(sortedItems);
+	$: filterLegend = `${filteredItemsList.length} results of ${$itemStore.length} total items.`;
+
+	onMount(async () => {
+		await itemStore.fetchItems();
+	});
+
 	const sortBy = (column: keyof Item) => {
-		sortAscending = currentSortColumn === column ? !sortAscending : true;
-		currentSortColumn = column;
-		updateItems();
+		if (currentSortColumn === column) {
+			sortAscending = !sortAscending;
+		} else {
+			currentSortColumn = column;
+			sortAscending = true;
+		}
 	};
 
 	const handleSearch = (value: string) => {
-		searchValue = value;
+		searchStore.setSearchTerm(value);
 		paginationStore.setCurrentPage(1);
 	};
 
 	const changeCount = async (item: Item, amount: number) => {
-		const newCount = Math.max(0, item.count + amount);
-		item.count = newCount;
-		await updateItemCount(item.id, newCount);
-		updateItems();
-
-		showNotificationWithMessage(`Count for "${item.name}" updated successfully!`);
+		await itemStore.changeCount(item.id, amount);
+		notificationStore.showNotification(`Count for "${item.name}" updated successfully!`, 'success');
 	};
 
 	const resetCount = async (item: Item) => {
-		item.count = 0;
-		await resetItemCount(item.id);
-		updateItems();
-
-		showNotificationWithMessage(`Count for "${item.name}" reset successfully!`);
+		await itemStore.resetItemCount(item.id);
+		notificationStore.showNotification(`Count for "${item.name}" reset successfully!`, 'success');
 	};
 
 	const resetAll = async () => {
-		await resetAllCounts();
-		allItems = await getItems();
-		allItems = allItems.map((item) => ({ ...item, changeAmount: 0 }));
-		paginationStore.setCurrentPage(1);
-
-		showNotificationWithMessage('All counts have been reset successfully!');
-	};
-
-	const updateItems = () => {
-		allItems = applySorting(allItems, currentSortColumn, sortAscending);
-	};
-
-	const showNotificationWithMessage = (message: string) => {
-		notificationMessage = message;
-		showNotification = true;
-		setTimeout(() => {
-			showNotification = false;
-			notificationMessage = '';
-		}, 3000);
+		await itemStore.resetAllCounts();
+		notificationStore.showNotification('All counts have been reset successfully!', 'success');
 	};
 
 	const handleItemsPerPageChange = (event: Event) => {
@@ -92,19 +61,25 @@
 		const newItemsPerPage = select.value === 'all' ? 'all' : parseInt(select.value);
 		paginationStore.setItemsPerPage(newItemsPerPage);
 	};
+
+	const handleChangeAmountInput = (item: Item, event: Event) => {
+		const input = event.target as HTMLInputElement;
+		const value = parseInt(input.value);
+		if (!isNaN(value)) {
+			itemStore.setChangeAmount(item.id, value);
+		}
+	};
 </script>
 
 <div
 	class="container mx-auto p-4 sm:p-6 rounded-lg shadow-md bg-container mt-4"
 	in:fadeAndSlide={{ duration: 300, y: 75 }}
 >
-	{#if showNotification}
-		<div class="notification" in:fade out:fade>
-			{notificationMessage}
-		</div>
-	{/if}
-
-	<SearchBar {searchValue} onSearch={handleSearch} onClear={() => handleSearch('')} />
+	<SearchBar
+		searchValue={$searchStore}
+		onSearch={handleSearch}
+		onClear={() => searchStore.clearSearch()}
+	/>
 
 	<div
 		class="top-controls flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0"
@@ -123,9 +98,9 @@
 		</select>
 	</div>
 
-	<div class="overflow-x-auto">
-		<table class="custom-table table-auto w-full mt-4 border-collapse">
-			<thead class="bg-zinc-800 text-white uppercase text-sm leading-normal">
+	<div class="table-container">
+		<table class="custom-table w-full">
+			<thead>
 				<tr>
 					<th class="px-4 py-2 text-left" on:click={() => sortBy('name')}>
 						<div class="header">
@@ -155,7 +130,7 @@
 					<th class="py-3 px-6 text-center">Actions</th>
 				</tr>
 			</thead>
-			<tbody class="text-white text-sm font-light">
+			<tbody>
 				{#each paginatedItemsList as item (item.id)}
 					<tr class="border-b border-zinc-800 hover:bg-zinc-800" in:fade={{ duration: 200 }}>
 						<td class="py-3 px-6 text-left whitespace-nowrap">{item.name}</td>
@@ -178,7 +153,7 @@
 								bind:value={item.changeAmount}
 								min="0"
 								class="w-16 rounded-md bg-zinc-800 border-zinc-800 hover:border-stone-400 text-white shadow-sm focus:border-stone-400 focus:ring-stone-400 sm:text-sm text-center"
-								on:input={() => (item.changeAmount = Math.max(0, item.changeAmount))}
+								on:input={(e) => handleChangeAmountInput(item, e)}
 							/>
 						</td>
 						<td class="py-3 px-6 text-center">
@@ -226,6 +201,12 @@
 	</div>
 </div>
 
+{#if $notificationStore}
+	<div class="notification" in:fade out:fade>
+		{$notificationStore.message}
+	</div>
+{/if}
+
 <style>
 	.top-controls {
 		display: flex;
@@ -246,6 +227,52 @@
 		background-color: var(--container-bg);
 		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 		border-radius: 1rem;
+	}
+
+	.table-container {
+		height: 600px;
+		overflow: auto;
+		margin-bottom: 1rem;
+	}
+
+	.custom-table {
+		border-collapse: separate;
+		border-spacing: 0;
+	}
+
+	.custom-table th {
+		position: sticky;
+		top: 0;
+		background-color: var(--container-bg); /* Changed to match table background */
+		z-index: 10;
+		box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+	}
+
+	.custom-table th,
+	.custom-table td {
+		padding: 0.75rem;
+		text-align: left;
+		border-bottom: 1px solid var(--table-border-color);
+	}
+
+	.custom-table tbody tr {
+		background-color: var(--container-bg);
+	}
+
+	.custom-table tbody tr:hover {
+		background-color: var(--zinc-800);
+	}
+
+	.header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		cursor: pointer;
+	}
+
+	.header:hover {
+		color: var(--icon-hover-color);
+		transition: color 0.3s ease;
 	}
 
 	.notification {
@@ -274,36 +301,5 @@
 
 	.relative {
 		height: 1.5em;
-	}
-
-	.header {
-		display: flex;
-		align-items: center;
-		cursor: pointer;
-	}
-
-	.custom-table th,
-	.custom-table td {
-		padding: 0.75rem;
-		text-align: left;
-	}
-
-	.custom-table th {
-		cursor: default;
-		border-bottom: 2px solid var(--table-border-color);
-	}
-
-	.custom-table th .header {
-		display: inline;
-		cursor: pointer;
-	}
-
-	.custom-table th .header:hover {
-		color: var(--icon-hover-color);
-		transition: color 0.3s ease;
-	}
-
-	.custom-table td {
-		cursor: default;
 	}
 </style>
