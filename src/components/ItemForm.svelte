@@ -52,14 +52,14 @@
 			await Swal.fire({
 				icon: 'error',
 				title: 'Empty Item Name',
-				text: 'Item name cannot be empty.'
+				text: 'Item name cannot be empty.',
+				background: 'var(--container-bg)',
+				color: 'var(--text-color)'
 			});
 			return;
 		}
 
-		// Dispatch the 'add' event with the form data
 		dispatch('add', { formData });
-		// Reset form data and errors
 		formData = { name: '', barcode: '', count: '', lowCount: '', cost: '', storageType: '' };
 		errors = {};
 	};
@@ -95,7 +95,6 @@
 				bind:value={formData.barcode}
 				placeholder="Enter barcode"
 			/>
-			<!-- You can add validation for barcode if needed -->
 		</div>
 	</div>
 
@@ -197,7 +196,6 @@
 </div>
 
 <style>
-	/* Form styles */
 	.form-group {
 		position: relative;
 		display: flex;
@@ -206,13 +204,13 @@
 	}
 
 	.placeholder-selected {
-		color: #888 !important;
+		color: var(--placeholder-text) !important;
 	}
 
 	.form-label {
 		margin-bottom: 0.5rem;
 		font-weight: 600;
-		color: var(--label-color);
+		color: var(--text-color);
 		font-size: 0.875rem;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -231,9 +229,9 @@
 		width: 100%;
 		padding: 0.75rem;
 		border: 2px solid var(--input-border-color);
-		border-radius: 0.5rem;
-		background-color: var(--input-bg-color);
-		color: var(--text-color);
+		border-radius: var(--border-radius);
+		background-color: var(--input-bg);
+		color: var(--input-text);
 		font-size: 1rem;
 		transition:
 			border-color 0.3s ease,
@@ -246,10 +244,9 @@
 	}
 
 	.form-control-input::placeholder {
-		color: #888;
+		color: var(--placeholder-text);
 	}
 
-	/* Hover and focus states */
 	.input-wrapper:hover .form-control-input:not(:focus) {
 		border-color: var(--input-hover-border-color);
 		box-shadow: 0 0 0 1px var(--input-hover-border-color);
@@ -259,8 +256,8 @@
 	.form-control-input:focus {
 		transform: scale(1.02);
 		outline: none;
-		border-color: #007bff;
-		box-shadow: 0 0 0 1px #007bff;
+		border-color: var(--focus-border-color);
+		box-shadow: 0 0 0 1px var(--focus-border-color);
 	}
 
 	.form-control-input.is-invalid:focus,
@@ -279,18 +276,17 @@
 		padding: 0.5rem;
 		color: #fff;
 		background-color: #ff0019;
-		border-radius: 0.5rem;
+		border-radius: var(--border-radius);
 		font-size: 0.875rem;
 		width: 100%;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 	}
 
-	/* Add item button styles */
 	#add-item {
-		background-color: #007bff;
-		color: #fff;
+		background-color: var(--add-item-color);
+		color: var(--background-color);
 		font-weight: 700;
-		border-radius: 1rem;
+		border-radius: var(--border-radius);
 		padding: 0.5rem 1rem;
 		border: none;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -316,14 +312,13 @@
 	#add-item:hover {
 		transform: translateY(-4px) scale(1.05);
 		box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-		background-color: #0056b3;
+		background-color: var(--icon-hover-color);
 	}
 
 	#add-item:active {
 		transform: translateY(0);
 	}
 
-	/* Media query for responsiveness */
 	@media (min-width: 640px) {
 		#add-item {
 			font-size: 1rem;
