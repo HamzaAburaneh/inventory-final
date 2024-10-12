@@ -12,7 +12,7 @@
 	import type { Item } from '../../types';
 	import { fadeAndSlide } from '$lib/transitions';
 	import { fade } from 'svelte/transition';
-	import { applySorting } from '../../lib/items';
+	import { applySorting, addTestItems } from '../../lib/items';
 
 	let formData: Omit<Item, 'id'> = {
 		name: '',
@@ -24,7 +24,7 @@
 	};
 
 	let errors: Partial<Record<keyof typeof formData, string>> = {};
-	let currentSortColumn: keyof Item = 'name';
+	let currentSortColumn: string = 'name';
 	let sortAscending = true;
 	let itemsLoaded = false;
 
@@ -32,11 +32,17 @@
 	$: {
 		paginationStore.setTotalItems(filteredItemsList.length);
 	}
-	$: sortedItems = applySorting(filteredItemsList, currentSortColumn, sortAscending);
+	$: sortedItems = applySorting(filteredItemsList, currentSortColumn as keyof Item, sortAscending);
 	$: paginatedItemsList = $paginatedItems(sortedItems);
 
 	onMount(async () => {
 		await itemStore.fetchItems();
+		if ($itemStore.length === 0) {
+			console.log('Adding test items...');
+			await addTestItems();
+			await itemStore.fetchItems();
+			console.log('Test items added successfully.');
+		}
 		itemsLoaded = true;
 	});
 
@@ -71,7 +77,12 @@
 			input: 'text',
 			inputValue: oldValue != null ? oldValue.toString() : '',
 			showCancelButton: true,
-			confirmButtonText: 'Confirm'
+			confirmButtonText: 'Confirm',
+			cancelButtonText: 'Cancel',
+			confirmButtonColor: '#3085d6',
+			cancelButtonColor: '#d33',
+			background: '#1a1a1a',
+			color: '#000000'
 		});
 		if (result.isConfirmed) {
 			await updateItem(id, field, result.value);
@@ -79,8 +90,19 @@
 	};
 
 	const updateItem = async (id: string, field: keyof Item, value: any) => {
-		// Implement update logic here
-		notificationStore.showNotification('Item updated successfully!', 'success');
+		try {
+			const item = $itemStore.find((item) => item.id === id);
+			if (!item) {
+				throw new Error('Item not found');
+			}
+			const updatedItem = { ...item, [field]: value };
+			await itemStore.updateItem(id, updatedItem);
+			notificationStore.showNotification('Item updated successfully!', 'success');
+		} catch (error) {
+			if (error instanceof Error) {
+				notificationStore.showNotification(error.message, 'error');
+			}
+		}
 	};
 
 	const handleSearch = (value: string) => {
@@ -92,7 +114,7 @@
 		searchStore.clearSearch();
 	};
 
-	const sortBy = (column: keyof Item) => {
+	const sortBy = (column: string) => {
 		if (currentSortColumn === column) {
 			sortAscending = !sortAscending;
 		} else {

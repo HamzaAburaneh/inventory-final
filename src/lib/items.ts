@@ -25,7 +25,7 @@ export async function resetItemCount(id: string): Promise<void> {
 export async function resetAllCounts(): Promise<void> {
 	const itemsQuery = collection(db, 'items');
 	const snapshot = await getDocs(itemsQuery);
-	const batch = writeBatch(db); // Use writeBatch(db)
+	const batch = writeBatch(db);
 
 	snapshot.forEach((docSnapshot) => {
 		batch.update(docSnapshot.ref, { count: 0 });
@@ -33,6 +33,7 @@ export async function resetAllCounts(): Promise<void> {
 
 	await batch.commit();
 }
+
 export async function getItems(): Promise<Item[]> {
 	const itemsQuery = collection(db, 'items');
 	const snapshot = await getDocs(itemsQuery);
@@ -81,12 +82,11 @@ export async function editItemCost(id: string, newCost: number): Promise<void> {
 	await updateDoc(itemDoc, { cost: newCost });
 }
 
-//edit item barcode
 export async function editItemBarcode(id: string, newBarcode: string): Promise<void> {
 	const itemDoc = doc(db, 'items', id);
 	await updateDoc(itemDoc, { barcode: newBarcode });
 }
-//edit item storage type
+
 export async function editItemStorageType(id: string, newStorageType: string): Promise<void> {
 	const itemDoc = doc(db, 'items', id);
 	await updateDoc(itemDoc, { storageType: newStorageType });
@@ -114,4 +114,34 @@ export function sortItems<T>(items: T[], column: keyof T, ascending: boolean): T
 
 export function applySorting(items: Item[], column: keyof Item, ascending: boolean): Item[] {
 	return sortItems(items, column, ascending);
+}
+
+// Add the new updateItem function
+export async function updateItem(id: string, updatedFields: Partial<Item>): Promise<void> {
+	const itemDoc = doc(db, 'items', id);
+	await updateDoc(itemDoc, updatedFields);
+}
+
+export async function addTestItems(count: number = 500): Promise<void> {
+	const storageTypes = ['freezer', 'refrigerator', 'dry storage'];
+
+	for (let i = 0; i < count; i++) {
+		const testItem: Omit<Item, 'id'> = {
+			name: `Test Item ${i + 1}`,
+			barcode: `BARCODE${(1000000 + i).toString().padStart(7, '0')}`,
+			count: Math.floor(Math.random() * 100),
+			lowCount: Math.floor(Math.random() * 10),
+			cost: parseFloat((Math.random() * 100).toFixed(2)),
+			storageType: storageTypes[Math.floor(Math.random() * storageTypes.length)]
+		};
+
+		try {
+			await addItem(testItem);
+			console.log(`Added test item ${i + 1}`);
+		} catch (error) {
+			console.error(`Error adding test item ${i + 1}:`, error);
+		}
+	}
+
+	console.log(`Finished adding ${count} test items`);
 }

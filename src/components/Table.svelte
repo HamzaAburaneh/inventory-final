@@ -1,32 +1,33 @@
 <script lang="ts">
-	import { fade, fly, crossfade } from 'svelte/transition';
+	import { fade, fly } from 'svelte/transition';
 	import type { Item } from '../types';
 
 	export let paginatedItems: Item[] = [];
-	export let onEdit: (id: string, field: keyof Item, value: any) => void;
-	export let onDelete: (id: string) => void;
-	export let sortBy: (column: keyof Item) => void;
-	export let currentSortColumn: keyof Item;
+	export let onEdit: (id: string, field: string, value: any) => void;
+	export let onDelete: (id: string) => Promise<void>;
+	export let sortBy: (column: string) => void;
+	export let currentSortColumn: string;
 	export let sortAscending: boolean;
 
-	const [send, receive] = crossfade({
-		duration: 200,
-		fallback(node, params) {
-			const style = getComputedStyle(node);
-			const transform = style.transform === 'none' ? '' : style.transform;
+	let hoveredButton: HTMLElement | null = null;
+	let deletingItemId: string | null = null;
 
-			return {
-				duration: 200,
-				easing: (t) => t,
-				css: (t) => `
-					transform: ${transform} scale(${t});
-					opacity: ${t}
-				`
-			};
-		}
-	});
+	function showTooltip(event: MouseEvent): void {
+		hoveredButton = event.target as HTMLElement;
+	}
+
+	function hideTooltip(): void {
+		hoveredButton = null;
+	}
+
+	async function handleDelete(id: string): Promise<void> {
+		deletingItemId = id;
+		await onDelete(id);
+		deletingItemId = null;
+	}
 
 	$: sortKey = `${currentSortColumn}-${sortAscending}`;
+	$: uniqueItems = [...new Map(paginatedItems.map((item) => [item.id, item])).values()];
 </script>
 
 <div class="table-wrapper">
@@ -34,166 +35,129 @@
 		<table class="custom-table">
 			<thead>
 				<tr class="table-header">
-					<th class="name-col" on:click={() => sortBy('name')}>
-						<div class="header">
-							Name
-							<i
-								class="fas fa-sort{currentSortColumn === 'name'
-									? sortAscending
-										? '-up'
-										: '-down'
-									: ''}"
-							></i>
-						</div>
-					</th>
-					<th class="barcode-col" on:click={() => sortBy('barcode')}>
-						<div class="header">
-							Barcode
-							<i
-								class="fas fa-sort{currentSortColumn === 'barcode'
-									? sortAscending
-										? '-up'
-										: '-down'
-									: ''}"
-							></i>
-						</div>
-					</th>
-					<th class="count-col" on:click={() => sortBy('count')}>
-						<div class="header">
-							Count
-							<i
-								class="fas fa-sort{currentSortColumn === 'count'
-									? sortAscending
-										? '-up'
-										: '-down'
-									: ''}"
-							></i>
-						</div>
-					</th>
-					<th class="lowcount-col" on:click={() => sortBy('lowCount')}>
-						<div class="header">
-							Low Count
-							<i
-								class="fas fa-sort{currentSortColumn === 'lowCount'
-									? sortAscending
-										? '-up'
-										: '-down'
-									: ''}"
-							></i>
-						</div>
-					</th>
-					<th class="cost-col" on:click={() => sortBy('cost')}>
-						<div class="header">
-							Cost
-							<i
-								class="fas fa-sort{currentSortColumn === 'cost'
-									? sortAscending
-										? '-up'
-										: '-down'
-									: ''}"
-							></i>
-						</div>
-					</th>
-					<th class="storage-col" on:click={() => sortBy('storageType')}>
-						<div class="header">
-							Storage Type
-							<i
-								class="fas fa-sort{currentSortColumn === 'storageType'
-									? sortAscending
-										? '-up'
-										: '-down'
-									: ''}"
-							></i>
-						</div>
-					</th>
-					<th class="action-col"></th>
+					{#each ['name', 'barcode', 'count', 'lowCount', 'cost', 'storageType', ''] as column, i}
+						<th class="{column}-col" on:click={() => column && sortBy(column)}>
+							<div class="header">
+								{#if column}
+									{column.charAt(0).toUpperCase() + column.slice(1)}
+									<i
+										class="fas fa-sort{currentSortColumn === column
+											? sortAscending
+												? '-up'
+												: '-down'
+											: ''}"
+									></i>
+								{/if}
+							</div>
+						</th>
+					{/each}
 				</tr>
 			</thead>
 			<tbody>
-				{#each paginatedItems as item (item.id + sortKey)}
-					<tr class="table-row">
-						<td class="name-col">
-							<div class="cell-content">
-								<span>{item.name}</span>
+				{#each uniqueItems as item (item.id)}
+					{#if item.id !== deletingItemId}
+						<tr class="table-row" in:fly={{ y: 20, duration: 300 }} out:fade={{ duration: 300 }}>
+							<td class="name-col">
+								<div class="cell-content">
+									<span>{item.name}</span>
+									<button
+										class="icon-button"
+										data-tooltip="Edit Name"
+										on:click={() => onEdit(item.id, 'name', item.name)}
+										on:mouseenter={showTooltip}
+										on:mouseleave={hideTooltip}
+									>
+										<i class="fas fa-edit"></i>
+									</button>
+								</div>
+							</td>
+							<td class="barcode-col">
+								<div class="cell-content">
+									<span>{item.barcode}</span>
+									<button
+										class="icon-button"
+										data-tooltip="Edit Barcode"
+										on:click={() => onEdit(item.id, 'barcode', item.barcode)}
+										on:mouseenter={showTooltip}
+										on:mouseleave={hideTooltip}
+									>
+										<i class="fas fa-edit"></i>
+									</button>
+								</div>
+							</td>
+							<td class="count-col">{item.count}</td>
+							<td class="lowcount-col">
+								<div class="cell-content">
+									<span>{item.lowCount != null ? item.lowCount : ''}</span>
+									<button
+										class="icon-button"
+										data-tooltip="Edit Low Count"
+										on:click={() => onEdit(item.id, 'lowCount', item.lowCount)}
+										on:mouseenter={showTooltip}
+										on:mouseleave={hideTooltip}
+									>
+										<i class="fas fa-edit"></i>
+									</button>
+								</div>
+							</td>
+							<td class="cost-col">
+								<div class="cell-content">
+									<span>{item.cost != null ? item.cost : ''}</span>
+									<button
+										class="icon-button"
+										data-tooltip="Edit Cost"
+										on:click={() => onEdit(item.id, 'cost', item.cost)}
+										on:mouseenter={showTooltip}
+										on:mouseleave={hideTooltip}
+									>
+										<i class="fas fa-edit"></i>
+									</button>
+								</div>
+							</td>
+							<td class="storage-col">
+								<div class="cell-content">
+									<span>{item.storageType}</span>
+									<button
+										class="icon-button"
+										data-tooltip="Edit Storage Type"
+										on:click={() => onEdit(item.id, 'storageType', item.storageType)}
+										on:mouseenter={showTooltip}
+										on:mouseleave={hideTooltip}
+									>
+										<i class="fas fa-edit"></i>
+									</button>
+								</div>
+							</td>
+							<td class="action-col">
 								<button
-									class="icon-button"
-									title="Edit Name"
-									on:click={() => onEdit(item.id, 'name', item.name)}
-									aria-label="Edit Name"
+									class="delete-button"
+									data-tooltip="Delete Item"
+									on:click={() => handleDelete(item.id)}
+									on:mouseenter={showTooltip}
+									on:mouseleave={hideTooltip}
 								>
-									<i class="fas fa-edit"></i>
+									<i class="fas fa-trash-alt"></i>
 								</button>
-							</div>
-						</td>
-						<td class="barcode-col">
-							<div class="cell-content">
-								<span>{item.barcode}</span>
-								<button
-									class="icon-button"
-									title="Edit Barcode"
-									on:click={() => onEdit(item.id, 'barcode', item.barcode)}
-									aria-label="Edit Barcode"
-								>
-									<i class="fas fa-edit"></i>
-								</button>
-							</div>
-						</td>
-						<td class="count-col">{item.count}</td>
-						<td class="lowcount-col">
-							<div class="cell-content">
-								<span>{item.lowCount != null ? item.lowCount : ''}</span>
-								<button
-									class="icon-button"
-									title="Edit Low Count"
-									on:click={() => onEdit(item.id, 'lowCount', item.lowCount)}
-									aria-label="Edit Low Count"
-								>
-									<i class="fas fa-edit"></i>
-								</button>
-							</div>
-						</td>
-						<td class="cost-col">
-							<div class="cell-content">
-								<span>{item.cost != null ? item.cost : ''}</span>
-								<button
-									class="icon-button"
-									title="Edit Cost"
-									on:click={() => onEdit(item.id, 'cost', item.cost)}
-									aria-label="Edit Cost"
-								>
-									<i class="fas fa-edit"></i>
-								</button>
-							</div>
-						</td>
-						<td class="storage-col">
-							<div class="cell-content">
-								<span>{item.storageType}</span>
-								<button
-									class="icon-button"
-									title="Edit Storage Type"
-									on:click={() => onEdit(item.id, 'storageType', item.storageType)}
-									aria-label="Edit Storage Type"
-								>
-									<i class="fas fa-edit"></i>
-								</button>
-							</div>
-						</td>
-						<td class="action-col">
-							<button
-								class="delete-button"
-								title="Delete Item"
-								on:click={() => onDelete(item.id)}
-								aria-label="Delete Item"
-							>
-								<i class="fas fa-trash-alt"></i>
-							</button>
-						</td>
-					</tr>
+							</td>
+						</tr>
+					{/if}
 				{/each}
 			</tbody>
 		</table>
 	</div>
 </div>
+
+{#if hoveredButton}
+	<div
+		class="tooltip"
+		style="left: {hoveredButton.getBoundingClientRect()
+			.left}px; top: {hoveredButton.getBoundingClientRect().top - 30}px"
+		in:fly={{ y: 10, duration: 200 }}
+		out:fade={{ duration: 200 }}
+	>
+		{hoveredButton.dataset.tooltip}
+	</div>
+{/if}
 
 <style>
 	.table-wrapper {
@@ -207,6 +171,7 @@
 		overflow-x: auto;
 		overflow-y: scroll;
 		max-height: 550px;
+		min-height: 550px;
 	}
 
 	.custom-table {
@@ -236,6 +201,7 @@
 
 	.custom-table tbody tr {
 		background-color: var(--container-bg);
+		transition: background-color 0.3s ease;
 	}
 
 	.custom-table tbody tr:hover {
@@ -246,16 +212,21 @@
 		display: flex;
 		align-items: center;
 		cursor: pointer;
+		transition: color 0.3s ease;
 	}
 
 	.header i {
 		margin-left: 0.5rem;
 		font-size: 0.8em;
+		transition: transform 0.3s ease;
 	}
 
 	.header:hover {
 		color: var(--icon-hover-color);
-		transition: color 0.3s ease;
+	}
+
+	.header:hover i {
+		transform: scale(1.2);
 	}
 
 	.cell-content {
@@ -270,12 +241,21 @@
 		border: none;
 		cursor: pointer;
 		opacity: 0;
-		transition: opacity 0.2s ease-in-out;
+		transition:
+			opacity 0.2s ease-in-out,
+			color 0.2s ease-in-out,
+			transform 0.2s ease;
 	}
 
 	.table-row:hover .icon-button,
 	.table-row:hover .delete-button {
 		opacity: 1;
+	}
+
+	.icon-button:hover,
+	.delete-button:hover {
+		color: var(--icon-hover-color);
+		transform: scale(1.2);
 	}
 
 	.delete-button {
@@ -307,5 +287,16 @@
 	}
 	.action-col {
 		width: 10%;
+	}
+
+	.tooltip {
+		position: fixed;
+		background-color: #333;
+		color: white;
+		padding: 5px 10px;
+		border-radius: 4px;
+		font-size: 14px;
+		z-index: 1000;
+		pointer-events: none;
 	}
 </style>

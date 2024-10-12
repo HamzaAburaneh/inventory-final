@@ -6,7 +6,8 @@ import {
 	deleteItem,
 	updateItemCount,
 	resetItemCount,
-	resetAllCounts
+	resetAllCounts,
+	updateItem as updateItemInFirestore
 } from '../lib/items';
 
 function createItemStore() {
@@ -58,6 +59,12 @@ function createItemStore() {
 				items.map((item) =>
 					item.id === id ? { ...item, changeAmount: Math.max(0, amount) } : item
 				)
+			);
+		},
+		updateItem: async (id: string, updatedFields: Partial<Item>) => {
+			await updateItemInFirestore(id, updatedFields);
+			update((items) =>
+				items.map((item) => (item.id === id ? { ...item, ...updatedFields } : item))
 			);
 		}
 	};
