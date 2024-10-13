@@ -37,12 +37,7 @@
 
 	onMount(async () => {
 		await itemStore.fetchItems();
-		if ($itemStore.length === 0) {
-			console.log('Adding test items...');
-			await addTestItems();
-			await itemStore.fetchItems();
-			console.log('Test items added successfully.');
-		}
+
 		itemsLoaded = true;
 	});
 
