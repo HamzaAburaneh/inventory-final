@@ -1,11 +1,21 @@
-<script>
+<script lang="ts">
 	import { page } from '$app/stores';
 	import ThemeToggle from './ThemeToggle.svelte';
+	import { authStore } from '../stores/authStore';
+	import type { User } from 'firebase/auth';
+	import { goto } from '$app/navigation';
+
+	export let user: User | null;
 
 	let isOpen = false;
 
 	function toggleMenu() {
 		isOpen = !isOpen;
+	}
+
+	async function handleLogout() {
+		await authStore.logout();
+		goto('/login');
 	}
 </script>
 
@@ -22,36 +32,56 @@
 		</button>
 		<ul class="nav-list desktop">
 			<li><a href="/" class="nav-link" class:active={$page.url.pathname === '/'}>Home</a></li>
-			<li>
-				<a href="/manageItems" class="nav-link" class:active={$page.url.pathname === '/manageItems'}
-					>Item Manager</a
-				>
-			</li>
-			<li>
-				<a
-					href="/manageTransactions"
-					class="nav-link"
-					class:active={$page.url.pathname === '/manageTransactions'}>Manage Transactions</a
-				>
-			</li>
-
+			{#if user}
+				<li>
+					<a
+						href="/manageItems"
+						class="nav-link"
+						class:active={$page.url.pathname === '/manageItems'}>Item Manager</a
+					>
+				</li>
+				<li>
+					<a
+						href="/manageTransactions"
+						class="nav-link"
+						class:active={$page.url.pathname === '/manageTransactions'}>Manage Transactions</a
+					>
+				</li>
+				<li>
+					<button on:click={handleLogout} class="nav-link">Logout</button>
+				</li>
+			{:else}
+				<li>
+					<a href="/login" class="nav-link" class:active={$page.url.pathname === '/login'}>Login</a>
+				</li>
+			{/if}
 			<li><ThemeToggle /></li>
 		</ul>
 		<ul class="nav-list mobile {isOpen ? 'open' : ''}">
 			<li><a href="/" class="nav-link" class:active={$page.url.pathname === '/'}>Home</a></li>
-			<li>
-				<a href="/manageItems" class="nav-link" class:active={$page.url.pathname === '/manageItems'}
-					>Item Manager</a
-				>
-			</li>
-			<li>
-				<a
-					href="/manageTransactions"
-					class="nav-link"
-					class:active={$page.url.pathname === '/manageTransactions'}>Manage Transactions</a
-				>
-			</li>
-
+			{#if user}
+				<li>
+					<a
+						href="/manageItems"
+						class="nav-link"
+						class:active={$page.url.pathname === '/manageItems'}>Item Manager</a
+					>
+				</li>
+				<li>
+					<a
+						href="/manageTransactions"
+						class="nav-link"
+						class:active={$page.url.pathname === '/manageTransactions'}>Manage Transactions</a
+					>
+				</li>
+				<li>
+					<button on:click={handleLogout} class="nav-link">Logout</button>
+				</li>
+			{:else}
+				<li>
+					<a href="/login" class="nav-link" class:active={$page.url.pathname === '/login'}>Login</a>
+				</li>
+			{/if}
 			<li><ThemeToggle /></li>
 		</ul>
 	</div>
@@ -89,6 +119,9 @@
 		padding: 0.5rem 0;
 		position: relative;
 		transition: color 0.3s ease;
+		background: none;
+		border: none;
+		cursor: pointer;
 	}
 
 	.nav-link::after {
@@ -96,7 +129,7 @@
 		position: absolute;
 		width: 100%;
 		height: 2px;
-		bottom: -16px; /* Adjust this value to place the underline exactly at the bottom */
+		bottom: -16px;
 		left: 0;
 		background-color: var(--nav-text-color);
 		transform: scaleX(0);

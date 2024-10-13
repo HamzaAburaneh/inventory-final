@@ -1,5 +1,6 @@
 import { initializeApp, type FirebaseOptions } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getAuth, type Auth } from 'firebase/auth';
 
 const firebaseConfig: FirebaseOptions = {
 	apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -12,13 +13,15 @@ const firebaseConfig: FirebaseOptions = {
 };
 
 let db: Firestore;
+let auth: Auth;
 
 try {
 	const app = initializeApp(firebaseConfig);
 	db = getFirestore(app);
+	auth = getAuth(app);
 } catch (error) {
 	console.error('Error initializing Firebase:', error);
 	throw error;
 }
 
-export { db };
+export { db, auth };
