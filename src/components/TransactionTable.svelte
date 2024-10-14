@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { fade, fly } from 'svelte/transition';
 	import type { Transaction } from '../types';
 
 	export let paginatedItems: Transaction[] = [];
@@ -16,66 +15,103 @@
 
 	const columns: (keyof Transaction | 'changedAmount')[] = [
 		'itemName',
-		'type',
 		'previousCount',
 		'changedAmount',
 		'newCount',
-		'user',
-		'timestamp'
+		'timestamp',
+		'user'
 	];
+
+	function getChangedAmountStyle(changedAmount: number): { color: string; icon: string } {
+		if (changedAmount > 0) {
+			return { color: 'positive-change', icon: 'fas fa-arrow-up' };
+		} else if (changedAmount < 0) {
+			return { color: 'negative-change', icon: 'fas fa-arrow-down' };
+		}
+		return { color: '', icon: '' };
+	}
+
+	function formatTimestamp(timestamp: Date): string {
+		const date = new Date(timestamp);
+		const time = date.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
+		const formattedDate = date.toLocaleDateString('en-US', {
+			month: '2-digit',
+			day: '2-digit',
+			year: 'numeric'
+		});
+		return `${time} | ${formattedDate}`;
+	}
 </script>
 
 <div class="table-wrapper">
-	<table class="custom-table">
-		<thead>
-			<tr class="table-header">
-				{#each columns as column}
-					<th class="{column}-col" on:click={() => sortBy(column)}>
-						<div class="header">
-							{capitalizeWords(column.replace(/([A-Z])/g, ' $1').trim())}
-							<i
-								class="fas fa-sort{currentSortColumn === column
-									? sortAscending
-										? '-up'
-										: '-down'
-									: ''}"
-							></i>
-						</div>
-					</th>
-				{/each}
-			</tr>
-		</thead>
-		<tbody>
-			{#each paginatedItems as transaction (transaction.id)}
-				<tr class="table-row" in:fly={{ y: 20, duration: 300 }} out:fade={{ duration: 300 }}>
-					<td class="itemname-col">{transaction.itemName}</td>
-					<td class="type-col">{capitalizeWords(transaction.type)}</td>
-					<td class="previouscount-col">{transaction.previousCount}</td>
-					<td class="changedamount-col">{transaction.newCount - transaction.previousCount}</td>
-					<td class="newcount-col">{transaction.newCount}</td>
-					<td class="user-col">{transaction.user}</td>
-					<td class="timestamp-col">{new Date(transaction.timestamp).toLocaleString()}</td>
+	<div class="table-scroll">
+		<table class="custom-table">
+			<thead>
+				<tr class="table-header">
+					{#each columns as column}
+						<th class="{column}-col" on:click={() => sortBy(column)}>
+							<div class="header">
+								{capitalizeWords(column.replace(/([A-Z])/g, ' $1').trim())}
+								<i
+									class="fas fa-sort{currentSortColumn === column
+										? sortAscending
+											? '-up'
+											: '-down'
+										: ''}"
+								></i>
+							</div>
+						</th>
+					{/each}
 				</tr>
-			{/each}
-		</tbody>
-	</table>
+			</thead>
+			<tbody>
+				{#each paginatedItems as transaction (transaction.id)}
+					{@const changedAmount = transaction.newCount - transaction.previousCount}
+					{@const style = getChangedAmountStyle(changedAmount)}
+					<tr class="table-row">
+						<td class="itemname-col">{transaction.itemName}</td>
+						<td class="previouscount-col">{transaction.previousCount}</td>
+						<td class="changedamount-col">
+							<span class={style.color}>
+								<i class="{style.icon} mr-1"></i>
+								{changedAmount > 0 ? '+' : ''}{changedAmount}
+							</span>
+						</td>
+						<td class="newcount-col highlighted">{transaction.newCount}</td>
+						<td class="timestamp-col dimmed-text">{formatTimestamp(transaction.timestamp)}</td>
+						<td class="user-col dimmed-text">{transaction.user}</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
 </div>
 
 <style>
 	.table-wrapper {
+		position: relative;
+		width: 100%;
+		overflow: hidden;
+	}
+	.table-scroll {
+		width: 100%;
 		overflow-x: auto;
-		max-width: 100%;
+		overflow-y: scroll;
+		max-height: 670px;
+		min-height: 670px;
 	}
 
 	.custom-table {
 		width: 100%;
 		border-collapse: separate;
 		border-spacing: 0;
+		font-size: 1rem;
+		max-height: 100%;
 	}
 
 	.custom-table th,
 	.custom-table td {
-		padding: 0.6rem;
+		padding: 1rem 1.2rem;
 		text-align: left;
 		border-bottom: 1px solid var(--table-border-color);
 		white-space: nowrap;
@@ -86,12 +122,15 @@
 		top: 0;
 		background-color: var(--container-bg);
 		z-index: 10;
-		box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		font-weight: bold;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		font-size: 0.9rem;
 	}
 
 	.custom-table tbody tr {
 		background-color: var(--container-bg);
-		transition: background-color 0.3s ease;
 	}
 
 	.custom-table tbody tr:hover {
@@ -101,52 +140,49 @@
 	.header {
 		display: flex;
 		align-items: center;
+		justify-content: space-between;
 		cursor: pointer;
-		transition: color 0.3s ease;
 	}
 
 	.header i {
 		margin-left: 0.5rem;
 		font-size: 0.8em;
-		transition: transform 0.3s ease;
 	}
 
-	.header:hover {
-		color: var(--icon-hover-color);
-	}
-
-	.header:hover i {
-		transform: scale(1.2);
-	}
-
-	/* Adjusted column widths */
 	.itemname-col {
-		width: 20%;
+		width: 25%;
 	}
-	.type-col {
-		width: 10%;
-	}
-	.previouscount-col {
-		width: 12%;
-	}
-	.changedamount-col {
-		width: 12%;
-	}
+	.previouscount-col,
+	.changedamount-col,
 	.newcount-col {
 		width: 12%;
+		text-align: right;
 	}
 	.user-col {
 		width: 15%;
 	}
 	.timestamp-col {
-		width: 19%;
+		width: 24%;
 	}
 
-	@media (max-width: 768px) {
-		.custom-table th,
-		.custom-table td {
-			padding: 0.5rem;
-			font-size: 0.9rem;
-		}
+	.positive-change {
+		color: #4caf50;
+		font-weight: bold;
+	}
+	.negative-change {
+		color: #f44336;
+		font-weight: bold;
+	}
+
+	.mr-1 {
+		margin-right: 0.25rem;
+	}
+	.highlighted {
+		background-color: rgba(255, 255, 255, 0.05);
+		font-weight: bold;
+	}
+	.dimmed-text {
+		color: rgba(255, 255, 255, 0.6);
+		font-size: 0.9em;
 	}
 </style>
