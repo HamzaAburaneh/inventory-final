@@ -48,6 +48,13 @@
 					>
 				</li>
 				<li>
+					<a
+						href="/transactionHistory"
+						class="nav-link"
+						class:active={$page.url.pathname === '/transactionHistory'}>Transaction History</a
+					>
+				</li>
+				<li>
 					<button on:click={handleLogout} class="nav-link">Logout</button>
 				</li>
 			{:else}
@@ -72,6 +79,13 @@
 						href="/manageTransactions"
 						class="nav-link"
 						class:active={$page.url.pathname === '/manageTransactions'}>Manage Transactions</a
+					>
+				</li>
+				<li>
+					<a
+						href="/transactionHistory"
+						class="nav-link"
+						class:active={$page.url.pathname === '/transactionHistory'}>Transaction History</a
 					>
 				</li>
 				<li>

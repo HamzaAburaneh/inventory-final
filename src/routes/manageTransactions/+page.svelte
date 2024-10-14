@@ -13,6 +13,8 @@
 	import type { Item } from '../../types';
 	import { applySorting } from '../../lib/items';
 	import { theme } from '../../themes';
+	import { addTransaction } from '../../lib/transactions';
+	import { authStore } from '../../stores/authStore';
 
 	let currentSortColumn: keyof Item = 'name';
 	let sortAscending = true;
@@ -43,8 +45,24 @@
 		paginationStore.setCurrentPage(1);
 	};
 
+	const getCurrentUser = () => {
+		return $authStore?.email || 'Unknown';
+	};
+
 	const changeCount = async (item: Item, amount: number) => {
+		const previousCount = item.count;
 		await itemStore.changeCount(item.id, amount);
+		const updatedItem = $itemStore.find((i) => i.id === item.id);
+		if (updatedItem) {
+			await addTransaction({
+				itemId: item.id,
+				itemName: item.name,
+				type: amount > 0 ? 'add' : 'remove',
+				previousCount: previousCount,
+				newCount: updatedItem.count,
+				user: getCurrentUser()
+			});
+		}
 		notificationStore.showNotification(`Count for "${item.name}" updated successfully!`, 'success');
 	};
 
@@ -63,7 +81,16 @@
 		});
 
 		if (result.isConfirmed) {
+			const previousCount = item.count;
 			await itemStore.resetItemCount(item.id);
+			await addTransaction({
+				itemId: item.id,
+				itemName: item.name,
+				type: 'remove',
+				previousCount: previousCount,
+				newCount: 0,
+				user: getCurrentUser()
+			});
 			notificationStore.showNotification(`Count for "${item.name}" reset successfully!`, 'success');
 		}
 	};
@@ -83,7 +110,18 @@
 		});
 
 		if (result.isConfirmed) {
+			const itemsToReset = $itemStore.filter((item) => item.count !== 0);
 			await itemStore.resetAllCounts();
+			for (const item of itemsToReset) {
+				await addTransaction({
+					itemId: item.id,
+					itemName: item.name,
+					type: 'remove',
+					previousCount: item.count,
+					newCount: 0,
+					user: getCurrentUser()
+				});
+			}
 			notificationStore.showNotification('All counts have been reset successfully!', 'success');
 		}
 	};
