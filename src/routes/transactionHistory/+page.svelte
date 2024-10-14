@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { db } from '../../firebase';
-	import { collection, query, orderBy, getDocs, where, getDoc, doc } from 'firebase/firestore';
-	import type { Transaction, Item } from '../../types';
+	import { collection, query, orderBy, getDocs, where } from 'firebase/firestore';
+	import type { Transaction } from '../../types';
 	import TransactionTable from '../../components/TransactionTable.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
@@ -10,26 +10,14 @@
 	import { searchStore } from '../../stores/searchStore';
 	import { fadeAndSlide } from '$lib/transitions';
 
-	let transactions: (Transaction & { itemName: string })[] = [];
+	let transactions: Transaction[] = [];
 	let loading = true;
-	let filteredTransactions: (Transaction & { itemName: string })[] = [];
-	let currentSortColumn: keyof (Transaction & { itemName: string }) | 'changedAmount' = 'timestamp';
+	let filteredTransactions: Transaction[] = [];
+	let currentSortColumn: keyof Transaction | 'changedAmount' = 'timestamp';
 	let sortAscending = false;
 
 	$: filteredTransactions = $paginatedItems(transactions);
 	$: filterLegend = `${filteredTransactions.length} results of ${transactions.length} total transactions.`;
-
-	$: {
-		console.log('Filtered transactions:', filteredTransactions);
-	}
-
-	async function fetchItemName(itemId: string): Promise<string> {
-		const itemDoc = await getDoc(doc(db, 'items', itemId));
-		if (itemDoc.exists()) {
-			return (itemDoc.data() as Item).name;
-		}
-		return 'Unknown Item';
-	}
 
 	async function fetchTransactions(searchTerm: string) {
 		loading = true;
@@ -42,24 +30,19 @@
 
 		try {
 			const querySnapshot = await getDocs(q);
-			console.log('Query snapshot:', querySnapshot);
-			const transactionsPromises = querySnapshot.docs.map(async (doc) => {
+			transactions = querySnapshot.docs.map((doc) => {
 				const data = doc.data();
-				console.log('Document data:', data);
-				const itemName = await fetchItemName(data.itemId);
 				return {
 					id: doc.id,
 					itemId: data.itemId,
-					itemName,
+					itemName: data.itemName,
 					type: data.type,
 					previousCount: data.previousCount,
 					newCount: data.newCount,
 					timestamp: data.timestamp?.toDate() || new Date(),
 					user: data.user
-				};
+				} as Transaction;
 			});
-			transactions = await Promise.all(transactionsPromises);
-			console.log('Processed transactions:', transactions);
 			paginationStore.setTotalItems(transactions.length);
 		} catch (error) {
 			console.error('Error fetching transactions:', error);
@@ -84,7 +67,7 @@
 		fetchTransactions('');
 	}
 
-	function handleSort(column: keyof (Transaction & { itemName: string }) | 'changedAmount') {
+	function handleSort(column: keyof Transaction | 'changedAmount') {
 		if (currentSortColumn === column) {
 			sortAscending = !sortAscending;
 		} else {
@@ -119,8 +102,9 @@
 >
 	<h1 class="text-3xl font-bold mb-6">Transaction History</h1>
 
-	<SearchBar searchValue={$searchStore} onSearch={handleSearch} onClear={handleClear} />
-
+	<div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+		<SearchBar searchValue={$searchStore} onSearch={handleSearch} onClear={handleClear} />
+	</div>
 	<div class="filter-legend text-white mb-4">
 		{filterLegend}
 	</div>
@@ -138,7 +122,9 @@
 				{sortAscending}
 			/>
 		</div>
-		<Pagination />
+		<div class="mt-4">
+			<Pagination />
+		</div>
 	{/if}
 </div>
 
@@ -149,9 +135,7 @@
 	}
 
 	.container {
-		margin-top: 20px;
-		padding: 2.5rem;
-		max-width: 90%;
+		max-width: 95%;
 		background-color: var(--container-bg);
 		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 		border-radius: 1rem;

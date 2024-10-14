@@ -23,83 +23,61 @@
 		'user',
 		'timestamp'
 	];
-
-	$: {
-		console.log('TransactionTable - paginatedItems:', paginatedItems);
-	}
 </script>
 
 <div class="table-wrapper">
-	<div class="table-scroll">
-		{#if paginatedItems.length === 0}
-			<p class="text-center my-4">No transactions to display.</p>
-		{:else}
-			<table class="custom-table">
-				<thead>
-					<tr class="table-header">
-						{#each columns as column}
-							<th class="{column}-col" on:click={() => sortBy(column)}>
-								<div class="header">
-									{capitalizeWords(column.replace(/([A-Z])/g, ' $1').trim())}
-									<i
-										class="fas fa-sort{currentSortColumn === column
-											? sortAscending
-												? '-up'
-												: '-down'
-											: ''}"
-									></i>
-								</div>
-							</th>
-						{/each}
-					</tr>
-				</thead>
-				<tbody>
-					{#each paginatedItems as transaction (transaction.id)}
-						<tr class="table-row" in:fly={{ y: 20, duration: 300 }} out:fade={{ duration: 300 }}>
-							<td class="itemname-col">{transaction.itemName}</td>
-							<td class="type-col">{capitalizeWords(transaction.type)}</td>
-							<td class="previouscount-col">{transaction.previousCount}</td>
-							<td class="changedamount-col">{transaction.newCount - transaction.previousCount}</td>
-							<td class="newcount-col">{transaction.newCount}</td>
-							<td class="user-col">{transaction.user}</td>
-							<td class="timestamp-col">{new Date(transaction.timestamp).toLocaleString()}</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		{/if}
-	</div>
+	<table class="custom-table">
+		<thead>
+			<tr class="table-header">
+				{#each columns as column}
+					<th class="{column}-col" on:click={() => sortBy(column)}>
+						<div class="header">
+							{capitalizeWords(column.replace(/([A-Z])/g, ' $1').trim())}
+							<i
+								class="fas fa-sort{currentSortColumn === column
+									? sortAscending
+										? '-up'
+										: '-down'
+									: ''}"
+							></i>
+						</div>
+					</th>
+				{/each}
+			</tr>
+		</thead>
+		<tbody>
+			{#each paginatedItems as transaction (transaction.id)}
+				<tr class="table-row" in:fly={{ y: 20, duration: 300 }} out:fade={{ duration: 300 }}>
+					<td class="itemname-col">{transaction.itemName}</td>
+					<td class="type-col">{capitalizeWords(transaction.type)}</td>
+					<td class="previouscount-col">{transaction.previousCount}</td>
+					<td class="changedamount-col">{transaction.newCount - transaction.previousCount}</td>
+					<td class="newcount-col">{transaction.newCount}</td>
+					<td class="user-col">{transaction.user}</td>
+					<td class="timestamp-col">{new Date(transaction.timestamp).toLocaleString()}</td>
+				</tr>
+			{/each}
+		</tbody>
+	</table>
 </div>
 
 <style>
 	.table-wrapper {
-		position: relative;
-		width: 100%;
-		overflow: hidden;
-	}
-
-	.table-scroll {
-		width: 100%;
 		overflow-x: auto;
-		overflow-y: scroll;
-		max-height: 600px;
-		min-height: 600px;
+		max-width: 100%;
 	}
 
 	.custom-table {
+		width: 100%;
 		border-collapse: separate;
 		border-spacing: 0;
-		width: 100%;
-		table-layout: fixed;
 	}
 
 	.custom-table th,
 	.custom-table td {
-		padding: 0.75rem;
+		padding: 0.6rem;
 		text-align: left;
 		border-bottom: 1px solid var(--table-border-color);
-		overflow: hidden;
-		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
@@ -141,14 +119,34 @@
 		transform: scale(1.2);
 	}
 
-	/* Fixed column widths */
-	.itemname-col,
-	.type-col,
-	.previouscount-col,
-	.changedamount-col,
-	.newcount-col,
-	.user-col,
+	/* Adjusted column widths */
+	.itemname-col {
+		width: 20%;
+	}
+	.type-col {
+		width: 10%;
+	}
+	.previouscount-col {
+		width: 12%;
+	}
+	.changedamount-col {
+		width: 12%;
+	}
+	.newcount-col {
+		width: 12%;
+	}
+	.user-col {
+		width: 15%;
+	}
 	.timestamp-col {
-		width: 14.28%; /* 100% / 7 columns */
+		width: 19%;
+	}
+
+	@media (max-width: 768px) {
+		.custom-table th,
+		.custom-table td {
+			padding: 0.5rem;
+			font-size: 0.9rem;
+		}
 	}
 </style>
