@@ -214,7 +214,7 @@
 									placeholder="0"
 									value={item.changeAmount === 0 ? '' : item.changeAmount}
 									on:input={(e) => handleChangeAmountInput(item, e)}
-									class="w-16 rounded-md bg-zinc-800 border-zinc-800 hover:border-stone-400 text-white shadow-sm focus:border-stone-400 focus:ring-stone-400 sm:text-sm text-center"
+									class="change-amount-input w-16 rounded-md shadow-sm sm:text-sm text-center"
 								/>
 							</div>
 						</td>
@@ -360,5 +360,21 @@
 	.relative {
 		height: 1.5em;
 		width: 100%;
+	}
+
+	.change-amount-input {
+		background-color: var(--input-bg);
+		color: var(--input-text);
+		border: 1px solid var(--input-border);
+		transition: all 0.3s ease;
+	}
+
+	.change-amount-input:hover {
+		background-color: var(--input-hover-bg);
+	}
+
+	.change-amount-input:focus {
+		border-color: var(--input-focus-border);
+		outline: none;
 	}
 </style>

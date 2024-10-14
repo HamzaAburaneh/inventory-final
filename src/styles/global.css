@@ -32,7 +32,12 @@
 	--scrollbar-track: #f1f1f1;
 	--scrollbar-thumb: #888;
 	--scrollbar-thumb-hover: #555;
-	--table-row-hover-bg: #f5f5f5; /* New variable for light mode row hover */
+	--table-row-hover-bg: #f5f5f5;
+	--input-bg: #ffffff;
+	--input-text: #333333;
+	--input-border: #cccccc;
+	--input-hover-bg: #f0f0f0;
+	--input-focus-border: #4a90e2;
 }
 
 [data-theme='dark'] {
@@ -66,7 +71,12 @@
 	--scrollbar-track: #2c2c2c;
 	--scrollbar-thumb: #555;
 	--scrollbar-thumb-hover: #777;
-	--table-row-hover-bg: #2a2a2a; /* New variable for dark mode row hover */
+	--table-row-hover-bg: #2a2a2a;
+	--input-bg: #2c2c2c;
+	--input-text: #e0e0e0;
+	--input-border: #444444;
+	--input-hover-bg: #3a3a3a;
+	--input-focus-border: #4a90e2;
 }
 
 body {
@@ -92,8 +102,18 @@ body {
 input {
 	background-color: var(--input-bg);
 	color: var(--input-text);
-	border: 1px solid var(--border-color);
+	border: 1px solid var(--input-border);
 	border-radius: var(--border-radius);
+	transition: all 0.3s ease;
+}
+
+input:hover {
+	background-color: var(--input-hover-bg);
+}
+
+input:focus {
+	border-color: var(--input-focus-border);
+	outline: none;
 }
 
 input::placeholder {
