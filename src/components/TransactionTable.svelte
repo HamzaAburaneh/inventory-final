@@ -131,10 +131,11 @@
 
 	.custom-table tbody tr {
 		background-color: var(--container-bg);
+		transition: background-color 0.3s ease;
 	}
 
 	.custom-table tbody tr:hover {
-		background-color: var(--zinc-800);
+		background-color: var(--table-row-hover-bg);
 	}
 
 	.header {

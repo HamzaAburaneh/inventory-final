@@ -193,7 +193,7 @@
 			</thead>
 			<tbody>
 				{#each paginatedItemsList as item (item.id)}
-					<tr class="border-b border-zinc-800 hover:bg-zinc-800" in:fade={{ duration: 200 }}>
+					<tr class="border-b border-zinc-800" in:fade={{ duration: 200 }}>
 						<td class="px-6 py-4 text-left whitespace-nowrap">{item.name}</td>
 						<td class="px-6 py-4 text-center">
 							<div class="relative inline-block w-full h-6">
@@ -310,10 +310,11 @@
 
 	.custom-table tbody tr {
 		background-color: var(--container-bg);
+		transition: background-color 0.3s ease;
 	}
 
 	.custom-table tbody tr:hover {
-		background-color: var(--zinc-800);
+		background-color: var(--table-row-hover-bg);
 	}
 
 	.header {

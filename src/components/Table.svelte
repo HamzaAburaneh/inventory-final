@@ -232,7 +232,7 @@
 	}
 
 	.custom-table tbody tr:hover {
-		background-color: var(--zinc-800);
+		background-color: var(--table-row-hover-bg);
 	}
 
 	.header {
