@@ -8,16 +8,22 @@
 	import SearchBar from '../../components/SearchBar.svelte';
 	import { paginationStore, paginatedItems } from '../../stores/paginationStore';
 	import { searchStore } from '../../stores/searchStore';
+	import { fade } from 'svelte/transition';
+	import { fadeAndSlide } from '$lib/transitions';
 
 	let allTransactions: Transaction[] = [];
 	let filteredTransactions: Transaction[] = [];
 	let loading = true;
 	let currentSortColumn: keyof Transaction | 'changedAmount' = 'timestamp';
 	let sortAscending = false;
+	let transactionsLoaded = false;
 
 	$: sortedTransactions = sortTransactions(filteredTransactions, currentSortColumn, sortAscending);
 	$: paginatedTransactions = $paginatedItems(sortedTransactions) as Transaction[];
 	$: filterLegend = `Showing ${paginatedTransactions.length} of ${filteredTransactions.length} filtered transactions (${allTransactions.length} total).`;
+	$: {
+		transactionsLoaded = allTransactions.length > 0;
+	}
 
 	function sortTransactions(
 		transactions: Transaction[],
@@ -108,32 +114,41 @@
 	<title>Transaction History</title>
 </svelte:head>
 
-<div class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4">
-	<h1 class="text-3xl font-bold mb-6">Transaction History</h1>
+{#if transactionsLoaded}
+	<div
+		class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4"
+		in:fadeAndSlide={{ duration: 300, y: 75 }}
+	>
+		<h1 class="text-3xl font-bold mb-6">Transaction History</h1>
 
-	<SearchBar searchValue={$searchStore} onSearch={handleSearch} onClear={handleClear} />
+		<SearchBar searchValue={$searchStore} onSearch={handleSearch} onClear={handleClear} />
 
-	<div class="filter-legend text-white mb-4">
-		{filterLegend}
+		<div class="filter-legend text-white mb-4">
+			{filterLegend}
+		</div>
+
+		<div class="table-container">
+			{#if loading}
+				<p class="text-center my-4">Loading transactions...</p>
+			{:else if sortedTransactions.length === 0}
+				<p class="text-center my-4">No transactions found.</p>
+			{:else}
+				<TransactionTable
+					paginatedItems={paginatedTransactions}
+					sortBy={handleSort}
+					{currentSortColumn}
+					{sortAscending}
+				/>
+			{/if}
+		</div>
+
+		<Pagination />
 	</div>
-
-	<div class="table-container">
-		{#if loading}
-			<p class="text-center my-4">Loading transactions...</p>
-		{:else if sortedTransactions.length === 0}
-			<p class="text-center my-4">No transactions found.</p>
-		{:else}
-			<TransactionTable
-				paginatedItems={paginatedTransactions}
-				sortBy={handleSort}
-				{currentSortColumn}
-				{sortAscending}
-			/>
-		{/if}
+{:else}
+	<div class="flex justify-center items-center h-screen">
+		<div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
 	</div>
-
-	<Pagination />
-</div>
+{/if}
 
 <style>
 	.container {

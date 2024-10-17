@@ -18,6 +18,7 @@
 
 	let currentSortColumn: keyof Item = 'name';
 	let sortAscending = true;
+	let itemsLoaded = false;
 
 	$: filteredItemsList = $filteredItems($searchStore);
 	$: {
@@ -29,6 +30,7 @@
 
 	onMount(async () => {
 		await itemStore.fetchItems();
+		itemsLoaded = true;
 	});
 
 	const sortBy = (column: keyof Item) => {
@@ -141,125 +143,131 @@
 	};
 </script>
 
-<div
-	class="container mx-auto p-4 sm:p-6 rounded-lg shadow-md bg-container mt-4"
-	in:fadeAndSlide={{ duration: 300, y: 75 }}
->
-	<SearchBar
-		searchValue={$searchStore}
-		onSearch={handleSearch}
-		onClear={() => searchStore.clearSearch()}
-	/>
+{#if itemsLoaded}
+	<div
+		class="container mx-auto p-4 sm:p-6 rounded-lg shadow-md bg-container mt-4"
+		in:fadeAndSlide={{ duration: 300, y: 75 }}
+	>
+		<SearchBar
+			searchValue={$searchStore}
+			onSearch={handleSearch}
+			onClear={() => searchStore.clearSearch()}
+		/>
 
-	<div class="filter-legend text-white mb-4">
-		{filterLegend}
-	</div>
+		<div class="filter-legend text-white mb-4">
+			{filterLegend}
+		</div>
 
-	<div class="table-container overflow-x-auto">
-		<table class="custom-table w-full">
-			<thead>
-				<tr>
-					<th class="w-1/3 px-6 py-3" on:click={() => sortBy('name')}>
-						<div class="header flex items-center cursor-pointer">
-							Item Name
-							<i
-								class="fas fa-sort ml-2 {currentSortColumn === 'name'
-									? sortAscending
-										? 'fa-sort-up'
-										: 'fa-sort-down'
-									: ''}"
-							></i>
-						</div>
-					</th>
-					<th class="w-1/6 px-6 py-3" on:click={() => sortBy('count')}>
-						<div class="header flex items-center justify-center cursor-pointer">
-							Count
-							<i
-								class="fas fa-sort ml-2 {currentSortColumn === 'count'
-									? sortAscending
-										? 'fa-sort-up'
-										: 'fa-sort-down'
-									: ''}"
-							></i>
-						</div>
-					</th>
-					<th class="w-1/6 px-6 py-3">
-						<div class="flex items-center justify-center">Change Amount</div>
-					</th>
-					<th class="w-1/3 px-6 py-3">
-						<div class="flex items-center justify-center">Actions</div>
-					</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each paginatedItemsList as item (item.id)}
-					<tr class="border-b border-zinc-800" in:fade={{ duration: 200 }}>
-						<td class="px-6 py-4 text-left whitespace-nowrap">{item.name}</td>
-						<td class="px-6 py-4 text-center">
-							<div class="relative inline-block w-full h-6">
-								{#key item.count}
-									<span
-										class="absolute inset-0 flex items-center justify-center"
-										transition:fly={{ y: -20, duration: 300, easing: elasticOut }}
-									>
-										{item.count}
-									</span>
-								{/key}
+		<div class="table-container overflow-x-auto">
+			<table class="custom-table w-full">
+				<thead>
+					<tr>
+						<th class="w-1/3 px-6 py-3" on:click={() => sortBy('name')}>
+							<div class="header flex items-center cursor-pointer">
+								Item Name
+								<i
+									class="fas fa-sort ml-2 {currentSortColumn === 'name'
+										? sortAscending
+											? 'fa-sort-up'
+											: 'fa-sort-down'
+										: ''}"
+								></i>
 							</div>
-						</td>
-						<td class="px-6 py-4">
-							<div class="flex justify-center">
-								<input
-									type="text"
-									placeholder="0"
-									value={item.changeAmount === 0 ? '' : item.changeAmount}
-									on:input={(e) => handleChangeAmountInput(item, e)}
-									class="change-amount-input w-16 rounded-md shadow-sm sm:text-sm text-center"
-								/>
+						</th>
+						<th class="w-1/6 px-6 py-3" on:click={() => sortBy('count')}>
+							<div class="header flex items-center justify-center cursor-pointer">
+								Count
+								<i
+									class="fas fa-sort ml-2 {currentSortColumn === 'count'
+										? sortAscending
+											? 'fa-sort-up'
+											: 'fa-sort-down'
+										: ''}"
+								></i>
 							</div>
-						</td>
-						<td class="px-6 py-4">
-							<div class="flex justify-center items-center space-x-2">
-								<button
-									class="bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-500 transition-transform active:scale-95 hover:shadow-lg"
-									on:click={() => changeCount(item, +item.changeAmount)}
-									disabled={item.changeAmount === 0}
-								>
-									Increase
-								</button>
-								<button
-									class="bg-red-800 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-transform active:scale-95 hover:shadow-lg"
-									on:click={() => changeCount(item, -item.changeAmount)}
-									disabled={item.changeAmount === 0}
-								>
-									Decrease
-								</button>
-								<button
-									class="bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition-transform active:scale-95 hover:shadow-lg"
-									on:click={() => resetCount(item)}
-									disabled={item.count === 0}
-								>
-									Reset
-								</button>
-							</div>
-						</td>
+						</th>
+						<th class="w-1/6 px-6 py-3">
+							<div class="flex items-center justify-center">Change Amount</div>
+						</th>
+						<th class="w-1/3 px-6 py-3">
+							<div class="flex items-center justify-center">Actions</div>
+						</th>
 					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
+				</thead>
+				<tbody>
+					{#each paginatedItemsList as item (item.id)}
+						<tr class="border-b border-zinc-800" in:fade={{ duration: 200 }}>
+							<td class="px-6 py-4 text-left whitespace-nowrap">{item.name}</td>
+							<td class="px-6 py-4 text-center">
+								<div class="relative inline-block w-full h-6">
+									{#key item.count}
+										<span
+											class="absolute inset-0 flex items-center justify-center"
+											transition:fly={{ y: -20, duration: 300, easing: elasticOut }}
+										>
+											{item.count}
+										</span>
+									{/key}
+								</div>
+							</td>
+							<td class="px-6 py-4">
+								<div class="flex justify-center">
+									<input
+										type="text"
+										placeholder="0"
+										value={item.changeAmount === 0 ? '' : item.changeAmount}
+										on:input={(e) => handleChangeAmountInput(item, e)}
+										class="change-amount-input w-16 rounded-md shadow-sm sm:text-sm text-center"
+									/>
+								</div>
+							</td>
+							<td class="px-6 py-4">
+								<div class="flex justify-center items-center space-x-2">
+									<button
+										class="bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-500 transition-transform active:scale-95 hover:shadow-lg"
+										on:click={() => changeCount(item, +item.changeAmount)}
+										disabled={item.changeAmount === 0}
+									>
+										Increase
+									</button>
+									<button
+										class="bg-red-800 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-transform active:scale-95 hover:shadow-lg"
+										on:click={() => changeCount(item, -item.changeAmount)}
+										disabled={item.changeAmount === 0}
+									>
+										Decrease
+									</button>
+									<button
+										class="bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition-transform active:scale-95 hover:shadow-lg"
+										on:click={() => resetCount(item)}
+										disabled={item.count === 0}
+									>
+										Reset
+									</button>
+								</div>
+							</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
 
-	<Pagination />
+		<Pagination />
 
-	<div class="flex justify-center mt-6">
-		<button
-			class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-500 transition-transform active:scale-95"
-			on:click={resetAll}
-		>
-			Reset All Counts
-		</button>
+		<div class="flex justify-center mt-6">
+			<button
+				class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-500 transition-transform active:scale-95"
+				on:click={resetAll}
+			>
+				Reset All Counts
+			</button>
+		</div>
 	</div>
-</div>
+{:else}
+	<div class="flex justify-center items-center h-screen">
+		<div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
+	</div>
+{/if}
 
 {#if $notificationStore}
 	<div class="notification" in:fade out:fade>
