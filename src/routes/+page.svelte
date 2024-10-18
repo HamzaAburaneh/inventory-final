@@ -55,6 +55,8 @@
 		showBackToTop = window.pageYOffset > 300;
 	}
 
+	let hoveredCard = -1;
+
 	onMount(() => {
 		const links = document.querySelectorAll('a[href^="#"]');
 		links.forEach((link) => {
@@ -69,24 +71,8 @@
 
 		window.addEventListener('scroll', handleScroll);
 
-		const observer = new IntersectionObserver(
-			(entries) => {
-				entries.forEach((entry) => {
-					if (entry.isIntersecting) {
-						entry.target.classList.add('animate-feature');
-					}
-				});
-			},
-			{ threshold: 0.1 }
-		);
-
-		document.querySelectorAll('.feature-card').forEach((card) => {
-			observer.observe(card);
-		});
-
 		return () => {
 			window.removeEventListener('scroll', handleScroll);
-			observer.disconnect();
 		};
 	});
 </script>
@@ -112,7 +98,17 @@
 		</h2>
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 			{#each features as feature, i}
-				<div class="feature-card" role="article" aria-labelledby="feature-heading-{i}">
+				<div
+					class="feature-card"
+					role="article"
+					aria-labelledby="feature-heading-{i}"
+					on:mouseenter={() => (hoveredCard = i)}
+					on:mouseleave={() => (hoveredCard = -1)}
+					style="transform: {hoveredCard === i
+						? 'scale(1.05) translateY(-5px)'
+						: 'scale(1) translateY(0)'};
+						   transition: transform 0.3s ease;"
+				>
 					<div class="flex items-center mb-4">
 						<i class="fas {feature.icon} text-4xl text-logo mr-6" aria-hidden="true"></i>
 						<h3 id="feature-heading-{i}" class="text-2xl font-semibold">{feature.name}</h3>
@@ -213,21 +209,6 @@
 		box-shadow:
 			0 4px 6px rgba(0, 0, 0, 0.1),
 			0 1px 3px rgba(0, 0, 0, 0.08);
-		transition: all 0.3s ease;
-		opacity: 0;
-		transform: translateY(20px);
-	}
-
-	.feature-card:hover {
-		box-shadow:
-			0 10px 15px rgba(0, 0, 0, 0.1),
-			0 4px 6px rgba(0, 0, 0, 0.05);
-		transform: translateY(-5px);
-	}
-
-	.feature-card.animate-feature {
-		opacity: 1;
-		transform: translateY(0);
 	}
 
 	.btn-primary {
@@ -263,6 +244,7 @@
 		position: absolute;
 		top: 50%;
 		transform: translateY(-50%);
+		background-color: var(--nav-logo-color);
 		color: var(--text-color);
 		border: none;
 		border-radius: 9999px;
@@ -273,6 +255,7 @@
 	}
 
 	.testimonial-nav:hover {
+		background-color: var(--nav-logo-hover-color);
 		opacity: 1;
 	}
 
