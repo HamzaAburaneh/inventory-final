@@ -145,8 +145,11 @@
 
 		<Pagination />
 	</div>
+{:else}
+	<div class="flex justify-center items-center h-screen">
+		<div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
+	</div>
 {/if}
-
 {#if $notificationStore}
 	<div class="notification" in:fade out:fade>
 		{$notificationStore.message}
