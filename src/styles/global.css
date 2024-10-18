@@ -73,6 +73,8 @@
 	--input-bg: #2c2c2c;
 	--input-text: #e0e0e0;
 	--input-border: #444444;
+	--nav-logo-color: #ffe260;
+	--nav-logo-hover-color: #ffd000;
 	--input-hover-bg: #3a3a3a;
 	--input-focus-border: #4a90e2;
 }

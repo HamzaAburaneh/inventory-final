@@ -21,7 +21,10 @@
 
 <nav class="navbar">
 	<div class="container mx-auto flex justify-between items-center">
-		<a href="/" class="brand">Brand</a>
+		<a href="/" class="brand">
+			<i class="fas fa-box mr-2"></i>
+			StockSense
+		</a>
 		<button class="menu-toggle" on:click={toggleMenu}>
 			<span class="sr-only">Toggle menu</span>
 			<div class="hamburger">
@@ -31,7 +34,6 @@
 			</div>
 		</button>
 		<ul class="nav-list desktop">
-			<li><a href="/" class="nav-link" class:active={$page.url.pathname === '/'}>Home</a></li>
 			{#if user}
 				<li>
 					<a
@@ -65,7 +67,6 @@
 			<li><ThemeToggle /></li>
 		</ul>
 		<ul class="nav-list mobile {isOpen ? 'open' : ''}">
-			<li><a href="/" class="nav-link" class:active={$page.url.pathname === '/'}>Home</a></li>
 			{#if user}
 				<li>
 					<a
@@ -110,10 +111,23 @@
 	}
 
 	.brand {
-		color: var(--nav-text-color);
+		color: var(--nav-logo-color);
 		font-size: 1.5rem;
-		font-weight: bold;
+		font-weight: 600;
 		text-decoration: none;
+		transition: all 0.3s ease;
+		display: flex;
+		align-items: center;
+	}
+
+	.brand:hover {
+		color: var(--nav-logo-hover-color); /* Adjust hover color as needed */
+		transform: scale(1.1); /* Slightly increases the size */
+		text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2); /* Adds a subtle shadow effect */
+	}
+
+	.brand i {
+		font-size: 1.5rem;
 	}
 
 	.nav-list {
@@ -181,7 +195,7 @@
 		display: block;
 		height: 3px;
 		width: 100%;
-		background-color: white;
+		background-color: var(--nav-text-color);
 		transition: all 0.3s ease;
 	}
 
