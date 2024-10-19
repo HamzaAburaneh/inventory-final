@@ -52,47 +52,124 @@
 	}
 </script>
 
-<div class="container mx-auto mt-8 p-4">
-	<h1 class="text-2xl font-bold mb-4">Profile</h1>
+<div class="profile-container">
+	<h1 class="profile-title">Profile</h1>
 	{#if user}
-		<form on:submit|preventDefault={handleSubmit} class="max-w-md">
-			<div class="mb-4">
-				<label for="name" class="block mb-2">Name</label>
-				<input type="text" id="name" bind:value={name} class="w-full p-2 border rounded" />
-			</div>
-			<div class="mb-4">
-				<label for="email" class="block mb-2">Email</label>
-				<input
-					type="email"
-					id="email"
-					bind:value={email}
-					class="w-full p-2 border rounded"
-					disabled
-				/>
-			</div>
-			<div class="mb-4">
-				<label for="phone" class="block mb-2">Phone</label>
-				<input type="tel" id="phone" bind:value={phone} class="w-full p-2 border rounded" />
-			</div>
-			{#if errorMessage}
-				<p class="text-red-500 mb-4">{errorMessage}</p>
-			{/if}
-			{#if successMessage}
-				<p class="text-green-500 mb-4">{successMessage}</p>
-			{/if}
-			<button
-				type="submit"
-				class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
-				disabled={isUpdating}
-			>
-				{isUpdating ? 'Updating...' : 'Update Profile'}
-			</button>
-		</form>
+		<div class="profile-card">
+			<form on:submit|preventDefault={handleSubmit} class="profile-form">
+				<div class="form-group">
+					<label for="name">Username</label>
+					<input type="text" id="name" bind:value={name} required />
+				</div>
+
+				<div class="form-group">
+					<label for="email">Email</label>
+					<input type="email" id="email" bind:value={email} disabled />
+				</div>
+
+				<div class="form-group">
+					<label for="phone">Phone</label>
+					<input type="tel" id="phone" bind:value={phone} />
+				</div>
+				{#if errorMessage}
+					<p class="error-message">{errorMessage}</p>
+				{/if}
+				{#if successMessage}
+					<p class="success-message">{successMessage}</p>
+				{/if}
+
+				<button type="submit" class="save-button" disabled={isUpdating}>
+					{isUpdating ? 'Updating...' : 'Save'}
+				</button>
+			</form>
+		</div>
 	{:else}
-		<p>Please log in to view your profile.</p>
+		<p class="login-message">Please log in to view your profile.</p>
 	{/if}
 </div>
 
 <style>
-	/* Add any additional styles here */
+	.profile-container {
+		max-width: 600px;
+		margin: 2rem auto;
+		padding: 1rem;
+	}
+
+	.profile-title {
+		font-size: 1.8rem;
+		font-weight: bold;
+		margin-bottom: 1rem;
+		color: var(--text-color);
+	}
+
+	.profile-card {
+		background-color: var(--nav-color);
+		border: 2px solid var(--nav-border-color);
+		border-radius: 8px;
+		padding: 2rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	}
+
+	.profile-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	label {
+		font-weight: 600;
+		color: var(--text-color);
+	}
+
+	input {
+		padding: 0.5rem;
+		border: 1px solid var(--nav-border-color);
+		border-radius: 4px;
+		background-color: var(--background-color);
+		color: var(--text-color);
+	}
+
+	input:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
+
+	.error-message {
+		color: #ff4136;
+	}
+
+	.success-message {
+		color: #2ecc40;
+	}
+
+	.save-button {
+		background-color: var(--nav-text-color);
+		color: var(--nav-color);
+		border: none;
+		border-radius: 4px;
+		padding: 0.5rem 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background-color 0.3s ease;
+	}
+
+	.save-button:hover:not(:disabled) {
+		background-color: var(--nav-text-hover-color);
+	}
+
+	.save-button:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
+
+	.login-message {
+		color: var(--text-color);
+		text-align: center;
+	}
 </style>
