@@ -106,6 +106,14 @@
 						class:active={browser && currentPath === '/transactionHistory'}>Transaction History</a
 					>
 				</li>
+				<li>
+					<a
+						href="/inventoryPredictions"
+						class="nav-link"
+						class:active={browser && currentPath === '/inventoryPredictions'}
+						>Inventory Predictions</a
+					>
+				</li>
 				<li class="relative" use:handleClickOutside>
 					<button on:click={toggleDropdown} class="nav-link user-menu profile-button">
 						<i class="fas fa-user mr-2"></i>
@@ -156,6 +164,14 @@
 							href="/transactionHistory"
 							class="nav-link"
 							class:active={browser && currentPath === '/transactionHistory'}>Transaction History</a
+						>
+					</li>
+					<li>
+						<a
+							href="/inventoryPredictions"
+							class="nav-link"
+							class:active={browser && currentPath === '/inventoryPredictions'}
+							>Inventory Predictions</a
 						>
 					</li>
 					<li>
