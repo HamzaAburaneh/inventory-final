@@ -3,11 +3,12 @@
 	import { itemStore } from '../stores/itemStore';
 	import { fade } from 'svelte/transition';
 	import { notificationStore } from '../stores/notificationStore';
+	import { searchStore } from '../stores/searchStore';
+	import SearchBar from './SearchBar.svelte';
 
 	let predictions: { [itemId: string]: number } = {};
 	let loading = true;
 	let error = '';
-	let searchTerm = '';
 	const PREDICTION_TIMEFRAME = 2; // 2 days prediction
 	const ANALYSIS_WINDOW = 7; // 7 days moving average
 
@@ -31,6 +32,14 @@
 		await Promise.all([fetchPredictions(), itemStore.fetchItems()]);
 	});
 
+	function onSearch(value: string) {
+		searchStore.setSearchTerm(value);
+	}
+
+	function onClear() {
+		searchStore.clearSearch();
+	}
+
 	$: itemsWithPredictions = Object.entries(predictions)
 		.map(([itemId, prediction]) => {
 			const item = $itemStore.find((item) => item.id === itemId);
@@ -44,7 +53,7 @@
 				recommendedOrder
 			};
 		})
-		.filter((item) => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+		.filter((item) => item.name.toLowerCase().includes($searchStore.toLowerCase()));
 
 	function getStatusIcon(currentCount: number, prediction: number): string {
 		if (currentCount < prediction * 0.5) return '🚨';
@@ -81,12 +90,7 @@
 		</p>
 	</div>
 
-	<input
-		type="text"
-		placeholder="Search items..."
-		bind:value={searchTerm}
-		class="w-full p-2 mb-4 rounded-lg"
-	/>
+	<SearchBar {onSearch} {onClear} searchValue={$searchStore} />
 
 	{#if loading}
 		<p class="text-center">Loading predictions...</p>
@@ -129,7 +133,6 @@
 		background-color: var(--background-color);
 		color: var(--text-color);
 	}
-
 	input {
 		background-color: var(--input-bg);
 		color: var(--input-text);
@@ -139,7 +142,6 @@
 	input:focus {
 		border-color: var(--input-focus-border);
 	}
-
 	.summary-section {
 		background-color: var(--table-header-bg);
 		color: var(--table-header-text);

@@ -7,21 +7,15 @@
 	import { goto } from '$app/navigation';
 	import { fade, slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy } from 'svelte';
 
 	export let user: User | null;
 
 	let isOpen = false;
 	let isDropdownOpen = false;
 	let dropdownNode: HTMLElement;
-	let currentPath = '/';
 
-	onMount(() => {
-		if (browser) {
-			console.log('Navbar mounted, current path:', $page.url.pathname);
-			currentPath = $page.url.pathname;
-		}
-	});
+	$: currentPath = $page.url.pathname;
 
 	function toggleMenu() {
 		isOpen = !isOpen;
@@ -86,32 +80,29 @@
 		<ul class="nav-list desktop">
 			{#if user}
 				<li>
-					<a
-						href="/manageItems"
-						class="nav-link"
-						class:active={browser && currentPath === '/manageItems'}>Item Manager</a
+					<a href="/manageItems" class="nav-link" class:active={currentPath === '/manageItems'}
+						>Item Manager</a
 					>
 				</li>
 				<li>
 					<a
 						href="/manageTransactions"
 						class="nav-link"
-						class:active={browser && currentPath === '/manageTransactions'}>Manage Transactions</a
+						class:active={currentPath === '/manageTransactions'}>Manage Transactions</a
 					>
 				</li>
 				<li>
 					<a
 						href="/transactionHistory"
 						class="nav-link"
-						class:active={browser && currentPath === '/transactionHistory'}>Transaction History</a
+						class:active={currentPath === '/transactionHistory'}>Transaction History</a
 					>
 				</li>
 				<li>
 					<a
 						href="/inventoryPredictions"
 						class="nav-link"
-						class:active={browser && currentPath === '/inventoryPredictions'}
-						>Inventory Predictions</a
+						class:active={currentPath === '/inventoryPredictions'}>Inventory Predictions</a
 					>
 				</li>
 				<li class="relative" use:handleClickOutside>
@@ -135,9 +126,7 @@
 				</li>
 			{:else}
 				<li>
-					<a href="/login" class="nav-link" class:active={browser && currentPath === '/login'}
-						>Login</a
-					>
+					<a href="/login" class="nav-link" class:active={currentPath === '/login'}>Login</a>
 				</li>
 			{/if}
 			<li><ThemeToggle /></li>
@@ -146,32 +135,29 @@
 			<ul class="nav-list mobile" transition:slide|local>
 				{#if user}
 					<li>
-						<a
-							href="/manageItems"
-							class="nav-link"
-							class:active={browser && currentPath === '/manageItems'}>Item Manager</a
+						<a href="/manageItems" class="nav-link" class:active={currentPath === '/manageItems'}
+							>Item Manager</a
 						>
 					</li>
 					<li>
 						<a
 							href="/manageTransactions"
 							class="nav-link"
-							class:active={browser && currentPath === '/manageTransactions'}>Manage Transactions</a
+							class:active={currentPath === '/manageTransactions'}>Manage Transactions</a
 						>
 					</li>
 					<li>
 						<a
 							href="/transactionHistory"
 							class="nav-link"
-							class:active={browser && currentPath === '/transactionHistory'}>Transaction History</a
+							class:active={currentPath === '/transactionHistory'}>Transaction History</a
 						>
 					</li>
 					<li>
 						<a
 							href="/inventoryPredictions"
 							class="nav-link"
-							class:active={browser && currentPath === '/inventoryPredictions'}
-							>Inventory Predictions</a
+							class:active={currentPath === '/inventoryPredictions'}>Inventory Predictions</a
 						>
 					</li>
 					<li>
@@ -182,9 +168,7 @@
 					</li>
 				{:else}
 					<li>
-						<a href="/login" class="nav-link" class:active={browser && currentPath === '/login'}
-							>Login</a
-						>
+						<a href="/login" class="nav-link" class:active={currentPath === '/login'}>Login</a>
 					</li>
 				{/if}
 				<li><ThemeToggle /></li>
