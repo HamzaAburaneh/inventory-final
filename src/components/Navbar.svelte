@@ -6,11 +6,13 @@
 	import { goto } from '$app/navigation';
 	import { fade, slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
+	import { onDestroy } from 'svelte';
 
 	export let user: User | null;
 
 	let isOpen = false;
 	let isDropdownOpen = false;
+	let dropdownNode: HTMLElement;
 
 	function toggleMenu() {
 		isOpen = !isOpen;
@@ -20,10 +22,35 @@
 		isDropdownOpen = !isDropdownOpen;
 	}
 
+	function closeDropdown() {
+		isDropdownOpen = false;
+	}
+
 	async function handleLogout() {
 		await authStore.logout();
+		closeDropdown();
 		goto('/login');
 	}
+
+	function handleClickOutside(node: HTMLElement) {
+		const handleClick = (event: MouseEvent) => {
+			if (node && !node.contains(event.target as Node) && !event.defaultPrevented) {
+				closeDropdown();
+			}
+		};
+
+		document.addEventListener('click', handleClick, true);
+
+		return {
+			destroy() {
+				document.removeEventListener('click', handleClick, true);
+			}
+		};
+	}
+
+	onDestroy(() => {
+		closeDropdown();
+	});
 </script>
 
 <nav class="navbar">
@@ -63,15 +90,19 @@
 						class:active={$page.url.pathname === '/transactionHistory'}>Transaction History</a
 					>
 				</li>
-				<li class="relative">
+				<li class="relative" use:handleClickOutside>
 					<button on:click={toggleDropdown} class="nav-link user-menu profile-button">
 						<i class="fas fa-user mr-2"></i>
 						{user.displayName || user.email}
 						<i class="fas fa-caret-down ml-2"></i>
 					</button>
 					{#if isDropdownOpen}
-						<ul class="dropdown-menu" transition:slide={{ duration: 300, easing: cubicOut }}>
-							<li><a href="/profile" class="dropdown-item">Profile</a></li>
+						<ul
+							class="dropdown-menu"
+							transition:slide={{ duration: 300, easing: cubicOut }}
+							bind:this={dropdownNode}
+						>
+							<li><a href="/profile" class="dropdown-item" on:click={closeDropdown}>Profile</a></li>
 							<li><button on:click={handleLogout} class="dropdown-item">Logout</button></li>
 						</ul>
 					{/if}
