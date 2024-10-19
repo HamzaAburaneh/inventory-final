@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
+	import { fadeAndSlide } from '$lib/transitions';
 	import { authStore } from '../stores/authStore';
 	import { onMount } from 'svelte';
 
@@ -77,7 +78,7 @@
 	});
 </script>
 
-<main class="container mx-auto px-4 py-12">
+<main class="container mx-auto px-4 py-12" in:fadeAndSlide={{ duration: 300, y: 75 }}>
 	<section id="hero" class="hero mb-24" in:fade={{ duration: 300 }}>
 		<h1 class="text-6xl font-bold mb-8 text-center logo-text">Welcome to StockSense</h1>
 		<p class="text-2xl mb-12 text-center text-secondary">
