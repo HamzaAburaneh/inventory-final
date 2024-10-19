@@ -1,18 +1,27 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import { authStore } from '../stores/authStore';
 	import type { User } from 'firebase/auth';
 	import { goto } from '$app/navigation';
 	import { fade, slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
-	import { onDestroy } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 
 	export let user: User | null;
 
 	let isOpen = false;
 	let isDropdownOpen = false;
 	let dropdownNode: HTMLElement;
+	let currentPath = '/';
+
+	onMount(() => {
+		if (browser) {
+			console.log('Navbar mounted, current path:', $page.url.pathname);
+			currentPath = $page.url.pathname;
+		}
+	});
 
 	function toggleMenu() {
 		isOpen = !isOpen;
@@ -30,6 +39,13 @@
 		await authStore.logout();
 		closeDropdown();
 		goto('/login');
+	}
+
+	async function handleProfileClick(event: Event) {
+		event.preventDefault();
+		closeDropdown();
+		console.log('Profile button clicked, navigating to /profile');
+		await goto('/profile');
 	}
 
 	function handleClickOutside(node: HTMLElement) {
@@ -73,21 +89,21 @@
 					<a
 						href="/manageItems"
 						class="nav-link"
-						class:active={$page.url.pathname === '/manageItems'}>Item Manager</a
+						class:active={browser && currentPath === '/manageItems'}>Item Manager</a
 					>
 				</li>
 				<li>
 					<a
 						href="/manageTransactions"
 						class="nav-link"
-						class:active={$page.url.pathname === '/manageTransactions'}>Manage Transactions</a
+						class:active={browser && currentPath === '/manageTransactions'}>Manage Transactions</a
 					>
 				</li>
 				<li>
 					<a
 						href="/transactionHistory"
 						class="nav-link"
-						class:active={$page.url.pathname === '/transactionHistory'}>Transaction History</a
+						class:active={browser && currentPath === '/transactionHistory'}>Transaction History</a
 					>
 				</li>
 				<li class="relative" use:handleClickOutside>
@@ -102,14 +118,18 @@
 							transition:slide={{ duration: 300, easing: cubicOut }}
 							bind:this={dropdownNode}
 						>
-							<li><a href="/profile" class="dropdown-item" on:click={closeDropdown}>Profile</a></li>
+							<li>
+								<a href="/profile" class="dropdown-item" on:click={handleProfileClick}>Profile</a>
+							</li>
 							<li><button on:click={handleLogout} class="dropdown-item">Logout</button></li>
 						</ul>
 					{/if}
 				</li>
 			{:else}
 				<li>
-					<a href="/login" class="nav-link" class:active={$page.url.pathname === '/login'}>Login</a>
+					<a href="/login" class="nav-link" class:active={browser && currentPath === '/login'}
+						>Login</a
+					>
 				</li>
 			{/if}
 			<li><ThemeToggle /></li>
@@ -121,32 +141,32 @@
 						<a
 							href="/manageItems"
 							class="nav-link"
-							class:active={$page.url.pathname === '/manageItems'}>Item Manager</a
+							class:active={browser && currentPath === '/manageItems'}>Item Manager</a
 						>
 					</li>
 					<li>
 						<a
 							href="/manageTransactions"
 							class="nav-link"
-							class:active={$page.url.pathname === '/manageTransactions'}>Manage Transactions</a
+							class:active={browser && currentPath === '/manageTransactions'}>Manage Transactions</a
 						>
 					</li>
 					<li>
 						<a
 							href="/transactionHistory"
 							class="nav-link"
-							class:active={$page.url.pathname === '/transactionHistory'}>Transaction History</a
+							class:active={browser && currentPath === '/transactionHistory'}>Transaction History</a
 						>
 					</li>
 					<li>
-						<a href="/profile" class="nav-link">Profile</a>
+						<a href="/profile" class="nav-link" on:click={handleProfileClick}>Profile</a>
 					</li>
 					<li>
 						<button on:click={handleLogout} class="nav-link">Logout</button>
 					</li>
 				{:else}
 					<li>
-						<a href="/login" class="nav-link" class:active={$page.url.pathname === '/login'}
+						<a href="/login" class="nav-link" class:active={browser && currentPath === '/login'}
 							>Login</a
 						>
 					</li>

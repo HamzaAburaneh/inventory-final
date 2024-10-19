@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { authStore } from '../../stores/authStore';
 	import type { User } from 'firebase/auth';
+	import { fadeAndSlide } from '$lib/transitions';
 	import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 	const db = getFirestore();
@@ -22,14 +23,18 @@
 		return '';
 	}
 
+	async function loadUserData() {
+		if (user) {
+			name = user.displayName || '';
+			email = user.email || '';
+			phone = await fetchPhoneNumber(user.uid);
+		}
+	}
+
 	onMount(() => {
-		const unsubscribe = authStore.subscribe(async (value) => {
+		const unsubscribe = authStore.subscribe((value) => {
 			user = value;
-			if (user) {
-				name = user.displayName || '';
-				email = user.email || '';
-				phone = await fetchPhoneNumber(user.uid);
-			}
+			loadUserData();
 		});
 
 		return unsubscribe;
@@ -44,7 +49,6 @@
 			await authStore.updateProfile(name, phone);
 			successMessage = 'Profile updated successfully!';
 		} catch (error) {
-			console.error('Error updating profile:', error);
 			errorMessage = 'Failed to update profile. Please try again.';
 		} finally {
 			isUpdating = false;
@@ -52,8 +56,8 @@
 	}
 </script>
 
-<div class="profile-container">
-	<h1 class="profile-title">Profile</h1>
+<div class="container" in:fadeAndSlide={{ duration: 300, y: 75 }}>
+	<h1 class="title">Profile</h1>
 	{#if user}
 		<div class="profile-card">
 			<form on:submit|preventDefault={handleSubmit} class="profile-form">
@@ -71,6 +75,7 @@
 					<label for="phone">Phone</label>
 					<input type="tel" id="phone" bind:value={phone} />
 				</div>
+
 				{#if errorMessage}
 					<p class="error-message">{errorMessage}</p>
 				{/if}
@@ -78,8 +83,8 @@
 					<p class="success-message">{successMessage}</p>
 				{/if}
 
-				<button type="submit" class="save-button" disabled={isUpdating}>
-					{isUpdating ? 'Updating...' : 'Save'}
+				<button type="submit" class="submit-button" disabled={isUpdating}>
+					{isUpdating ? 'Updating...' : 'Save Changes'}
 				</button>
 			</form>
 		</div>
@@ -89,25 +94,26 @@
 </div>
 
 <style>
-	.profile-container {
+	.container {
 		max-width: 600px;
-		margin: 2rem auto;
-		padding: 1rem;
+		margin: 0 auto;
+		padding: 2rem;
+		background-color: var(--container-bg);
+		border-radius: var(--border-radius);
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 	}
 
-	.profile-title {
-		font-size: 1.8rem;
-		font-weight: bold;
-		margin-bottom: 1rem;
+	.title {
+		font-size: 2rem;
 		color: var(--text-color);
+		margin-bottom: 1.5rem;
 	}
 
 	.profile-card {
-		background-color: var(--nav-color);
-		border: 2px solid var(--nav-border-color);
-		border-radius: 8px;
-		padding: 2rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		background-color: var(--container-bg);
+		padding: 1.5rem;
+		border-radius: var(--border-radius);
+		border: 1px solid var(--border-color);
 	}
 
 	.profile-form {
@@ -119,20 +125,28 @@
 	.form-group {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
 	}
 
 	label {
-		font-weight: 600;
 		color: var(--text-color);
+		margin-bottom: 0.5rem;
 	}
 
 	input {
 		padding: 0.5rem;
-		border: 1px solid var(--nav-border-color);
-		border-radius: 4px;
-		background-color: var(--background-color);
-		color: var(--text-color);
+		border: 1px solid var(--input-border);
+		border-radius: var(--border-radius);
+		background-color: var(--input-bg);
+		color: var(--input-text);
+	}
+
+	input:hover {
+		background-color: var(--input-hover-bg);
+	}
+
+	input:focus {
+		border-color: var(--input-focus-border);
+		outline: none;
 	}
 
 	input:disabled {
@@ -145,25 +159,25 @@
 	}
 
 	.success-message {
-		color: #2ecc40;
+		color: var(--add-item-color);
 	}
 
-	.save-button {
-		background-color: var(--nav-text-color);
-		color: var(--nav-color);
+	.submit-button {
+		background-color: var(--add-item-color);
+		color: var(--text-color);
 		border: none;
-		border-radius: 4px;
-		padding: 0.5rem 1rem;
-		font-weight: 600;
+		border-radius: var(--border-radius);
+		padding: 0.75rem 1rem;
+		font-weight: bold;
 		cursor: pointer;
 		transition: background-color 0.3s ease;
 	}
 
-	.save-button:hover:not(:disabled) {
-		background-color: var(--nav-text-hover-color);
+	.submit-button:hover:not(:disabled) {
+		opacity: 0.9;
 	}
 
-	.save-button:disabled {
+	.submit-button:disabled {
 		opacity: 0.7;
 		cursor: not-allowed;
 	}
