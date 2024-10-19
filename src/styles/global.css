@@ -38,6 +38,7 @@
 	--input-border: #cccccc;
 	--input-hover-bg: #f0f0f0;
 	--input-focus-border: #4a90e2;
+	--nav-drop-down-text-hover-color: #00aaff;
 }
 
 [data-theme='dark'] {
@@ -77,6 +78,7 @@
 	--nav-logo-hover-color: #ffd000;
 	--input-hover-bg: #3a3a3a;
 	--input-focus-border: #4a90e2;
+	--nav-drop-down-text-hover-color: #ffd000;
 }
 
 body {

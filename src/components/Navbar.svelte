@@ -5,6 +5,7 @@
 	import type { User } from 'firebase/auth';
 	import { goto } from '$app/navigation';
 	import { fade, slide } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
 
 	export let user: User | null;
 
@@ -63,13 +64,13 @@
 					>
 				</li>
 				<li class="relative">
-					<button on:click={toggleDropdown} class="nav-link user-menu">
+					<button on:click={toggleDropdown} class="nav-link user-menu profile-button">
 						<i class="fas fa-user mr-2"></i>
 						{user.displayName || user.email}
 						<i class="fas fa-caret-down ml-2"></i>
 					</button>
 					{#if isDropdownOpen}
-						<ul class="dropdown-menu" transition:slide|local>
+						<ul class="dropdown-menu" transition:slide={{ duration: 300, easing: cubicOut }}>
 							<li><a href="/profile" class="dropdown-item">Profile</a></li>
 							<li><button on:click={handleLogout} class="dropdown-item">Logout</button></li>
 						</ul>
@@ -226,6 +227,23 @@
 		transform-origin: bottom left;
 	}
 
+	.profile-button {
+		background-color: transparent;
+		border: 2px solid var(--nav-text-color);
+		border-radius: 20px;
+		padding: 0.25rem 0.75rem;
+		transition: all 0.3s ease;
+	}
+
+	.profile-button:hover {
+		background-color: var(--nav-text-color);
+		color: var(--nav-color);
+	}
+
+	.profile-button::after {
+		display: none;
+	}
+
 	.menu-toggle {
 		display: block;
 		background: none;
@@ -268,26 +286,35 @@
 
 	.dropdown-menu {
 		position: absolute;
-		top: 100%;
+		top: calc(100% + 0.5rem);
 		right: 0;
 		background-color: var(--nav-color);
 		border: 1px solid var(--nav-border-color);
-		border-radius: 4px;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-		min-width: 150px;
+		border-radius: 8px;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		min-width: 180px;
 		z-index: 1000;
+		overflow: hidden;
 	}
 
 	.dropdown-item {
 		display: block;
-		padding: 0.5rem 1rem;
+		padding: 0.75rem 1rem;
 		color: var(--nav-text-color);
 		text-decoration: none;
-		transition: background-color 0.3s ease;
+		transition: all 0.3s ease;
+		font-weight: 500;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.dropdown-item:last-child {
+		border-bottom: none;
 	}
 
 	.dropdown-item:hover {
 		background-color: var(--nav-hover-bg);
+		color: var(--nav-drop-down-text-hover-color);
+		padding-left: 1.5rem;
 	}
 
 	@media (min-width: 768px) {
