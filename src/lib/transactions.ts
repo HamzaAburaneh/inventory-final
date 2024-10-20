@@ -6,7 +6,8 @@ import {
 	getDocs,
 	query,
 	orderBy,
-	limit
+	where,
+	Timestamp
 } from 'firebase/firestore';
 import type { Transaction } from '../types';
 
@@ -25,17 +26,26 @@ export async function addTransaction(
 	}
 }
 
-export async function getHistoricalTransactions(limitCount: number = 1000): Promise<Transaction[]> {
+export async function getHistoricalTransactions(days: number = 90): Promise<Transaction[]> {
 	try {
 		const transactionsRef = collection(db, 'transactions');
-		const q = query(transactionsRef, orderBy('timestamp', 'desc'), limit(limitCount));
+		const startDate = new Date();
+		startDate.setDate(startDate.getDate() - days);
+
+		const q = query(
+			transactionsRef,
+			where('timestamp', '>=', Timestamp.fromDate(startDate)),
+			orderBy('timestamp', 'asc')
+		);
+
 		const querySnapshot = await getDocs(q);
 
 		return querySnapshot.docs.map(
 			(doc) =>
 				({
 					id: doc.id,
-					...doc.data()
+					...doc.data(),
+					timestamp: doc.data().timestamp.toDate()
 				}) as Transaction
 		);
 	} catch (error) {
