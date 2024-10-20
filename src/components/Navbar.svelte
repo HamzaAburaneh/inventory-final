@@ -14,6 +14,7 @@
 	let isOpen = false;
 	let isDropdownOpen = false;
 	let dropdownNode: HTMLElement;
+	let userMenuNode: HTMLElement;
 
 	$: currentPath = $page.url.pathname;
 
@@ -23,6 +24,10 @@
 
 	function toggleDropdown() {
 		isDropdownOpen = !isDropdownOpen;
+	}
+
+	function openDropdown() {
+		isDropdownOpen = true;
 	}
 
 	function closeDropdown() {
@@ -58,8 +63,22 @@
 		};
 	}
 
+	let timeoutId: NodeJS.Timeout;
+
+	function handleMouseEnter() {
+		clearTimeout(timeoutId);
+		openDropdown();
+	}
+
+	function handleMouseLeave() {
+		timeoutId = setTimeout(() => {
+			closeDropdown();
+		}, 300); // 300ms delay before closing
+	}
+
 	onDestroy(() => {
 		closeDropdown();
+		clearTimeout(timeoutId);
 	});
 </script>
 
@@ -105,7 +124,13 @@
 						class:active={currentPath === '/inventoryPredictions'}>Inventory Predictions</a
 					>
 				</li>
-				<li class="relative" use:handleClickOutside>
+				<li
+					class="relative"
+					use:handleClickOutside
+					bind:this={userMenuNode}
+					on:mouseenter={handleMouseEnter}
+					on:mouseleave={handleMouseLeave}
+				>
 					<button on:click={toggleDropdown} class="nav-link user-menu profile-button">
 						<i class="fas fa-user mr-2"></i>
 						{user.displayName || user.email}
@@ -116,6 +141,8 @@
 							class="dropdown-menu"
 							transition:slide={{ duration: 300, easing: cubicOut }}
 							bind:this={dropdownNode}
+							on:mouseenter={handleMouseEnter}
+							on:mouseleave={handleMouseLeave}
 						>
 							<li>
 								<a href="/profile" class="dropdown-item" on:click={handleProfileClick}>Profile</a>
