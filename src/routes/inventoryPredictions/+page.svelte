@@ -105,7 +105,7 @@
 		<h2 class="text-xl font-medium mb-4">Overview</h2>
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 			<div class="metric-card">
-				<Icon icon="mdi:box" width="24" height="24" />
+				<Icon icon="mdi-package-variant-closed" width="24" height="24" />
 				<h3>Total Items</h3>
 				<p>{totalItems}</p>
 			</div>
