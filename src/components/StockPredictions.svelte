@@ -1,22 +1,25 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { itemStore } from '../stores/itemStore';
-	import { fade, slide } from 'svelte/transition';
+	import { fade, slide, scale } from 'svelte/transition';
+	import { tweened } from 'svelte/motion';
+	import { cubicOut } from 'svelte/easing';
 	import { notificationStore } from '../stores/notificationStore';
 	import { searchStore } from '../stores/searchStore';
 	import SearchBar from './SearchBar.svelte';
 
 	let predictions: { [itemId: string]: number[] } = {};
 	let loading = true;
-	let updating = false;
 	let error = '';
-	let predictionTimeframe = 14; // Default to 14 days
+	let predictionTimeframe = tweened(14, {
+		duration: 300,
+		easing: cubicOut
+	});
 	const ANALYSIS_WINDOW = 7; // 7 days moving average
 
 	async function fetchPredictions() {
 		try {
-			updating = true;
-			const response = await fetch(`/api/stockPredictions?timeframe=${predictionTimeframe}`);
+			const response = await fetch(`/api/stockPredictions?timeframe=${$predictionTimeframe}`);
 			if (!response.ok) {
 				throw new Error('Failed to fetch stock predictions');
 			}
@@ -27,7 +30,6 @@
 			notificationStore.showNotification('Failed to load stock predictions.', 'error');
 		} finally {
 			loading = false;
-			updating = false;
 		}
 	}
 
@@ -43,19 +45,17 @@
 		searchStore.clearSearch();
 	}
 
-	let throttleTimer: NodeJS.Timeout | undefined;
-	function throttledFetchPredictions() {
-		if (!throttleTimer) {
-			throttleTimer = setTimeout(() => {
-				fetchPredictions();
-				throttleTimer = undefined;
-			}, 300);
-		}
+	let debounceTimer: NodeJS.Timeout;
+	function debouncedFetchPredictions() {
+		clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => {
+			fetchPredictions();
+		}, 300);
 	}
 
 	$: {
-		if (predictionTimeframe) {
-			throttledFetchPredictions();
+		if ($predictionTimeframe) {
+			debouncedFetchPredictions();
 		}
 	}
 
@@ -100,17 +100,23 @@
 </script>
 
 <div class="stock-predictions">
-	<h2 class="text-2xl font-bold mb-4">Inventory Predictions</h2>
-	<div class="summary-section mb-6 p-4 bg-gray-100 rounded-lg">
+	<h2 class="text-2xl font-bold mb-4" in:slide={{ duration: 300, delay: 150 }}>
+		Inventory Predictions
+	</h2>
+	<div class="summary-section mb-6 p-4 bg-gray-100 rounded-lg" in:fade={{ duration: 300 }}>
 		<div class="flex items-center mb-2">
 			<p class="text-lg mr-2">
-				Prediction timeframe: <strong>{predictionTimeframe} days</strong>
+				Prediction timeframe: <strong>{$predictionTimeframe.toFixed(0)} days</strong>
 			</p>
-			{#if updating}
-				<div class="loader"></div>
-			{/if}
 		</div>
-		<input type="range" min="1" max="14" bind:value={predictionTimeframe} class="w-full" />
+		<div class="slider-container">
+			<input type="range" min="1" max="14" bind:value={$predictionTimeframe} class="slider" />
+			<div class="slider-labels">
+				<span>1</span>
+				<span>7</span>
+				<span>14</span>
+			</div>
+		</div>
 		<p class="text-sm mb-2">Based on a {ANALYSIS_WINDOW}-day moving average of sales data</p>
 		<p>
 			Total Items: <strong>{totalItems}</strong> | Items Needing Restock:
@@ -123,7 +129,15 @@
 
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
 		{#if loading}
-			<p class="col-span-full text-center">Loading predictions...</p>
+			{#each Array(6) as _}
+				<div class="bg-white p-4 rounded-lg shadow-md animate-pulse">
+					<div class="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+					<div class="h-4 bg-gray-200 rounded w-1/2 mb-1"></div>
+					<div class="h-4 bg-gray-200 rounded w-2/3 mb-1"></div>
+					<div class="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+					<div class="h-6 bg-gray-200 rounded w-1/3"></div>
+				</div>
+			{/each}
 		{:else if error}
 			<p class="error text-center col-span-full">{error}</p>
 		{:else if itemsWithPredictions.length === 0}
@@ -132,11 +146,11 @@
 			</p>
 		{:else}
 			{#each itemsWithPredictions as { id, name, currentCount, prediction, totalPrediction, recommendedOrder } (id)}
-				<div class="bg-white p-4 rounded-lg shadow-md" transition:fade={{ duration: 200 }}>
+				<div class="bg-white p-4 rounded-lg shadow-md" in:scale={{ duration: 300, delay: 150 }}>
 					<h3 class="text-lg font-semibold mb-2">{name}</h3>
 					<p class="mb-1">Current Stock: <strong>{currentCount}</strong></p>
 					<p class="mb-1">
-						Predicted Need ({predictionTimeframe} days):
+						Predicted Need ({$predictionTimeframe.toFixed(0)} days):
 						<strong>{totalPrediction.toFixed(2)}</strong>
 					</p>
 					<p class="mb-2">Recommended Order: <strong>{recommendedOrder.toFixed(2)}</strong></p>
@@ -171,19 +185,6 @@
 		margin-top: 2rem;
 	}
 
-	:global(body) {
-		background-color: var(--background-color);
-		color: var(--text-color);
-	}
-	input {
-		background-color: var(--input-bg);
-		color: var(--input-text);
-		border: 1px solid var(--input-border);
-	}
-
-	input:focus {
-		border-color: var(--input-focus-border);
-	}
 	.summary-section {
 		background-color: var(--table-header-bg);
 		color: var(--table-header-text);
@@ -201,21 +202,65 @@
 		border-radius: var(--border-radius);
 	}
 
-	.loader {
-		border: 2px solid #f3f3f3;
-		border-top: 2px solid #3498db;
-		border-radius: 50%;
-		width: 16px;
-		height: 16px;
-		animation: spin 1s linear infinite;
+	.slider-container {
+		position: relative;
+		width: 100%;
+		max-width: 300px;
+		margin: 0 auto;
 	}
 
-	@keyframes spin {
-		0% {
-			transform: rotate(0deg);
-		}
+	.slider {
+		-webkit-appearance: none;
+		width: 100%;
+		height: 10px;
+		border-radius: 5px;
+		background: #d3d3d3;
+		outline: none;
+		opacity: 0.7;
+		transition: opacity 0.2s;
+	}
+
+	.slider:hover {
+		opacity: 1;
+	}
+
+	.slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: #4caf50;
+		cursor: pointer;
+	}
+
+	.slider::-moz-range-thumb {
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: #4caf50;
+		cursor: pointer;
+	}
+
+	.slider-labels {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 5px;
+		font-size: 12px;
+		color: #666;
+	}
+
+	@keyframes pulse {
+		0%,
 		100% {
-			transform: rotate(360deg);
+			opacity: 1;
 		}
+		50% {
+			opacity: 0.5;
+		}
+	}
+
+	.animate-pulse {
+		animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 	}
 </style>
