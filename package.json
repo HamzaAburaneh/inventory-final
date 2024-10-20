@@ -40,7 +40,9 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@iconify/svelte": "^4.0.2",
 		"arima": "^0.2.5",
+		"chart.js": "^4.4.5",
 		"firebase": "^10.12.2",
 		"flowbite-svelte": "^0.46.4",
 		"inventory-app-final": "file:",

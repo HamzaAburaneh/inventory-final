@@ -7,6 +7,7 @@
 	import { notificationStore } from '../stores/notificationStore';
 	import { searchStore } from '../stores/searchStore';
 	import SearchBar from './SearchBar.svelte';
+	import Icon from '@iconify/svelte';
 
 	let predictions: { [itemId: string]: number[] } = {};
 	let loading = true;
@@ -77,10 +78,10 @@
 		.filter((item) => item.name.toLowerCase().includes($searchStore.toLowerCase()));
 
 	function getStatusIcon(currentCount: number, totalPrediction: number): string {
-		if (currentCount < totalPrediction * 0.5) return '🚨';
-		if (currentCount < totalPrediction) return '⚠️';
-		if (currentCount > totalPrediction * 1.5) return '📦';
-		return '✅';
+		if (currentCount < totalPrediction * 0.5) return 'mdi:alert-circle';
+		if (currentCount < totalPrediction) return 'mdi:alert';
+		if (currentCount > totalPrediction * 1.5) return 'mdi:package-variant';
+		return 'mdi:check-circle';
 	}
 
 	function getStatusColor(currentCount: number, totalPrediction: number): string {
@@ -101,28 +102,41 @@
 
 <div class="stock-predictions">
 	<h2 class="text-2xl font-bold mb-4" in:slide={{ duration: 300, delay: 150 }}>
+		<Icon icon="mdi:chart-box" class="inline-block mr-2" />
 		Inventory Predictions
 	</h2>
-	<div class="summary-section mb-6 p-4 bg-gray-100 rounded-lg" in:fade={{ duration: 300 }}>
-		<div class="flex items-center mb-2">
+	<div
+		class="summary-section mb-6 p-4 bg-gray-100 rounded-lg shadow-md"
+		in:fade={{ duration: 300 }}
+	>
+		<div class="flex flex-wrap items-center justify-between mb-4">
 			<p class="text-lg mr-2">
 				Prediction timeframe: <strong>{$predictionTimeframe.toFixed(0)} days</strong>
 			</p>
-		</div>
-		<div class="slider-container">
-			<input type="range" min="1" max="14" bind:value={$predictionTimeframe} class="slider" />
-			<div class="slider-labels">
-				<span>1</span>
-				<span>7</span>
-				<span>14</span>
+			<div class="slider-container">
+				<input type="range" min="1" max="14" bind:value={$predictionTimeframe} class="slider" />
+				<div class="slider-labels">
+					<span>1</span>
+					<span>7</span>
+					<span>14</span>
+				</div>
 			</div>
 		</div>
 		<p class="text-sm mb-2">Based on a {ANALYSIS_WINDOW}-day moving average of sales data</p>
-		<p>
-			Total Items: <strong>{totalItems}</strong> | Items Needing Restock:
-			<strong class="text-yellow-500">{itemsNeedingRestock}</strong>
-			| Potential Overstock: <strong class="text-blue-500">{potentialOverstock}</strong>
-		</p>
+		<div class="flex flex-wrap justify-between mt-4">
+			<div class="stat-item">
+				<Icon icon="mdi:package" class="inline-block mr-1" />
+				Total Items: <strong>{totalItems}</strong>
+			</div>
+			<div class="stat-item text-yellow-500">
+				<Icon icon="mdi:alert" class="inline-block mr-1" />
+				Items Needing Restock: <strong>{itemsNeedingRestock}</strong>
+			</div>
+			<div class="stat-item text-blue-500">
+				<Icon icon="mdi:package-variant" class="inline-block mr-1" />
+				Potential Overstock: <strong>{potentialOverstock}</strong>
+			</div>
+		</div>
 	</div>
 
 	<SearchBar {onSearch} {onClear} searchValue={$searchStore} />
@@ -146,16 +160,27 @@
 			</p>
 		{:else}
 			{#each itemsWithPredictions as { id, name, currentCount, prediction, totalPrediction, recommendedOrder } (id)}
-				<div class="bg-white p-4 rounded-lg shadow-md" in:scale={{ duration: 300, delay: 150 }}>
+				<div
+					class="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
+					in:scale={{ duration: 300, delay: 150 }}
+				>
 					<h3 class="text-lg font-semibold mb-2">{name}</h3>
-					<p class="mb-1">Current Stock: <strong>{currentCount}</strong></p>
 					<p class="mb-1">
+						<Icon icon="mdi:package" class="inline-block mr-1" />
+						Current Stock: <strong>{currentCount}</strong>
+					</p>
+					<p class="mb-1">
+						<Icon icon="mdi:chart-line" class="inline-block mr-1" />
 						Predicted Need ({$predictionTimeframe.toFixed(0)} days):
 						<strong>{totalPrediction.toFixed(2)}</strong>
 					</p>
-					<p class="mb-2">Recommended Order: <strong>{recommendedOrder.toFixed(2)}</strong></p>
-					<p class={`text-lg ${getStatusColor(currentCount, totalPrediction)}`}>
-						Status: {getStatusIcon(currentCount, totalPrediction)}
+					<p class="mb-2">
+						<Icon icon="mdi:cart-plus" class="inline-block mr-1" />
+						Recommended Order: <strong>{recommendedOrder.toFixed(2)}</strong>
+					</p>
+					<p class={`text-lg ${getStatusColor(currentCount, totalPrediction)} flex items-center`}>
+						<Icon icon={getStatusIcon(currentCount, totalPrediction)} class="inline-block mr-2" />
+						Status:
 						{#if currentCount < totalPrediction * 0.5}
 							Urgent restock needed
 						{:else if currentCount < totalPrediction}
@@ -167,7 +192,9 @@
 						{/if}
 					</p>
 					<details class="mt-2">
-						<summary class="cursor-pointer text-sm text-gray-600">Daily Breakdown</summary>
+						<summary class="cursor-pointer text-sm text-gray-600 hover:text-gray-800"
+							>Daily Breakdown</summary
+						>
 						<ul class="mt-2 text-sm">
 							{#each prediction as dailyPrediction, index}
 								<li>Day {index + 1}: {dailyPrediction.toFixed(2)}</li>
@@ -186,8 +213,9 @@
 	}
 
 	.summary-section {
-		background-color: var(--table-header-bg);
-		color: var(--table-header-text);
+		background-color: var(--container-bg);
+		color: var(--text-color);
+		border: 1px solid var(--border-color);
 	}
 
 	.grid > div {
@@ -230,7 +258,7 @@
 		width: 20px;
 		height: 20px;
 		border-radius: 50%;
-		background: #4caf50;
+		background: var(--primary-color);
 		cursor: pointer;
 	}
 
@@ -238,7 +266,7 @@
 		width: 20px;
 		height: 20px;
 		border-radius: 50%;
-		background: #4caf50;
+		background: var(--primary-color);
 		cursor: pointer;
 	}
 
@@ -247,7 +275,15 @@
 		justify-content: space-between;
 		margin-top: 5px;
 		font-size: 12px;
-		color: #666;
+		color: var(--text-color);
+	}
+
+	.stat-item {
+		flex: 1 1 auto;
+		margin: 0.5rem;
+		padding: 0.5rem;
+		background-color: rgba(255, 255, 255, 0.1);
+		border-radius: 0.25rem;
 	}
 
 	@keyframes pulse {
@@ -262,5 +298,20 @@
 
 	.animate-pulse {
 		animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+	}
+
+	@media (max-width: 768px) {
+		.summary-section {
+			padding: 1rem;
+		}
+
+		.slider-container {
+			margin-top: 1rem;
+		}
+
+		.stat-item {
+			flex-basis: 100%;
+			margin: 0.25rem 0;
+		}
 	}
 </style>
