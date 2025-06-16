@@ -1,4 +1,4 @@
-import { initializeApp, type FirebaseOptions } from 'firebase/app';
+import { initializeApp, getApps, getApp, type FirebaseOptions } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getAuth, type Auth } from 'firebase/auth';
 
@@ -16,7 +16,12 @@ let db: Firestore;
 let auth: Auth;
 
 try {
-	const app = initializeApp(firebaseConfig);
+	let app;
+	if (!getApps().length) {
+		app = initializeApp(firebaseConfig);
+	} else {
+		app = getApp(); // if already initialized, use that app
+	}
 	db = getFirestore(app);
 	auth = getAuth(app);
 } catch (error) {
