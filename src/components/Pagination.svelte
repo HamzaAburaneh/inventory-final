@@ -1,17 +1,24 @@
-<script lang="ts">
-	import { paginationStore, totalPages } from '../stores/paginationStore';
+<script>
+	import { paginationStore } from '../stores/paginationStore';
 
-	$: currentPage = $paginationStore.currentPage;
-	$: totalPagesCount = $totalPages;
+	// Access the individual stores correctly
+	let currentPage = $state(1);
+	let totalPagesCount = $state(1);
+	let itemsPerPage = $state(10);
 
-	function goToPage(page: number) {
+	// Subscribe to the stores
+	paginationStore.currentPage.subscribe(value => currentPage = value);
+	paginationStore.totalPages.subscribe(value => totalPagesCount = value);
+	paginationStore.itemsPerPage.subscribe(value => itemsPerPage = value);
+
+	function goToPage(page) {
 		if (page >= 1 && page <= totalPagesCount) {
 			paginationStore.setCurrentPage(page);
 		}
 	}
 
-	function handleItemsPerPageChange(event: Event) {
-		const select = event.target as HTMLSelectElement;
+	function handleItemsPerPageChange(event) {
+		const select = event.target;
 		const newItemsPerPage = select.value === 'all' ? 'all' : parseInt(select.value);
 		paginationStore.setItemsPerPage(newItemsPerPage);
 	}
@@ -21,7 +28,7 @@
 	<div class="pagination-buttons">
 		<button
 			class="pagination-button"
-			on:click={() => goToPage(currentPage - 1)}
+			onclick={() => goToPage(currentPage - 1)}
 			disabled={currentPage === 1}
 			aria-label="Previous page"
 		>
@@ -30,7 +37,7 @@
 		<span class="pagination-info">Page {currentPage} of {totalPagesCount}</span>
 		<button
 			class="pagination-button"
-			on:click={() => goToPage(currentPage + 1)}
+			onclick={() => goToPage(currentPage + 1)}
 			disabled={currentPage === totalPagesCount}
 			aria-label="Next page"
 		>
@@ -41,11 +48,11 @@
 		<label for="itemsPerPage">Items per page:</label>
 		<select
 			id="itemsPerPage"
-			bind:value={$paginationStore.itemsPerPage}
-			on:change={handleItemsPerPageChange}
+			bind:value={itemsPerPage}
+			onchange={handleItemsPerPageChange}
 			class="pagination-select"
 		>
-			{#each $paginationStore.itemsPerPageOptions as option}
+			{#each [5, 10, 25, 50, 'all'] as option}
 				<option value={option}>{option === 'all' ? 'All' : option}</option>
 			{/each}
 		</select>

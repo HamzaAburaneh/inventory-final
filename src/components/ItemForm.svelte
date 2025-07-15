@@ -1,24 +1,22 @@
-<script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+<script>
 	import { fly, fade } from 'svelte/transition';
 	import Swal from 'sweetalert2';
-	import type { Item } from '../types';
 
-	const dispatch = createEventDispatcher();
+	let { onAdd } = $props();
 
-	let formData: Omit<Item, 'id'> = {
+	let formData = $state({
 		name: '',
 		barcode: '',
 		count: '',
 		lowCount: '',
 		cost: '',
-		storageType: '' as '' | 'Freezer' | 'Refrigerator' | 'Dry Storage'
-	};
+		storageType: ''
+	});
 
-	let errors: Partial<Record<keyof typeof formData, string>> = {};
+	let errors = $state({});
 
-	const validateField = (field: keyof typeof formData, value: any) => {
-		const validations: Partial<Record<keyof typeof formData, () => string>> = {
+	const validateField = (field, value) => {
+		const validations = {
 			name: () => (value.trim().length < 3 ? 'Name must be at least 3 characters' : ''),
 			count: () =>
 				isNaN(parseInt(value)) || parseInt(value) < 0 ? 'Must be a positive number' : '',
@@ -30,12 +28,8 @@
 		errors[field] = validations[field] ? validations[field]() : '';
 	};
 
-	const handleInput = (
-		event: Event,
-		field: keyof typeof formData,
-		allowDecimal: boolean = false
-	) => {
-		let value = (event.target as HTMLInputElement).value;
+	const handleInput = (event, field, allowDecimal = false) => {
+		let value = event.target.value;
 		if (allowDecimal) {
 			value = value.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1');
 			const [integer, decimal] = value.split('.');
@@ -59,7 +53,7 @@
 			return;
 		}
 
-		dispatch('add', { formData });
+		onAdd({ formData });
 		formData = { name: '', barcode: '', count: '', lowCount: '', cost: '', storageType: '' };
 		errors = {};
 	};
@@ -75,7 +69,7 @@
 				class="form-control-input {errors.name ? 'is-invalid' : ''}"
 				bind:value={formData.name}
 				placeholder="Enter item name"
-				on:input={() => validateField('name', formData.name)}
+				oninput={() => validateField('name', formData.name)}
 			/>
 			{#if errors.name}
 				<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
@@ -109,7 +103,7 @@
 				bind:value={formData.count}
 				pattern="^[0-9]*$"
 				placeholder="Enter item count"
-				on:input={(event) => handleInput(event, 'count')}
+				oninput={(event) => handleInput(event, 'count')}
 			/>
 			{#if errors.count}
 				<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
@@ -130,7 +124,7 @@
 				bind:value={formData.lowCount}
 				pattern="^[0-9]*$"
 				placeholder="Enter low stock threshold"
-				on:input={(event) => handleInput(event, 'lowCount')}
+				oninput={(event) => handleInput(event, 'lowCount')}
 			/>
 			{#if errors.lowCount}
 				<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
@@ -150,7 +144,7 @@
 				type="text"
 				bind:value={formData.cost}
 				placeholder="Enter item cost"
-				on:input={(event) => handleInput(event, 'cost', true)}
+				oninput={(event) => handleInput(event, 'cost', true)}
 			/>
 			{#if errors.cost}
 				<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
@@ -180,7 +174,7 @@
 
 	<!-- Add Item Button -->
 	<div class="form-group col-span-full">
-		<button class="btn btn-primary w-full" id="add-item" on:click={handleAdd}>
+		<button class="btn btn-primary w-full" id="add-item" onclick={handleAdd}>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				width="16"

@@ -1,22 +1,20 @@
-<script lang="ts">
+<script>
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
 	import ThemeToggle from './ThemeToggle.svelte';
-	import { authStore } from '../stores/authStore';
-	import type { User } from 'firebase/auth';
+	import { authStore } from '../stores/authStore.js';
 	import { goto } from '$app/navigation';
 	import { fade, slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
-	import { onDestroy } from 'svelte';
 
-	export let user: User | null;
+	let { user } = $props();
 
-	let isOpen = false;
-	let isDropdownOpen = false;
-	let dropdownNode: HTMLElement;
-	let userMenuNode: HTMLElement;
+	let isOpen = $state(false);
+	let isDropdownOpen = $state(false);
+	let dropdownNode = $state();
+	let userMenuNode = $state();
 
-	$: currentPath = $page.url.pathname;
+	const currentPath = $derived($page.url.pathname);
 
 	function toggleMenu() {
 		isOpen = !isOpen;
@@ -40,16 +38,16 @@
 		goto('/login');
 	}
 
-	async function handleProfileClick(event: Event) {
+	async function handleProfileClick(event) {
 		event.preventDefault();
 		closeDropdown();
 		console.log('Profile button clicked, navigating to /profile');
 		await goto('/profile');
 	}
 
-	function handleClickOutside(node: HTMLElement) {
-		const handleClick = (event: MouseEvent) => {
-			if (node && !node.contains(event.target as Node) && !event.defaultPrevented) {
+	function handleClickOutside(node) {
+		const handleClick = (event) => {
+			if (node && !node.contains(event.target) && !event.defaultPrevented) {
 				closeDropdown();
 			}
 		};
@@ -63,7 +61,7 @@
 		};
 	}
 
-	let timeoutId: NodeJS.Timeout;
+	let timeoutId;
 
 	function handleMouseEnter() {
 		clearTimeout(timeoutId);
@@ -76,9 +74,11 @@
 		}, 300); // 300ms delay before closing
 	}
 
-	onDestroy(() => {
-		closeDropdown();
-		clearTimeout(timeoutId);
+	$effect(() => {
+		return () => {
+			closeDropdown();
+			clearTimeout(timeoutId);
+		};
 	});
 </script>
 
@@ -88,7 +88,7 @@
 			<i class="fas fa-box mr-2"></i>
 			<span class="brand-text">StockSense</span>
 		</a>
-		<button class="menu-toggle" on:click={toggleMenu}>
+		<button class="menu-toggle" onclick={toggleMenu}>
 			<span class="sr-only">Toggle menu</span>
 			<div class="hamburger">
 				<span></span>
@@ -128,10 +128,10 @@
 					class="relative"
 					use:handleClickOutside
 					bind:this={userMenuNode}
-					on:mouseenter={handleMouseEnter}
-					on:mouseleave={handleMouseLeave}
+					onmouseenter={handleMouseEnter}
+					onmouseleave={handleMouseLeave}
 				>
-					<button on:click={toggleDropdown} class="nav-link user-menu profile-button">
+					<button onclick={toggleDropdown} class="nav-link user-menu profile-button">
 						<i class="fas fa-user mr-2"></i>
 						{user.displayName || user.email}
 						<i class="fas fa-caret-down ml-2"></i>
@@ -141,13 +141,13 @@
 							class="dropdown-menu"
 							transition:slide={{ duration: 300, easing: cubicOut }}
 							bind:this={dropdownNode}
-							on:mouseenter={handleMouseEnter}
-							on:mouseleave={handleMouseLeave}
+							onmouseenter={handleMouseEnter}
+							onmouseleave={handleMouseLeave}
 						>
 							<li>
-								<a href="/profile" class="dropdown-item" on:click={handleProfileClick}>Profile</a>
+								<a href="/profile" class="dropdown-item" onclick={handleProfileClick}>Profile</a>
 							</li>
-							<li><button on:click={handleLogout} class="dropdown-item">Logout</button></li>
+							<li><button onclick={handleLogout} class="dropdown-item">Logout</button></li>
 						</ul>
 					{/if}
 				</li>
@@ -188,10 +188,10 @@
 						>
 					</li>
 					<li>
-						<a href="/profile" class="nav-link" on:click={handleProfileClick}>Profile</a>
+						<a href="/profile" class="nav-link" onclick={handleProfileClick}>Profile</a>
 					</li>
 					<li>
-						<button on:click={handleLogout} class="nav-link">Logout</button>
+						<button onclick={handleLogout} class="nav-link">Logout</button>
 					</li>
 				{:else}
 					<li>
@@ -297,6 +297,7 @@
 	.nav-link:hover,
 	.nav-link.active {
 		color: var(--nav-text-hover-color);
+		background-color: transparent !important; /* Ensure no background color */
 	}
 
 	.nav-link:hover::after,

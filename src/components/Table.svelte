@@ -1,39 +1,41 @@
-<script lang="ts">
+<script>
 	import { fade, fly } from 'svelte/transition';
-	import type { Item } from '../types';
 
-	export let paginatedItems: Item[] = [];
-	export let onEdit: (id: string, field: string, value: any) => void;
-	export let onDelete: (id: string) => Promise<void>;
-	export let sortBy: (column: string) => void;
-	export let currentSortColumn: string;
-	export let sortAscending: boolean;
+	let {
+		paginatedItems = [],
+		onEdit,
+		onDelete,
+		sortBy,
+		currentSortColumn,
+		sortAscending
+	} = $props();
 
-	let hoveredButton: HTMLElement | null = null;
-	let deletingItemId: string | null = null;
 
-	function showTooltip(event: MouseEvent): void {
-		hoveredButton = event.target as HTMLElement;
+	let hoveredButton = $state(null);
+	let deletingItemId = $state(null);
+
+	function showTooltip(event) {
+		hoveredButton = event.target;
 	}
 
-	function hideTooltip(): void {
+	function hideTooltip() {
 		hoveredButton = null;
 	}
 
-	async function handleDelete(id: string): Promise<void> {
+	async function handleDelete(id) {
 		deletingItemId = id;
 		await onDelete(id);
 		deletingItemId = null;
 	}
 
-	function capitalizeWords(str: string): string {
+	function capitalizeWords(str) {
 		return str
 			.split(' ')
 			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 			.join(' ');
 	}
 
-	function getStorageTypeStyle(storageType: string): { backgroundColor: string; color: string } {
+	function getStorageTypeStyle(storageType) {
 		switch (storageType.toLowerCase()) {
 			case 'freezer':
 				return { backgroundColor: '#1E3A8A', color: '#BFDBFE' }; // Dark blue background, light blue text
@@ -46,7 +48,7 @@
 		}
 	}
 
-	function formatCost(cost: number | null): string {
+	function formatCost(cost) {
 		return cost != null ? `$ ${cost.toFixed(2)}` : '';
 	}
 </script>
@@ -57,7 +59,7 @@
 			<thead>
 				<tr class="table-header">
 					{#each ['name', 'barcode', 'count', 'lowCount', 'cost', 'storageType', ''] as column, i}
-						<th class="{column}-col" on:click={() => column && sortBy(column)}>
+						<th class="{column}-col" onclick={() => column && sortBy(column)}>
 							<div class="header">
 								{#if column}
 									{column.charAt(0).toUpperCase() + column.slice(1)}
@@ -84,9 +86,10 @@
 									<button
 										class="icon-button"
 										data-tooltip="Edit Name"
-										on:click={() => onEdit(item.id, 'name', item.name)}
-										on:mouseenter={showTooltip}
-										on:mouseleave={hideTooltip}
+										aria-label="Edit Name"
+										onclick={() => onEdit(item.id, 'name', item.name)}
+										onmouseenter={showTooltip}
+										onmouseleave={hideTooltip}
 									>
 										<i class="fas fa-edit"></i>
 									</button>
@@ -98,9 +101,10 @@
 									<button
 										class="icon-button"
 										data-tooltip="Edit Barcode"
-										on:click={() => onEdit(item.id, 'barcode', item.barcode)}
-										on:mouseenter={showTooltip}
-										on:mouseleave={hideTooltip}
+										aria-label="Edit Barcode"
+										onclick={() => onEdit(item.id, 'barcode', item.barcode)}
+										onmouseenter={showTooltip}
+										onmouseleave={hideTooltip}
 									>
 										<i class="fas fa-edit"></i>
 									</button>
@@ -113,9 +117,10 @@
 									<button
 										class="icon-button"
 										data-tooltip="Edit Low Count"
-										on:click={() => onEdit(item.id, 'lowCount', item.lowCount)}
-										on:mouseenter={showTooltip}
-										on:mouseleave={hideTooltip}
+										aria-label="Edit Low Count"
+										onclick={() => onEdit(item.id, 'lowCount', item.lowCount)}
+										onmouseenter={showTooltip}
+										onmouseleave={hideTooltip}
 									>
 										<i class="fas fa-edit"></i>
 									</button>
@@ -127,9 +132,10 @@
 									<button
 										class="icon-button"
 										data-tooltip="Edit Cost"
-										on:click={() => onEdit(item.id, 'cost', item.cost)}
-										on:mouseenter={showTooltip}
-										on:mouseleave={hideTooltip}
+										aria-label="Edit Cost"
+										onclick={() => onEdit(item.id, 'cost', item.cost)}
+										onmouseenter={showTooltip}
+										onmouseleave={hideTooltip}
 									>
 										<i class="fas fa-edit"></i>
 									</button>
@@ -147,9 +153,10 @@
 									<button
 										class="icon-button"
 										data-tooltip="Edit Storage Type"
-										on:click={() => onEdit(item.id, 'storageType', item.storageType)}
-										on:mouseenter={showTooltip}
-										on:mouseleave={hideTooltip}
+										aria-label="Edit Storage Type"
+										onclick={() => onEdit(item.id, 'storageType', item.storageType)}
+										onmouseenter={showTooltip}
+										onmouseleave={hideTooltip}
 									>
 										<i class="fas fa-edit"></i>
 									</button>
@@ -159,9 +166,10 @@
 								<button
 									class="delete-button"
 									data-tooltip="Delete Item"
-									on:click={() => handleDelete(item.id)}
-									on:mouseenter={showTooltip}
-									on:mouseleave={hideTooltip}
+									aria-label="Delete Item"
+									onclick={() => handleDelete(item.id)}
+									onmouseenter={showTooltip}
+									onmouseleave={hideTooltip}
 								>
 									<i class="fas fa-trash-alt"></i>
 								</button>

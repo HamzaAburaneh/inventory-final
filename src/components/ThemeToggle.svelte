@@ -1,25 +1,18 @@
-<script lang="ts">
-	import { theme } from '../themes';
+<script>
+	import { themeStore } from '../stores/themes.js';
 	import { get } from 'svelte/store';
-	import { onMount } from 'svelte';
 
-	let currentTheme = get(theme);
+	let currentTheme = $state(get(themeStore));
 
 	function toggleTheme() {
 		currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-		theme.set(currentTheme);
+		themeStore.setTheme(currentTheme);
 		if (typeof window !== 'undefined') {
 			localStorage.setItem('theme', currentTheme);
 		}
 	}
 
-	$: {
-		if (typeof document !== 'undefined') {
-			document.documentElement.setAttribute('data-theme', currentTheme);
-		}
-	}
-
-	onMount(() => {
+	$effect(() => {
 		if (typeof document !== 'undefined') {
 			document.documentElement.setAttribute('data-theme', currentTheme);
 		}
@@ -27,7 +20,7 @@
 </script>
 
 <button
-	on:click={toggleTheme}
+	onclick={toggleTheme}
 	class="theme-toggle"
 	aria-label={currentTheme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
 >

@@ -1,12 +1,10 @@
-<script lang="ts">
+<script>
 	import { fade, fly } from 'svelte/transition';
 
-	export let searchValue = '';
-	export let onSearch: (value: string) => void;
-	export let onClear: () => void;
+	let { searchValue = $bindable(''), onSearch, onClear } = $props();
 
-	function handleInput(event: Event) {
-		const value = (event.target as HTMLInputElement).value;
+	function handleInput(event) {
+		const value = event.target.value;
 		searchValue = value;
 		onSearch(value);
 	}
@@ -24,7 +22,7 @@
 			class="search-input"
 			bind:value={searchValue}
 			placeholder="Search Items"
-			on:input={handleInput}
+			oninput={handleInput}
 		/>
 		<label for="search" class="search-icon">
 			<svg
@@ -41,7 +39,7 @@
 			</svg>
 		</label>
 		{#if searchValue}
-			<button class="clear-button" on:click={clearSearch} transition:fade={{ duration: 200 }}>
+			<button class="clear-button" onclick={clearSearch} transition:fade={{ duration: 200 }} aria-label="Clear search">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					viewBox="0 0 24 24"

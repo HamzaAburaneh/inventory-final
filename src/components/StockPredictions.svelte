@@ -1,26 +1,40 @@
-<script lang="ts">
-	import { onMount } from 'svelte';
-	import { itemStore } from '../stores/itemStore';
+<script>
+	import { itemStore } from '../stores/itemStore.js';
 	import { fade, slide, scale } from 'svelte/transition';
 	import { tweened } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
-	import { notificationStore } from '../stores/notificationStore';
-	import { searchStore } from '../stores/searchStore';
+	import { notificationStore } from '../stores/notificationStore.js';
+	import { searchTerm as searchStore, setSearchTerm, clearSearch } from '../stores/searchStore.js';
 	import SearchBar from './SearchBar.svelte';
-	import Icon from '@iconify/svelte';
 
-	let predictions: { [itemId: string]: number[] } = {};
-	let loading = true;
-	let error = '';
-	let predictionTimeframe = tweened(14, {
-		duration: 300,
-		easing: cubicOut
-	});
+	let predictions = $state({});
+	let loading = $state(true);
+	let error = $state('');
+	let timeframeValue = $state(14);
 	const ANALYSIS_WINDOW = 7; // 7 days moving average
+	
+	// Store values as reactive state
+	let items = $state([]);
+	let searchTermValue = $state('');
+	
+	// Subscribe to stores
+	$effect(() => {
+		const unsubscribeItems = itemStore.subscribe(value => {
+			items = value;
+		});
+		const unsubscribeSearch = searchStore.subscribe(value => {
+			searchTermValue = value;
+		});
+		
+		return () => {
+			unsubscribeItems();
+			unsubscribeSearch();
+		};
+	});
 
 	async function fetchPredictions() {
 		try {
-			const response = await fetch(`/api/stockPredictions?timeframe=${$predictionTimeframe}`);
+			const response = await fetch(`/api/stockPredictions?timeframe=${timeframeValue}`);
 			if (!response.ok) {
 				throw new Error('Failed to fetch stock predictions');
 			}
@@ -34,35 +48,32 @@
 		}
 	}
 
-	onMount(async () => {
+	$effect(async () => {
 		await Promise.all([fetchPredictions(), itemStore.fetchItems()]);
 	});
 
-	function onSearch(value: string) {
-		searchStore.setSearchTerm(value);
+	function onSearch(value) {
+		setSearchTerm(value);
 	}
 
 	function onClear() {
-		searchStore.clearSearch();
+		clearSearch();
 	}
 
-	let debounceTimer: NodeJS.Timeout;
-	function debouncedFetchPredictions() {
+	let debounceTimer;
+	
+	$effect(() => {
 		clearTimeout(debounceTimer);
 		debounceTimer = setTimeout(() => {
 			fetchPredictions();
 		}, 300);
-	}
+		
+		return () => clearTimeout(debounceTimer);
+	});
 
-	$: {
-		if ($predictionTimeframe) {
-			debouncedFetchPredictions();
-		}
-	}
-
-	$: itemsWithPredictions = Object.entries(predictions)
+	const itemsWithPredictions = $derived(Object.entries(predictions)
 		.map(([itemId, prediction]) => {
-			const item = $itemStore.find((item) => item.id === itemId);
+			const item = items.find((item) => item.id === itemId);
 			const currentCount = item && item.count !== undefined ? item.count : 0;
 			const totalPrediction = prediction.reduce((sum, daily) => sum + daily, 0);
 			const recommendedOrder = Math.max(0, totalPrediction - currentCount);
@@ -75,34 +86,34 @@
 				recommendedOrder
 			};
 		})
-		.filter((item) => item.name.toLowerCase().includes($searchStore.toLowerCase()));
+		.filter((item) => item.name.toLowerCase().includes(searchTermValue.toLowerCase())));
 
-	function getStatusIcon(currentCount: number, totalPrediction: number): string {
-		if (currentCount < totalPrediction * 0.5) return 'mdi:alert-circle';
-		if (currentCount < totalPrediction) return 'mdi:alert';
-		if (currentCount > totalPrediction * 1.5) return 'mdi:package-variant';
-		return 'mdi:check-circle';
+	function getStatusIcon(currentCount, totalPrediction) {
+		if (currentCount < totalPrediction * 0.5) return 'fa-exclamation-circle';
+		if (currentCount < totalPrediction) return 'fa-exclamation-triangle';
+		if (currentCount > totalPrediction * 1.5) return 'fa-boxes';
+		return 'fa-check-circle';
 	}
 
-	function getStatusColor(currentCount: number, totalPrediction: number): string {
+	function getStatusColor(currentCount, totalPrediction) {
 		if (currentCount < totalPrediction * 0.5) return 'text-red-500';
 		if (currentCount < totalPrediction) return 'text-yellow-500';
 		if (currentCount > totalPrediction * 1.5) return 'text-blue-500';
 		return 'text-green-500';
 	}
 
-	$: totalItems = itemsWithPredictions.length;
-	$: itemsNeedingRestock = itemsWithPredictions.filter(
+	const totalItems = $derived(itemsWithPredictions.length);
+	const itemsNeedingRestock = $derived(itemsWithPredictions.filter(
 		(item) => item.currentCount < item.totalPrediction
-	).length;
-	$: potentialOverstock = itemsWithPredictions.filter(
+	).length);
+	const potentialOverstock = $derived(itemsWithPredictions.filter(
 		(item) => item.currentCount > item.totalPrediction * 1.5
-	).length;
+	).length);
 </script>
 
 <div class="stock-predictions">
 	<h2 class="text-2xl font-bold mb-4" in:slide={{ duration: 300, delay: 150 }}>
-		<Icon icon="mdi:chart-box" class="inline-block mr-2" />
+		<i class="fas fa-chart-bar inline-block mr-2"></i>
 		Inventory Predictions
 	</h2>
 	<div
@@ -111,10 +122,10 @@
 	>
 		<div class="flex flex-wrap items-center justify-between mb-4">
 			<p class="text-lg mr-2">
-				Prediction timeframe: <strong>{$predictionTimeframe.toFixed(0)} days</strong>
+				Prediction timeframe: <strong>{timeframeValue} days</strong>
 			</p>
 			<div class="slider-container">
-				<input type="range" min="1" max="14" bind:value={$predictionTimeframe} class="slider" />
+				<input type="range" min="1" max="14" bind:value={timeframeValue} class="slider" />
 				<div class="slider-labels">
 					<span>1</span>
 					<span>7</span>
@@ -125,21 +136,21 @@
 		<p class="text-sm mb-2">Based on a {ANALYSIS_WINDOW}-day moving average of sales data</p>
 		<div class="flex flex-wrap justify-between mt-4">
 			<div class="stat-item">
-				<Icon icon="mdi:package" class="inline-block mr-1" />
+				<i class="fas fa-box inline-block mr-1"></i>
 				Total Items: <strong>{totalItems}</strong>
 			</div>
 			<div class="stat-item text-yellow-500">
-				<Icon icon="mdi:alert" class="inline-block mr-1" />
+				<i class="fas fa-exclamation-triangle inline-block mr-1"></i>
 				Items Needing Restock: <strong>{itemsNeedingRestock}</strong>
 			</div>
 			<div class="stat-item text-blue-500">
-				<Icon icon="mdi:package-variant" class="inline-block mr-1" />
+				<i class="fas fa-boxes inline-block mr-1"></i>
 				Potential Overstock: <strong>{potentialOverstock}</strong>
 			</div>
 		</div>
 	</div>
 
-	<SearchBar {onSearch} {onClear} searchValue={$searchStore} />
+	<SearchBar {onSearch} {onClear} searchValue={searchTermValue} />
 
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
 		{#if loading}
@@ -166,20 +177,20 @@
 				>
 					<h3 class="text-lg font-semibold mb-2">{name}</h3>
 					<p class="mb-1">
-						<Icon icon="mdi:package" class="inline-block mr-1" />
+						<i class="fas fa-box inline-block mr-1"></i>
 						Current Stock: <strong>{currentCount}</strong>
 					</p>
 					<p class="mb-1">
-						<Icon icon="mdi:chart-line" class="inline-block mr-1" />
-						Predicted Need ({$predictionTimeframe.toFixed(0)} days):
+						<i class="fas fa-chart-line inline-block mr-1"></i>
+						Predicted Need ({timeframeValue} days):
 						<strong>{totalPrediction.toFixed(2)}</strong>
 					</p>
 					<p class="mb-2">
-						<Icon icon="mdi:cart-plus" class="inline-block mr-1" />
+						<i class="fas fa-cart-plus inline-block mr-1"></i>
 						Recommended Order: <strong>{recommendedOrder.toFixed(2)}</strong>
 					</p>
 					<p class={`text-lg ${getStatusColor(currentCount, totalPrediction)} flex items-center`}>
-						<Icon icon={getStatusIcon(currentCount, totalPrediction)} class="inline-block mr-2" />
+						<i class="fas {getStatusIcon(currentCount, totalPrediction)} inline-block mr-2"></i>
 						Status:
 						{#if currentCount < totalPrediction * 0.5}
 							Urgent restock needed

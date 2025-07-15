@@ -1,19 +1,14 @@
-<script lang="ts">
-	import type { Transaction } from '../types';
+<script>
+	const { paginatedItems = [], sortBy, currentSortColumn, sortAscending } = $props();
 
-	export let paginatedItems: Transaction[] = [];
-	export let sortBy: (column: keyof Transaction | 'changedAmount') => void;
-	export let currentSortColumn: keyof Transaction | 'changedAmount';
-	export let sortAscending: boolean;
-
-	function capitalizeWords(str: string): string {
+	function capitalizeWords(str) {
 		return str
 			.split(' ')
 			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 			.join(' ');
 	}
 
-	const columns: (keyof Transaction | 'changedAmount')[] = [
+	const columns = [
 		'itemName',
 		'previousCount',
 		'changedAmount',
@@ -22,7 +17,7 @@
 		'user'
 	];
 
-	function getChangedAmountStyle(changedAmount: number): { color: string; icon: string } {
+	function getChangedAmountStyle(changedAmount) {
 		if (changedAmount > 0) {
 			return { color: 'positive-change', icon: 'fas fa-arrow-up' };
 		} else if (changedAmount < 0) {
@@ -31,7 +26,7 @@
 		return { color: '', icon: '' };
 	}
 
-	function formatTimestamp(timestamp: Date): string {
+	function formatTimestamp(timestamp) {
 		const date = new Date(timestamp);
 		const time = date.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
 		const formattedDate = date.toLocaleDateString('en-US', {
@@ -49,7 +44,7 @@
 			<thead>
 				<tr class="table-header">
 					{#each columns as column}
-						<th class="{column}-col" on:click={() => sortBy(column)}>
+						<th class="{column}-col" onclick={() => sortBy(column)}>
 							<div class="header">
 								{capitalizeWords(column.replace(/([A-Z])/g, ' $1').trim())}
 								<i
