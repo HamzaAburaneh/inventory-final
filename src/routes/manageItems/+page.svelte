@@ -1,54 +1,98 @@
-<script lang="ts">
-	import { onMount } from 'svelte';
+<script>
 	import Swal from 'sweetalert2';
 	import ItemForm from '../../components/ItemForm.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Table from '../../components/Table.svelte';
 	import Pagination from '../../components/Pagination.svelte';
-	import { paginationStore, paginatedItems } from '../../stores/paginationStore';
-	import { itemStore, filteredItems } from '../../stores/itemStore';
-	import { searchStore } from '../../stores/searchStore';
+	import { paginationStore } from '../../stores/paginationStore';
+	import { itemStore } from '../../stores/itemStore';
+	import { searchTerm, setSearchTerm, clearSearch } from '../../stores/searchStore';
 	import { notificationStore } from '../../stores/notificationStore';
-	import type { Item } from '../../types';
 	import { fadeAndSlide } from '$lib/transitions';
 	import { fade } from 'svelte/transition';
 	import { applySorting, addTestItems } from '../../lib/items';
+	import { get } from 'svelte/store';
 
-	let formData: Omit<Item, 'id'> = {
+	let formData = $state({
 		name: '',
 		barcode: '',
 		count: '',
 		lowCount: '',
 		cost: '',
-		storageType: '' as '' | 'freezer' | 'refrigerator' | 'dry storage'
-	};
+		storageType: ''
+	});
 
-	let errors: Partial<Record<keyof typeof formData, string>> = {};
-	let currentSortColumn: string = 'name';
-	let sortAscending = true;
-	let itemsLoaded = false;
+	let errors = $state({});
+	let currentSortColumn = $state('name');
+	let sortAscending = $state(true);
+	let itemsLoaded = $state(false);
+	
+	// Store values as reactive state
+	let items = $state([]);
+	let searchTermValue = $state('');
+	let currentPage = $state(1);
+	let itemsPerPage = $state(10);
+	let notificationValue = $state(null);
+	
+	// Subscribe to stores
+	$effect(() => {
+		const unsubscribeItems = itemStore.subscribe(value => {
+			items = value;
+		});
+		const unsubscribeSearch = searchTerm.subscribe(value => {
+			searchTermValue = value;
+		});
+		const unsubscribePage = paginationStore.currentPage.subscribe(value => {
+			currentPage = value;
+		});
+		const unsubscribeItemsPerPage = paginationStore.itemsPerPage.subscribe(value => {
+			itemsPerPage = value;
+		});
+		const unsubscribeNotification = notificationStore.subscribe(value => {
+			notificationValue = value;
+		});
+		
+		return () => {
+			unsubscribeItems();
+			unsubscribeSearch();
+			unsubscribePage();
+			unsubscribeItemsPerPage();
+			unsubscribeNotification();
+		};
+	});
 
-	$: filteredItemsList = $filteredItems($searchStore);
-	$: {
+	const filteredItemsList = $derived(
+		items.filter(item =>
+			item.name.toLowerCase().includes(searchTermValue.toLowerCase()) ||
+			item.barcode.toLowerCase().includes(searchTermValue.toLowerCase())
+		)
+	);
+	
+	$effect(() => {
 		paginationStore.setTotalItems(filteredItemsList.length);
-	}
-	$: sortedItems = applySorting(filteredItemsList, currentSortColumn as keyof Item, sortAscending);
-	$: paginatedItemsList = $paginatedItems(sortedItems);
+	});
+	
+	const sortedItems = $derived(applySorting(filteredItemsList, currentSortColumn, sortAscending));
+	
+	const paginatedItemsList = $derived(() => {
+		const startIndex = (currentPage - 1) * itemsPerPage;
+		const endIndex = startIndex + itemsPerPage;
+		return sortedItems.slice(startIndex, endIndex);
+	});
 
-	onMount(async () => {
-		await itemStore.fetchItems();
-
+	$effect(async () => {
+		await itemStore.loadItems();
 		itemsLoaded = true;
 	});
 
-	const handleItemAdd = async (event: CustomEvent<{ formData: Omit<Item, 'id'> }>) => {
+	const handleItemAdd = async (event) => {
 		const { formData } = event.detail;
-		if ($itemStore.some((item) => item.name.toLowerCase() === formData.name.toLowerCase())) {
+		if (items.some((item) => item.name.toLowerCase() === formData.name.toLowerCase())) {
 			notificationStore.showNotification('Item with this name already exists.', 'error');
 			return;
 		}
 		try {
-			const newItem: Omit<Item, 'id'> = {
+			const newItem = {
 				...formData,
 				cost: formData.cost ? parseFloat(parseFloat(formData.cost).toFixed(2)) : 0
 			};
@@ -61,12 +105,12 @@
 		}
 	};
 
-	const handleDelete = async (id: string) => {
+	const handleDelete = async (id) => {
 		await itemStore.deleteItem(id);
 		notificationStore.showNotification('Item deleted successfully!', 'success');
 	};
 
-	const handleEdit = async (id: string, field: keyof Item, oldValue: any) => {
+	const handleEdit = async (id, field, oldValue) => {
 		const result = await Swal.fire({
 			title: `Edit ${String(field).charAt(0).toUpperCase() + String(field).slice(1)}`,
 			input: 'text',
@@ -84,9 +128,9 @@
 		}
 	};
 
-	const updateItem = async (id: string, field: keyof Item, value: any) => {
+	const updateItem = async (id, field, value) => {
 		try {
-			const item = $itemStore.find((item) => item.id === id);
+			const item = items.find((item) => item.id === id);
 			if (!item) {
 				throw new Error('Item not found');
 			}
@@ -100,16 +144,16 @@
 		}
 	};
 
-	const handleSearch = (value: string) => {
-		searchStore.setSearchTerm(value);
+	const handleSearch = (value) => {
+		setSearchTerm(value);
 		paginationStore.setCurrentPage(1);
 	};
 
 	const handleClearSearch = () => {
-		searchStore.clearSearch();
+		clearSearch();
 	};
 
-	const sortBy = (column: string) => {
+	const sortBy = (column) => {
 		if (currentSortColumn === column) {
 			sortAscending = !sortAscending;
 		} else {
@@ -124,17 +168,17 @@
 		class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4"
 		in:fadeAndSlide={{ duration: 300, y: 75 }}
 	>
-		<ItemForm on:add={handleItemAdd} />
+		<ItemForm onAdd={handleItemAdd} />
 
-		<SearchBar searchValue={$searchStore} onSearch={handleSearch} onClear={handleClearSearch} />
+		<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClearSearch} />
 
 		<div class="filter-legend text-white mb-4">
-			{filteredItemsList.length} results of {$itemStore.length} total items.
+			{filteredItemsList.length} results of {items.length} total items.
 		</div>
 
 		<div class="table-container">
 			<Table
-				paginatedItems={paginatedItemsList}
+				paginatedItems={paginatedItemsList()}
 				onEdit={handleEdit}
 				onDelete={handleDelete}
 				{sortBy}
@@ -150,9 +194,9 @@
 		<div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
 	</div>
 {/if}
-{#if $notificationStore}
-	<div class="notification" in:fade out:fade>
-		{$notificationStore.message}
+{#if notificationValue}
+	<div class="notification {notificationValue.type}" in:fade out:fade>
+		{notificationValue.message}
 	</div>
 {/if}
 
@@ -179,14 +223,29 @@
 
 	.notification {
 		position: fixed;
-		top: 20px;
-		left: 50%;
-		transform: translateX(-50%);
-		background-color: #38a169;
+		bottom: 20px;
+		right: 20px;
 		color: white;
 		padding: 1rem 2rem;
 		border-radius: 0.5rem;
 		z-index: 1000;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	}
+
+	.notification.success {
+		background-color: var(--add-item-color); /* Green */
+	}
+
+	.notification.error {
+		background-color: #dc3545; /* Red */
+	}
+
+	.notification.warning {
+		background-color: #ffc107; /* Yellow */
+		color: #333; /* Dark text for contrast */
+	}
+
+	.notification.info {
+		background-color: #17a2b8; /* Blue */
 	}
 </style>

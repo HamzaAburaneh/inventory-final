@@ -1,12 +1,26 @@
-<script lang="ts">
+<script>
 	import { fade, fly } from 'svelte/transition';
 	import { fadeAndSlide } from '$lib/transitions';
-	import { authStore } from '../stores/authStore';
-	import { onMount } from 'svelte';
+	import { authStore } from '../stores/authStore.js';
 
-	let showFeatures = false;
-	let activeTestimonial = 0;
-	let showBackToTop = false;
+	let showFeatures = $state(false);
+	let activeTestimonial = $state(0);
+	let showBackToTop = $state(false);
+	let hoveredCard = $state(-1);
+	
+	// Store values as reactive state
+	let authUser = $state(null);
+	
+	// Subscribe to stores
+	$effect(() => {
+		const unsubscribeAuth = authStore.subscribe(value => {
+			authUser = value;
+		});
+		
+		return () => {
+			unsubscribeAuth();
+		};
+	});
 
 	const features = [
 		{ name: 'Real-time Tracking', icon: 'fa-chart-line' },
@@ -41,7 +55,7 @@
 		activeTestimonial = (activeTestimonial - 1 + testimonials.length) % testimonials.length;
 	}
 
-	function scrollToSection(sectionId: string) {
+	function scrollToSection(sectionId) {
 		const section = document.getElementById(sectionId);
 		if (section) {
 			section.scrollIntoView({ behavior: 'smooth' });
@@ -56,9 +70,7 @@
 		showBackToTop = window.pageYOffset > 300;
 	}
 
-	let hoveredCard = -1;
-
-	onMount(() => {
+	$effect(() => {
 		const links = document.querySelectorAll('a[href^="#"]');
 		links.forEach((link) => {
 			link.addEventListener('click', (e) => {
@@ -84,7 +96,7 @@
 		<p class="text-2xl mb-12 text-center text-secondary">
 			Your intelligent inventory management solution
 		</p>
-		{#if !$authStore}
+		{#if !authUser}
 			<div class="text-center">
 				<a href="#cta" class="btn-primary" aria-label="Get started with StockSense">
 					Get Started
@@ -103,12 +115,11 @@
 					class="feature-card"
 					role="article"
 					aria-labelledby="feature-heading-{i}"
-					on:mouseenter={() => (hoveredCard = i)}
-					on:mouseleave={() => (hoveredCard = -1)}
+					onmouseenter={() => (hoveredCard = i)}
+					onmouseleave={() => (hoveredCard = -1)}
 					style="transform: {hoveredCard === i
 						? 'scale(1.05) translateY(-5px)'
-						: 'scale(1) translateY(0)'};
-						   transition: transform 0.3s ease;"
+						: 'scale(1) translateY(0)'}; transition: transform 0.3s ease;"
 				>
 					<div class="flex items-center mb-4">
 						<i class="fas {feature.icon} text-4xl text-logo mr-6" aria-hidden="true"></i>
@@ -136,14 +147,14 @@
 			{/each}
 			<button
 				class="testimonial-nav testimonial-prev"
-				on:click={prevTestimonial}
+				onclick={prevTestimonial}
 				aria-label="Previous testimonial"
 			>
 				<i class="fas fa-chevron-left" aria-hidden="true"></i>
 			</button>
 			<button
 				class="testimonial-nav testimonial-next"
-				on:click={nextTestimonial}
+				onclick={nextTestimonial}
 				aria-label="Next testimonial"
 			>
 				<i class="fas fa-chevron-right" aria-hidden="true"></i>
@@ -151,7 +162,7 @@
 		</div>
 	</section>
 
-	{#if !$authStore}
+	{#if !authUser}
 		<section id="cta" class="cta mb-24" in:fade={{ duration: 300 }} aria-labelledby="cta-heading">
 			<div class="cta-container">
 				<h2 id="cta-heading" class="text-4xl font-semibold mb-6 logo-text">
@@ -170,7 +181,7 @@
 
 {#if showBackToTop}
 	<button
-		on:click={scrollToTop}
+		onclick={scrollToTop}
 		class="back-to-top"
 		transition:fade
 		aria-label="Scroll to top of page"
@@ -180,11 +191,6 @@
 {/if}
 
 <style>
-	:global(body) {
-		background-color: var(--background-color);
-		color: var(--text-color);
-	}
-
 	main {
 		max-width: 1200px;
 	}
@@ -207,9 +213,7 @@
 		background-color: var(--container-bg);
 		padding: 2rem;
 		border-radius: var(--border-radius);
-		box-shadow:
-			0 4px 6px rgba(0, 0, 0, 0.1),
-			0 1px 3px rgba(0, 0, 0, 0.08);
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
 	}
 
 	.btn-primary {
@@ -225,9 +229,7 @@
 
 	.btn-primary:hover {
 		background-color: var(--nav-logo-hover-color);
-		box-shadow:
-			0 4px 6px rgba(0, 0, 0, 0.1),
-			0 1px 3px rgba(0, 0, 0, 0.08);
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
 		transform: translateY(-2px);
 	}
 
@@ -235,9 +237,7 @@
 		background-color: var(--container-bg);
 		padding: 2rem;
 		border-radius: var(--border-radius);
-		box-shadow:
-			0 4px 6px rgba(0, 0, 0, 0.1),
-			0 1px 3px rgba(0, 0, 0, 0.08);
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
 		position: relative;
 	}
 
@@ -272,9 +272,7 @@
 		background-color: var(--container-bg);
 		padding: 3rem;
 		border-radius: var(--border-radius);
-		box-shadow:
-			0 4px 6px rgba(0, 0, 0, 0.1),
-			0 1px 3px rgba(0, 0, 0, 0.08);
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
 		text-align: center;
 	}
 
@@ -286,9 +284,7 @@
 		color: var(--text-color);
 		border-radius: 9999px;
 		padding: 1rem;
-		box-shadow:
-			0 4px 6px rgba(0, 0, 0, 0.1),
-			0 1px 3px rgba(0, 0, 0, 0.08);
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
 		transition: all 0.3s ease;
 		opacity: 0.8;
 	}

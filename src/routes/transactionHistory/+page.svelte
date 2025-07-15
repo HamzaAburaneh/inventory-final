@@ -1,35 +1,58 @@
-<script lang="ts">
-	import { onMount } from 'svelte';
+<script>
 	import { db } from '../../firebase';
 	import { collection, query, orderBy, getDocs } from 'firebase/firestore';
-	import type { Transaction } from '../../types';
 	import TransactionTable from '../../components/TransactionTable.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
-	import { paginationStore, paginatedItems } from '../../stores/paginationStore';
-	import { searchStore } from '../../stores/searchStore';
+	import { paginationStore } from '../../stores/paginationStore';
+	import { searchTerm, setSearchTerm, clearSearch } from '../../stores/searchStore';
 	import { fade } from 'svelte/transition';
 	import { fadeAndSlide } from '$lib/transitions';
 
-	let allTransactions: Transaction[] = [];
-	let filteredTransactions: Transaction[] = [];
-	let loading = true;
-	let currentSortColumn: keyof Transaction | 'changedAmount' = 'timestamp';
-	let sortAscending = false;
-	let transactionsLoaded = false;
+	let allTransactions = $state([]);
+	let filteredTransactions = $state([]);
+	let loading = $state(true);
+	let currentSortColumn = $state('timestamp');
+	let sortAscending = $state(false);
+	let transactionsLoaded = $state(false);
+	
+	// Store values as reactive state
+	let searchTermValue = $state('');
+	let currentPage = $state(1);
+	let itemsPerPage = $state(10);
+	
+	// Subscribe to stores
+	$effect(() => {
+		const unsubscribeSearch = searchTerm.subscribe(value => {
+			searchTermValue = value;
+			filterTransactions(value);
+		});
+		const unsubscribePage = paginationStore.currentPage.subscribe(value => {
+			currentPage = value;
+		});
+		const unsubscribeItemsPerPage = paginationStore.itemsPerPage.subscribe(value => {
+			itemsPerPage = value;
+		});
+		
+		return () => {
+			unsubscribeSearch();
+			unsubscribePage();
+			unsubscribeItemsPerPage();
+		};
+	});
 
-	$: sortedTransactions = sortTransactions(filteredTransactions, currentSortColumn, sortAscending);
-	$: paginatedTransactions = $paginatedItems(sortedTransactions) as Transaction[];
-	$: filterLegend = `Showing ${paginatedTransactions.length} of ${filteredTransactions.length} filtered transactions (${allTransactions.length} total).`;
-	$: {
+	const sortedTransactions = $derived(sortTransactions(filteredTransactions, currentSortColumn, sortAscending));
+	const paginatedTransactions = $derived(() => {
+		const startIndex = (currentPage - 1) * itemsPerPage;
+		const endIndex = startIndex + itemsPerPage;
+		return sortedTransactions.slice(startIndex, endIndex);
+	});
+	const filterLegend = $derived(`Showing ${paginatedTransactions().length} of ${filteredTransactions.length} filtered transactions (${allTransactions.length} total).`);
+	$effect(() => {
 		transactionsLoaded = allTransactions.length > 0;
-	}
+	});
 
-	function sortTransactions(
-		transactions: Transaction[],
-		column: keyof Transaction | 'changedAmount',
-		ascending: boolean
-	) {
+	function sortTransactions(transactions, column, ascending) {
 		return [...transactions].sort((a, b) => {
 			let aValue, bValue;
 			if (column === 'changedAmount') {
@@ -63,9 +86,9 @@
 					newCount: data.newCount,
 					timestamp: data.timestamp?.toDate() || new Date(),
 					user: data.user
-				} as Transaction;
+				};
 			});
-			filterTransactions($searchStore);
+			filterTransactions(searchTermValue);
 		} catch (error) {
 			console.error('Error fetching transactions:', error);
 		} finally {
@@ -73,9 +96,9 @@
 		}
 	}
 
-	function filterTransactions(searchTerm: string) {
-		if (searchTerm) {
-			const lowerSearchTerm = searchTerm.toLowerCase();
+	function filterTransactions(searchTermParam) {
+		if (searchTermParam) {
+			const lowerSearchTerm = searchTermParam.toLowerCase();
 			filteredTransactions = allTransactions.filter((transaction) =>
 				transaction.itemName.toLowerCase().includes(lowerSearchTerm)
 			);
@@ -86,21 +109,21 @@
 		paginationStore.setCurrentPage(1);
 	}
 
-	onMount(() => {
+	$effect(() => {
 		fetchTransactions();
 	});
 
-	function handleSearch(value: string) {
-		searchStore.setSearchTerm(value);
+	function handleSearch(value) {
+		setSearchTerm(value);
 		filterTransactions(value);
 	}
 
 	function handleClear() {
-		searchStore.clearSearch();
+		clearSearch();
 		filterTransactions('');
 	}
 
-	function handleSort(column: keyof Transaction | 'changedAmount') {
+	function handleSort(column) {
 		if (currentSortColumn === column) {
 			sortAscending = !sortAscending;
 		} else {
@@ -121,7 +144,7 @@
 	>
 		<h1 class="text-3xl font-bold mb-6">Transaction History</h1>
 
-		<SearchBar searchValue={$searchStore} onSearch={handleSearch} onClear={handleClear} />
+		<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClear} />
 
 		<div class="filter-legend text-white mb-4">
 			{filterLegend}
@@ -134,7 +157,7 @@
 				<p class="text-center my-4">No transactions found.</p>
 			{:else}
 				<TransactionTable
-					paginatedItems={paginatedTransactions}
+					paginatedItems={paginatedTransactions()}
 					sortBy={handleSort}
 					{currentSortColumn}
 					{sortAscending}

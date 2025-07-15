@@ -1,46 +1,53 @@
-<script lang="ts">
-	import { onMount } from 'svelte';
-	import { authStore } from '../../stores/authStore';
-	import type { User } from 'firebase/auth';
+<script>
+	import { authStore } from '../../stores/authStore.js';
 	import { fadeAndSlide } from '$lib/transitions';
-	import { getFirestore, doc, getDoc } from 'firebase/firestore';
+	import { db } from '../../firebase.js';
+	import { doc, getDoc, setDoc } from 'firebase/firestore';
+	import { onMount } from 'svelte';
 
-	const db = getFirestore();
+	let user = $state(null);
+	let name = $state('');
+	let email = $state('');
+	let phone = $state('');
+	let errorMessage = $state('');
+	let successMessage = $state('');
+	let isUpdating = $state(false);
 
-	let user: User | null = null;
-	let name = '';
-	let email = '';
-	let phone = '';
-	let errorMessage = '';
-	let successMessage = '';
-	let isUpdating = false;
-
-	async function fetchPhoneNumber(userId: string) {
-		const userProfileDoc = await getDoc(doc(db, 'userProfiles', userId));
-		if (userProfileDoc.exists()) {
-			return userProfileDoc.data().phoneNumber || '';
+	async function fetchPhoneNumber(userId) {
+		try {
+			const userProfileDoc = await getDoc(doc(db, 'userProfiles', userId));
+			if (userProfileDoc.exists()) {
+				return userProfileDoc.data().phoneNumber || '';
+			}
+		} catch (error) {
+			console.error('Error fetching phone number:', error);
 		}
 		return '';
 	}
 
-	async function loadUserData() {
-		if (user) {
-			name = user.displayName || '';
-			email = user.email || '';
-			phone = await fetchPhoneNumber(user.uid);
+	async function loadUserData(authUser) {
+		if (authUser) {
+			name = authUser.displayName || '';
+			email = authUser.email || '';
+			phone = await fetchPhoneNumber(authUser.uid);
+		} else {
+			// Reset form when no user
+			name = '';
+			email = '';
+			phone = '';
 		}
 	}
 
 	onMount(() => {
-		const unsubscribe = authStore.subscribe((value) => {
-			user = value;
-			loadUserData();
+		const unsubscribe = authStore.subscribe(async (authUser) => {
+			user = authUser;
+			await loadUserData(authUser);
 		});
 
 		return unsubscribe;
 	});
 
-	async function handleSubmit(): Promise<void> {
+	async function handleSubmit() {
 		errorMessage = '';
 		successMessage = '';
 		isUpdating = true;
@@ -60,7 +67,7 @@
 	<h1 class="title">Profile</h1>
 	{#if user}
 		<div class="profile-card">
-			<form on:submit|preventDefault={handleSubmit} class="profile-form">
+			<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="profile-form">
 				<div class="form-group">
 					<label for="name">Username</label>
 					<input type="text" id="name" bind:value={name} required />

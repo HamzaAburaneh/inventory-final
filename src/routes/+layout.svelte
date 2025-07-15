@@ -1,13 +1,12 @@
-<script lang="ts">
-	import { onMount } from 'svelte';
+<script>
 	import Navbar from '../components/Navbar.svelte';
 	import '../styles/global.css';
-	import { authStore } from '../stores/authStore';
-	import type { User } from 'firebase/auth';
+	import { authStore } from '../stores/authStore.js';
 
-	let user: User | null = null;
+	let { children } = $props();
+	let user = $state(null);
 
-	onMount(() => {
+	$effect(() => {
 		authStore.init();
 		const unsubscribe = authStore.subscribe((value) => {
 			user = value;
@@ -20,7 +19,7 @@
 <Navbar {user} />
 
 <main class="main-container">
-	<slot />
+	{@render children()}
 </main>
 
 <style>

@@ -1,19 +1,17 @@
-<script lang="ts">
-	import { onMount } from 'svelte';
+<script>
 	import { authStore } from '../../stores/authStore';
 	import { goto } from '$app/navigation';
-	import { Button, Input, Label } from 'flowbite-svelte';
 	import { fadeAndSlide } from '$lib/transitions';
 	import { fade } from 'svelte/transition';
 	import { createUserWithEmailAndPassword } from 'firebase/auth';
 	import { auth } from '../../firebase';
 
-	let email = '';
-	let password = '';
-	let error = '';
-	let isRegistering = false;
+	let email = $state('');
+	let password = $state('');
+	let error = $state('');
+	let isRegistering = $state(false);
 
-	onMount(() => {
+	$effect(() => {
 		const unsubscribe = authStore.subscribe((user) => {
 			if (user) {
 				goto('/'); // Redirect to home page if already logged in
@@ -54,36 +52,36 @@
 		<h3 class="text-2xl font-bold text-center mb-6 text-text-color">
 			{isRegistering ? 'Create an account' : 'Login to your account'}
 		</h3>
-		<form on:submit|preventDefault={handleAuth} class="space-y-6">
+		<form onsubmit={(e) => { e.preventDefault(); handleAuth(); }} class="space-y-6">
 			<div>
-				<Label for="email" class="mb-2 text-text-color">Email</Label>
-				<Input
+				<label for="email" class="block mb-2 text-sm font-medium text-text-color">Email</label>
+				<input
 					type="email"
 					id="email"
 					placeholder="name@company.com"
 					required
 					bind:value={email}
-					class="bg-input-bg text-input-text"
+					class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-input-bg text-input-text"
 				/>
 			</div>
 			<div>
-				<Label for="password" class="mb-2 text-text-color">Password</Label>
-				<Input
+				<label for="password" class="block mb-2 text-sm font-medium text-text-color">Password</label>
+				<input
 					type="password"
 					id="password"
 					placeholder="••••••••"
 					required
 					bind:value={password}
-					class="bg-input-bg text-input-text"
+					class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-input-bg text-input-text"
 				/>
 			</div>
-			<Button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white">
+			<button type="submit" class="w-full px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm transition-colors duration-200">
 				<i class="fas fa-sign-in-alt mr-2"></i>
 				{isRegistering ? 'Register' : 'Log in'}
-			</Button>
+			</button>
 		</form>
 		<div class="mt-4 text-center">
-			<button on:click={toggleMode} class="text-blue-500 hover:underline">
+			<button onclick={toggleMode} class="text-blue-500 hover:underline">
 				{isRegistering ? 'Already have an account? Log in' : 'Need an account? Register'}
 			</button>
 		</div>

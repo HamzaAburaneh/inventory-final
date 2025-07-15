@@ -1,29 +1,45 @@
-<script lang="ts">
-	import { onMount } from 'svelte';
+<script>
 	import StockPredictions from '../../components/StockPredictions.svelte';
-	import { requireAuth } from '$lib/auth';
 	import { fade, fly } from 'svelte/transition';
-	import { notificationStore } from '../../stores/notificationStore';
-	import Icon from '@iconify/svelte';
+	import { notificationStore } from '../../stores/notificationStore.js';
 	import { Chart, registerables } from 'chart.js';
-	import { itemStore } from '../../stores/itemStore';
+	import { itemStore } from '../../stores/itemStore.js';
 
-	let overviewChart: Chart;
-	let predictions: { [itemId: string]: number[] } = {};
+	let overviewChart = $state();
+	let predictions = $state({});
+	
+	// Store values as reactive state
+	let items = $state([]);
+	let notificationValue = $state(null);
+	
+	// Subscribe to stores
+	$effect(() => {
+		const unsubscribeItems = itemStore.subscribe(value => {
+			items = value;
+		});
+		const unsubscribeNotification = notificationStore.subscribe(value => {
+			notificationValue = value;
+		});
+		
+		return () => {
+			unsubscribeItems();
+			unsubscribeNotification();
+		};
+	});
 
-	$: totalItems = $itemStore.length;
-	$: itemsNeedingRestock = $itemStore.filter((item) => {
+	const totalItems = $derived(items.length);
+	const itemsNeedingRestock = $derived(items.filter((item) => {
 		const prediction = predictions[item.id];
 		if (!prediction) return false;
 		const totalPrediction = prediction.reduce((sum, daily) => sum + daily, 0);
 		return item.count < totalPrediction;
-	}).length;
-	$: potentialOverstock = $itemStore.filter((item) => {
+	}).length);
+	const potentialOverstock = $derived(items.filter((item) => {
 		const prediction = predictions[item.id];
 		if (!prediction) return false;
 		const totalPrediction = prediction.reduce((sum, daily) => sum + daily, 0);
 		return item.count > totalPrediction * 1.5;
-	}).length;
+	}).length);
 
 	async function fetchPredictions() {
 		try {
@@ -38,14 +54,13 @@
 		}
 	}
 
-	onMount(async () => {
-		requireAuth('/inventoryPredictions');
+	$effect(async () => {
 		Chart.register(...registerables);
 
 		await Promise.all([itemStore.fetchItems(), fetchPredictions()]);
 
 		// Initialize dashboard chart
-		const ctx = document.getElementById('overviewChart') as HTMLCanvasElement;
+		const ctx = document.getElementById('overviewChart');
 		overviewChart = new Chart(ctx, {
 			type: 'bar',
 			data: {
@@ -86,10 +101,12 @@
 		});
 	});
 
-	$: if (overviewChart) {
-		overviewChart.data.datasets[0].data = [totalItems, itemsNeedingRestock, potentialOverstock];
-		overviewChart.update();
-	}
+	$effect(() => {
+		if (overviewChart) {
+			overviewChart.data.datasets[0].data = [totalItems, itemsNeedingRestock, potentialOverstock];
+			overviewChart.update();
+		}
+	});
 </script>
 
 <svelte:head>
@@ -105,17 +122,17 @@
 		<h2 class="text-xl font-medium mb-4">Overview</h2>
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 			<div class="metric-card">
-				<Icon icon="mdi-package-variant-closed" width="24" height="24" />
+				<i class="fas fa-box" style="font-size: 24px;"></i>
 				<h3>Total Items</h3>
 				<p>{totalItems}</p>
 			</div>
 			<div class="metric-card">
-				<Icon icon="mdi:alert-circle" width="24" height="24" />
+				<i class="fas fa-exclamation-circle" style="font-size: 24px;"></i>
 				<h3>Needs Restock</h3>
 				<p>{itemsNeedingRestock}</p>
 			</div>
 			<div class="metric-card">
-				<Icon icon="mdi:package-variant" width="24" height="24" />
+				<i class="fas fa-boxes" style="font-size: 24px;"></i>
 				<h3>Potential Overstock</h3>
 				<p>{potentialOverstock}</p>
 			</div>
@@ -129,7 +146,7 @@
 		out:fade={{ duration: 200 }}
 	>
 		<h1 class="text-4xl font-bold mb-6" in:fly={{ y: 20, duration: 300, delay: 500 }}>
-			<Icon icon="mdi:chart-line" width="32" height="32" />
+			<i class="fas fa-chart-line" style="font-size: 32px;"></i>
 			Inventory Predictions
 		</h1>
 		<p class="mb-8 text-lg font-light" in:fly={{ y: 20, duration: 300, delay: 600 }}>
@@ -140,9 +157,9 @@
 		<StockPredictions />
 	</div>
 
-	{#if $notificationStore}
-		<div class="notification" in:fly={{ y: -50, duration: 300 }} out:fade={{ duration: 200 }}>
-			{$notificationStore.message}
+	{#if notificationValue}
+		<div class="notification {notificationValue.type}" in:fly={{ y: -50, duration: 300 }} out:fade={{ duration: 200 }}>
+			{notificationValue.message}
 		</div>
 	{/if}
 </div>
@@ -174,16 +191,31 @@
 
 	.notification {
 		position: fixed;
-		top: 20px;
-		left: 50%;
-		transform: translateX(-50%);
-		background-color: var(--primary-color);
+		bottom: 20px;
+		right: 20px;
 		color: white;
 		padding: 1rem 2rem;
 		border-radius: 0.5rem;
 		z-index: 1000;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 		font-weight: bold;
+	}
+
+	.notification.success {
+		background-color: var(--add-item-color); /* Green */
+	}
+
+	.notification.error {
+		background-color: #dc3545; /* Red */
+	}
+
+	.notification.warning {
+		background-color: #ffc107; /* Yellow */
+		color: #333; /* Dark text for contrast */
+	}
+
+	.notification.info {
+		background-color: #17a2b8; /* Blue */
 	}
 
 	h1 {

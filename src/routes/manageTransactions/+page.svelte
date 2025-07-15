@@ -1,39 +1,98 @@
-<script lang="ts">
-	import { onMount } from 'svelte';
+<script>
 	import { fade, fly } from 'svelte/transition';
 	import { elasticOut } from 'svelte/easing';
 	import Swal from 'sweetalert2';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import { fadeAndSlide } from '$lib/transitions';
-	import { paginationStore, paginatedItems } from '../../stores/paginationStore';
-	import { itemStore, filteredItems } from '../../stores/itemStore';
-	import { searchStore } from '../../stores/searchStore';
+	import { paginationStore } from '../../stores/paginationStore';
+	import { itemStore } from '../../stores/itemStore';
+	import { searchTerm, clearSearch, setSearchTerm } from '../../stores/searchStore';
 	import { notificationStore } from '../../stores/notificationStore';
-	import type { Item } from '../../types';
 	import { applySorting } from '../../lib/items';
-	import { theme } from '../../themes';
+	import { themeStore } from '../../stores/themes.js';
 	import { addTransaction } from '../../lib/transactions';
 	import { authStore } from '../../stores/authStore';
+	import { get } from 'svelte/store';
 
-	let currentSortColumn: keyof Item = 'name';
-	let sortAscending = true;
-	let itemsLoaded = false;
+	let currentSortColumn = $state('name');
+	let sortAscending = $state(true);
+	let itemsLoaded = $state(false);
+	
+	// Store values as reactive state
+	let items = $state([]);
+	let searchTermValue = $state('');
+	let currentPage = $state(1);
+	let itemsPerPage = $state(10);
+	let notificationValue = $state(null);
+	let currentTheme = $state('light');
+	let authUser = $state(null);
+	
+	// Subscribe to stores
+	$effect(() => {
+		const unsubscribeItems = itemStore.subscribe(value => {
+			items = value;
+		});
+		const unsubscribeSearch = searchTerm.subscribe(value => {
+			searchTermValue = value;
+		});
+		const unsubscribePage = paginationStore.currentPage.subscribe(value => {
+			currentPage = value;
+		});
+		const unsubscribeItemsPerPage = paginationStore.itemsPerPage.subscribe(value => {
+			itemsPerPage = value;
+		});
+		const unsubscribeNotification = notificationStore.subscribe(value => {
+			notificationValue = value;
+		});
+		const unsubscribeTheme = themeStore.subscribe(value => {
+			currentTheme = value;
+		});
+		const unsubscribeAuth = authStore.subscribe(value => {
+			authUser = value;
+		});
+		
+		return () => {
+			unsubscribeItems();
+			unsubscribeSearch();
+			unsubscribePage();
+			unsubscribeItemsPerPage();
+			unsubscribeNotification();
+			unsubscribeTheme();
+			unsubscribeAuth();
+		};
+	});
 
-	$: filteredItemsList = $filteredItems($searchStore);
-	$: {
-		paginationStore.setTotalItems(filteredItemsList.length);
-	}
-	$: sortedItems = applySorting(filteredItemsList, currentSortColumn, sortAscending);
-	$: paginatedItemsList = $paginatedItems(sortedItems);
-	$: filterLegend = `${filteredItemsList.length} results of ${$itemStore.length} total items.`;
+	const filteredItemsList = $derived(() => {
+		if (!searchTermValue) {
+			return items;
+		}
+		const lowerCaseSearchTerm = searchTermValue.toLowerCase();
+		return items.filter(item =>
+			item.name.toLowerCase().includes(lowerCaseSearchTerm)
+		);
+	});
+	
+	$effect(() => {
+		paginationStore.setTotalItems(filteredItemsList().length);
+	});
+	
+	const sortedItems = $derived(applySorting(filteredItemsList(), currentSortColumn, sortAscending));
+	
+	const paginatedItemsList = $derived(() => {
+		const startIndex = (currentPage - 1) * itemsPerPage;
+		const endIndex = startIndex + itemsPerPage;
+		return sortedItems.slice(startIndex, endIndex);
+	});
+	
+	const filterLegend = $derived(`${filteredItemsList().length} results of ${items.length} total items.`);
 
-	onMount(async () => {
-		await itemStore.fetchItems();
+	$effect(async () => {
+		await itemStore.loadItems();
 		itemsLoaded = true;
 	});
 
-	const sortBy = (column: keyof Item) => {
+	const sortBy = (column) => {
 		if (currentSortColumn === column) {
 			sortAscending = !sortAscending;
 		} else {
@@ -42,19 +101,19 @@
 		}
 	};
 
-	const handleSearch = (value: string) => {
-		searchStore.setSearchTerm(value);
+	const handleSearch = (value) => {
+		setSearchTerm(value);
 		paginationStore.setCurrentPage(1);
 	};
 
 	const getCurrentUser = () => {
-		return $authStore?.email || 'Unknown';
+		return authUser?.email || 'Unknown';
 	};
 
-	const changeCount = async (item: Item, amount: number) => {
+	const changeCount = async (item, amount) => {
 		const previousCount = item.count;
 		await itemStore.changeCount(item.id, amount);
-		const updatedItem = $itemStore.find((i) => i.id === item.id);
+		const updatedItem = items.find((i) => i.id === item.id);
 		if (updatedItem) {
 			await addTransaction({
 				itemId: item.id,
@@ -68,8 +127,7 @@
 		notificationStore.showNotification(`Count for "${item.name}" updated successfully!`, 'success');
 	};
 
-	const resetCount = async (item: Item) => {
-		const currentTheme = $theme;
+	const resetCount = async (item) => {
 		const result = await Swal.fire({
 			title: 'Are you sure?',
 			text: `This will reset the count for "${item.name}" to 0.`,
@@ -98,7 +156,6 @@
 	};
 
 	const resetAll = async () => {
-		const currentTheme = $theme;
 		const result = await Swal.fire({
 			title: 'Are you sure?',
 			html: `This will reset the count for <strong style="color: #DC2626;">ALL</strong> items to 0.`,
@@ -112,7 +169,7 @@
 		});
 
 		if (result.isConfirmed) {
-			const itemsToReset = $itemStore.filter((item) => item.count !== 0);
+			const itemsToReset = items.filter((item) => item.count !== 0);
 			await itemStore.resetAllCounts();
 			for (const item of itemsToReset) {
 				await addTransaction({
@@ -128,8 +185,8 @@
 		}
 	};
 
-	const handleChangeAmountInput = (item: Item, event: Event) => {
-		const input = event.target as HTMLInputElement;
+	const handleChangeAmountInput = (item, event) => {
+		const input = event.target;
 		const value = input.value.replace(/[^0-9]/g, '');
 
 		if (value === '') {
@@ -149,9 +206,9 @@
 		in:fadeAndSlide={{ duration: 300, y: 75 }}
 	>
 		<SearchBar
-			searchValue={$searchStore}
+			searchValue={searchTermValue}
 			onSearch={handleSearch}
-			onClear={() => searchStore.clearSearch()}
+			onClear={clearSearch}
 		/>
 
 		<div class="filter-legend text-white mb-4">
@@ -162,7 +219,7 @@
 			<table class="custom-table w-full">
 				<thead>
 					<tr>
-						<th class="w-1/3 px-6 py-3" on:click={() => sortBy('name')}>
+						<th class="w-1/3 px-6 py-3" onclick={() => sortBy('name')}>
 							<div class="header flex items-center cursor-pointer">
 								Item Name
 								<i
@@ -174,7 +231,7 @@
 								></i>
 							</div>
 						</th>
-						<th class="w-1/6 px-6 py-3" on:click={() => sortBy('count')}>
+						<th class="w-1/6 px-6 py-3" onclick={() => sortBy('count')}>
 							<div class="header flex items-center justify-center cursor-pointer">
 								Count
 								<i
@@ -195,7 +252,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each paginatedItemsList as item (item.id)}
+					{#each paginatedItemsList() as item (item.id)}
 						<tr class="border-b border-zinc-800" in:fade={{ duration: 200 }}>
 							<td class="px-6 py-4 text-left whitespace-nowrap">{item.name}</td>
 							<td class="px-6 py-4 text-center">
@@ -216,7 +273,7 @@
 										type="text"
 										placeholder="0"
 										value={item.changeAmount === 0 ? '' : item.changeAmount}
-										on:input={(e) => handleChangeAmountInput(item, e)}
+										oninput={(e) => handleChangeAmountInput(item, e)}
 										class="change-amount-input w-16 rounded-md shadow-sm sm:text-sm text-center"
 									/>
 								</div>
@@ -225,21 +282,21 @@
 								<div class="flex justify-center items-center space-x-2">
 									<button
 										class="bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-500 transition-transform active:scale-95 hover:shadow-lg"
-										on:click={() => changeCount(item, +item.changeAmount)}
+										onclick={() => changeCount(item, +item.changeAmount)}
 										disabled={item.changeAmount === 0}
 									>
 										Increase
 									</button>
 									<button
 										class="bg-red-800 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-transform active:scale-95 hover:shadow-lg"
-										on:click={() => changeCount(item, -item.changeAmount)}
+										onclick={() => changeCount(item, -item.changeAmount)}
 										disabled={item.changeAmount === 0}
 									>
 										Decrease
 									</button>
 									<button
 										class="bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition-transform active:scale-95 hover:shadow-lg"
-										on:click={() => resetCount(item)}
+										onclick={() => resetCount(item)}
 										disabled={item.count === 0}
 									>
 										Reset
@@ -257,7 +314,7 @@
 		<div class="flex justify-center mt-6">
 			<button
 				class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-500 transition-transform active:scale-95"
-				on:click={resetAll}
+				onclick={resetAll}
 			>
 				Reset All Counts
 			</button>
@@ -269,9 +326,9 @@
 	</div>
 {/if}
 
-{#if $notificationStore}
-	<div class="notification" in:fade out:fade>
-		{$notificationStore.message}
+{#if notificationValue}
+	<div class="notification {notificationValue.type}" in:fade out:fade>
+		{notificationValue.message}
 	</div>
 {/if}
 
@@ -343,15 +400,30 @@
 
 	.notification {
 		position: fixed;
-		top: 20px;
-		left: 50%;
-		transform: translateX(-50%);
-		background-color: #38a169;
+		bottom: 20px;
+		right: 20px;
 		color: white;
 		padding: 1rem 2rem;
 		border-radius: 0.5rem;
 		z-index: 1000;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	}
+
+	.notification.success {
+		background-color: var(--add-item-color); /* Green */
+	}
+
+	.notification.error {
+		background-color: #dc3545; /* Red */
+	}
+
+	.notification.warning {
+		background-color: #ffc107; /* Yellow */
+		color: #333; /* Dark text for contrast */
+	}
+
+	.notification.info {
+		background-color: #17a2b8; /* Blue */
 	}
 
 	button {
