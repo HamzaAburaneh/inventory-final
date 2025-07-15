@@ -1,4 +1,3 @@
-@import 'flowbite';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -38,6 +37,10 @@
 	--input-border: #cccccc;
 	--input-hover-bg: #f0f0f0;
 	--input-focus-border: #4a90e2;
+	--nav-logo-color: #007bff;
+	--nav-logo-hover-color: #0056b3;
+	--nav-text-hover-color: #0056b3;
+	--nav-hover-bg: #f8f9fa;
 	--nav-drop-down-text-hover-color: #00aaff;
 }
 
@@ -76,6 +79,8 @@
 	--input-border: #444444;
 	--nav-logo-color: #ffe260;
 	--nav-logo-hover-color: #ffd000;
+	--nav-text-hover-color: #ffd000;
+	--nav-hover-bg: #3a3a3a;
 	--input-hover-bg: #3a3a3a;
 	--input-focus-border: #4a90e2;
 	--nav-drop-down-text-hover-color: #ffd000;
