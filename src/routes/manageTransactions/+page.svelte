@@ -80,6 +80,9 @@
 	const sortedItems = $derived(applySorting(filteredItemsList(), currentSortColumn, sortAscending));
 	
 	const paginatedItemsList = $derived(() => {
+		if (itemsPerPage === 'all') {
+			return sortedItems;
+		}
 		const startIndex = (currentPage - 1) * itemsPerPage;
 		const endIndex = startIndex + itemsPerPage;
 		return sortedItems.slice(startIndex, endIndex);

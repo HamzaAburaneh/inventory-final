@@ -43,6 +43,9 @@
 
 	const sortedTransactions = $derived(sortTransactions(filteredTransactions, currentSortColumn, sortAscending));
 	const paginatedTransactions = $derived(() => {
+		if (itemsPerPage === 'all') {
+			return sortedTransactions;
+		}
 		const startIndex = (currentPage - 1) * itemsPerPage;
 		const endIndex = startIndex + itemsPerPage;
 		return sortedTransactions.slice(startIndex, endIndex);
