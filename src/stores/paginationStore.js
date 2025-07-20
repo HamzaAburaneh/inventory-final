@@ -75,13 +75,13 @@ function createPaginationStore() {
 
 	return {
 		// Stores
-		currentPage: { subscribe: currentPage.subscribe },
-		itemsPerPage: { subscribe: itemsPerPage.subscribe },
-		totalItems: { subscribe: totalItems.subscribe },
-		totalPages: { subscribe: totalPages.subscribe },
-		startIndex: { subscribe: startIndex.subscribe },
-		endIndex: { subscribe: endIndex.subscribe },
-		
+		currentPage,
+		itemsPerPage,
+		totalItems,
+		totalPages,
+		startIndex,
+		endIndex,
+
 		// Actions
 		setCurrentPage,
 		setItemsPerPage,
@@ -94,4 +94,12 @@ function createPaginationStore() {
 	};
 }
 
-export const paginationStore = createPaginationStore();
+const paginationStores = new Map();
+
+export function getPaginationStore(key) {
+	if (!paginationStores.has(key)) {
+		paginationStores.set(key, createPaginationStore());
+	}
+	return paginationStores.get(key);
+}
+

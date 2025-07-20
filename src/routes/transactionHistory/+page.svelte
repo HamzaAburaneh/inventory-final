@@ -4,7 +4,7 @@
 	import TransactionTable from '../../components/TransactionTable.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
-	import { paginationStore } from '../../stores/paginationStore';
+	import { getPaginationStore } from '../../stores/paginationStore';
 	import { searchTerm, setSearchTerm, clearSearch } from '../../stores/searchStore';
 	import { fade } from 'svelte/transition';
 	import { fadeAndSlide } from '$lib/transitions';
@@ -16,10 +16,11 @@
 	let sortAscending = $state(false);
 	let transactionsLoaded = $state(false);
 	
+	const paginationStore = getPaginationStore('transactionHistory');
+	const { currentPage, itemsPerPage, setTotalItems, setCurrentPage } = paginationStore;
+
 	// Store values as reactive state
 	let searchTermValue = $state('');
-	let currentPage = $state(1);
-	let itemsPerPage = $state(10);
 	
 	// Subscribe to stores
 	$effect(() => {
@@ -27,27 +28,19 @@
 			searchTermValue = value;
 			filterTransactions(value);
 		});
-		const unsubscribePage = paginationStore.currentPage.subscribe(value => {
-			currentPage = value;
-		});
-		const unsubscribeItemsPerPage = paginationStore.itemsPerPage.subscribe(value => {
-			itemsPerPage = value;
-		});
 		
 		return () => {
 			unsubscribeSearch();
-			unsubscribePage();
-			unsubscribeItemsPerPage();
 		};
 	});
 
 	const sortedTransactions = $derived(sortTransactions(filteredTransactions, currentSortColumn, sortAscending));
 	const paginatedTransactions = $derived(() => {
-		if (itemsPerPage === 'all') {
+		if ($itemsPerPage === 'all') {
 			return sortedTransactions;
 		}
-		const startIndex = (currentPage - 1) * itemsPerPage;
-		const endIndex = startIndex + itemsPerPage;
+		const startIndex = ($currentPage - 1) * $itemsPerPage;
+		const endIndex = startIndex + $itemsPerPage;
 		return sortedTransactions.slice(startIndex, endIndex);
 	});
 	const filterLegend = $derived(`Showing ${paginatedTransactions().length} of ${filteredTransactions.length} filtered transactions (${allTransactions.length} total).`);
@@ -108,8 +101,8 @@
 		} else {
 			filteredTransactions = allTransactions;
 		}
-		paginationStore.setTotalItems(filteredTransactions.length);
-		paginationStore.setCurrentPage(1);
+		setTotalItems(filteredTransactions.length);
+		setCurrentPage(1);
 	}
 
 	$effect(() => {
@@ -168,7 +161,7 @@
 			{/if}
 		</div>
 
-		<Pagination />
+		<Pagination store={paginationStore} />
 	</div>
 {:else}
 	<div class="flex justify-center items-center h-screen">

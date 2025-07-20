@@ -5,7 +5,7 @@
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import { fadeAndSlide } from '$lib/transitions';
-	import { paginationStore } from '../../stores/paginationStore';
+	import { getPaginationStore } from '../../stores/paginationStore';
 	import { itemStore } from '../../stores/itemStore';
 	import { searchTerm, clearSearch, setSearchTerm } from '../../stores/searchStore';
 	import { notificationStore } from '../../stores/notificationStore';
@@ -19,11 +19,12 @@
 	let sortAscending = $state(true);
 	let itemsLoaded = $state(false);
 	
+	const paginationStore = getPaginationStore('manageTransactions');
+	const { currentPage, itemsPerPage, setTotalItems } = paginationStore;
+
 	// Store values as reactive state
 	let items = $state([]);
 	let searchTermValue = $state('');
-	let currentPage = $state(1);
-	let itemsPerPage = $state(10);
 	let notificationValue = $state(null);
 	let currentTheme = $state('light');
 	let authUser = $state(null);
@@ -35,12 +36,6 @@
 		});
 		const unsubscribeSearch = searchTerm.subscribe(value => {
 			searchTermValue = value;
-		});
-		const unsubscribePage = paginationStore.currentPage.subscribe(value => {
-			currentPage = value;
-		});
-		const unsubscribeItemsPerPage = paginationStore.itemsPerPage.subscribe(value => {
-			itemsPerPage = value;
 		});
 		const unsubscribeNotification = notificationStore.subscribe(value => {
 			notificationValue = value;
@@ -55,8 +50,6 @@
 		return () => {
 			unsubscribeItems();
 			unsubscribeSearch();
-			unsubscribePage();
-			unsubscribeItemsPerPage();
 			unsubscribeNotification();
 			unsubscribeTheme();
 			unsubscribeAuth();
@@ -74,17 +67,17 @@
 	});
 	
 	$effect(() => {
-		paginationStore.setTotalItems(filteredItemsList().length);
+		setTotalItems(filteredItemsList().length);
 	});
 	
 	const sortedItems = $derived(applySorting(filteredItemsList(), currentSortColumn, sortAscending));
 	
 	const paginatedItemsList = $derived(() => {
-		if (itemsPerPage === 'all') {
+		if ($itemsPerPage === 'all') {
 			return sortedItems;
 		}
-		const startIndex = (currentPage - 1) * itemsPerPage;
-		const endIndex = startIndex + itemsPerPage;
+		const startIndex = ($currentPage - 1) * $itemsPerPage;
+		const endIndex = startIndex + $itemsPerPage;
 		return sortedItems.slice(startIndex, endIndex);
 	});
 	
@@ -312,7 +305,7 @@
 			</table>
 		</div>
 
-		<Pagination />
+		<Pagination store={paginationStore} />
 
 		<div class="flex justify-center mt-6">
 			<button

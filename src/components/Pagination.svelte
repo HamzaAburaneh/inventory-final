@@ -1,26 +1,18 @@
 <script>
-	import { paginationStore } from '../stores/paginationStore';
+	let { store } = $props();
 
-	// Access the individual stores correctly
-	let currentPage = $state(1);
-	let totalPagesCount = $state(1);
-	let itemsPerPage = $state(10);
-
-	// Subscribe to the stores
-	paginationStore.currentPage.subscribe(value => currentPage = value);
-	paginationStore.totalPages.subscribe(value => totalPagesCount = value);
-	paginationStore.itemsPerPage.subscribe(value => itemsPerPage = value);
+	const { currentPage, totalPages, itemsPerPage, setCurrentPage, setItemsPerPage } = store;
 
 	function goToPage(page) {
-		if (page >= 1 && page <= totalPagesCount) {
-			paginationStore.setCurrentPage(page);
+		if (page >= 1 && page <= $totalPages) {
+			setCurrentPage(page);
 		}
 	}
 
 	function handleItemsPerPageChange(event) {
 		const select = event.target;
 		const newItemsPerPage = select.value === 'all' ? 'all' : parseInt(select.value);
-		paginationStore.setItemsPerPage(newItemsPerPage);
+		setItemsPerPage(newItemsPerPage);
 	}
 </script>
 
@@ -28,17 +20,17 @@
 	<div class="pagination-buttons">
 		<button
 			class="pagination-button"
-			onclick={() => goToPage(currentPage - 1)}
-			disabled={currentPage === 1}
+			onclick={() => goToPage($currentPage - 1)}
+			disabled={$currentPage === 1}
 			aria-label="Previous page"
 		>
 			<i class="fas fa-chevron-left"></i>
 		</button>
-		<span class="pagination-info">Page {currentPage} of {totalPagesCount}</span>
+		<span class="pagination-info">Page {$currentPage} of {$totalPages}</span>
 		<button
 			class="pagination-button"
-			onclick={() => goToPage(currentPage + 1)}
-			disabled={currentPage === totalPagesCount}
+			onclick={() => goToPage($currentPage + 1)}
+			disabled={$currentPage === $totalPages}
 			aria-label="Next page"
 		>
 			<i class="fas fa-chevron-right"></i>
@@ -48,7 +40,7 @@
 		<label for="itemsPerPage">Items per page:</label>
 		<select
 			id="itemsPerPage"
-			bind:value={itemsPerPage}
+			value={$itemsPerPage}
 			onchange={handleItemsPerPageChange}
 			class="pagination-select"
 		>
