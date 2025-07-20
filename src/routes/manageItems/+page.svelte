@@ -75,6 +75,9 @@
 	const sortedItems = $derived(applySorting(filteredItemsList, currentSortColumn, sortAscending));
 	
 	const paginatedItemsList = $derived(() => {
+		if (itemsPerPage === 'all') {
+			return sortedItems;
+		}
 		const startIndex = (currentPage - 1) * itemsPerPage;
 		const endIndex = startIndex + itemsPerPage;
 		return sortedItems.slice(startIndex, endIndex);
@@ -85,8 +88,7 @@
 		itemsLoaded = true;
 	});
 
-	const handleItemAdd = async (event) => {
-		const { formData } = event.detail;
+	const handleItemAdd = async ({ formData }) => {
 		if (items.some((item) => item.name.toLowerCase() === formData.name.toLowerCase())) {
 			notificationStore.showNotification('Item with this name already exists.', 'error');
 			return;

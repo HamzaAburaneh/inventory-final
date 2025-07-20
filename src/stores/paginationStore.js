@@ -7,18 +7,32 @@ function createPaginationStore() {
 
 	const totalPages = derived(
 		[totalItems, itemsPerPage],
-		([$totalItems, $itemsPerPage]) => Math.ceil($totalItems / $itemsPerPage)
+		([$totalItems, $itemsPerPage]) => {
+			if ($itemsPerPage === 'all') {
+				return 1;
+			}
+			return Math.ceil($totalItems / $itemsPerPage);
+		}
 	);
 
 	const startIndex = derived(
 		[currentPage, itemsPerPage],
-		([$currentPage, $itemsPerPage]) => ($currentPage - 1) * $itemsPerPage
+		([$currentPage, $itemsPerPage]) => {
+			if ($itemsPerPage === 'all') {
+				return 0;
+			}
+			return ($currentPage - 1) * $itemsPerPage;
+		}
 	);
 
 	const endIndex = derived(
 		[startIndex, itemsPerPage, totalItems],
-		([$startIndex, $itemsPerPage, $totalItems]) => 
-			Math.min($startIndex + $itemsPerPage, $totalItems)
+		([$startIndex, $itemsPerPage, $totalItems]) => {
+			if ($itemsPerPage === 'all') {
+				return $totalItems;
+			}
+			return Math.min($startIndex + $itemsPerPage, $totalItems);
+		}
 	);
 
 	function setCurrentPage(page) {

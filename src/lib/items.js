@@ -184,8 +184,18 @@ export function sortItems(items, column, ascending) {
         return [];
     }
 	return [...items].sort((a, b) => {
-		if (a[column] < b[column]) return ascending ? -1 : 1;
-		if (a[column] > b[column]) return ascending ? 1 : -1;
+		const valA = a[column];
+		const valB = b[column];
+
+		if (typeof valA === 'string' && typeof valB === 'string') {
+			const lowerA = valA.toLowerCase();
+			const lowerB = valB.toLowerCase();
+			if (lowerA < lowerB) return ascending ? -1 : 1;
+			if (lowerA > lowerB) return ascending ? 1 : -1;
+		} else {
+			if (valA < valB) return ascending ? -1 : 1;
+			if (valA > valB) return ascending ? 1 : -1;
+		}
 		return 0;
 	});
 }
