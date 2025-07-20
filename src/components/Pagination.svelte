@@ -122,7 +122,7 @@
 		padding: 0.5rem 2rem 0.5rem 0.5rem;
 		font-size: 1rem;
 		appearance: none;
-		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+		background-image: var(--pagination-arrow-icon);
 		background-repeat: no-repeat;
 		background-position: right 0.5rem center;
 		background-size: 1.5em;
