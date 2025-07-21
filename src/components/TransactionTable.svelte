@@ -178,7 +178,7 @@
 		font-weight: bold;
 	}
 	.dimmed-text {
-		color: rgba(255, 255, 255, 0.6);
+		color: var(--text-color-dimmed);
 		font-size: 0.9em;
 	}
 </style>

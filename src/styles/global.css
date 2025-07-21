@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+	--text-color-dimmed: #727272;
 	--background-color: #f9f9f9;
 	--text-color: #1a1a1a;
 	--container-bg: #ffffff;
@@ -85,6 +86,7 @@
 	--input-hover-bg: #3a3a3a;
 	--input-focus-border: #4a90e2;
 	--nav-drop-down-text-hover-color: #ffd000;
+	--text-color-dimmed: #727272;
 	--pagination-arrow-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
 }
 
