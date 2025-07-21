@@ -10,7 +10,6 @@
 	import { fadeAndSlide } from '$lib/transitions';
 
 	let allTransactions = $state([]);
-	let filteredTransactions = $state([]);
 	let loading = $state(true);
 	let currentSortColumn = $state('timestamp');
 	let sortAscending = $state(false);
@@ -22,19 +21,37 @@
 	// Store values as reactive state
 	let searchTermValue = $state('');
 	
-	// Subscribe to stores
+	// Subscribe to search store more efficiently
+	const unsubscribeSearch = searchTerm.subscribe(value => {
+		searchTermValue = value;
+	});
+	
+	// Clean up subscription on component destroy
 	$effect(() => {
-		const unsubscribeSearch = searchTerm.subscribe(value => {
-			searchTermValue = value;
-			filterTransactions(value);
-		});
-		
 		return () => {
 			unsubscribeSearch();
 		};
 	});
 
-	const sortedTransactions = $derived(sortTransactions(filteredTransactions, currentSortColumn, sortAscending));
+	// Optimize filtering to be reactive like manage transactions
+	const filteredTransactions = $derived(() => {
+		if (searchTermValue) {
+			const lowerSearchTerm = searchTermValue.toLowerCase();
+			return allTransactions.filter((transaction) =>
+				transaction.itemName.toLowerCase().includes(lowerSearchTerm)
+			);
+		} else {
+			return allTransactions;
+		}
+	});
+	
+	// Update pagination when filtered results change
+	$effect(() => {
+		setTotalItems(filteredTransactions().length);
+		setCurrentPage(1);
+	});
+	
+	const sortedTransactions = $derived(sortTransactions(filteredTransactions(), currentSortColumn, sortAscending));
 	const paginatedTransactions = $derived(() => {
 		if ($itemsPerPage === 'all') {
 			return sortedTransactions;
@@ -43,7 +60,7 @@
 		const endIndex = startIndex + $itemsPerPage;
 		return sortedTransactions.slice(startIndex, endIndex);
 	});
-	const filterLegend = $derived(`Showing ${paginatedTransactions().length} of ${filteredTransactions.length} filtered transactions (${allTransactions.length} total).`);
+	const filterLegend = $derived('Showing ' + paginatedTransactions().length + ' of ' + filteredTransactions().length + ' filtered transactions (' + allTransactions.length + ' total).');
 	$effect(() => {
 		transactionsLoaded = allTransactions.length > 0;
 	});
@@ -84,25 +101,11 @@
 					user: data.user
 				};
 			});
-			filterTransactions(searchTermValue);
 		} catch (error) {
 			console.error('Error fetching transactions:', error);
 		} finally {
 			loading = false;
 		}
-	}
-
-	function filterTransactions(searchTermParam) {
-		if (searchTermParam) {
-			const lowerSearchTerm = searchTermParam.toLowerCase();
-			filteredTransactions = allTransactions.filter((transaction) =>
-				transaction.itemName.toLowerCase().includes(lowerSearchTerm)
-			);
-		} else {
-			filteredTransactions = allTransactions;
-		}
-		setTotalItems(filteredTransactions.length);
-		setCurrentPage(1);
 	}
 
 	$effect(() => {
@@ -111,12 +114,12 @@
 
 	function handleSearch(value) {
 		setSearchTerm(value);
-		filterTransactions(value);
+		// Fixed: Removed redundant filterTransactions call - the store subscription handles it
 	}
 
 	function handleClear() {
 		clearSearch();
-		filterTransactions('');
+		// Fixed: Removed redundant filterTransactions call - clearSearch triggers the store update
 	}
 
 	function handleSort(column) {
