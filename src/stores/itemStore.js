@@ -72,6 +72,25 @@ function createItemStore() {
 
 	async function deleteItem(id) {
 		try {
+			// Get the item details before deleting
+			const items = get({ subscribe });
+			const item = items.find(item => item.id === id);
+			
+			if (item) {
+				// Create a transaction record for the deletion
+				const authUser = get(authStore);
+				const currentUser = authUser?.email || 'Unknown';
+				
+				await addTransaction({
+					itemId: id,
+					itemName: item.name,
+					type: 'remove',
+					previousCount: item.count || 0,
+					newCount: 0,
+					user: currentUser
+				});
+			}
+			
 			await deleteDoc(doc(db, 'items', id));
 			update(items => items.filter(item => item.id !== id));
 		} catch (error) {

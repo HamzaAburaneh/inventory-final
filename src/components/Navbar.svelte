@@ -119,6 +119,13 @@
 				</li>
 				<li>
 					<a
+						href="/transactionAnalysis"
+						class="nav-link"
+						class:active={currentPath === '/transactionAnalysis'}>Transaction Analysis</a
+					>
+				</li>
+				<li>
+					<a
 						href="/inventoryPredictions"
 						class="nav-link"
 						class:active={currentPath === '/inventoryPredictions'}>Inventory Predictions</a
@@ -178,6 +185,13 @@
 							href="/transactionHistory"
 							class="nav-link"
 							class:active={currentPath === '/transactionHistory'}>Transaction History</a
+						>
+					</li>
+					<li>
+						<a
+							href="/transactionAnalysis"
+							class="nav-link"
+							class:active={currentPath === '/transactionAnalysis'}>Transaction Analysis</a
 						>
 					</li>
 					<li>
