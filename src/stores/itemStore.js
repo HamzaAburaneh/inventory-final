@@ -1,6 +1,8 @@
 import { writable, get } from 'svelte/store';
 import { db } from '../firebase';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { addTransaction } from '../lib/transactions';
+import { authStore } from './authStore';
 
 function createItemStore() {
 	const { subscribe, set, update } = writable([]);
@@ -34,6 +36,20 @@ function createItemStore() {
 			const docRef = await addDoc(collection(db, 'items'), item);
 			const newItem = { id: docRef.id, ...item, changeAmount: 0 };
 			update(items => [...items, newItem]);
+			
+			// Create a transaction for the new item
+			const authUser = get(authStore);
+			const currentUser = authUser?.email || 'Unknown';
+			
+			await addTransaction({
+				itemId: docRef.id,
+				itemName: item.name,
+				type: 'add',
+				previousCount: 0,
+				newCount: parseInt(item.count) || 0,
+				user: currentUser
+			});
+			
 			return newItem;
 		} catch (error) {
 			console.error('Error adding item:', error);
