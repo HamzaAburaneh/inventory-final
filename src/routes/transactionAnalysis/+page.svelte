@@ -2,6 +2,7 @@
 	import { Chart, registerables } from 'chart.js';
 	import { fade, fly } from 'svelte/transition';
 	import { fadeAndSlide } from '$lib/transitions';
+	import { browser } from '$app/environment';
 	import {
 		getDailyAnalysis,
 		getHourlyActivityPattern,
@@ -26,6 +27,9 @@
 	let hourlyHeatmapChart = $state(null);
 	let topMoversChart = $state(null);
 	let transactionTypeChart = $state(null);
+	
+	// Track if charts need redrawing
+	let chartsNeedRedraw = $state(false);
 
 	// Formatted date strings for inputs
 	const startDateStr = $derived(dateRange.start.toISOString().split('T')[0]);
@@ -358,6 +362,58 @@
 			if (transactionTypeChart) transactionTypeChart.destroy();
 		};
 	});
+	
+	// Handle viewport changes
+	$effect(() => {
+		if (!browser) return;
+		
+		let resizeTimer;
+		let previousWidth = window.innerWidth;
+		
+		function handleResize() {
+			clearTimeout(resizeTimer);
+			resizeTimer = setTimeout(() => {
+				const currentWidth = window.innerWidth;
+				const widthDiff = Math.abs(currentWidth - previousWidth);
+				
+				// Only redraw if width changed significantly (more than 50px)
+				if (widthDiff > 50) {
+					console.log(`Viewport width changed significantly: ${previousWidth}px -> ${currentWidth}px`);
+					previousWidth = currentWidth;
+					
+					// Destroy and recreate charts to ensure proper sizing
+					if (dailyTrendChart) {
+						dailyTrendChart.destroy();
+						dailyTrendChart = null;
+					}
+					if (hourlyHeatmapChart) {
+						hourlyHeatmapChart.destroy();
+						hourlyHeatmapChart = null;
+					}
+					if (topMoversChart) {
+						topMoversChart.destroy();
+						topMoversChart = null;
+					}
+					if (transactionTypeChart) {
+						transactionTypeChart.destroy();
+						transactionTypeChart = null;
+					}
+					
+					// Redraw charts
+					updateCharts();
+				}
+			}, 250);
+		}
+		
+		window.addEventListener('resize', handleResize);
+		window.addEventListener('orientationchange', handleResize);
+		
+		return () => {
+			window.removeEventListener('resize', handleResize);
+			window.removeEventListener('orientationchange', handleResize);
+			clearTimeout(resizeTimer);
+		};
+	});
 </script>
 
 <svelte:head>
@@ -533,6 +589,8 @@
 		padding: 2rem;
 		max-width: 1400px;
 		margin: 0 auto;
+		width: 100%;
+		overflow-x: hidden;
 	}
 
 	.summary-section {
@@ -545,7 +603,7 @@
 
 	.summary-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(min(150px, 45%), 1fr));
 		gap: 1.5rem;
 		margin-top: 1.5rem;
 	}
@@ -705,7 +763,7 @@
 
 	.charts-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(min(500px, 100%), 1fr));
 		gap: 2rem;
 		margin-bottom: 2rem;
 	}
@@ -770,25 +828,173 @@
 
 	@media (max-width: 768px) {
 		.analysis-page {
+			padding: 0.5rem;
+		}
+
+		.summary-section {
 			padding: 1rem;
+			margin-bottom: 1rem;
+		}
+
+		.summary-section h1 {
+			font-size: 1.5rem;
+			margin-bottom: 1rem;
+		}
+
+		.summary-grid {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 0.5rem;
+			margin-top: 1rem;
+		}
+
+		.summary-card {
+			padding: 0.5rem;
+			border-radius: 0.375rem;
+			min-width: 0;
+			overflow: hidden;
+		}
+
+		.summary-card i {
+			font-size: 1rem;
+			margin-bottom: 0.25rem;
+		}
+
+		.summary-card h3 {
+			font-size: 0.65rem;
+			margin-bottom: 0.25rem;
+			line-height: 1.1;
+		}
+
+		.summary-card p {
+			font-size: 0.9rem;
+			margin-bottom: 0.125rem;
+			word-break: break-all;
+		}
+
+		.summary-card small {
+			font-size: 0.55rem;
+			line-height: 1.1;
+			display: block;
+			word-wrap: break-word;
+		}
+
+		.controls-section {
+			padding: 1rem;
+			margin-bottom: 1rem;
 		}
 
 		.charts-grid {
 			grid-template-columns: 1fr;
+			gap: 1rem;
+			margin-bottom: 1rem;
+		}
+
+		.chart-container {
+			padding: 1rem;
+			height: 300px;
 		}
 
 		.date-controls {
 			flex-direction: column;
 			align-items: stretch;
+			gap: 0.75rem;
+		}
+
+		.date-inputs {
+			flex-direction: column;
+			gap: 0.5rem;
 		}
 
 		.quick-ranges {
 			justify-content: center;
+			gap: 0.25rem;
+		}
+
+		.quick-btn {
+			padding: 0.375rem 0.5rem;
+			font-size: 0.75rem;
 		}
 
 		.export-btn {
 			width: 100%;
 			justify-content: center;
+			padding: 0.75rem;
+		}
+
+		.table-section {
+			padding: 1rem;
+		}
+
+		.table-section h2 {
+			font-size: 1.25rem;
+			margin-bottom: 1rem;
+		}
+
+		/* Make table responsive */
+		.data-table {
+			font-size: 0.75rem;
+		}
+
+		.data-table th,
+		.data-table td {
+			padding: 0.5rem 0.25rem;
+		}
+
+		.data-table th {
+			font-size: 0.7rem;
+		}
+
+		/* Hide less important columns on very small screens */
+		.data-table th:nth-child(6),
+		.data-table td:nth-child(6) {
+			display: none;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.analysis-page {
+			padding: 0.25rem;
+		}
+
+		.summary-section {
+			padding: 0.75rem;
+		}
+
+		.summary-grid {
+			grid-template-columns: 1fr 1fr;
+			gap: 0.25rem;
+		}
+
+		.summary-card {
+			padding: 0.375rem;
+		}
+
+		.summary-card h3 {
+			font-size: 0.6rem;
+		}
+
+		.summary-card p {
+			font-size: 0.8rem;
+		}
+
+		.summary-card small {
+			font-size: 0.5rem;
+		}
+
+		.quick-ranges {
+			flex-direction: column;
+		}
+
+		.quick-btn {
+			width: 100%;
+		}
+
+		/* Hide even more columns on very small screens */
+		.data-table th:nth-child(3),
+		.data-table td:nth-child(3),
+		.data-table th:nth-child(4),
+		.data-table td:nth-child(4) {
+			display: none;
 		}
 	}
 

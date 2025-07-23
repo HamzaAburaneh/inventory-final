@@ -203,7 +203,7 @@
 
 	.container {
 		margin-top: 20px;
-		padding: 2.5rem;
+		padding: 1rem;
 		max-width: 90%;
 		background-color: var(--container-bg);
 		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
@@ -211,7 +211,8 @@
 	}
 
 	.table-container {
-		height: 670px;
+		min-height: 400px;
+		max-height: 70vh;
 		overflow: auto;
 		margin-bottom: 1rem;
 	}
@@ -242,5 +243,11 @@
 
 	.notification.info {
 		background-color: #17a2b8; /* Blue */
+	}
+	@media (min-width: 768px) {
+		.container {
+			padding: 2.5rem;
+			max-width: 90%;
+		}
 	}
 </style>

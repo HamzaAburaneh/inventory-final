@@ -90,10 +90,14 @@
 	});
 </script>
 
-<main class="container mx-auto px-4 py-12" in:fadeAndSlide={{ duration: 300, y: 75 }}>
-	<section id="hero" class="hero mb-24" in:fade={{ duration: 300 }}>
-		<h1 class="text-6xl font-bold mb-8 text-center logo-text">Welcome to StockSense</h1>
-		<p class="text-2xl mb-12 text-center text-secondary">
+<main class="container mx-auto px-4 sm:px-6 lg:px-8 py-12" in:fadeAndSlide={{ duration: 300, y: 75 }}>
+	<section id="hero" class="hero mb-16 md:mb-24" in:fade={{ duration: 300 }}>
+		<h1
+			class="text-4xl md:text-6xl font-bold mb-6 md:mb-8 text-center logo-text"
+		>
+			Welcome to StockSense
+		</h1>
+		<p class="text-lg md:text-2xl mb-10 md:mb-12 text-center text-secondary">
 			Your intelligent inventory management solution
 		</p>
 		{#if !authUser}
@@ -109,7 +113,7 @@
 		<h2 id="features-heading" class="text-4xl font-semibold mb-12 text-center logo-text">
 			Key Features
 		</h2>
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 			{#each features as feature, i}
 				<div
 					class="feature-card"
@@ -211,7 +215,7 @@
 
 	.feature-card {
 		background-color: var(--container-bg);
-		padding: 2rem;
+		padding: 1.5rem;
 		border-radius: var(--border-radius);
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
 	}
@@ -220,7 +224,7 @@
 		background-color: var(--nav-logo-color);
 		color: var(--text-color);
 		font-weight: bold;
-		padding: 1rem 2rem;
+		padding: 0.75rem 1.5rem;
 		border-radius: 9999px;
 		font-size: 1.125rem;
 		transition: all 0.3s ease;
@@ -235,7 +239,7 @@
 
 	.testimonial-container {
 		background-color: var(--container-bg);
-		padding: 2rem;
+		padding: 1.5rem;
 		border-radius: var(--border-radius);
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
 		position: relative;
@@ -249,7 +253,7 @@
 		color: var(--text-color);
 		border: none;
 		border-radius: 9999px;
-		padding: 0.75rem;
+		padding: 0.5rem;
 		font-size: 1rem;
 		transition: all 0.3s ease;
 		opacity: 0.8;
@@ -270,7 +274,7 @@
 
 	.cta-container {
 		background-color: var(--container-bg);
-		padding: 3rem;
+		padding: 2rem;
 		border-radius: var(--border-radius);
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
 		text-align: center;
@@ -283,7 +287,7 @@
 		background-color: var(--nav-logo-color);
 		color: var(--text-color);
 		border-radius: 9999px;
-		padding: 1rem;
+		padding: 0.75rem;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
 		transition: all 0.3s ease;
 		opacity: 0.8;
@@ -293,5 +297,26 @@
 		background-color: var(--nav-logo-hover-color);
 		opacity: 1;
 		transform: translateY(-2px);
+	}
+	@media (min-width: 768px) {
+		.feature-card {
+			padding: 2rem;
+		}
+		.btn-primary {
+			padding: 1rem 2rem;
+			font-size: 1.125rem;
+		}
+		.testimonial-container {
+			padding: 2rem;
+		}
+		.testimonial-nav {
+			padding: 0.75rem;
+		}
+		.cta-container {
+			padding: 3rem;
+		}
+		.back-to-top {
+			padding: 1rem;
+		}
 	}
 </style>

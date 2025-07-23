@@ -64,17 +64,17 @@
 					{@const changedAmount = transaction.newCount - transaction.previousCount}
 					{@const style = getChangedAmountStyle(changedAmount)}
 					<tr class="table-row">
-						<td class="itemname-col">{transaction.itemName}</td>
-						<td class="previouscount-col">{transaction.previousCount}</td>
-						<td class="changedamount-col">
+						<td class="itemname-col" data-label="Item Name">{transaction.itemName}</td>
+						<td class="previouscount-col" data-label="Previous Count">{transaction.previousCount}</td>
+						<td class="changedamount-col" data-label="Changed Amount">
 							<span class={style.color}>
 								<i class="{style.icon} mr-1"></i>
 								{changedAmount > 0 ? '+' : ''}{changedAmount}
 							</span>
 						</td>
-						<td class="newcount-col highlighted">{transaction.newCount}</td>
-						<td class="timestamp-col dimmed-text">{formatTimestamp(transaction.timestamp)}</td>
-						<td class="user-col dimmed-text">{transaction.user}</td>
+						<td class="newcount-col highlighted" data-label="New Count">{transaction.newCount}</td>
+						<td class="timestamp-col dimmed-text" data-label="Timestamp">{formatTimestamp(transaction.timestamp)}</td>
+						<td class="user-col dimmed-text" data-label="User">{transaction.user}</td>
 					</tr>
 				{/each}
 			</tbody>
@@ -93,7 +93,7 @@
 		overflow-x: auto;
 		overflow-y: scroll;
 		max-height: 670px;
-		min-height: 670px;
+		min-height: 300px; /* A more flexible min-height */
 	}
 
 	.custom-table {
@@ -147,18 +147,22 @@
 
 	.itemname-col {
 		width: 25%;
+		min-width: min(150px, 25vw);
 	}
 	.previouscount-col,
 	.changedamount-col,
 	.newcount-col {
 		width: 12%;
 		text-align: right;
+		min-width: min(100px, 15vw);
 	}
 	.user-col {
 		width: 15%;
+		min-width: min(120px, 20vw);
 	}
 	.timestamp-col {
 		width: 24%;
+		min-width: min(180px, 30vw);
 	}
 
 	.positive-change {
@@ -180,5 +184,65 @@
 	.dimmed-text {
 		color: var(--text-color-dimmed);
 		font-size: 0.9em;
+	}
+	@media (max-width: 768px) {
+		.custom-table thead {
+			display: none;
+		}
+
+		.custom-table,
+		.custom-table tbody,
+		.custom-table tr,
+		.custom-table td {
+			display: block;
+			width: 100%;
+		}
+
+		.custom-table tr {
+			display: flex;
+			flex-direction: column;
+			margin-bottom: 1rem;
+			border: 1px solid var(--table-border-color);
+			border-radius: 8px;
+			overflow: hidden;
+			background-color: var(--container-bg);
+		}
+
+		.custom-table td {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 0.75rem 1rem;
+			text-align: right;
+			position: relative;
+			border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+			white-space: normal;
+		}
+
+		.custom-table td:last-child {
+			border-bottom: none;
+		}
+
+		.custom-table td::before {
+			content: attr(data-label);
+			font-weight: bold;
+			text-align: left;
+			white-space: nowrap;
+		}
+
+		.custom-table tr:hover td {
+			border-bottom-color: rgba(255, 255, 255, 0.2);
+		}
+
+		/* Special styling for highlighted cells */
+		.highlighted {
+			background-color: rgba(255, 255, 255, 0.08);
+		}
+
+		/* Ensure change amount styling is preserved */
+		.changedamount-col span {
+			display: flex;
+			align-items: center;
+		}
 	}
 </style>

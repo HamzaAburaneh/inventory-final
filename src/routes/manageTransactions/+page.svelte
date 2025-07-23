@@ -215,7 +215,7 @@
 			<table class="custom-table w-full">
 				<thead>
 					<tr>
-						<th class="w-1/3 px-6 py-3" onclick={() => sortBy('name')}>
+						<th class="w-1/3 px-6 py-3" onclick={() => sortBy('name')} data-label="Item Name">
 							<div class="header flex items-center cursor-pointer">
 								Item Name
 								<i
@@ -227,7 +227,7 @@
 								></i>
 							</div>
 						</th>
-						<th class="w-1/6 px-6 py-3" onclick={() => sortBy('count')}>
+						<th class="w-1/6 px-6 py-3" onclick={() => sortBy('count')} data-label="Count">
 							<div class="header flex items-center justify-center cursor-pointer">
 								Count
 								<i
@@ -239,10 +239,10 @@
 								></i>
 							</div>
 						</th>
-						<th class="w-1/6 px-6 py-3">
+						<th class="w-1/6 px-6 py-3" data-label="Change Amount">
 							<div class="flex items-center justify-center">Change Amount</div>
 						</th>
-						<th class="w-1/3 px-6 py-3">
+						<th class="w-1/3 px-6 py-3" data-label="Actions">
 							<div class="flex items-center justify-center">Actions</div>
 						</th>
 					</tr>
@@ -250,8 +250,8 @@
 				<tbody>
 					{#each paginatedItemsList() as item (item.id)}
 						<tr class="border-b border-zinc-800" in:fade={{ duration: 200 }}>
-							<td class="px-6 py-4 text-left whitespace-nowrap">{item.name}</td>
-							<td class="px-6 py-4 text-center">
+							<td class="px-6 py-4 text-left whitespace-nowrap" data-label="Item Name">{item.name}</td>
+							<td class="px-6 py-4 text-center" data-label="Count">
 								<div class="relative inline-block w-full h-6">
 									{#key item.count}
 										<span
@@ -263,7 +263,7 @@
 									{/key}
 								</div>
 							</td>
-							<td class="px-6 py-4">
+							<td class="px-6 py-4" data-label="Change Amount">
 								<div class="flex justify-center">
 									<input
 										type="text"
@@ -274,24 +274,26 @@
 									/>
 								</div>
 							</td>
-							<td class="px-6 py-4">
-								<div class="flex justify-center items-center space-x-2">
+							<td class="px-6 py-4" data-label="Actions">
+								<div
+									class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-2"
+								>
 									<button
-										class="bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-500 transition-transform active:scale-95 hover:shadow-lg"
+										class="w-full sm:w-auto bg-emerald-700 text-white font-bold py-2 px-3 rounded-lg hover:bg-emerald-500 transition-transform active:scale-95 hover:shadow-lg"
 										onclick={() => changeCount(item, +item.changeAmount)}
 										disabled={item.changeAmount === 0}
 									>
 										Increase
 									</button>
 									<button
-										class="bg-red-800 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-transform active:scale-95 hover:shadow-lg"
+										class="w-full sm:w-auto bg-red-800 text-white font-bold py-2 px-3 rounded-lg hover:bg-red-600 transition-transform active:scale-95 hover:shadow-lg"
 										onclick={() => changeCount(item, -item.changeAmount)}
 										disabled={item.changeAmount === 0}
 									>
 										Decrease
 									</button>
 									<button
-										class="bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition-transform active:scale-95 hover:shadow-lg"
+										class="w-full sm:w-auto bg-yellow-700 text-white font-bold py-2 px-3 rounded-lg hover:bg-yellow-500 transition-transform active:scale-95 hover:shadow-lg"
 										onclick={() => resetCount(item)}
 										disabled={item.count === 0}
 									>
@@ -336,7 +338,7 @@
 
 	.container {
 		margin-top: 20px;
-		padding: 2.5rem;
+		padding: 1rem;
 		max-width: 90%;
 		background-color: var(--container-bg);
 		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
@@ -344,7 +346,8 @@
 	}
 
 	.table-container {
-		max-height: 700px;
+		min-height: 400px;
+		max-height: 70vh;
 		overflow-y: auto;
 		margin-bottom: 1rem;
 	}
@@ -452,5 +455,85 @@
 	.change-amount-input:focus {
 		border-color: var(--input-focus-border);
 		outline: none;
+	}
+
+	@media (max-width: 768px) {
+		.custom-table thead {
+			display: none;
+		}
+
+		.custom-table,
+		.custom-table tbody,
+		.custom-table tr,
+		.custom-table td {
+			display: block;
+			width: 100%;
+		}
+
+		.custom-table tr {
+			display: flex;
+			flex-direction: column;
+			margin-bottom: 1rem;
+			border: 1px solid var(--table-border-color);
+			border-radius: 8px;
+			overflow: hidden;
+			background-color: var(--container-bg);
+		}
+
+		.custom-table td {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 0.75rem 1rem;
+			text-align: right;
+			position: relative;
+			border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+		}
+
+		.custom-table td:last-child {
+			border-bottom: none;
+		}
+
+		.custom-table tr:hover td {
+			border-bottom-color: rgba(255, 255, 255, 0.2);
+		}
+
+		.custom-table td::before {
+			content: attr(data-label);
+			font-weight: bold;
+			text-align: left;
+			white-space: nowrap;
+		}
+
+		.custom-table td[data-label="Actions"] {
+			justify-content: center;
+			padding: 1rem;
+		}
+
+		.custom-table td[data-label="Actions"]::before {
+			display: none;
+		}
+
+		.custom-table td[data-label="Change Amount"] {
+			justify-content: space-between;
+		}
+
+		.custom-table td[data-label="Change Amount"] .flex {
+			justify-content: flex-end;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.container {
+			padding: 1.5rem;
+			max-width: 95%;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.container {
+			padding: 2.5rem;
+			max-width: 90%;
+		}
 	}
 </style>

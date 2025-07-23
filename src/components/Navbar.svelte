@@ -13,11 +13,18 @@
 	let isDropdownOpen = $state(false);
 	let dropdownNode = $state();
 	let userMenuNode = $state();
+	let menuToggleRef = $state();
+	let mobileMenuRef = $state();
+	let isMobile = $state(browser ? window.innerWidth < 768 : false);
 
 	const currentPath = $derived($page.url.pathname);
 
 	function toggleMenu() {
 		isOpen = !isOpen;
+	}
+
+	function closeMenu() {
+		isOpen = false;
 	}
 
 	function toggleDropdown() {
@@ -35,6 +42,7 @@
 	async function handleLogout() {
 		await authStore.logout();
 		closeDropdown();
+		closeMenu();
 		goto('/login');
 	}
 
@@ -71,7 +79,7 @@
 	function handleMouseLeave() {
 		timeoutId = setTimeout(() => {
 			closeDropdown();
-		}, 300); // 300ms delay before closing
+		}, 150); // Reduced delay to prevent sticking
 	}
 
 	$effect(() => {
@@ -80,17 +88,71 @@
 			clearTimeout(timeoutId);
 		};
 	});
+	
+	// Handle viewport changes
+	$effect(() => {
+		if (!browser) return;
+
+		function handleResize() {
+			const wasMobile = isMobile;
+			isMobile = window.innerWidth < 768;
+			
+			// Close mobile menu when switching from mobile to desktop
+			if (wasMobile && !isMobile && isOpen) {
+				closeMenu();
+			}
+			
+			// Close dropdown when switching viewports
+			if (wasMobile !== isMobile) {
+				closeDropdown();
+			}
+		}
+
+		window.addEventListener('resize', handleResize);
+		
+		return () => {
+			window.removeEventListener('resize', handleResize);
+		};
+	});
+	
+	$effect(() => {
+		if (!isOpen) return;
+
+		const handleClickOutside = (event) => {
+			if (
+				mobileMenuRef &&
+				!mobileMenuRef.contains(event.target) &&
+				menuToggleRef &&
+				!menuToggleRef.contains(event.target)
+			) {
+				closeMenu();
+			}
+		};
+
+		document.addEventListener('click', handleClickOutside, true);
+
+		return () => {
+			document.removeEventListener('click', handleClickOutside, true);
+		};
+	});
 </script>
 
 <nav class="navbar">
-	<div class="container mx-auto flex justify-between items-center">
+	<div class="container mx-auto flex justify-between items-center relative">
 		<a href="/" class="brand">
 			<i class="fas fa-box mr-2"></i>
 			<span class="brand-text">StockSense</span>
 		</a>
-		<button class="menu-toggle" onclick={toggleMenu}>
+		<button
+			class="menu-toggle"
+			onclick={toggleMenu}
+			bind:this={menuToggleRef}
+			type="button"
+			aria-expanded={isOpen}
+			aria-controls="mobile-menu"
+		>
 			<span class="sr-only">Toggle menu</span>
-			<div class="hamburger">
+			<div class="hamburger" class:open={isOpen}>
 				<span></span>
 				<span></span>
 				<span></span>
@@ -132,7 +194,7 @@
 					>
 				</li>
 				<li
-					class="relative"
+					class="relative user-menu-container"
 					use:handleClickOutside
 					bind:this={userMenuNode}
 					onmouseenter={handleMouseEnter}
@@ -140,13 +202,13 @@
 				>
 					<button onclick={toggleDropdown} class="nav-link user-menu profile-button">
 						<i class="fas fa-user mr-2"></i>
-						{user.displayName || user.email}
+						<span class="user-name">{user.displayName || user.email}</span>
 						<i class="fas fa-caret-down ml-2"></i>
 					</button>
 					{#if isDropdownOpen}
 						<ul
 							class="dropdown-menu"
-							transition:slide={{ duration: 300, easing: cubicOut }}
+							transition:slide={{ duration: 200, easing: cubicOut }}
 							bind:this={dropdownNode}
 							onmouseenter={handleMouseEnter}
 							onmouseleave={handleMouseLeave}
@@ -166,50 +228,62 @@
 			<li><ThemeToggle /></li>
 		</ul>
 		{#if isOpen}
-			<ul class="nav-list mobile" transition:slide|local>
+			<ul
+				class="nav-list mobile"
+				id="mobile-menu"
+				transition:slide|local={{ duration: 300, easing: cubicOut }}
+				bind:this={mobileMenuRef}
+			>
 				{#if user}
 					<li>
-						<a href="/manageItems" class="nav-link" class:active={currentPath === '/manageItems'}
-							>Item Manager</a
+						<a
+							href="/manageItems"
+							class="nav-link"
+							class:active={currentPath === '/manageItems'}
+							onclick={closeMenu}>Item Manager</a
 						>
 					</li>
 					<li>
 						<a
 							href="/manageTransactions"
 							class="nav-link"
-							class:active={currentPath === '/manageTransactions'}>Manage Transactions</a
+							class:active={currentPath === '/manageTransactions'}
+							onclick={closeMenu}>Manage Transactions</a
 						>
 					</li>
 					<li>
 						<a
 							href="/transactionHistory"
 							class="nav-link"
-							class:active={currentPath === '/transactionHistory'}>Transaction History</a
+							class:active={currentPath === '/transactionHistory'}
+							onclick={closeMenu}>Transaction History</a
 						>
 					</li>
 					<li>
 						<a
 							href="/transactionAnalysis"
 							class="nav-link"
-							class:active={currentPath === '/transactionAnalysis'}>Transaction Analysis</a
+							class:active={currentPath === '/transactionAnalysis'}
+							onclick={closeMenu}>Transaction Analysis</a
 						>
 					</li>
 					<li>
 						<a
 							href="/inventoryPredictions"
 							class="nav-link"
-							class:active={currentPath === '/inventoryPredictions'}>Inventory Predictions</a
+							class:active={currentPath === '/inventoryPredictions'}
+							onclick={closeMenu}>Inventory Predictions</a
 						>
 					</li>
 					<li>
-						<a href="/profile" class="nav-link" onclick={handleProfileClick}>Profile</a>
+						<a href="/profile" class="nav-link" onclick={() => { closeMenu(); handleProfileClick(event); }}>Profile</a>
 					</li>
 					<li>
 						<button onclick={handleLogout} class="nav-link">Logout</button>
 					</li>
 				{:else}
 					<li>
-						<a href="/login" class="nav-link" class:active={currentPath === '/login'}>Login</a>
+						<a href="/login" class="nav-link" class:active={currentPath === '/login'} onclick={closeMenu}>Login</a>
 					</li>
 				{/if}
 				<li><ThemeToggle /></li>
@@ -227,6 +301,7 @@
 		position: sticky;
 		top: 0;
 		z-index: 1000;
+		overflow: visible; /* Changed from overflow-x: hidden to allow mobile menu to show */
 	}
 
 	.brand {
@@ -287,12 +362,18 @@
 		color: var(--nav-text-color);
 		text-decoration: none;
 		font-size: 1rem;
-		padding: 0.5rem 0;
+		padding: 0.5rem 1rem;
+		min-height: 44px;
 		position: relative;
 		transition: color 0.3s ease;
 		background: none;
 		border: none;
 		cursor: pointer;
+		border-radius: 4px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		touch-action: manipulation;
 	}
 
 	.nav-link::after {
@@ -324,8 +405,9 @@
 		background-color: transparent;
 		border: 2px solid var(--nav-text-color);
 		border-radius: 20px;
-		padding: 0.25rem 0.75rem;
+		padding: 0.5rem 1rem;
 		transition: all 0.3s ease;
+		white-space: nowrap;
 	}
 
 	.profile-button:hover {
@@ -342,14 +424,29 @@
 		background: none;
 		border: none;
 		cursor: pointer;
+		min-height: 44px;
+		min-width: 44px;
+		padding: 0.5rem;
+		border-radius: 4px;
+		transition: background-color 0.3s ease;
+		position: relative;
+		z-index: 1001;
+	}
+
+	.menu-toggle:hover,
+	.menu-toggle:focus {
+		background-color: var(--nav-hover-bg);
+		outline: 2px solid var(--input-focus-border);
+		outline-offset: 2px;
 	}
 
 	.hamburger {
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
-		width: 30px;
-		height: 21px;
+		width: 24px;
+		height: 18px;
+		position: relative;
 	}
 
 	.hamburger span {
@@ -358,6 +455,20 @@
 		width: 100%;
 		background-color: var(--nav-text-color);
 		transition: all 0.3s ease;
+		border-radius: 2px;
+		transform-origin: center;
+	}
+
+	.hamburger.open span:nth-child(1) {
+		transform: rotate(45deg) translate(6px, 6px);
+	}
+
+	.hamburger.open span:nth-child(2) {
+		opacity: 0;
+	}
+
+	.hamburger.open span:nth-child(3) {
+		transform: rotate(-45deg) translate(6px, -6px);
 	}
 
 	.nav-list.mobile {
@@ -370,11 +481,34 @@
 		background-color: var(--nav-color);
 		padding: 1rem;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		gap: 0.5rem;
+		overflow-x: hidden;
+		overflow-y: auto;
+		max-height: calc(100vh - 80px);
+		z-index: 999;
+		border-top: 1px solid var(--nav-border-color);
 	}
 
 	.user-menu {
 		display: flex;
 		align-items: center;
+	}
+
+	.user-menu-container {
+		position: relative;
+	}
+
+	.user-name {
+		display: inline-block;
+		max-width: 150px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.profile-button .user-name {
+		opacity: 1;
+		transition: opacity 0.2s ease;
 	}
 
 	.dropdown-menu {
@@ -410,17 +544,50 @@
 		padding-left: 1.5rem;
 	}
 
+	/* Responsive breakpoints */
+	@media (max-width: 767px) {
+		.navbar {
+			padding: 0.75rem 1rem;
+		}
+		
+		.brand {
+			font-size: 1.25rem;
+		}
+		
+		/* Ensure mobile menu is properly positioned */
+		.nav-list.mobile {
+			width: 100%;
+			max-width: 100vw;
+		}
+	}
+
 	@media (min-width: 768px) {
 		.menu-toggle {
-			display: none;
+			display: none !important;
 		}
 
 		.nav-list.desktop {
-			display: flex;
+			display: flex !important;
 		}
 
 		.nav-list.mobile {
 			display: none !important;
+		}
+		
+		.navbar {
+			padding: 1rem 2rem;
+		}
+	}
+	
+	@media (orientation: landscape) and (max-height: 500px) {
+		.navbar {
+			padding-top: 0.5rem;
+			padding-bottom: 0.5rem;
+		}
+		
+		.nav-list.mobile {
+			max-height: calc(100vh - 60px);
+			padding: 0.75rem;
 		}
 	}
 </style>

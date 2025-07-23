@@ -2,7 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CSS Custom Properties for Responsive Design */
 :root {
+	/* Responsive spacing scale */
+	--space-xs: 0.25rem;
+	--space-sm: 0.5rem;
+	--space-md: 1rem;
+	--space-lg: 1.5rem;
+	--space-xl: 2rem;
+	--space-2xl: 3rem;
+	
+	/* Responsive font sizes */
+	--text-xs: 0.75rem;
+	--text-sm: 0.875rem;
+	--text-base: 1rem;
+	--text-lg: 1.125rem;
+	--text-xl: 1.25rem;
+	--text-2xl: 1.5rem;
+	--text-3xl: 1.875rem;
+	
+	/* Touch target sizes */
+	--touch-target-min: 44px;
+	--touch-target-comfortable: 48px;
+	--touch-target-large: 56px;
+	
+	/* Container widths */
+	--container-xs: 100%;
+	--container-sm: 640px;
+	--container-md: 768px;
+	--container-lg: 1024px;
+	--container-xl: 1280px;
+	
+	/* Safe area insets for notched devices */
+	--safe-area-inset-top: env(safe-area-inset-top, 0px);
+	--safe-area-inset-right: env(safe-area-inset-right, 0px);
+	--safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+	--safe-area-inset-left: env(safe-area-inset-left, 0px);
+	
+	/* Original color variables */
 	--text-color-dimmed: #727272;
 	--background-color: #f9f9f9;
 	--text-color: #1a1a1a;
@@ -90,10 +127,35 @@
 	--pagination-arrow-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
 }
 
+/* Base styles with mobile-first approach */
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	/* Prevent horizontal scrolling */
+	overflow-x: hidden;
+	/* Improve text rendering */
+	-webkit-text-size-adjust: 100%;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	/* Enable smooth scrolling */
+	scroll-behavior: smooth;
+	/* Ensure proper sizing on all devices */
+	width: 100%;
+	height: 100%;
+}
+
 body {
 	background-color: var(--background-color);
 	color: var(--text-color);
 	margin: 0;
+	padding: 0;
+	overflow-x: hidden;
+	font-size: 16px;
+	line-height: 1.6;
 	font-family:
 		system-ui,
 		-apple-system,
@@ -108,6 +170,57 @@ body {
 		'Segoe UI Emoji',
 		'Segoe UI Symbol',
 		'Noto Color Emoji';
+	/* Ensure body takes full width */
+	width: 100%;
+	min-height: 100vh;
+	position: relative;
+}
+
+/* Fix for viewport changes */
+@media screen {
+	body {
+		/* Force recalculation on viewport change */
+		contain: layout style;
+	}
+}
+
+@media (max-width: 480px) {
+	body {
+		font-size: 14px;
+	}
+}
+
+/* Responsive container utility */
+.container-responsive {
+	width: 100%;
+	max-width: var(--container-xl);
+	margin: 0 auto;
+	padding-left: var(--space-sm);
+	padding-right: var(--space-sm);
+}
+
+@media (min-width: 640px) {
+	.container-responsive {
+		padding-left: var(--space-md);
+		padding-right: var(--space-md);
+	}
+}
+
+@media (min-width: 1024px) {
+	.container-responsive {
+		padding-left: var(--space-lg);
+		padding-right: var(--space-lg);
+	}
+}
+
+/* Enhanced input styles with touch targets */
+input,
+select,
+textarea {
+	/* Ensure minimum touch target size */
+	min-height: var(--touch-target-min);
+	/* Improve touch responsiveness */
+	touch-action: manipulation;
 }
 
 input {
@@ -116,6 +229,13 @@ input {
 	border: 1px solid var(--input-border);
 	border-radius: var(--border-radius);
 	transition: all 0.3s ease;
+	padding: 0.75rem;
+}
+
+@media (max-width: 480px) {
+	input {
+		padding: 0.5rem;
+	}
 }
 
 input:hover {
@@ -125,10 +245,45 @@ input:hover {
 input:focus {
 	border-color: var(--input-focus-border);
 	outline: none;
+	/* Enhanced focus for accessibility */
+	box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
 }
 
 input::placeholder {
 	color: var(--placeholder-text);
+}
+
+/* Button enhancements */
+button:not(.theme-toggle) {
+	min-height: var(--touch-target-min); /* Apply min-height here */
+	cursor: pointer;
+	border: none;
+	border-radius: var(--border-radius);
+	transition: all 0.3s ease;
+	padding: 0.75rem 1.5rem;
+	font-size: 1rem;
+}
+
+@media (max-width: 480px) {
+	button {
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+	}
+}
+
+button:focus {
+	outline: 2px solid var(--input-focus-border);
+	outline-offset: 2px;
+}
+
+button:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+/* Specific rule for theme-toggle to reset min-height */
+.theme-toggle {
+    min-height: 0;
 }
 
 .table th,
@@ -175,4 +330,89 @@ input::placeholder {
 * {
 	scrollbar-width: thin;
 	scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* Touch-friendly utilities */
+.touch-target {
+	min-height: var(--touch-target-min);
+	min-width: var(--touch-target-min);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.touch-target-comfortable {
+	min-height: var(--touch-target-comfortable);
+	min-width: var(--touch-target-comfortable);
+}
+
+.touch-target-large {
+	min-height: var(--touch-target-large);
+	min-width: var(--touch-target-large);
+}
+
+/* Accessibility and performance enhancements */
+
+
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+	:root {
+		--input-border: #000000;
+		--table-border-color: #000000;
+		--nav-border-color: #000000;
+	}
+}
+
+/* Dark mode preference */
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme]) {
+		--background-color: #1a1a1a;
+		--text-color: #ffffff;
+		--container-bg: #121212;
+	}
+}
+
+/* Print styles */
+@media print {
+	* {
+		background: transparent !important;
+		color: black !important;
+		box-shadow: none !important;
+		text-shadow: none !important;
+	}
+	
+	body {
+		font-size: 12pt;
+		line-height: 1.5;
+	}
+	
+	.navbar,
+	button,
+	.no-print {
+		display: none !important;
+	}
+}
+
+/* Landscape orientation optimizations */
+@media (orientation: landscape) and (max-height: 500px) {
+	.container-responsive {
+		padding-top: 0.25rem;
+		padding-bottom: 0.25rem;
+	}
+}
+
+/* Viewport transition fix */
+* {
+	/* Prevent layout jumps during viewport changes */
+	min-width: 0;
+}
+
+/* Ensure proper reflow on viewport changes */
+@media screen and (min-width: 0px) {
+	body::after {
+		content: '';
+		display: table;
+		clear: both;
+	}
 }

@@ -13,9 +13,15 @@
 
 	let hoveredButton = $state(null);
 	let deletingItemId = $state(null);
+	let tooltipStyle = $state('');
 
 	function showTooltip(event) {
-		hoveredButton = event.target;
+		const button = event.currentTarget;
+		hoveredButton = button;
+		const rect = button.getBoundingClientRect();
+		const left = rect.left + rect.width / 2;
+		const top = rect.top - 8;
+		tooltipStyle = `left: ${left}px; top: ${top}px;`;
 	}
 
 	function hideTooltip() {
@@ -80,7 +86,7 @@
 				{#each paginatedItems as item (item.id)}
 					{#if item.id !== deletingItemId}
 						<tr class="table-row" in:fly={{ y: 20, duration: 300 }} out:fade={{ duration: 300 }}>
-							<td class="name-col">
+							<td class="name-col" data-label="Name">
 								<div class="cell-content">
 									<span>{item.name}</span>
 									<button
@@ -95,7 +101,7 @@
 									</button>
 								</div>
 							</td>
-							<td class="barcode-col">
+							<td class="barcode-col" data-label="Barcode">
 								<div class="cell-content">
 									<span>{item.barcode}</span>
 									<button
@@ -110,8 +116,8 @@
 									</button>
 								</div>
 							</td>
-							<td class="count-col">{item.count}</td>
-							<td class="lowcount-col">
+							<td class="count-col" data-label="Count">{item.count}</td>
+							<td class="lowcount-col" data-label="Low Count">
 								<div class="cell-content">
 									<span>{item.lowCount != null ? item.lowCount : ''}</span>
 									<button
@@ -126,7 +132,7 @@
 									</button>
 								</div>
 							</td>
-							<td class="cost-col">
+							<td class="cost-col" data-label="Cost">
 								<div class="cell-content">
 									<span>{formatCost(item.cost)}</span>
 									<button
@@ -141,7 +147,7 @@
 									</button>
 								</div>
 							</td>
-							<td class="storage-col">
+							<td class="storage-col" data-label="Storage Type">
 								<div class="cell-content">
 									<span
 										class="storage-type"
@@ -162,7 +168,7 @@
 									</button>
 								</div>
 							</td>
-							<td class="action-col">
+							<td class="action-col" data-label="Actions">
 								<button
 									class="delete-button"
 									data-tooltip="Delete Item"
@@ -183,13 +189,7 @@
 </div>
 
 {#if hoveredButton}
-	<div
-		class="tooltip"
-		style="left: {hoveredButton.getBoundingClientRect()
-			.left}px; top: {hoveredButton.getBoundingClientRect().top - 30}px"
-		in:fly={{ y: 10, duration: 200 }}
-		out:fade={{ duration: 200 }}
-	>
+	<div class="tooltip" style={tooltipStyle} in:fly={{ y: 10, duration: 200 }} out:fade={{ duration: 200 }}>
 		{hoveredButton.dataset.tooltip}
 	</div>
 {/if}
@@ -205,8 +205,8 @@
 		width: 100%;
 		overflow-x: auto;
 		overflow-y: scroll;
-		max-height: 670px;
-		min-height: 670px;
+		max-height: 670px; /* Or a suitable max-height */
+		min-height: 300px; /* A more flexible min-height */
 	}
 
 	.custom-table {
@@ -303,36 +303,49 @@
 
 	/* Fixed column widths */
 	.name-col {
-		width: 25%;
+		width: 20%;
+		min-width: min(180px, 25vw);
 	}
 	.barcode-col {
-		width: 20%;
+		width: 15%;
+		min-width: min(150px, 20vw);
 	}
 	.count-col {
-		width: 10%;
+		width: 8%;
+		min-width: min(80px, 15vw);
 	}
 	.lowcount-col {
-		width: 10%;
+		width: 8%;
+		min-width: min(100px, 15vw);
 	}
 	.cost-col {
-		width: 10%;
+		width: 12%;
+		min-width: min(100px, 18vw);
 	}
 	.storage-col {
-		width: 15%;
+		width: 12%;
+		min-width: min(150px, 20vw);
 	}
 	.action-col {
-		width: 10%;
+		width: 15%;
+		min-width: min(120px, 20vw);
 	}
 
 	.tooltip {
 		position: fixed;
 		background-color: #333;
 		color: white;
-		padding: 5px 10px;
-		border-radius: 4px;
+		padding: 8px 12px;
+		border-radius: 6px;
 		font-size: 14px;
 		z-index: 1000;
 		pointer-events: none;
+		transform: translate(-50%, -100%);
+		transition:
+			opacity 0.2s,
+			transform 0.2s;
+		white-space: nowrap;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 	}
 
 	.storage-type {
@@ -347,5 +360,62 @@
 			0 1px 3px rgba(0, 0, 0, 0.1); /* Softer, layered shadow */
 		border: 1px solid rgba(0, 0, 0, 0.1); /* Optional subtle border */
 		transition: all 0.2s ease-in-out; /* Smooth hover effect */
+	}
+	@media (max-width: 768px) {
+		.custom-table thead {
+			display: none;
+		}
+
+		.custom-table,
+		.custom-table tbody,
+		.custom-table tr,
+		.custom-table td {
+			width: 100%;
+		}
+
+		.custom-table tr {
+			display: flex;
+			flex-direction: column;
+			margin-bottom: 1rem;
+			border: 1px solid var(--table-border-color);
+			border-radius: 8px;
+			overflow: hidden;
+		}
+
+		.custom-table td {
+			text-align: right;
+			padding-left: 50%;
+			position: relative;
+			border-bottom: 1px solid var(--table-border-color);
+		}
+
+		.custom-table td:last-child {
+			border-bottom: none;
+		}
+
+		.custom-table td::before {
+			content: attr(data-label);
+			position: absolute;
+			left: 0;
+			width: 45%;
+			padding-left: 1rem;
+			font-weight: bold;
+			text-align: left;
+			white-space: nowrap;
+		}
+
+		.action-col {
+			text-align: center;
+			padding: 1rem;
+		}
+
+		.cell-content {
+			justify-content: flex-end;
+		}
+
+		.icon-button,
+		.delete-button {
+			opacity: 1;
+		}
 	}
 </style>

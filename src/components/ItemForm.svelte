@@ -59,9 +59,9 @@
 	};
 </script>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+<div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-4 mb-4">
 	<!-- Name Field -->
-	<div class="form-group">
+	<div class="form-group col-span-1 sm:col-span-1 lg:col-span-1">
 		<label for="name" class="form-label"><span>Name</span></label>
 		<div class="input-wrapper">
 			<input
@@ -80,7 +80,7 @@
 	</div>
 
 	<!-- Barcode Field -->
-	<div class="form-group">
+	<div class="form-group col-span-1 sm:col-span-1 lg:col-span-1">
 		<label for="barcode" class="form-label"><span>Barcode</span></label>
 		<div class="input-wrapper">
 			<input
@@ -93,8 +93,8 @@
 	</div>
 
 	<!-- Count Field -->
-	<div class="form-group">
-		<label for="count" class="form-label"><span>Item Count</span></label>
+	<div class="form-group col-span-1">
+		<label for="count" class="form-label"><span>Count</span></label>
 		<div class="input-wrapper">
 			<input
 				id="count"
@@ -102,7 +102,7 @@
 				type="text"
 				bind:value={formData.count}
 				pattern="^[0-9]*$"
-				placeholder="Enter item count"
+				placeholder="Enter count"
 				oninput={(event) => handleInput(event, 'count')}
 			/>
 			{#if errors.count}
@@ -114,7 +114,7 @@
 	</div>
 
 	<!-- Low Count Field -->
-	<div class="form-group">
+	<div class="form-group col-span-1">
 		<label for="lowCount" class="form-label"><span>Low Item</span></label>
 		<div class="input-wrapper">
 			<input
@@ -123,7 +123,7 @@
 				type="text"
 				bind:value={formData.lowCount}
 				pattern="^[0-9]*$"
-				placeholder="Enter low stock threshold"
+				placeholder="Enter low stock"
 				oninput={(event) => handleInput(event, 'lowCount')}
 			/>
 			{#if errors.lowCount}
@@ -135,7 +135,7 @@
 	</div>
 
 	<!-- Cost Field -->
-	<div class="form-group">
+	<div class="form-group col-span-1">
 		<label for="cost" class="form-label"><span>Cost</span></label>
 		<div class="input-wrapper">
 			<input
@@ -143,7 +143,7 @@
 				class="form-control-input {errors.cost ? 'is-invalid' : ''}"
 				type="text"
 				bind:value={formData.cost}
-				placeholder="Enter item cost"
+				placeholder="Enter cost"
 				oninput={(event) => handleInput(event, 'cost', true)}
 			/>
 			{#if errors.cost}
@@ -155,8 +155,8 @@
 	</div>
 
 	<!-- Storage Type Field -->
-	<div class="form-group">
-		<label for="storageType" class="form-label"><span>Storage Type</span></label>
+	<div class="form-group col-span-1">
+		<label for="storageType" class="form-label"><span>Storage</span></label>
 		<div class="input-wrapper">
 			<select
 				id="storageType"
@@ -164,7 +164,7 @@
 				bind:value={formData.storageType}
 				class:placeholder-selected={!formData.storageType}
 			>
-				<option value="" disabled>Select storage type...</option>
+				<option value="" disabled>Select type...</option>
 				<option value="Freezer">Freezer</option>
 				<option value="Refrigerator">Refrigerator</option>
 				<option value="Dry Storage">Dry Storage</option>
@@ -173,7 +173,7 @@
 	</div>
 
 	<!-- Add Item Button -->
-	<div class="form-group col-span-full">
+	<div class="form-group col-span-2 sm:col-span-2 lg:col-span-3">
 		<button class="btn btn-primary w-full" id="add-item" onclick={handleAdd}>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -194,7 +194,7 @@
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		margin-bottom: 2rem;
+		margin-bottom: 0;
 	}
 
 	.placeholder-selected {
@@ -287,7 +287,7 @@
 		cursor: pointer;
 		text-align: center;
 		font-size: 0.875rem;
-		max-width: 25%;
+		max-width: 100%; /* Full width on smaller screens */
 		margin: 2rem auto 0 auto;
 		display: flex;
 		align-items: center;
@@ -315,8 +315,13 @@
 
 	@media (min-width: 640px) {
 		#add-item {
-			font-size: 1rem;
-			padding: 0.75rem 1.5rem;
+			max-width: 50%; /* Adjust as needed for sm screens */
+		}
+	}
+
+	@media (min-width: 1024px) {
+		#add-item {
+			max-width: 25%; /* Original width for larger screens */
 		}
 	}
 </style>
