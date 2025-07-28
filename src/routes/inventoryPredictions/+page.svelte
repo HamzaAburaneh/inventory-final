@@ -29,21 +29,31 @@
 
 	const totalItems = $derived(items.length);
 	const itemsNeedingRestock = $derived(items.filter((item) => {
-		const prediction = predictions[item.id];
-		if (!prediction) return false;
+		const predictionData = predictions[item.id];
+		if (!predictionData) return false;
+		
+		// Handle both old format (array) and new format (object with prediction array)
+		const prediction = Array.isArray(predictionData) ? predictionData : predictionData.prediction;
+		if (!Array.isArray(prediction)) return false;
+		
 		const totalPrediction = prediction.reduce((sum, daily) => sum + daily, 0);
 		return item.count < totalPrediction;
 	}).length);
 	const potentialOverstock = $derived(items.filter((item) => {
-		const prediction = predictions[item.id];
-		if (!prediction) return false;
+		const predictionData = predictions[item.id];
+		if (!predictionData) return false;
+		
+		// Handle both old format (array) and new format (object with prediction array)
+		const prediction = Array.isArray(predictionData) ? predictionData : predictionData.prediction;
+		if (!Array.isArray(prediction)) return false;
+		
 		const totalPrediction = prediction.reduce((sum, daily) => sum + daily, 0);
 		return item.count > totalPrediction * 1.5;
 	}).length);
 
 	async function fetchPredictions() {
 		try {
-			const response = await fetch('/api/stockPredictions?timeframe=14');
+			const response = await fetch('/api/stockPredictions?timeframe=14&ai=false');
 			if (!response.ok) {
 				throw new Error('Failed to fetch stock predictions');
 			}

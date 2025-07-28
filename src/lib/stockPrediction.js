@@ -1,5 +1,14 @@
 import arimaPackage from 'arima';
-const { ARIMA } = arimaPackage;
+
+// Handle different possible export formats
+let ARIMA;
+try {
+	// Try destructuring first
+	ARIMA = arimaPackage.ARIMA || arimaPackage.default?.ARIMA || arimaPackage.default || arimaPackage;
+} catch (error) {
+	console.warn('ARIMA import issue, using fallback predictions');
+	ARIMA = null;
+}
 
 /**
  * @typedef {import('../types').Transaction} Transaction
@@ -83,6 +92,12 @@ function prepareDataForARIMA(sales) {
  */
 function predictWithARIMA(data, forecastDays) {
 	try {
+		// Check if ARIMA is available
+		if (!ARIMA) {
+			console.warn('ARIMA not available, using fallback prediction');
+			return fallbackPrediction(data, forecastDays);
+		}
+
 		const arima = new ARIMA({
 			p: 1,
 			d: 1,
@@ -127,7 +142,6 @@ export function predictStockLevels(transactions, forecastDays = 14) {
 	for (const [itemId, sales] of Object.entries(itemSales)) {
 		const dailySales = prepareDataForARIMA(sales);
 		if (dailySales.length < forecastDays * 2) {
-			console.warn(`Not enough historical data for item ${itemId}. Using fallback prediction.`);
 			predictions[itemId] = fallbackPrediction(dailySales, forecastDays);
 		} else {
 			predictions[itemId] = predictWithARIMA(dailySales, forecastDays);
