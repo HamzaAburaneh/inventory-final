@@ -103,7 +103,12 @@
 				dailyTrendChart = new Chart(dailyCtx.getContext('2d'), {
 				type: 'line',
 				data: {
-					labels: dailyAnalysis.map(d => d.date),
+					labels: dailyAnalysis.map(d => {
+						const date = new Date(d.date);
+						const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+						const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+						return `${dayName} ${monthDay}`;
+					}),
 					datasets: [
 						{
 							label: 'Stock In',
@@ -164,7 +169,13 @@
 				hourlyHeatmapChart = new Chart(hourlyCtx.getContext('2d'), {
 				type: 'bar',
 				data: {
-					labels: hourlyActivity.map(h => `${h.hour}:00`),
+					labels: hourlyActivity.map(h => {
+						const hour = h.hour;
+						if (hour === 0) return '12 AM';
+						if (hour === 12) return '12 PM';
+						if (hour < 12) return `${hour} AM`;
+						return `${hour - 12} PM`;
+					}),
 					datasets: [{
 						label: 'Transactions',
 						data: hourlyActivity.map(h => h.transactionCount),
@@ -309,6 +320,36 @@
 		} else {
 			// Other ranges - go back N days from now
 			dateRange.start = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+		}
+		
+		loadAnalysisData();
+	}
+
+	// CNE date range presets
+	function setCNERange(year) {
+		activeFilter = `cne${year}`; // Set active filter for CNE
+		
+		switch(year) {
+			case 2022:
+				// CNE 2022: August 19 to September 5, 2022
+				dateRange.start = new Date(2022, 7, 19); // Month is 0-indexed, so 7 = August
+				dateRange.end = new Date(2022, 8, 5, 23, 59, 59); // 8 = September
+				break;
+			case 2023:
+				// CNE 2023: August 18 to September 4, 2023
+				dateRange.start = new Date(2023, 7, 18);
+				dateRange.end = new Date(2023, 8, 4, 23, 59, 59);
+				break;
+			case 2024:
+				// CNE 2024: August 16 to September 2, 2024
+				dateRange.start = new Date(2024, 7, 16);
+				dateRange.end = new Date(2024, 8, 2, 23, 59, 59);
+				break;
+			case 2025:
+				// CNE 2025: August 15 to September 1, 2025
+				dateRange.start = new Date(2025, 7, 15);
+				dateRange.end = new Date(2025, 8, 1, 23, 59, 59);
+				break;
 		}
 		
 		loadAnalysisData();
@@ -513,6 +554,13 @@
 				<button onclick={() => setQuickRange(21)} class="quick-btn" class:active={activeFilter === 21}>Last 21 Days</button>
 				<button onclick={() => setQuickRange(30)} class="quick-btn" class:active={activeFilter === 30}>Last 30 Days</button>
 			</div>
+			<div class="cne-ranges">
+				<span class="filter-label">CNE Periods:</span>
+				<button onclick={() => setCNERange(2022)} class="quick-btn cne-btn" class:active={activeFilter === 'cne2022'}>CNE 2022</button>
+				<button onclick={() => setCNERange(2023)} class="quick-btn cne-btn" class:active={activeFilter === 'cne2023'}>CNE 2023</button>
+				<button onclick={() => setCNERange(2024)} class="quick-btn cne-btn" class:active={activeFilter === 'cne2024'}>CNE 2024</button>
+				<button onclick={() => setCNERange(2025)} class="quick-btn cne-btn" class:active={activeFilter === 'cne2025'}>CNE 2025</button>
+			</div>
 			<button onclick={exportToCSV} class="export-btn">
 				<i class="fas fa-download mr-2"></i>
 				Export CSV
@@ -708,6 +756,23 @@
 		gap: 0.5rem;
 	}
 
+	.cne-ranges {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		align-items: center;
+		margin-top: 0.75rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid var(--table-border-color);
+	}
+
+	.filter-label {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-color-dimmed);
+		margin-right: 0.5rem;
+	}
+
 	.quick-btn {
 		padding: 0.4rem 0.8rem;
 		border: 1px solid var(--table-border-color);
@@ -733,6 +798,23 @@
 		font-weight: 600;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 		transform: translateY(-1px);
+	}
+
+	.cne-btn {
+		background-color: #FF6B35;
+		border-color: #FF6B35;
+		color: white;
+	}
+
+	.cne-btn:hover {
+		background-color: #E55A2B;
+		border-color: #E55A2B;
+	}
+
+	.cne-btn.active {
+		background-color: #D14A1F;
+		border-color: #D14A1F;
+		box-shadow: 0 2px 4px rgba(255, 107, 53, 0.4);
 	}
 
 	.export-btn {
@@ -910,6 +992,20 @@
 			gap: 0.25rem;
 		}
 
+		.cne-ranges {
+			margin-top: 0.5rem;
+			padding-top: 0.5rem;
+			justify-content: center;
+			gap: 0.25rem;
+		}
+
+		.filter-label {
+			width: 100%;
+			text-align: center;
+			margin-bottom: 0.25rem;
+			margin-right: 0;
+		}
+
 		.quick-btn {
 			padding: 0.375rem 0.5rem;
 			font-size: 0.75rem;
@@ -983,6 +1079,12 @@
 
 		.quick-ranges {
 			flex-direction: column;
+		}
+
+		.cne-ranges {
+			flex-direction: column;
+			margin-top: 0.5rem;
+			padding-top: 0.5rem;
 		}
 
 		.quick-btn {
