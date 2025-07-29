@@ -211,9 +211,6 @@
 	}
 
 	.table-container {
-		min-height: 400px;
-		max-height: 70vh;
-		overflow: auto;
 		margin-bottom: 1rem;
 	}
 
