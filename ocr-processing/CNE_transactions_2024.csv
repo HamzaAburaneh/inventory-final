@@ -1,0 +1,3429 @@
+item_name,transaction_type,item_count,date_time
+#1,add,2,2024-10-19 11:59:37
+ribeye,remove,1,2024-08-31 22:14:21
+pork,remove,4,2024-08-31 22:13:21
+cholula,remove,1,2024-08-31 22:06:33
+avacodo,remove,2,2024-08-31 21:37:36
+hot dog,add,4,2024-08-31 21:37:18
+cheese curds,add,2,2024-08-31 21:37:11
+peameal bacon,remove,2,2024-08-31 21:37:07
+ribeye,add,1,2024-08-31 21:37:03
+ground beef,add,3,2024-08-31 21:37:00
+beef burgers,remove,2,2024-08-31 21:36:49
+bacon,add,4,2024-08-31 21:36:42
+bacon,add,1,2024-08-31 21:36:39
+chicken fingers,remove,2,2024-08-31 21:36:35
+bean sprouts,add,2,2024-08-31 21:36:10
+cheese sliced br,remove,1,2024-08-31 21:35:53
+bean sprouts,remove,1,2024-08-31 21:35:22
+kimchi,remove,1,2024-08-31 21:35:14
+whip cream,remove,1,2024-08-31 21:35:00
+cabbage,remove,1,2024-08-31 21:34:56
+tomato,remove,3,2024-08-31 21:34:44
+red onions,remove,1,2024-08-31 21:34:39
+hot dog,remove,5,2024-08-31 21:34:30
+ground beef,remove,4,2024-08-31 21:34:23
+cheese curds,remove,5,2024-08-31 21:34:17
+bacon,remove,6,2024-08-31 21:34:12
+sour cream,remove,2,2024-08-31 21:33:55
+water,remove,3,2024-08-31 21:33:50
+chocolate,remove,1,2024-08-31 21:33:40
+krispy kreme,add,4,2024-08-31 21:33:32
+krispy kreme,remove,22,2024-08-31 21:33:31
+strawberries,add,20,2024-08-31 21:33:12
+strawberries,remove,35,2024-08-31 21:33:08
+fries,add,1,2024-08-31 21:32:23
+fries,add,11,2024-08-31 21:32:17
+fries,add,20,2024-08-31 21:32:11
+corn,remove,5,2024-08-31 21:31:53
+plumsauce,remove,1,2024-08-31 21:30:49
+lemon juice,add,1,2024-08-31 21:30:35
+gravy,remove,5,2024-08-31 21:30:10
+oil,remove,3,2024-08-31 21:29:59
+paper towels,add,1,2024-08-31 21:29:52
+mustard,remove,1,2024-08-31 21:28:46
+forks,remove,2,2024-08-31 21:28:26
+200 savaday,remove,1,2024-08-31 21:27:39
+tortilla,remove,1,2024-08-31 21:27:34
+napkins,remove,1,2024-08-31 21:27:21
+#1,remove,1,2024-08-31 21:27:14
+chipotle can,add,3,2024-08-31 16:14:04
+cheese curds,add,4,2024-08-31 15:58:19
+avacodo,add,3,2024-08-31 15:58:07
+lobster,add,8,2024-08-31 15:57:29
+cheese curds,remove,4,2024-08-31 15:57:18
+cheese curds,add,2,2024-08-31 15:57:16
+hot dog,add,4,2024-08-31 15:57:10
+ribeye,add,1,2024-08-31 15:56:57
+peameal bacon,remove,1,2024-08-31 15:56:46
+peameal bacon,add,4,2024-08-31 15:56:44
+ground beef,add,3,2024-08-31 15:56:40
+haddock fish,add,14,2024-08-31 15:56:34
+beef burgers,add,5,2024-08-31 15:56:27
+bacon,add,8,2024-08-31 15:56:18
+pork,add,4,2024-08-31 15:56:12
+apple fritter,add,8,2024-08-31 15:56:05
+chicken fingers,add,8,2024-08-31 15:55:57
+coconut shred,add,1,2024-08-31 15:43:04
+coconut shred,add,1,2024-08-31 15:43:02
+chives,add,1,2024-08-31 15:42:55
+cilantro,add,2,2024-08-31 15:33:16
+shredded lettuce,add,3,2024-08-31 15:33:10
+cheese mozzarella,add,4,2024-08-31 15:33:00
+bean sprouts,add,2,2024-08-31 15:32:50
+cheese sliced br,add,1,2024-08-31 15:32:45
+cheese ribbons,add,3,2024-08-31 15:32:30
+cheese cotija,add,4,2024-08-31 15:32:21
+cream,add,1,2024-08-31 15:32:08
+butter,add,1,2024-08-31 15:32:05
+shredded cheese,add,1,2024-08-31 15:31:46
+dill,add,1,2024-08-31 15:31:36
+parsley,add,1,2024-08-31 15:31:33
+eggs,add,1,2024-08-31 15:30:34
+burger lettuce,add,4,2024-08-31 15:30:29
+kimchi,add,5,2024-08-31 15:30:22
+whip cream,add,4,2024-08-31 15:30:14
+cabbage,add,2,2024-08-31 15:30:09
+red cabbage,add,3,2024-08-31 15:30:03
+tomato,add,3,2024-08-31 15:29:52
+red onions,add,4,2024-08-31 15:29:46
+ground beef,add,2,2024-08-31 15:27:25
+peameal bacon,add,2,2024-08-31 15:27:19
+bacon,add,2,2024-08-31 15:27:13
+ribeye,add,1,2024-08-31 15:27:09
+hot dog,add,2,2024-08-31 15:27:06
+cheese curds,add,4,2024-08-31 15:27:01
+water,add,16,2024-08-31 15:26:50
+pickles,add,2,2024-08-31 15:26:42
+relish,add,2,2024-08-31 15:26:37
+sour cream,add,5,2024-08-31 15:26:32
+sauerkraut,add,1,2024-08-31 15:26:26
+chocolate,add,10,2024-08-31 15:26:20
+krispy kreme,add,60,2024-08-31 15:26:10
+strawberries,add,3,2024-08-31 15:25:57
+strawberries,add,20,2024-08-31 15:25:52
+strawberries,add,7,2024-08-31 15:25:46
+strawberries,add,6,2024-08-31 15:25:45
+strawberries,add,7,2024-08-31 15:25:42
+strawberries,add,6,2024-08-31 15:25:40
+strawberries,add,6,2024-08-31 15:25:38
+strawberries,add,7,2024-08-31 15:25:35
+strawberries,add,8,2024-08-31 15:25:28
+strawberries,add,4,2024-08-31 15:25:26
+strawberries,add,6,2024-08-31 15:25:22
+fries,add,8,2024-08-31 15:24:41
+fries,add,6,2024-08-31 15:24:37
+fries,add,40,2024-08-31 15:24:30
+fries,add,14,2024-08-31 15:24:20
+corn,add,40,2024-08-31 15:24:03
+ketchup squeezed,remove,1,2024-08-31 15:21:25
+batter mix,remove,1,2024-08-31 15:21:19
+mayo,remove,1,2024-08-31 15:20:51
+mustard,add,4,2024-08-31 15:19:32
+mayo,remove,3,2024-08-31 15:19:29
+mayo,add,3,2024-08-31 15:19:27
+saran wrap,add,5,2024-08-31 15:19:21
+foil,add,3,2024-08-31 15:19:15
+knife,add,10,2024-08-31 15:19:11
+jalapeno,add,1,2024-08-31 15:17:05
+chipotle sauce,add,2,2024-08-31 15:17:00
+hand soap,add,1,2024-08-31 15:16:51
+pot pan detergent,add,1,2024-08-31 15:16:47
+forks,add,8,2024-08-31 15:16:42
+gloves vinyl,add,7,2024-08-31 15:16:34
+teriyaki,add,1,2024-08-31 15:16:26
+gloves poly,add,3,2024-08-31 15:16:18
+gloves poly,add,4,2024-08-31 15:16:16
+siracha,add,4,2024-08-31 15:16:08
+ketchup,add,1,2024-08-31 15:16:04
+thermal foil wrap,add,5,2024-08-31 15:15:59
+mayo,add,1,2024-08-31 15:15:55
+salt box,add,1,2024-08-31 15:15:52
+checkered basket,add,2,2024-08-31 15:15:49
+200 savaday,add,4,2024-08-31 15:15:29
+tortilla,add,4,2024-08-31 15:15:24
+franks,add,2,2024-08-31 15:15:20
+16 ounce cup,add,2,2024-08-31 15:15:16
+napkins,add,3,2024-08-31 15:16:12
+#1,add,5,2024-08-31 15:15:07
+blueberry filling,add,4,2024-08-31 15:15:00
+bleach,add,1,2024-08-31 15:14:56
+paper towels,add,2,2024-08-31 15:14:52
+oil,add,13,2024-08-31 15:14:47
+cheese sauce,add,1,2024-08-31 15:14:40
+gravy,add,10,2024-08-31 15:14:35
+salt bag,add,1,2024-08-31 15:14:30
+sugar,add,1,2024-08-31 15:14:27
+batter mix,add,2,2024-08-31 15:14:23
+prep butter,add,2,2024-08-31 15:14:15
+ketchup squeezed,add,7,2024-08-31 15:14:08
+lime juice,add,2,2024-08-31 15:13:43
+9 ounce cups,add,2,2024-08-31 15:13:37
+coleslaw dressing,add,2,2024-08-31 15:13:33
+coleslaw dressing,add,3,2024-08-31 15:13:30
+tajin,add,1,2024-08-31 15:13:24
+banana pepper,add,1,2024-08-31 15:13:21
+cajun,add,1,2024-08-31 15:13:17
+#2 trays,add,2,2024-08-31 15:13:10
+pancake waffle,add,1,2024-08-31 15:13:05
+garlic aioli,add,2,2024-08-31 15:12:59
+bbq sauce dip,add,7,2024-08-31 15:12:49
+plumsauce,add,4,2024-08-31 15:12:23
+grill brick,add,1,2024-08-31 15:12:17
+cholula,add,1,2024-08-31 15:12:13
+oil non stick,add,1,2024-08-31 15:12:10
+pineapple,add,3,2024-08-31 15:12:02
+beans,add,2,2024-08-31 15:11:57
+hoisin,add,6,2024-08-31 15:11:52
+whip cream,remove,2,2024-08-31 15:07:07
+water,remove,22,2024-08-31 15:07:03
+vinegar,remove,3,2024-08-31 15:06:59
+tortilla,remove,4,2024-08-31 15:06:54
+tomato,remove,5,2024-08-31 15:06:51
+thunder chicken,remove,2,2024-08-31 15:06:49
+thermal foil wrap,remove,6,2024-08-31 15:06:46
+tajin,remove,1,2024-08-31 15:06:43
+teriyaki,remove,1,2024-08-31 15:06:41
+sugar,remove,1,2024-08-31 15:06:36
+strawberries,remove,40,2024-08-31 15:06:34
+sour cream,remove,6,2024-08-31 15:06:32
+softshell crab,remove,2,2024-08-31 15:06:31
+snowcrab,remove,1,2024-08-31 15:06:30
+saran wrap,remove,3,2024-08-31 15:06:28
+saran wrap,remove,2,2024-08-31 15:06:27
+siracha,remove,4,2024-08-31 15:06:24
+shrimp,remove,2,2024-08-31 15:06:23
+shredded lettuce,remove,3,2024-08-31 15:06:21
+shredded cheese,remove,1,2024-08-31 15:06:19
+sauerkraut,remove,1,2024-08-31 15:06:18
+salt packet,remove,1,2024-08-31 15:06:17
+salt bag,remove,1,2024-08-31 15:06:15
+salt box,remove,1,2024-08-31 15:06:14
+salsa,remove,3,2024-08-31 15:06:12
+ribeye,remove,2,2024-08-31 15:06:11
+relish,remove,2,2024-08-31 15:06:09
+red cabbage,remove,4,2024-08-31 15:06:07
+ramen burger,remove,13,2024-08-31 15:06:06
+prep butter,remove,2,2024-08-31 15:06:04
+pot pan detergent,remove,1,2024-08-31 15:06:02
+pork,remove,18,2024-08-31 15:06:00
+plumsauce,remove,5,2024-08-31 15:05:58
+pineapple,remove,3,2024-08-31 15:06:57
+pico,remove,1,2024-08-31 15:05:55
+pickles,remove,2,2024-08-31 15:05:54
+pepper packet,remove,1,2024-08-31 15:05:52
+peameal bacon,remove,7,2024-08-31 15:05:51
+paper towels,remove,3,2024-08-31 15:05:49
+pancake waffle,remove,1,2024-08-31 15:05:46
+oil non stick,remove,1,2024-08-31 15:05:43
+oil,remove,13,2024-08-31 15:05:42
+napkins,remove,3,2024-08-31 15:05:40
+mustard,remove,4,2024-08-31 15:05:39
+mayo,remove,2,2024-08-31 15:05:36
+lobster,remove,9,2024-08-31 15:05:35
+lime juice,remove,2,2024-08-31 15:05:33
+lemon juice,remove,2,2024-08-31 15:05:31
+knife,remove,10,2024-08-31 15:05:29
+ketchup squeezed,remove,7,2024-08-31 15:05:26
+ketchup,remove,1,2024-08-31 15:05:25
+jalapeno,remove,1,2024-08-31 15:05:24
+hot dog,remove,9,2024-08-31 15:05:21
+hoisin,remove,6,2024-08-31 15:05:19
+hand soap,remove,1,2024-08-31 15:06:17
+ground beef,remove,6,2024-08-31 15:05:15
+grill brick,remove,2,2024-08-31 15:05:14
+gravy,remove,10,2024-08-31 15:06:12
+gloves vinyl,remove,8,2024-08-31 15:05:10
+gloves poly,remove,7,2024-08-31 15:05:08
+garlic aioli,remove,2,2024-08-31 15:05:06
+fries,remove,81,2024-08-31 15:05:02
+franks,remove,2,2024-08-31 15:05:01
+forks,remove,10,2024-08-31 15:04:59
+foil,remove,3,2024-08-31 15:04:57
+doritos,remove,3,2024-08-31 15:04:56
+eggs,remove,1,2024-08-31 15:04:55
+doritos,remove,1,2024-08-31 15:04:53
+dill,remove,1,2024-08-31 15:04:50
+cream,remove,1,2024-08-31 15:04:49
+corn,remove,19,2024-08-31 15:04:48
+coleslaw dressing,remove,6,2024-08-31 15:04:45
+coconut shred,remove,1,2024-08-31 15:04:44
+coconut shred,remove,1,2024-08-31 15:04:42
+clam chowder,remove,1,2024-08-31 15:04:40
+cilantro,remove,2,2024-08-31 15:04:39
+cholula,remove,1,2024-08-31 15:04:37
+chocolate,remove,1,2024-08-31 15:04:36
+chives,remove,1,2024-08-31 15:04:34
+chili,remove,1,2024-08-31 15:04:33
+chicken fingers,remove,11,2024-08-31 15:04:31
+cheese sliced br,remove,2,2024-08-31 15:04:29
+cheese sauce,remove,1,2024-08-31 15:04:27
+cheese ribbons,remove,3,2024-08-31 15:04:26
+cheese mozzarella,remove,4,2024-08-31 15:04:24
+cheese curds,remove,9,2024-08-31 15:04:22
+cheese cotija,remove,5,2024-08-31 15:04:21
+checkered basket,remove,2,2024-08-31 15:04:19
+cajun,remove,1,2024-08-31 15:04:18
+cabbage,remove,3,2024-08-31 15:04:17
+butter,remove,1,2024-08-31 15:04:16
+burger lettuce,remove,5,2024-08-31 15:04:12
+blueberry,remove,6,2024-08-31 15:04:08
+blueberry filling,remove,4,2024-08-31 15:04:07
+bleach,remove,2,2024-08-31 15:04:04
+beef burgers,remove,14,2024-08-31 15:04:03
+beans,remove,3,2024-08-31 15:04:01
+bean sprouts,remove,3,2024-08-31 15:04:00
+batter mix,remove,2,2024-08-31 15:03:59
+banana pepper,remove,2,2024-08-31 15:03:57
+banana,remove,1,2024-08-31 15:03:55
+bacon,remove,21,2024-08-31 15:03:54
+avacodo,remove,3,2024-08-31 15:03:52
+apple fritter,remove,10,2024-08-31 15:03:50
+red onions,remove,4,2024-08-31 15:03:49
+krispy kreme,remove,80,2024-08-31 15:03:47
+haddock fish,remove,17,2024-08-31 15:03:45
+chipotle sauce,remove,2,2024-08-31 15:03:43
+chipotle can,remove,3,2024-08-31 15:03:42
+belgian waffle,remove,1,2024-08-31 15:03:41
+bbq sauce dip,remove,7,2024-08-31 15:03:39
+9 ounce cups,remove,2,2024-08-31 15:03:36
+16 ounce cup,remove,3,2024-08-31 15:03:35
+#8,remove,3,2024-08-31 15:03:34
+200 savaday,remove,7,2024-08-31 15:03:33
+#2 trays,remove,2,2024-08-31 15:03:26
+#1,remove,6,2024-08-31 15:03:24
+kimchi,remove,3,2024-08-30 13:27:10
+strawberries,add,20,2024-08-30 12:35:35
+krispy kreme,add,10,2024-08-30 12:17:17
+softshell crab,add,2,2024-08-30 12:17:08
+strawberries,add,20,2024-08-30 12:01:32
+strawberries,remove,46,2024-08-30 12:01:31
+bbq sauce,remove,2,2024-08-30 11:42:22
+water,add,3,2024-08-30 11:31:40
+water,add,4,2024-08-30 11:31:39
+mayo,remove,1,2024-08-30 11:31:32
+salsa,add,2,2024-08-30 11:31:21
+water,remove,1,2024-08-30 11:30:20
+thunder chicken,remove,3,2024-08-30 11:29:27
+avacodo,remove,1,2024-08-30 11:29:21
+lobster,remove,6,2024-08-30 11:29:16
+cheese curds,add,7,2024-08-30 11:29:05
+hot dog,add,8,2024-08-30 11:28:58
+peameal bacon,add,5,2024-08-30 11:28:47
+ribeye,add,1,2024-08-30 11:28:41
+ground beef,add,3,2024-08-30 11:28:37
+bacon,add,11,2024-08-30 11:28:27
+bacon,add,7,2024-08-30 11:28:23
+pork,add,4,2024-08-30 11:28:17
+chicken fingers,remove,2,2024-08-30 11:28:10
+apple fritter,remove,3,2024-08-30 11:27:50
+beef burgers,add,8,2024-08-30 11:27:38
+beef burgers,remove,19,2024-08-30 11:27:34
+beef burgers,add,6,2024-08-30 11:27:34
+snowcrab,remove,2,2024-08-30 11:27:25
+peameal bacon,remove,2,2024-08-30 11:26:57
+ground beef,remove,4,2024-08-30 11:26:53
+ribeye,remove,2,2024-08-30 11:26:48
+cheese curds,remove,14,2024-08-30 11:26:44
+bacon,add,3,2024-08-30 11:26:37
+bacon,remove,30,2024-08-30 11:26:36
+hot dog,remove,8,2024-08-30 11:26:28
+pork,add,14,2024-08-30 11:26:24
+pork,remove,30,2024-08-30 11:26:23
+cream,remove,1,2024-08-30 11:24:49
+cilantro,remove,1,2024-08-30 11:24:21
+shredded cheese,remove,1,2024-08-30 11:24:14
+shredded lettuce,remove,1,2024-08-30 11:23:55
+cabbage,remove,1,2024-08-30 11:23:48
+tomato,add,1,2024-08-30 11:23:35
+red onions,add,2,2024-08-30 11:23:21
+red onions,remove,3,2024-08-30 11:23:14
+relish,remove,1,2024-08-30 11:22:58
+sauerkraut,remove,1,2024-08-30 11:22:47
+pico,remove,2,2024-08-30 11:22:41
+banana,remove,1,2024-08-30 11:22:19
+krispy kreme,remove,50,2024-08-30 11:22:13
+fries,add,1,2024-08-30 11:22:03
+fries,add,4,2024-08-30 11:22:01
+fries,add,4,2024-08-30 11:22:01
+fries,add,4,2024-08-30 11:21:56
+fries,add,4,2024-08-30 11:21:55
+fries,add,6,2024-08-30 11:21:54
+fries,add,4,2024-08-30 11:21:52
+fries,add,4,2024-08-30 11:21:50
+fries,add,50,2024-08-30 11:21:46
+fries,remove,190,2024-08-30 11:21:45
+corn,remove,11,2024-08-30 11:21:29
+lemon juice,remove,1,2024-08-30 11:20:10
+oil,add,1,2024-08-30 11:19:45
+oil,add,12,2024-08-30 11:19:44
+oil,remove,25,2024-08-30 11:19:43
+ketchup squeezed,remove,1,2024-08-30 11:18:28
+#1,remove,2,2024-08-30 11:18:20
+tortilla,remove,1,2024-08-30 11:17:57
+chipotle sauce,remove,1,2024-08-30 11:17:38
+jalapeno,remove,1,2024-08-30 11:17:33
+teriyaki,remove,1,2024-08-30 11:17:22
+cheese sauce,remove,1,2024-08-30 11:17:14
+ketchup,remove,1,2024-08-30 11:17:09
+#2 trays,remove,1,2024-08-30 11:16:39
+gloves vinyl,remove,1,2024-08-30 11:16:05
+banana,add,2,2024-08-29 12:43:53
+lobster,add,6,2024-08-29 12:43:03
+lobster,add,2,2024-08-29 12:43:00
+lobster,add,6,2024-08-29 12:42:57
+lobster,add,1,2024-08-29 12:42:57
+thunder chicken,add,5,2024-08-29 12:42:51
+avacodo,add,4,2024-08-29 12:42:43
+beef burgers,add,6,2024-08-29 12:42:35
+cheese curds,add,9,2024-08-29 12:42:26
+peameal bacon,add,4,2024-08-29 12:42:18
+ribeye,add,2,2024-08-29 12:42:13
+ground beef,add,5,2024-08-29 12:42:09
+hot dog,add,6,2024-08-29 12:42:00
+bacon,add,5,2024-08-29 12:41:51
+ramen burger,add,13,2024-08-29 12:41:42
+pork,add,20,2024-08-29 12:41:18
+bacon,add,6,2024-08-29 12:41:09
+bacon,add,10,2024-08-29 12:41:05
+clam chowder,add,1,2024-08-29 12:40:55
+chili,add,1,2024-08-29 12:40:52
+shrimp,add,2,2024-08-29 12:40:48
+chicken fingers,add,4,2024-08-29 12:40:42
+blueberry,add,6,2024-08-29 12:40:33
+haddock fish,add,6,2024-08-29 12:40:26
+apple fritter,add,13,2024-08-29 12:40:20
+chicken fingers,add,9,2024-08-29 12:40:11
+beef burgers,add,6,2024-08-29 12:40:04
+beef burgers,add,7,2024-08-29 12:40:03
+snowcrab,add,3,2024-08-29 12:39:48
+cheese curds,add,5,2024-08-29 12:39:42
+haddock fish,add,8,2024-08-29 12:39:32
+haddock fish,add,3,2024-08-29 12:39:30
+burger lettuce,add,1,2024-08-29 12:39:01
+ribeye,add,1,2024-08-29 12:38:54
+cheese curds,add,2,2024-08-29 12:38:50
+ground beef,add,2,2024-08-29 12:38:45
+bacon,add,9,2024-08-29 12:38:39
+hot dog,add,3,2024-08-29 12:38:28
+pork,add,10,2024-08-29 12:38:21
+whip cream,add,3,2024-08-29 12:36:54
+whip cream,remove,1,2024-08-29 12:36:54
+tomato,add,4,2024-08-29 12:36:48
+strawberries,add,6,2024-08-29 12:36:34
+strawberries,add,6,2024-08-29 12:36:33
+strawberries,add,4,2024-08-29 12:36:31
+strawberries,add,30,2024-08-29 12:36:27
+sour cream,add,6,2024-08-29 12:36:24
+shredded lettuce,add,1,2024-08-29 12:36:10
+shredded lettuce,add,3,2024-08-29 12:36:06
+shredded cheese,add,2,2024-08-29 12:35:54
+relish,add,3,2024-08-29 12:35:48
+red cabbage,add,4,2024-08-29 12:35:39
+pico,add,3,2024-08-29 12:35:35
+pickles,add,2,2024-08-29 12:35:30
+kimchi,add,3,2024-08-29 12:35:11
+bean sprouts,add,1,2024-08-29 12:34:42
+fries,add,4,2024-08-29 12:34:15
+fries,add,4,2024-08-29 12:34:15
+fries,add,4,2024-08-29 12:34:14
+fries,add,4,2024-08-29 12:34:14
+fries,add,3,2024-08-29 12:34:11
+fries,add,4,2024-08-29 12:34:05
+fries,add,4,2024-08-29 12:34:02
+fries,add,40,2024-08-29 12:34:00
+fries,add,40,2024-08-29 12:33:57
+fries,add,8,2024-08-29 12:33:35
+fries,add,12,2024-08-29 12:33:33
+fries,add,3,2024-08-29 12:33:31
+fries,add,60,2024-08-29 12:33:27
+eggs,add,1,2024-08-29 12:33:19
+dill,add,1,2024-08-29 12:33:16
+cream,add,2,2024-08-29 12:33:09
+corn,add,3,2024-08-29 12:33:01
+corn,remove,3,2024-08-29 12:32:59
+corn,add,30,2024-08-29 12:32:57
+cilantro,add,3,2024-08-29 12:32:50
+chocolate,add,1,2024-08-29 12:32:33
+chives,add,1,2024-08-29 12:32:23
+cheese sliced br,add,2,2024-08-29 12:32:15
+cheese ribbons,add,3,2024-08-29 12:32:13
+cheese mozzarella,add,4,2024-08-29 12:32:07
+cheese cotija,add,5,2024-08-29 12:32:00
+cabbage,add,4,2024-08-29 12:31:48
+butter,add,1,2024-08-29 12:31:41
+burger lettuce,add,4,2024-08-29 12:31:36
+bean sprouts,add,2,2024-08-29 12:30:42
+red onions,add,5,2024-08-29 12:30:35
+krispy kreme,add,120,2024-08-29 12:30:08
+tortilla,add,2,2024-08-29 12:22:23
+teriyaki,remove,1,2024-08-29 12:18:17
+salt box,remove,1,2024-08-29 12:17:54
+salsa,remove,2,2024-08-29 12:17:52
+paper towels,remove,1,2024-08-29 12:17:09
+water,remove,9,2024-08-29 12:17:03
+mayo,remove,2,2024-08-29 12:16:58
+pot pan detergent,remove,6,2024-08-29 12:16:42
+paper towels,remove,1,2024-08-29 12:16:09
+oil,add,25,2024-08-29 12:15:55
+oil,remove,37,2024-08-29 12:15:39
+napkins,remove,4,2024-08-29 12:15:36
+gravy,remove,19,2024-08-29 12:14:49
+forks,remove,8,2024-08-29 12:13:59
+doritos,remove,7,2024-08-29 12:13:07
+beans,remove,1,2024-08-29 12:12:15
+belgian waffle,remove,1,2024-08-29 12:11:51
+bbq sauce dip,remove,2,2024-08-29 12:11:32
+16 ounce cup,remove,1,2024-08-29 12:11:08
+#8,remove,3,2024-08-29 12:11:00
+#1,remove,2,2024-08-29 12:10:36
+teriyaki,add,3,2024-08-28 11:52:56
+water,add,20,2024-08-28 11:50:43
+water,add,5,2024-08-28 11:50:39
+water,remove,21,2024-08-28 11:50:38
+whip cream,remove,3,2024-08-28 11:50:22
+tortilla,remove,2,2024-08-28 11:50:15
+tomato,remove,3,2024-08-28 11:50:14
+thunder chicken,remove,16,2024-08-28 11:50:13
+teriyaki,remove,3,2024-08-28 11:50:10
+tajin,remove,1,2024-08-28 11:49:42
+strawberries,remove,18,2024-08-28 11:49:33
+sour cream,remove,7,2024-08-28 11:49:31
+softshell crab,remove,2,2024-08-28 11:49:29
+snowcrab,remove,4,2024-08-28 11:49:28
+shrimp,remove,11,2024-08-28 11:49:22
+shredded lettuce,remove,4,2024-08-28 11:49:19
+shredded cheese,remove,3,2024-08-28 11:49:18
+jalapeno,remove,1,2024-08-28 11:49:02
+salsa,remove,3,2024-08-28 11:48:57
+ribeye,remove,4,2024-08-28 11:48:43
+relish,remove,3,2024-08-28 11:48:42
+red cabbage,remove,4,2024-08-28 11:48:41
+ramen burger,remove,2,2024-08-28 11:48:37
+pot pan detergent,add,2,2024-08-28 11:48:34
+pork,remove,38,2024-08-28 11:48:32
+plumsauce,remove,1,2024-08-28 11:48:28
+pineapple,add,2,2024-08-28 11:48:22
+pico,remove,6,2024-08-28 11:48:18
+pickles,remove,4,2024-08-28 11:48:16
+peameal bacon,remove,12,2024-08-28 11:48:14
+paper towels,remove,1,2024-08-28 11:48:13
+pancake waffle,remove,1,2024-08-28 11:48:06
+old bay,remove,6,2024-08-28 11:48:02
+oil,add,5,2024-08-28 11:47:50
+oil,add,1,2024-08-28 11:47:44
+oil,add,1,2024-08-28 11:47:43
+oil,add,9,2024-08-28 11:47:41
+oil,add,9,2024-08-28 11:47:39
+oil,add,12,2024-08-28 11:47:35
+oil,remove,24,2024-08-28 11:47:34
+mustard,add,1,2024-08-28 11:47:19
+lobster,remove,10,2024-08-28 11:47:14
+kimchi,remove,7,2024-08-28 11:47:01
+ketchup squeezed,remove,2,2024-08-28 11:47:00
+ketchup,remove,1,2024-08-28 11:46:53
+hot dog,remove,18,2024-08-28 11:46:42
+hoisin,remove,1,2024-08-28 11:46:40
+hand soap,remove,1,2024-08-28 11:46:33
+ground beef,remove,10,2024-08-28 11:46:30
+gravy,add,9,2024-08-28 11:46:24
+gloves vinyl,remove,1,2024-08-28 11:46:19
+gloves poly,remove,1,2024-08-28 11:46:14
+garlic aioli,remove,2,2024-08-28 11:45:06
+fries,remove,160,2024-08-28 11:46:03
+franks,remove,2,2024-08-28 11:45:01
+forks,add,8,2024-08-28 11:45:58
+eggs,remove,3,2024-08-28 11:45:46
+dill,remove,1,2024-08-28 11:45:42
+cream,remove,2,2024-08-28 11:45:41
+corn,remove,25,2024-08-28 11:45:40
+clam chowder,remove,2,2024-08-28 11:45:32
+cilantro,remove,3,2024-08-28 11:45:29
+ciabatta,remove,3,2024-08-28 11:45:28
+chocolate,remove,5,2024-08-28 11:45:20
+chives,remove,1,2024-08-28 11:45:19
+chili,remove,2,2024-08-28 11:45:16
+chicken fingers,remove,19,2024-08-28 11:45:14
+cheese sliced br,remove,3,2024-08-28 11:45:13
+cheese sauce,remove,1,2024-08-28 11:45:11
+cheese mozzarella,remove,5,2024-08-28 11:45:07
+cheese ribbons,remove,4,2024-08-28 11:45:07
+cheese curds,remove,30,2024-08-28 11:45:04
+cheese cotija,remove,5,2024-08-28 11:45:02
+checkered basket,remove,1,2024-08-28 11:45:00
+cajun,remove,1,2024-08-28 11:44:57
+cabbage,remove,3,2024-08-28 11:44:52
+butter,remove,2,2024-08-28 11:44:51
+burger lettuce,remove,6,2024-08-28 11:44:48
+blueberry,remove,7,2024-08-28 11:44:45
+bleach,add,1,2024-08-28 11:44:41
+beef burgers,remove,30,2024-08-28 11:44:37
+bean sprouts,remove,3,2024-08-28 11:44:32
+banana pepper,remove,1,2024-08-28 11:44:29
+bacon,remove,24,2024-08-28 11:44:21
+avacodo,remove,8,2024-08-28 11:44:20
+red onions,remove,4,2024-08-28 11:44:17
+krispy kreme,remove,110,2024-08-28 11:44:15
+haddock fish,remove,20,2024-08-28 11:44:14
+16 ounce cup,add,1,2024-08-28 11:43:39
+#8,remove,1,2024-08-28 11:43:27
+#1,remove,3,2024-08-28 11:43:23
+napkins,remove,1,2024-08-28 11:43:16
+mayo,remove,1,2024-08-27 12:01:01
+water,add,9,2024-08-27 12:00:56
+water,add,12,2024-08-27 12:00:53
+water,remove,30,2024-08-27 12:00:52
+pineapple,remove,1,2024-08-27 12:00:27
+oil,add,18,2024-08-27 11:59:54
+oil,add,1,2024-08-27 11:59:54
+oil,add,2,2024-08-27 11:59:49
+oil,add,3,2024-08-27 11:59:48
+oil,remove,28,2024-08-27 11:59:47
+salt box,add,1,2024-08-27 11:59:35
+paper towels,remove,1,2024-08-27 11:59:11
+#8,remove,4,2024-08-27 11:58:53
+#1,remove,1,2024-08-27 11:58:45
+napkins,remove,1,2024-08-27 11:58:40
+16 ounce cup,remove,1,2024-08-27 11:58:27
+checkered basket,remove,1,2024-08-27 11:58:04
+#2 trays,remove,1,2024-08-27 11:56:15
+gloves vinyl,remove,1,2024-08-27 11:56:27
+forks,remove,4,2024-08-27 11:55:19
+mustard,add,3,2024-08-27 11:55:01
+mustard,remove,1,2024-08-27 11:55:00
+ribeye,remove,1,2024-08-26 10:58:09
+avacodo,add,8,2024-08-26 10:57:55
+lobster,add,10,2024-08-26 10:57:48
+thunder chicken,add,16,2024-08-26 10:57:41
+cheese curds,add,11,2024-08-26 10:57:29
+ground beef,add,6,2024-08-26 10:57:21
+ribeye,add,4,2024-08-26 10:57:15
+peameal bacon,add,9,2024-08-26 10:57:11
+ramen burger,add,2,2024-08-26 10:57:04
+hot dog,add,12,2024-08-26 10:56:58
+hot dog,add,4,2024-08-26 10:56:49
+blueberry,add,2,2024-08-26 10:56:40
+bacon,add,5,2024-08-26 10:56:35
+beef burgers,add,24,2024-08-26 10:56:16
+bacon,add,10,2024-08-26 10:55:42
+beef burgers,add,6,2024-08-26 10:55:33
+pork,add,2,2024-08-26 10:55:23
+pork,add,18,2024-08-26 10:55:21
+blueberry,add,5,2024-08-26 10:55:09
+cheese curds,add,9,2024-08-26 10:54:44
+snowcrab,add,4,2024-08-26 10:54:36
+softshell crab,add,2,2024-08-26 10:54:29
+chicken fingers,add,3,2024-08-26 10:54:19
+chicken fingers,add,16,2024-08-26 10:54:17
+shrimp,add,11,2024-08-26 10:53:57
+chili,remove,1,2024-08-26 10:53:43
+clam chowder,add,2,2024-08-26 10:53:35
+bacon,add,9,2024-08-26 10:52:58
+ground beef,add,4,2024-08-26 10:52:49
+ribeye,add,1,2024-08-26 10:52:44
+hot dog,add,2,2024-08-26 10:52:37
+peameal bacon,add,3,2024-08-26 10:52:32
+pork,add,18,2024-08-26 10:52:26
+cheese curds,add,10,2024-08-26 10:52:13
+chicken fingers,remove,15,2024-08-26 10:51:28
+cheese curds,remove,24,2024-08-26 10:51:23
+blueberry,remove,7,2024-08-26 10:51:15
+beef burgers,remove,8,2024-08-26 10:51:11
+bacon,remove,26,2024-08-26 10:51:04
+avacodo,remove,10,2024-08-26 10:51:01
+apple fritter,remove,40,2024-08-26 10:50:57
+whip cream,add,3,2024-08-26 10:50:44
+tomato,remove,3,2024-08-26 10:50:27
+thunder chicken,remove,16,2024-08-26 10:50:21
+strawberries,add,4,2024-08-26 10:50:10
+strawberries,add,6,2024-08-26 10:50:08
+strawberries,add,8,2024-08-26 10:50:05
+strawberries,remove,34,2024-08-26 10:50:01
+sour cream,remove,1,2024-08-26 10:49:58
+softshell crab,remove,4,2024-08-26 10:49:52
+snowcrab,remove,5,2024-08-26 10:49:51
+shrimp,remove,10,2024-08-26 10:49:45
+shredded lettuce,add,2,2024-08-26 10:49:41
+shredded cheese,add,1,2024-08-26 10:49:35
+ribeye,remove,5,2024-08-26 10:49:28
+relish,add,2,2024-08-26 10:49:24
+ramen burger,remove,3,2024-08-26 10:49:12
+pork,remove,38,2024-08-26 10:49:07
+pickles,add,2,2024-08-26 10:48:59
+peameal bacon,remove,13,2024-08-26 10:48:55
+lobster,remove,7,2024-08-26 10:48:42
+hot dog,remove,3,2024-08-26 10:48:23
+ground beef,remove,3,2024-08-26 10:48:20
+green onion,remove,1,2024-08-26 10:48:17
+fries,add,70,2024-08-26 10:47:47
+corn,remove,20,2024-08-26 10:47:29
+ciabatta,add,2,2024-08-26 10:47:19
+chocolate,add,2,2024-08-26 10:47:07
+chocolate,remove,1,2024-08-26 10:47:01
+cheese sliced br,add,3,2024-08-26 10:46:29
+cheese ribbons,add,4,2024-08-26 10:46:19
+cabbage,remove,1,2024-08-26 10:45:38
+bean sprouts,add,1,2024-08-26 10:45:23
+krispy kreme,add,110,2024-08-26 10:44:31
+krispy kreme,remove,120,2024-08-26 10:43:48
+water,add,13,2024-08-26 10:41:52
+vinegar,add,1,2024-08-26 10:41:08
+tortilla,add,3,2024-08-26 10:41:03
+saran wrap,remove,2,2024-08-26 10:40:28
+salsa,add,2,2024-08-26 10:40:09
+plumsauce,remove,1,2024-08-26 10:39:48
+pineapple,add,1,2024-08-26 10:39:42
+paper towels,add,5,2024-08-26 10:39:37
+chipotle can,add,1,2024-08-26 10:39:22
+oil,add,4,2024-08-26 10:39:10
+oil,add,8,2024-08-26 10:39:08
+oil,add,4,2024-08-26 10:39:00
+napkins,add,5,2024-08-26 10:38:38
+mustard,remove,2,2024-08-26 10:38:21
+mayo,add,2,2024-08-26 10:38:18
+ketchup,remove,1,2024-08-26 10:38:02
+jalapeno,remove,1,2024-08-26 10:37:55
+hoisin,add,3,2024-08-26 10:37:43
+gravy,remove,12,2024-08-26 10:37:26
+gloves vinyl,add,2,2024-08-26 10:37:21
+gloves poly,add,2,2024-08-26 10:37:16
+foil,add,3,2024-08-26 10:36:42
+cholula,add,1,2024-08-26 10:36:21
+checkered basket,add,3,2024-08-26 10:36:10
+bleach,remove,4,2024-08-26 10:35:53
+beans,add,2,2024-08-26 10:35:42
+batter mix,add,1,2024-08-26 10:35:38
+bbq sauce,remove,2,2024-08-26 10:35:19
+16 ounce cup,add,2,2024-08-26 10:35:05
+#2 trays,remove,1,2024-08-26 10:34:47
+#8,add,9,2024-08-26 10:34:38
+#1,remove,3,2024-08-26 10:34:30
+paper towels,remove,1,2024-08-25 11:24:49
+#8,remove,1,2024-08-25 11:24:40
+ramen burger,remove,1,2024-08-25 11:21:03
+ramen burger,remove,1,2024-08-25 11:18:51
+limes,remove,1,2024-08-25 11:18:23
+clam chowder,remove,2,2024-08-25 11:17:57
+thunder chicken,remove,2,2024-08-25 11:16:28
+lobster,remove,2,2024-08-25 11:16:18
+avacodo,add,5,2024-08-25 11:16:13
+cheese curds,add,6,2024-08-25 11:16:07
+cheese curds,add,9,2024-08-25 11:16:57
+ground beef,add,3,2024-08-25 11:15:43
+ground beef,remove,2,2024-08-25 11:15:41
+ground beef,remove,2,2024-08-25 11:15:36
+ribeye,add,4,2024-08-25 11:15:31
+peameal bacon,add,11,2024-08-25 11:15:24
+bacon,add,8,2024-08-25 11:15:10
+bacon,add,12,2024-08-25 11:15:02
+pork,add,6,2024-08-25 11:14:54
+pork,add,18,2024-08-25 11:14:48
+chicken fingers,add,10,2024-08-25 11:14:25
+beef burgers,add,8,2024-08-25 11:14:16
+beef burgers,remove,27,2024-08-25 11:14:15
+cheese curds,add,2,2024-08-25 11:13:58
+chicken fingers,remove,4,2024-08-25 11:13:45
+chili,add,2,2024-08-25 11:13:36
+shrimp,add,4,2024-08-25 11:13:31
+snowcrab,add,5,2024-08-25 11:13:08
+softshell crab,add,4,2024-08-25 11:13:02
+haddock fish,add,7,2024-08-25 11:12:56
+cheese sliced br,remove,1,2024-08-25 11:11:02
+cheese ribbons,remove,5,2024-08-25 11:10:58
+red onions,remove,1,2024-08-25 11:10:46
+red cabbage,remove,1,2024-08-25 11:10:40
+green onion,remove,1,2024-08-25 11:10:35
+tomato,remove,2,2024-08-25 11:10:31
+bean sprouts,remove,6,2024-08-25 11:10:21
+chocolate,remove,1,2024-08-25 11:09:57
+cheese cotija,remove,1,2024-08-25 11:09:26
+butter,add,2,2024-08-25 11:09:15
+shredded cheese,remove,1,2024-08-25 11:09:07
+cabbage,remove,3,2024-08-25 11:08:50
+eggs,remove,1,2024-08-25 11:08:43
+burger lettuce,remove,1,2024-08-25 11:08:38
+pico,remove,3,2024-08-25 11:08:29
+sour cream,remove,2,2024-08-25 11:08:24
+pickles,remove,1,2024-08-25 11:08:16
+relish,remove,1,2024-08-25 11:08:11
+ground beef,remove,4,2024-08-25 11:08:01
+ribeye,remove,6,2024-08-25 11:07:54
+bacon,add,6,2024-08-25 11:07:49
+bacon,remove,24,2024-08-25 11:07:48
+pork,remove,45,2024-08-25 11:07:41
+pork,add,14,2024-08-25 11:07:41
+peameal bacon,add,2,2024-08-25 11:07:31
+peameal bacon,remove,18,2024-08-25 11:07:30
+hot dog,add,3,2024-08-25 11:07:22
+hot dog,remove,20,2024-08-25 11:07:21
+cheese curds,remove,29,2024-08-25 11:07:12
+cheese curds,add,7,2024-08-25 11:07:12
+ciabatta,remove,1,2024-08-25 11:07:03
+fries,add,2,2024-08-25 11:06:52
+fries,add,10,2024-08-25 11:06:51
+fries,add,12,2024-08-25 11:06:45
+fries,add,14,2024-08-25 11:06:40
+fries,add,14,2024-08-25 11:06:38
+fries,add,14,2024-08-25 11:06:36
+fries,add,10,2024-08-25 11:06:26
+fries,remove,185,2024-08-25 11:06:22
+fries,add,14,2024-08-25 11:06:22
+krispy kreme,add,2,2024-08-25 11:06:03
+krispy kreme,add,90,2024-08-25 11:06:02
+krispy kreme,add,28,2024-08-25 11:05:48
+krispy kreme,remove,65,2024-08-25 11:05:44
+strawberries,add,4,2024-08-25 11:05:34
+strawberries,add,6,2024-08-25 11:05:32
+strawberries,add,8,2024-08-25 11:05:30
+corn,remove,2,2024-08-25 11:05:19
+corn,add,17,2024-08-25 11:06:17
+corn,add,30,2024-08-25 11:06:12
+corn,remove,13,2024-08-25 11:05:11
+belgian waffle,remove,1,2024-08-25 10:57:22
+water,remove,4,2024-08-25 10:57:12
+tortilla,remove,1,2024-08-25 10:57:02
+water,add,9,2024-08-25 10:50:49
+water,add,12,2024-08-25 10:50:47
+water,remove,30,2024-08-25 10:50:46
+mayo,remove,8,2024-08-25 10:50:36
+mayo,add,8,2024-08-25 10:50:34
+mayo,remove,2,2024-08-25 10:50:25
+vinegar,remove,1,2024-08-25 10:49:48
+tortilla,remove,1,2024-08-25 10:49:38
+sugar,add,1,2024-08-25 10:48:15
+salsa,remove,4,2024-08-25 10:47:49
+pot pan detergent,add,4,2024-08-25 10:47:06
+plumsauce,add,1,2024-08-25 10:46:54
+pineapple,remove,1,2024-08-25 10:46:41
+paper towels,remove,3,2024-08-25 10:46:35
+oil,add,12,2024-08-25 10:46:19
+oil,remove,27,2024-08-25 10:46:18
+napkins,remove,1,2024-08-25 10:46:09
+lemon juice,add,2,2024-08-25 10:45:45
+lime juice,add,2,2024-08-25 10:45:35
+ketchup squeezed,add,3,2024-08-25 10:45:23
+jalapeno,add,1,2024-08-25 10:45:14
+hoisin,add,4,2024-08-25 10:45:03
+grill brick,remove,1,2024-08-25 10:44:45
+gravy,remove,2,2024-08-25 10:44:36
+gravy,add,13,2024-08-25 10:44:34
+gravy,add,21,2024-08-25 10:44:33
+gravy,remove,128,2024-08-25 10:44:32
+gravy,add,64,2024-08-25 10:44:28
+gravy,add,43,2024-08-25 10:44:26
+gravy,add,21,2024-08-25 10:44:20
+gravy,remove,34,2024-08-25 10:44:19
+gloves vinyl,remove,3,2024-08-25 10:44:07
+gloves poly,remove,2,2024-08-25 10:44:01
+franks,add,1,2024-08-25 10:43:52
+forks,add,14,2024-08-25 10:43:43
+forks,remove,26,2024-08-25 10:43:42
+foil,remove,1,2024-08-25 10:43:23
+doritos,remove,6,2024-08-25 10:43:11
+coleslaw dressing,remove,1,2024-08-25 10:42:48
+cheese sauce,add,2,2024-08-25 10:42:23
+checkered basket,remove,2,2024-08-25 10:42:03
+bleach,add,3,2024-08-25 10:41:42
+beans,remove,2,2024-08-25 10:41:26
+batter mix,remove,1,2024-08-25 10:41:18
+belgian waffle,add,3,2024-08-25 10:40:50
+bbq sauce,add,1,2024-08-25 10:40:42
+bbq sauce dip,add,4,2024-08-25 10:40:35
+16 ounce cup,remove,1,2024-08-25 10:40:15
+#2 trays,remove,1,2024-08-25 10:40:03
+#8,remove,10,2024-08-25 10:39:35
+#1,add,3,2024-08-25 10:39:20
+#1,add,3,2024-08-25 10:39:11
+lobster,add,9,2024-08-24 20:58:45
+chocolate,remove,3,2024-08-24 20:57:48
+ciabatta,remove,6,2024-08-24 20:57:31
+whip cream,remove,2,2024-08-24 17:47:51
+softshell crab,remove,2,2024-08-23 10:20:23
+snowcrab,remove,1,2024-08-23 10:20:13
+lobster,remove,8,2024-08-23 10:17:48
+jalapeno,remove,1,2024-08-23 10:16:58
+mayo,add,1,2024-08-23 09:27:44
+water,add,10,2024-08-23 09:19:53
+oil,add,15,2024-08-23 09:17:39
+ketchup squeezed,add,7,2024-08-23 09:17:30
+forks,add,10,2024-08-23 09:17:12
+water,add,20,2024-08-23 09:16:41
+water,remove,12,2024-08-23 09:16:40
+tortilla,remove,1,2024-08-23 09:15:33
+old bay,add,6,2024-08-23 09:14:02
+old bay,remove,1,2024-08-23 09:13:58
+oil,add,12,2024-08-23 09:13:48
+oil,remove,21,2024-08-23 09:13:46
+mustard,remove,1,2024-08-23 09:13:23
+ketchup,remove,2,2024-08-23 09:13:03
+hoisin,remove,1,2024-08-23 09:12:49
+grill brick,remove,1,2024-08-23 09:12:33
+gravy,add,13,2024-08-23 09:12:16
+gravy,add,21,2024-08-23 09:12:09
+gravy,remove,34,2024-08-23 09:12:08
+gloves vinyl,remove,1,2024-08-23 09:11:55
+franks,remove,1,2024-08-23 09:11:38
+dish soap,add,2,2024-08-23 09:11:15
+beans,remove,3,2024-08-23 09:09:52
+chipotle sauce,remove,1,2024-08-23 09:09:37
+belgian waffle,remove,1,2024-08-23 09:09:26
+bbq sauce,remove,1,2024-08-23 09:08:46
+#1,remove,8,2024-08-23 09:07:53
+#1,remove,1,2024-08-23 09:07:45
+ciabatta,add,4,2024-08-23 09:07:04
+beef burgers,add,15,2024-08-23 09:06:55
+chocolate,add,5,2024-08-23 09:06:45
+chicken fingers,add,5,2024-08-23 09:06:40
+relish,add,2,2024-08-23 09:06:33
+salsa,add,3,2024-08-23 09:06:17
+doritos,add,10,2024-08-23 09:06:06
+cheese curds,add,10,2024-08-23 09:06:00
+fries,add,120,2024-08-23 09:05:54
+shredded cheese,add,1,2024-08-23 09:05:47
+vinegar,add,2,2024-08-23 09:05:32
+old bay,add,1,2024-08-23 09:05:26
+cajun,add,2,2024-08-23 09:05:21
+pineapple,add,2,2024-08-23 09:05:16
+chipotle can,add,1,2024-08-23 09:04:48
+mayo,add,3,2024-08-23 09:04:36
+clam chowder,add,1,2024-08-23 09:04:29
+haddock fish,add,5,2024-08-23 09:04:24
+pico,add,5,2024-08-23 09:04:20
+peameal bacon,add,16,2024-08-23 09:02:50
+beef burgers,add,12,2024-08-23 09:02:33
+beef burgers,remove,15,2024-08-23 09:02:32
+cheese curds,add,9,2024-08-23 09:02:15
+chicken fingers,add,1,2024-08-23 09:01:57
+bacon,add,5,2024-08-23 09:01:31
+bacon,add,12,2024-08-23 09:01:24
+chili,remove,1,2024-08-23 09:01:13
+shrimp,remove,4,2024-08-23 09:01:04
+chicken fingers,remove,4,2024-08-23 09:00:57
+pork,add,4,2024-08-23 09:00:38
+pork,add,25,2024-08-23 09:00:34
+hot dog,add,18,2024-08-23 09:00:07
+ramen burger,remove,1,2024-08-23 08:59:56
+thunder chicken,remove,5,2024-08-23 08:59:34
+cheese curds,add,6,2024-08-23 08:59:25
+ribeye,add,6,2024-08-23 08:59:18
+ground beef,add,4,2024-08-23 08:59:12
+krispy kreme,add,65,2024-08-23 08:58:47
+krispy kreme,remove,126,2024-08-23 08:58:46
+shredded lettuce,remove,1,2024-08-23 08:58:20
+butter,remove,1,2024-08-23 08:57:54
+cheese cotija,remove,1,2024-08-23 08:57:42
+burger lettuce,remove,1,2024-08-23 08:57:16
+limes,remove,1,2024-08-23 08:57:09
+pico,remove,1,2024-08-23 08:56:59
+strawberries,add,16,2024-08-23 08:56:09
+strawberries,remove,28,2024-08-23 08:56:08
+red cabbage,remove,1,2024-08-23 08:55:58
+bacon,add,4,2024-08-23 08:55:47
+ribeye,remove,6,2024-08-23 08:55:33
+peameal bacon,remove,19,2024-08-23 08:55:21
+peameal bacon,add,2,2024-08-23 08:55:21
+bacon,add,3,2024-08-23 08:55:17
+bacon,remove,30,2024-08-23 08:55:16
+ground beef,remove,5,2024-08-23 08:55:00
+cheese curds,add,4,2024-08-23 08:54:52
+cheese curds,remove,27,2024-08-23 08:54:51
+pork,add,16,2024-08-23 08:54:43
+pork,remove,63,2024-08-23 08:54:42
+hot dog,remove,25,2024-08-23 08:54:31
+hot dog,add,2,2024-08-23 08:54:31
+fries,add,30,2024-08-23 08:54:08
+fries,add,35,2024-08-23 08:53:50
+fries,remove,107,2024-08-23 08:53:49
+shredded lettuce,remove,1,2024-08-23 08:53:34
+corn,add,1,2024-08-23 08:53:23
+sugar,remove,1,2024-08-22 10:52:50
+cheese curds,add,10,2024-08-22 10:50:52
+pork,add,15,2024-08-22 10:48:19
+softshell crab,remove,1,2024-08-22 10:38:17
+ramen burger,remove,1,2024-08-22 10:37:53
+lobster,add,4,2024-08-22 10:37:38
+blueberry,add,2,2024-08-22 10:37:22
+thunder chicken,add,12,2024-08-22 10:37:11
+thunder chicken,add,11,2024-08-22 10:37:07
+thunder chicken,remove,47,2024-08-22 10:37:06
+cheese curds,add,14,2024-08-22 10:36:54
+beef burgers,remove,10,2024-08-22 10:36:36
+blueberry,add,3,2024-08-22 10:36:11
+peameal bacon,add,7,2024-08-22 10:36:01
+ribeye,add,6,2024-08-22 10:35:52
+ground beef,add,8,2024-08-22 10:35:45
+pork,add,9,2024-08-22 10:35:31
+pork,add,10,2024-08-22 10:35:14
+pork,add,16,2024-08-22 10:35:10
+bacon,add,13,2024-08-22 10:34:52
+avacodo,remove,2,2024-08-22 10:34:36
+chili,add,1,2024-08-22 10:34:20
+shrimp,add,6,2024-08-22 10:34:15
+chicken fingers,remove,3,2024-08-22 10:34:00
+haddock fish,remove,2,2024-08-22 10:33:48
+tomato,remove,1,2024-08-22 10:33:14
+red onions,add,4,2024-08-22 10:33:00
+red onions,remove,2,2024-08-22 10:32:58
+green onion,remove,1,2024-08-22 10:32:46
+limes,remove,2,2024-08-22 10:32:35
+pico,remove,2,2024-08-22 10:32:29
+pickles,remove,1,2024-08-22 10:32:22
+relish,remove,1,2024-08-22 10:32:17
+sour cream,remove,2,2024-08-22 10:32:07
+mayo,remove,3,2024-08-22 10:31:59
+chocolate,remove,2,2024-08-22 10:31:34
+burger lettuce,add,4,2024-08-22 10:31:27
+kimchi,add,7,2024-08-22 10:31:20
+eggs,remove,1,2024-08-22 10:31:13
+shredded cheese,add,1,2024-08-22 10:30:49
+butter,add,1,2024-08-22 10:30:37
+cilantro,remove,1,2024-08-22 10:30:26
+burger lettuce,add,1,2024-08-22 10:30:07
+cabbage,remove,1,2024-08-22 10:29:47
+burger lettuce,remove,5,2024-08-22 10:29:32
+red cabbage,remove,3,2024-08-22 10:29:08
+strawberries,add,7,2024-08-22 10:29:00
+ground beef,add,1,2024-08-22 10:28:31
+ground beef,remove,32,2024-08-22 10:28:30
+ground beef,add,16,2024-08-22 10:28:27
+ribeye,add,1,2024-08-22 10:28:22
+ribeye,remove,7,2024-08-22 10:28:21
+bacon,add,7,2024-08-22 10:28:15
+bacon,add,10,2024-08-22 10:28:10
+bacon,remove,25,2024-08-22 10:28:08
+cheese curds,add,3,2024-08-22 10:28:01
+cheese curds,remove,24,2024-08-22 10:28:00
+pork,add,13,2024-08-22 10:27:52
+pork,remove,56,2024-08-22 10:27:51
+peameal bacon,add,2,2024-08-22 10:27:38
+krispy kreme,add,106,2024-08-22 10:27:16
+ciabatta,remove,5,2024-08-22 10:26:26
+fries,add,25,2024-08-22 10:25:59
+fries,add,60,2024-08-22 10:25:56
+fries,add,22,2024-08-22 10:25:54
+fries,remove,120,2024-08-22 10:25:50
+water,add,12,2024-08-22 10:23:51
+water,remove,26,2024-08-22 10:23:50
+200 savaday,add,4,2024-08-22 10:23:05
+coleslaw dressing,remove,1,2024-08-22 10:22:56
+chipotle sauce,add,3,2024-08-22 10:22:32
+lemon juice,remove,1,2024-08-22 10:22:11
+bbq sauce,remove,3,2024-08-22 10:21:30
+gloves vinyl,remove,4,2024-08-22 10:20:26
+forks,remove,4,2024-08-22 10:20:12
+mustard,remove,4,2024-08-22 10:19:58
+foil,add,1,2024-08-22 10:19:50
+saran wrap,remove,1,2024-08-22 10:19:46
+banana pepper,remove,1,2024-08-22 10:19:16
+plumsauce,remove,1,2024-08-22 10:18:59
+chipotle can,add,1,2024-08-22 10:18:52
+gravy,add,13,2024-08-22 10:18:38
+gravy,add,21,2024-08-22 10:18:33
+gravy,remove,47,2024-08-22 10:18:32
+salsa,remove,2,2024-08-22 10:18:14
+grill brick,add,3,2024-08-22 10:18:01
+oil,remove,2,2024-08-22 10:17:44
+200 savaday,remove,5,2024-08-22 10:16:56
+9 ounce cups,remove,1,2024-08-22 10:16:24
+cheese sauce,remove,1,2024-08-22 10:16:10
+tortilla,remove,1,2024-08-22 10:15:42
+paper towels,remove,2,2024-08-22 10:15:30
+napkins,add,2,2024-08-22 10:15:12
+pot pan detergent,remove,1,2024-08-22 10:15:03
+doritos,remove,2,2024-08-22 10:14:41
+#1,remove,8,2024-08-22 10:14:32
+#8,remove,7,2024-08-22 10:14:20
+foil,remove,1,2024-08-20 12:26:09
+coconut shred,add,1,2024-08-20 12:25:54
+coconut shred,add,1,2024-08-20 12:25:52
+cheese sauce,remove,2,2024-08-20 12:24:59
+gravy,remove,3,2024-08-20 12:00:49
+gravy,add,35,2024-08-20 12:00:46
+gravy,add,15,2024-08-20 12:00:31
+gravy,remove,47,2024-08-20 12:00:30
+shrimp,remove,3,2024-08-20 11:36:09
+avacodo,add,4,2024-08-20 11:35:59
+lobster,remove,2,2024-08-20 11:35:54
+cheese curds,add,15,2024-08-20 11:35:44
+ground beef,add,12,2024-08-20 11:35:33
+ribeye,add,6,2024-08-20 11:35:25
+peameal bacon,remove,6,2024-08-20 11:35:16
+hot dog,add,9,2024-08-20 11:35:08
+hot dog,add,15,2024-08-20 11:35:04
+ramen burger,remove,1,2024-08-20 11:34:50
+softshell crab,remove,1,2024-08-20 11:34:41
+bacon,add,12,2024-08-20 11:34:31
+pork,add,16,2024-08-20 11:34:22
+pork,add,15,2024-08-20 11:34:09
+avacodo,add,3,2024-08-20 11:33:44
+avacodo,remove,11,2024-08-20 11:33:43
+bacon,add,7,2024-08-20 11:33:36
+chili,remove,1,2024-08-20 11:33:21
+cheese curds,add,9,2024-08-20 11:33:05
+cheese curds,remove,21,2024-08-20 11:33:04
+haddock fish,add,3,2024-08-20 11:32:55
+pork,add,11,2024-08-20 11:32:18
+bacon,add,6,2024-08-20 11:31:54
+bacon,remove,33,2024-08-20 11:31:53
+pork,add,14,2024-08-20 11:31:42
+pork,remove,67,2024-08-20 11:31:41
+hot dog,add,1,2024-08-20 11:31:31
+hot dog,remove,22,2024-08-20 11:31:30
+ribeye,remove,1,2024-08-20 11:31:25
+chocolate,remove,1,2024-08-20 11:30:20
+shredded cheese,remove,2,2024-08-20 11:30:02
+pico,add,1,2024-08-20 11:29:22
+pico,remove,1,2024-08-20 11:29:20
+krispy kreme,add,20,2024-08-20 11:29:12
+krispy kreme,remove,116,2024-08-20 11:29:11
+clam chowder,add,1,2024-08-20 11:26:59
+red onions,add,3,2024-08-20 11:26:55
+red cabbage,remove,1,2024-08-20 11:26:50
+red cabbage,add,6,2024-08-20 11:26:47
+fries,remove,10,2024-08-20 11:26:09
+fries,add,130,2024-08-20 11:26:06
+fries,remove,170,2024-08-20 11:26:05
+forks,remove,6,2024-08-20 11:00:52
+#2 trays,remove,2,2024-08-20 11:00:28
+ketchup,add,2,2024-08-20 11:00:16
+vinegar,remove,1,2024-08-20 11:00:04
+hoisin,remove,1,2024-08-20 10:59:58
+lemon juice,add,1,2024-08-20 10:59:44
+jalapeno,remove,1,2024-08-20 10:59:32
+tortilla,remove,1,2024-08-20 10:59:16
+blueberry filling,add,4,2024-08-20 10:58:56
+sugar,add,1,2024-08-20 10:58:49
+salt bag,add,1,2024-08-20 10:58:46
+#1,remove,3,2024-08-20 10:58:36
+#8,remove,5,2024-08-20 10:58:23
+paper towels,remove,2,2024-08-20 10:58:08
+napkins,add,2,2024-08-20 10:57:50
+16 ounce cup,add,3,2024-08-20 10:57:45
+batter mix,add,2,2024-08-20 10:57:36
+cheese sauce,add,4,2024-08-20 10:56:21
+bbq sauce dip,add,3,2024-08-20 10:56:08
+plumsauce,add,4,2024-08-20 10:55:54
+salsa,add,3,2024-08-20 10:55:39
+salsa,add,4,2024-08-20 10:55:37
+salsa,remove,10,2024-08-20 10:55:36
+oil,add,20,2024-08-20 10:55:25
+oil,add,3,2024-08-20 10:55:18
+oil,remove,15,2024-08-20 10:55:16
+cheese curds,add,15,2024-08-19 11:03:16
+snowcrab,remove,1,2024-08-19 11:03:01
+lobster,add,2,2024-08-19 11:02:37
+shrimp,remove,1,2024-08-19 11:02:30
+softshell crab,add,4,2024-08-19 11:02:13
+chicken fingers,add,7,2024-08-19 10:40:49
+pork,add,10,2024-08-19 10:40:27
+pork,add,16,2024-08-19 10:40:26
+pork,add,16,2024-08-19 10:40:14
+mayo,add,1,2024-08-19 10:39:33
+mayo,remove,1,2024-08-19 10:39:31
+cheese cotija,add,2,2024-08-19 10:39:19
+chocolate,add,5,2024-08-19 10:38:59
+cabbage,add,8,2024-08-19 10:38:47
+strawberries,add,1,2024-08-19 10:37:36
+ground beef,add,4,2024-08-19 10:37:10
+ground beef,remove,14,2024-08-19 10:37:09
+ribeye,add,2,2024-08-19 10:37:05
+ribeye,remove,8,2024-08-19 10:37:04
+cheese curds,add,6,2024-08-19 10:36:50
+cheese curds,remove,23,2024-08-19 10:36:48
+pork,add,9,2024-08-19 10:36:20
+pork,add,16,2024-08-19 10:36:11
+pork,remove,75,2024-08-19 10:36:09
+krispy kreme,add,10,2024-08-19 10:35:37
+cheese cotija,remove,4,2024-08-19 10:35:07
+ciabatta,remove,2,2024-08-19 10:34:57
+fries,remove,16,2024-08-19 10:34:36
+fries,remove,30,2024-08-19 10:34:34
+ramen burger,remove,1,2024-08-18 12:19:00
+blueberry,remove,1,2024-08-18 12:09:52
+old bay,remove,1,2024-08-18 09:23:45
+lime juice,remove,1,2024-08-18 09:23:35
+hot dog,add,20,2024-08-18 09:23:22
+clam chowder,remove,1,2024-08-18 09:22:46
+chili,remove,1,2024-08-18 09:22:39
+cabbage,remove,1,2024-08-18 09:22:22
+shrimp,remove,2,2024-08-18 09:20:21
+lobster,remove,2,2024-08-18 09:20:16
+cheese curds,add,14,2024-08-18 09:19:58
+ribeye,add,6,2024-08-18 09:19:45
+ground beef,add,12,2024-08-18 09:19:38
+peameal bacon,add,14,2024-08-18 09:19:29
+pork,add,1,2024-08-18 09:19:17
+pork,add,9,2024-08-18 09:19:14
+pork,add,2,2024-08-18 09:19:12
+pork,add,11,2024-08-18 09:19:10
+pork,add,16,2024-08-18 09:18:53
+pork,add,10,2024-08-18 09:18:49
+beef burgers,add,25,2024-08-18 09:18:37
+beef burgers,remove,41,2024-08-18 09:18:36
+chicken fingers,remove,4,2024-08-18 09:17:34
+bacon,add,13,2024-08-18 09:17:02
+bacon,add,13,2024-08-18 09:16:53
+pork,add,26,2024-08-18 09:16:27
+pork,remove,102,2024-08-18 09:16:26
+hot dog,remove,28,2024-08-18 09:16:07
+hot dog,add,2,2024-08-18 09:16:07
+ribeye,remove,10,2024-08-18 09:15:58
+ribeye,add,2,2024-08-18 09:15:58
+ground beef,add,2,2024-08-18 09:15:54
+ground beef,remove,16,2024-08-18 09:15:53
+bacon,add,7,2024-08-18 09:15:48
+bacon,remove,19,2024-08-18 09:15:41
+peameal bacon,add,2,2024-08-18 09:15:36
+peameal bacon,remove,16,2024-08-18 09:15:35
+cheese curds,add,9,2024-08-18 09:15:29
+cheese curds,remove,36,2024-08-18 09:15:28
+tomato,add,2,2024-08-18 09:14:46
+strawberries,add,3,2024-08-18 09:14:34
+tomato,remove,3,2024-08-18 09:14:27
+chocolate,remove,1,2024-08-18 09:14:14
+cheese cotija,add,4,2024-08-18 09:14:08
+strawberries,add,8,2024-08-18 09:12:24
+strawberries,add,1,2024-08-18 09:12:24
+eggs,remove,1,2024-08-18 09:11:52
+mayo,add,3,2024-08-18 09:11:44
+pickles,remove,1,2024-08-18 09:11:34
+sour cream,add,1,2024-08-18 09:11:24
+sour cream,add,1,2024-08-18 09:11:23
+sour cream,remove,2,2024-08-18 09:11:21
+ciabatta,add,2,2024-08-18 09:10:51
+krispy kreme,add,5,2024-08-18 09:10:37
+krispy kreme,add,2,2024-08-18 09:10:36
+krispy kreme,add,60,2024-08-18 09:10:35
+fries,add,10,2024-08-18 09:10:06
+fries,add,50,2024-08-18 09:10:02
+fries,add,60,2024-08-18 09:09:46
+fries,add,36,2024-08-18 09:09:45
+fries,add,60,2024-08-18 09:09:19
+fries,remove,261,2024-08-18 09:09:18
+cheese cotija,add,5,2024-08-18 09:09:13
+cheese cotija,remove,13,2024-08-18 09:09:11
+napkins,remove,4,2024-08-18 09:05:01
+jalapeno,add,1,2024-08-18 09:03:15
+bbq sauce,remove,1,2024-08-18 09:02:50
+vinegar,add,1,2024-08-18 09:02:06
+ketchup,add,1,2024-08-18 09:01:53
+forks,remove,6,2024-08-18 09:01:36
+foil,add,1,2024-08-18 09:00:57
+gravy,add,35,2024-08-18 09:00:47
+salt box,remove,2,2024-08-18 09:00:02
+200 savaday,add,3,2024-08-18 08:59:39
+200 savaday,remove,15,2024-08-18 08:59:33
+200 savaday,add,5,2024-08-18 08:59:33
+ketchup,remove,2,2024-08-18 08:58:48
+water,remove,3,2024-08-18 08:58:03
+gravy,add,12,2024-08-18 08:57:28
+gravy,remove,55,2024-08-18 08:57:27
+mayo,remove,3,2024-08-18 08:57:06
+matcha,remove,2,2024-08-17 11:21:01
+coconut shred,remove,2,2024-08-17 11:19:10
+coconut shred,remove,2,2024-08-17 11:19:07
+sugar,remove,1,2024-08-17 11:03:36
+sesame seed,remove,1,2024-08-17 11:02:56
+pan liner,remove,1,2024-08-17 11:01:54
+icing sugar,remove,1,2024-08-17 11:01:23
+butter,remove,1,2024-08-17 11:00:21
+mayo,add,2,2024-08-17 10:50:32
+gravy,add,8,2024-08-17 10:50:27
+gravy,add,6,2024-08-17 10:50:26
+gravy,add,6,2024-08-17 10:50:21
+water,remove,1,2024-08-17 10:49:38
+water,remove,41,2024-08-17 10:49:37
+water,add,21,2024-08-17 10:49:35
+#1,add,1,2024-08-17 10:49:16
+#8,add,1,2024-08-17 10:49:15
+bbq sauce dip,remove,2,2024-08-17 10:48:47
+old bay,add,1,2024-08-17 10:48:19
+foil,remove,4,2024-08-17 10:47:25
+saran wrap,remove,4,2024-08-17 10:47:18
+mustard,add,3,2024-08-17 10:47:06
+mustard,add,5,2024-08-17 10:47:02
+mustard,remove,13,2024-08-17 10:47:01
+siracha,add,2,2024-08-17 10:46:30
+forks,add,10,2024-08-17 10:46:17
+forks,add,22,2024-08-17 10:45:33
+forks,remove,55,2024-08-17 10:45:32
+gloves vinyl,remove,1,2024-08-17 10:45:17
+gloves vinyl,remove,7,2024-08-17 10:45:16
+gloves poly,remove,4,2024-08-17 10:44:57
+gloves poly,remove,5,2024-08-17 10:44:55
+gloves poly,add,2,2024-08-17 10:44:55
+#2 trays,add,8,2024-08-17 10:44:46
+ketchup,add,2,2024-08-17 10:44:22
+plumsauce,add,3,2024-08-17 10:44:15
+hoisin,remove,3,2024-08-17 10:43:58
+teriyaki,remove,2,2024-08-17 10:43:50
+vinegar,add,1,2024-08-17 10:43:39
+garlic aioli,remove,3,2024-08-17 10:42:49
+bbq sauce,remove,2,2024-08-17 10:42:42
+franks,add,2,2024-08-17 10:42:23
+chipotle sauce,remove,1,2024-08-17 10:42:13
+jalapeno,remove,1,2024-08-17 10:42:04
+coleslaw dressing,remove,2,2024-08-17 10:41:59
+thermal foil wrap,add,1,2024-08-17 10:41:06
+checkered basket,remove,5,2024-08-17 10:40:57
+lemon juice,remove,2,2024-08-17 10:40:49
+200 savaday,add,5,2024-08-17 10:40:30
+tortilla,remove,3,2024-08-17 10:40:19
+doritos,remove,11,2024-08-17 10:40:07
+pot pan detergent,add,2,2024-08-17 10:39:41
+beans,remove,3,2024-08-17 10:39:20
+banana pepper,remove,1,2024-08-17 10:39:11
+oil non stick,remove,1,2024-08-17 10:38:11
+quaker batter,remove,1,2024-08-17 10:37:57
+belgian waffle,remove,2,2024-08-17 10:37:23
+pancake waffle,remove,1,2024-08-17 10:37:07
+gravy,add,10,2024-08-17 10:36:56
+gravy,add,12,2024-08-17 10:36:53
+gravy,add,12,2024-08-17 10:36:48
+gravy,add,1,2024-08-17 10:36:48
+gravy,remove,100,2024-08-17 10:36:47
+salsa,add,2,2024-08-17 10:36:35
+salsa,remove,7,2024-08-17 10:36:27
+oil,add,4,2024-08-17 10:36:05
+oil,remove,60,2024-08-17 10:36:04
+prep butter,remove,3,2024-08-17 10:35:08
+grill brick,add,1,2024-08-17 10:34:28
+9 ounce cups,remove,2,2024-08-17 10:34:04
+napkins,remove,2,2024-08-17 10:32:51
+paper towels,remove,7,2024-08-17 10:32:33
+bleach,add,2,2024-08-17 10:32:22
+ketchup,add,3,2024-08-17 10:31:37
+ketchup,remove,13,2024-08-17 10:31:36
+hand soap,remove,1,2024-08-17 10:31:30
+hand soap,remove,5,2024-08-17 10:31:28
+hand soap,add,3,2024-08-17 10:31:26
+#8,add,24,2024-08-17 10:31:17
+#8,remove,35,2024-08-17 10:31:16
+#1,add,30,2024-08-17 10:31:05
+#1,remove,40,2024-08-17 10:30:58
+blueberry filling,remove,5,2024-08-17 10:07:08
+blueberry,remove,2,2024-08-17 10:07:04
+lobster,remove,3,2024-08-17 10:06:56
+avacodo,add,4,2024-08-17 10:06:49
+shrimp,add,2,2024-08-17 10:06:38
+shrimp,add,8,2024-08-17 10:06:37
+shrimp,remove,15,2024-08-17 10:06:33
+cheese curds,add,12,2024-08-17 10:06:25
+cheese curds,add,4,2024-08-17 10:06:22
+thunder chicken,add,12,2024-08-17 10:06:14
+thunder chicken,add,29,2024-08-17 10:06:09
+thunder chicken,add,6,2024-08-17 10:06:01
+thunder chicken,remove,60,2024-08-17 10:05:58
+ribeye,add,8,2024-08-17 10:05:50
+peameal bacon,add,6,2024-08-17 10:05:04
+peameal bacon,add,8,2024-08-17 10:04:59
+ground beef,add,14,2024-08-17 10:04:51
+hot dog,add,6,2024-08-17 10:04:33
+hot dog,add,19,2024-08-17 10:04:26
+ramen burger,add,9,2024-08-17 10:04:14
+bacon,add,1,2024-08-17 10:03:52
+pork,add,11,2024-08-17 10:03:46
+chicken fingers,add,6,2024-08-17 10:03:27
+bacon,add,13,2024-08-17 10:03:17
+avacodo,remove,8,2024-08-17 10:02:53
+haddock fish,remove,3,2024-08-17 10:02:44
+cheese curds,add,9,2024-08-17 10:02:32
+snowcrab,remove,1,2024-08-17 10:02:23
+chicken fingers,remove,9,2024-08-17 10:02:17
+clam chowder,remove,1,2024-08-17 10:02:01
+chili,remove,2,2024-08-17 10:01:58
+pork,add,12,2024-08-17 10:01:52
+pork,add,1,2024-08-17 10:01:50
+pork,add,12,2024-08-17 10:01:49
+pork,add,10,2024-08-17 10:01:46
+pork,add,16,2024-08-17 10:01:42
+apple fritter,add,32,2024-08-17 10:01:29
+cheese sauce,remove,1,2024-08-17 09:58:51
+tomato,remove,10,2024-08-17 09:57:36
+green onion,remove,2,2024-08-17 09:57:19
+shredded lettuce,remove,1,2024-08-17 09:57:10
+apple fritter,add,8,2024-08-17 09:56:42
+apple fritter,remove,50,2024-08-17 09:56:38
+cilantro,add,3,2024-08-17 09:56:22
+strawberries,add,8,2024-08-17 09:56:01
+bean sprouts,remove,2,2024-08-17 09:55:45
+cheese cotija,add,3,2024-08-17 09:55:29
+chocolate,remove,1,2024-08-17 09:55:23
+cheese sliced br,remove,4,2024-08-17 09:55:12
+shredded cheese,add,3,2024-08-17 09:51:27
+dill,remove,2,2024-08-17 09:48:35
+cilantro,remove,4,2024-08-17 09:48:21
+cabbage,remove,4,2024-08-17 09:48:15
+burger lettuce,add,4,2024-08-17 09:47:35
+burger lettuce,add,4,2024-08-17 09:47:28
+burger lettuce,remove,15,2024-08-17 09:47:24
+eggs,remove,3,2024-08-17 09:47:14
+limes,add,1,2024-08-17 09:47:02
+relish,remove,1,2024-08-17 09:46:55
+sauerkraut,remove,1,2024-08-17 09:46:50
+pickles,add,5,2024-08-17 09:46:39
+pickles,remove,10,2024-08-17 09:46:38
+mayo,add,3,2024-08-17 09:46:20
+mayo,remove,10,2024-08-17 09:46:18
+sour cream,remove,5,2024-08-17 09:46:07
+pico,remove,3,2024-08-17 09:45:57
+cheese curds,add,11,2024-08-17 09:45:44
+cheese curds,remove,55,2024-08-17 09:45:43
+peameal bacon,add,2,2024-08-17 09:45:32
+bacon,add,5,2024-08-17 09:45:27
+bacon,remove,55,2024-08-17 09:45:24
+ground beef,remove,20,2024-08-17 09:45:19
+ground beef,add,2,2024-08-17 09:45:19
+ribeye,add,2,2024-08-17 09:45:12
+hot dog,add,3,2024-08-17 09:45:06
+pork,add,20,2024-08-17 09:44:55
+ciabatta,add,9,2024-08-17 09:44:34
+ciabatta,remove,15,2024-08-17 09:44:33
+krispy kreme,add,39,2024-08-17 09:44:18
+krispy kreme,remove,1,2024-08-17 09:44:17
+fries,add,90,2024-08-17 09:43:43
+fries,add,1,2024-08-17 09:43:23
+fries,add,60,2024-08-17 09:43:22
+fries,add,50,2024-08-17 09:43:19
+corn,add,12,2024-08-17 09:43:00
+cheese cotija,add,10,2024-08-17 09:42:34
+cheese cotija,remove,6,2024-08-17 09:42:32
+fries,add,60,2024-08-17 09:42:24
+fries,remove,350,2024-08-17 09:42:21
+pork,add,20,2024-08-17 09:42:14
+pork,remove,100,2024-08-17 09:42:13
+chocolate,add,3,2024-08-15 11:17:06
+snowcrab,add,3,2024-08-15 08:50:17
+old bay,remove,1,2024-08-15 08:49:58
+old bay,add,1,2024-08-15 08:49:57
+krispy kreme,add,1,2024-08-15 08:49:26
+quaker batter,add,1,2024-08-15 08:49:25
+lime juice,add,1,2024-08-15 08:49:06
+siracha,add,2,2024-08-14 22:36:28
+salt packet,add,1,2024-08-14 22:36:06
+dill,add,3,2024-08-14 22:23:25
+chives,add,1,2024-08-14 22:23:09
+paper towels,add,5,2024-08-14 20:02:22
+cheese sauce,add,1,2024-08-14 20:02:16
+salt box,add,1,2024-08-14 20:02:06
+salsa,add,5,2024-08-14 20:01:59
+jalapeno,add,5,2024-08-14 20:01:55
+oil,add,20,2024-08-14 20:01:33
+napkins,add,5,2024-08-14 20:01:24
+mustard,add,6,2024-08-14 20:01:19
+gravy,add,50,2024-08-14 20:01:13
+#8,add,25,2024-08-14 20:01:06
+#1,add,25,2024-08-14 20:01:02
+forks,add,20,2024-08-14 20:00:55
+cheese curds,add,25,2024-08-14 20:00:49
+beef burgers,add,1,2024-08-14 20:00:24
+bacon,add,20,2024-08-14 20:00:11
+avacodo,add,5,2024-08-14 20:00:02
+sour cream,add,5,2024-08-14 19:59:54
+pickles,add,5,2024-08-14 19:59:47
+shredded lettuce,add,5,2024-08-14 19:59:40
+fries,add,100,2024-08-14 19:59:32
+eggs,add,5,2024-08-14 19:59:24
+ground beef,add,10,2024-08-14 19:59:18
+pancake waffle,add,3,2024-08-14 19:58:56
+oil non stick,add,2,2024-08-14 19:58:49
+thermal foil wrap,add,5,2024-08-14 19:58:12
+oil,add,5,2024-08-14 19:57:54
+belgian waffle,add,3,2024-08-14 19:57:44
+ketchup,add,5,2024-08-14 19:57:37
+icing sugar,add,1,2024-08-14 19:57:31
+blueberry filling,add,5,2024-08-14 19:56:26
+#1,add,5,2024-08-14 19:55:57
+thunder chicken,add,30,2024-08-14 19:55:42
+blueberry,add,5,2024-08-14 19:55:20
+beef burgers,add,40,2024-08-14 19:55:09
+bacon,add,10,2024-08-14 19:55:03
+cheese mozzarella,add,5,2024-08-14 19:54:58
+cheese ribbons,add,5,2024-08-14 19:54:37
+matcha,add,2,2024-08-14 19:53:32
+sesame seed,add,1,2024-08-14 19:53:20
+teriyaki,add,5,2024-08-14 19:52:52
+hoisin,add,5,2024-08-14 19:52:35
+bbq sauce,add,10,2024-08-14 19:52:27
+mayo,add,5,2024-08-14 19:52:06
+ketchup,add,3,2024-08-14 19:51:59
+thunder chicken,add,20,2024-08-14 19:51:51
+tomato,add,5,2024-08-14 19:51:44
+bean sprouts,add,10,2024-08-14 19:51:38
+green onion,add,5,2024-08-14 19:51:30
+limes,add,3,2024-08-14 19:51:24
+burger lettuce,add,5,2024-08-14 19:51:17
+cilantro,add,5,2024-08-14 19:51:06
+tortilla,add,10,2024-08-14 19:50:42
+sugar,add,1,2024-08-14 19:50:36
+chipotle sauce,add,2,2024-08-14 19:49:48
+garlic aioli,add,5,2024-08-14 19:48:02
+mayo,add,2,2024-08-14 19:47:51
+checkered basket,add,5,2024-08-14 19:47:39
+lemon juice,remove,1,2024-08-14 19:47:27
+lemon juice,add,2,2024-08-14 19:47:26
+200 savaday,add,5,2024-08-14 19:47:18
+clam chowder,add,2,2024-08-14 19:46:55
+shrimp,add,15,2024-08-14 19:46:48
+lobster,add,9,2024-08-14 19:46:43
+tomato,add,5,2024-08-14 19:46:36
+sour cream,add,2,2024-08-14 19:46:32
+pico,add,10,2024-08-14 19:46:25
+burger lettuce,add,5,2024-08-14 19:46:15
+cream,add,2,2024-08-14 19:46:03
+red cabbage,add,4,2024-08-14 19:45:56
+butter,add,1,2024-08-14 19:45:47
+tomato,add,5,2024-08-14 18:09:33
+checkered basket,add,3,2024-08-14 18:09:07
+200 savaday,add,5,2024-08-14 18:08:52
+haddock fish,add,10,2024-08-14 18:08:29
+tomato,add,5,2024-08-14 18:08:20
+whip cream,add,2,2024-08-14 18:08:15
+foil,add,2,2024-08-14 18:06:55
+saran wrap,add,2,2024-08-14 18:06:28
+paper towels,add,2,2024-08-14 18:06:16
+pepper packet,add,1,2024-08-14 18:06:11
+foil,add,2,2024-08-14 18:05:57
+tajin,add,2,2024-08-14 18:05:51
+bbq sauce dip,add,4,2024-08-14 18:05:34
+banana pepper,add,5,2024-08-14 18:05:20
+oil veggie butter,add,5,2024-08-14 18:05:11
+oil,add,6,2024-08-14 18:04:30
+napkins,add,2,2024-08-14 18:03:36
+mustard,add,5,2024-08-14 18:03:31
+mayo,add,3,2024-08-14 18:03:24
+ketchup,add,5,2024-08-14 18:03:19
+lemon juice,add,2,2024-08-14 18:02:52
+gloves vinyl,add,5,2024-08-14 18:02:29
+gloves poly,add,5,2024-08-14 18:02:25
+forks,add,5,2024-08-14 18:02:17
+9 ounce cups,add,5,2024-08-14 18:02:04
+coconut shred,add,2,2024-08-14 18:01:36
+coconut shred,add,2,2024-08-14 18:01:30
+fries,add,200,2024-08-14 18:00:07
+fries,add,50,2024-08-14 17:59:40
+fries,remove,250,2024-08-14 17:59:39
+chili,add,5,2024-08-14 17:12:21
+thunder chicken,add,10,2024-08-14 17:12:12
+chicken fingers,add,10,2024-08-14 17:12:07
+cheese curds,add,5,2024-08-14 17:10:17
+bacon,add,5,2024-08-14 17:10:09
+sauerkraut,add,3,2024-08-14 17:09:58
+relish,add,2,2024-08-14 17:08:58
+burger lettuce,add,5,2024-08-14 17:08:46
+fries,add,50,2024-08-14 17:08:25
+eggs,add,4,2024-08-14 17:08:19
+cheese cotija,add,6,2024-08-14 17:08:13
+cheese sliced br,add,5,2024-08-14 17:07:36
+water,add,50,2024-08-14 17:06:33
+paper towels,add,10,2024-08-14 17:06:25
+salt box,add,2,2024-08-14 17:06:19
+salsa,add,10,2024-08-14 17:05:49
+oil,add,40,2024-08-14 17:05:43
+mustard,add,2,2024-08-14 17:05:37
+gravy,add,50,2024-08-14 17:05:31
+#8,add,10,2024-08-14 17:05:20
+#1,add,10,2024-08-14 17:05:15
+dish soap,add,3,2024-08-14 17:04:55
+forks,add,20,2024-08-14 17:04:48
+doritos,add,20,2024-08-14 17:04:09
+cheese curds,add,25,2024-08-14 17:04:02
+bacon,add,20,2024-08-14 17:03:51
+avacodo,add,10,2024-08-14 17:03:44
+sour cream,add,5,2024-08-14 17:03:36
+pickles,add,5,2024-08-14 17:03:16
+fries,add,200,2024-08-14 17:03:10
+ground beef,add,10,2024-08-14 17:03:02
+saran wrap,add,10,2024-08-14 17:02:38
+hand soap,add,5,2024-08-14 17:02:23
+pan liner,add,1,2024-08-14 17:02:16
+gloves vinyl,add,20,2024-08-14 16:58:43
+gloves poly,add,10,2024-08-14 16:58:37
+coleslaw dressing,add,10,2024-08-14 16:58:08
+knife,add,10,2024-08-14 16:57:51
+forks,add,10,2024-08-14 16:57:14
+beans,add,10,2024-08-14 16:56:44
+pork,add,100,2024-08-14 16:56:36
+sour cream,add,5,2024-08-14 16:56:18
+wowbutter,remove,1,2024-08-14 16:55:56
+white onion,remove,2,2024-08-14 16:55:53
+water,remove,9,2024-08-14 16:55:51
+vinegar,remove,3,2024-08-14 16:55:49
+tortilla,remove,5,2024-08-14 16:55:46
+tomato,remove,12,2024-08-14 16:55:44
+tofu,remove,1,2024-08-14 16:55:43
+thermal foil wrap,remove,2,2024-08-14 16:55:40
+supreme crunch,remove,35,2024-08-14 16:55:39
+sugar,remove,2,2024-08-14 16:55:38
+sour cream,remove,5,2024-08-14 16:55:37
+snowcrab,remove,3,2024-08-14 16:55:33
+saran wrap,remove,4,2024-08-14 16:55:32
+siracha,remove,1,2024-08-14 16:55:31
+shrimp,remove,5,2024-08-14 16:55:29
+shredded lettuce,remove,2,2024-08-14 16:55:28
+shredded cheese,remove,3,2024-08-14 16:55:27
+salt packet,remove,2,2024-08-14 16:55:26
+salsa,remove,5,2024-08-14 16:55:22
+relish,remove,2,2024-08-14 16:55:21
+red cabbage,remove,3,2024-08-14 16:55:19
+pretzel,remove,4,2024-08-14 16:55:18
+pork,remove,100,2024-08-14 16:55:17
+plumsauce,remove,8,2024-08-14 16:55:15
+plastic portion,remove,1,2024-08-14 16:55:11
+pico,remove,2,2024-08-14 16:55:10
+pickles,remove,5,2024-08-14 16:55:09
+pepper packet,remove,2,2024-08-14 16:55:07
+peameal bacon,remove,11,2024-08-14 16:55:05
+paper towels,remove,2,2024-08-14 16:55:04
+pancake waffle,remove,3,2024-08-14 16:55:00
+pan liner,remove,1,2024-08-14 16:54:58
+pad thai,remove,2,2024-08-14 16:54:57
+oil,remove,39,2024-08-14 16:54:55
+napkins,remove,3,2024-08-14 16:54:52
+mustard,remove,14,2024-08-14 16:54:51
+mayo,remove,2,2024-08-14 16:54:49
+lemon juice,remove,1,2024-08-14 16:54:47
+lemon,remove,1,2024-08-14 16:54:46
+kimchi,remove,4,2024-08-14 16:54:44
+ketchup,remove,2,2024-08-14 16:54:42
+jalapeno,remove,4,2024-08-14 16:54:41
+icing sugar,remove,1,2024-08-14 16:54:39
+hot dog,remove,39,2024-08-14 16:54:37
+hand soap,remove,2,2024-08-14 16:54:34
+hoisin,remove,2,2024-08-14 16:54:34
+ground beef,remove,4,2024-08-14 16:54:32
+grill brick,remove,1,2024-08-14 16:54:28
+green onion,remove,3,2024-08-14 16:54:26
+gravy,remove,23,2024-08-14 16:54:25
+gloves,remove,1,2024-08-14 16:54:24
+garlic aioli,remove,9,2024-08-14 16:54:22
+fries,remove,150,2024-08-14 16:54:21
+forks,remove,16,2024-08-14 16:54:18
+franks,remove,2,2024-08-14 16:54:18
+foil,remove,2,2024-08-14 16:54:16
+eggs,remove,4,2024-08-14 16:54:14
+doritos,remove,6,2024-08-14 16:54:14
+dish soap,remove,2,2024-08-14 16:54:10
+cream,remove,1,2024-08-14 16:54:09
+clean green pot,remove,2,2024-08-14 16:54:07
+coleslaw dressing,remove,4,2024-08-14 16:54:07
+cilantro,remove,3,2024-08-14 16:53:14
+chili,remove,1,2024-08-14 16:53:11
+chicken breast,remove,12,2024-08-14 16:53:10
+cheese sliced br,remove,2,2024-08-14 16:53:08
+cheese sauce,remove,1,2024-08-14 16:53:07
+cheese ribbons,remove,1,2024-08-14 16:53:06
+cheese mozzarella,remove,1,2024-08-14 16:53:05
+cheese curds,remove,22,2024-08-14 16:53:02
+checkered basket,remove,4,2024-08-14 16:52:59
+carrots,remove,2,2024-08-14 16:52:56
+burger lettuce,remove,7,2024-08-14 16:52:30
+bleach,remove,8,2024-08-14 16:52:27
+beyond burger,remove,3,2024-08-14 16:52:26
+beef burgers,remove,20,2024-08-14 16:52:24
+beans,remove,2,2024-08-14 16:52:22
+bean sprouts,remove,4,2024-08-14 16:52:20
+banana pepper,remove,2,2024-08-14 16:52:18
+bacon,remove,17,2024-08-14 16:52:16
+avacodo,remove,2,2024-08-14 16:52:14
+red onions,remove,3,2024-08-14 16:52:10
+quaker batter,remove,1,2024-08-14 16:52:09
+krispy kreme,remove,48,2024-08-14 16:52:06
+haddock fish,remove,11,2024-08-14 16:52:03
+belgian waffle,remove,1,2024-08-14 16:52:00
+bbq sauce,remove,3,2024-08-14 16:51:58
+bbq sauce dip,remove,8,2024-08-14 16:51:56
+5 piece cutlery,remove,1,2024-08-14 16:51:53
+#8,remove,9,2024-08-14 16:51:51
+200 savaday,remove,6,2024-08-14 16:51:50
+#2,remove,7,2024-08-14 16:51:45
+#1,remove,7,2024-08-14 16:51:44
+pork,add,100,2024-08-14 16:51:39
+pork,remove,43,2024-08-14 16:51:34
+apple fritter,add,50,2024-08-14 16:51:26
+ciabatta,add,10,2024-08-14 16:51:03
+sour cream,remove,2,2024-08-14 16:50:56
+cabbage,add,5,2024-08-14 16:50:48
+cabbage,remove,2,2024-08-14 16:50:47
+salsa,add,5,2023-09-01 12:38:28
+foil,remove,1,2023-09-01 11:39:26
+tortilla,remove,1,2023-09-01 11:39:06
+sugar,add,1,2023-09-01 11:38:55
+saran wrap,remove,1,2023-09-01 11:38:48
+salsa,remove,3,2023-09-01 11:38:16
+plastic portion,remove,1,2023-09-01 11:38:06
+plastic portion,remove,2,2023-09-01 11:38:06
+pad thai,remove,1,2023-09-01 11:37:09
+ketchup,remove,2,2023-09-01 11:36:45
+hoisin,remove,1,2023-09-01 11:36:29
+gravy,add,1,2023-09-01 11:36:06
+forks,remove,24,2023-09-01 11:35:45
+beans,remove,1,2023-09-01 11:34:21
+bbq sauce,remove,1,2023-09-01 11:34:02
+#8,remove,4,2023-09-01 11:33:46
+200 savaday,remove,1,2023-09-01 11:33:33
+#2,remove,3,2023-09-01 11:33:27
+#1,remove,1,2023-09-01 11:33:18
+shrimp,add,5,2023-09-01 11:31:20
+beyond burger,remove,1,2023-09-01 11:31:14
+supreme crunch,add,35,2023-09-01 11:31:07
+avacodo,add,2,2023-09-01 11:30:33
+chili,add,1,2023-09-01 11:30:29
+bacon,add,12,2023-09-01 11:30:21
+beef burgers,add,18,2023-09-01 11:30:15
+ground beef,add,2,2023-09-01 11:29:59
+chicken breast,add,12,2023-09-01 11:29:53
+haddock fish,add,11,2023-09-01 11:29:39
+snowcrab,add,3,2023-09-01 11:29:29
+cheese curds,add,12,2023-09-01 11:29:14
+water,remove,11,2023-09-01 11:28:55
+supreme crunch,remove,42,2023-09-01 11:28:42
+sour cream,add,1,2023-09-01 11:28:38
+softshell crab,remove,2,2023-09-01 11:28:32
+snowcrab,remove,5,2023-09-01 11:28:30
+shrimp,remove,9,2023-09-01 11:28:25
+shredded lettuce,remove,1,2023-09-01 11:28:22
+ribeye,remove,1,2023-09-01 11:28:11
+red cabbage,remove,2,2023-09-01 11:28:06
+pork,add,21,2023-09-01 11:27:55
+pork,add,4,2023-09-01 11:27:32
+pork,add,18,2023-09-01 11:27:29
+pork,remove,74,2023-09-01 11:27:20
+lobster,remove,5,2023-09-01 11:26:53
+kimchi,remove,2,2023-09-01 11:26:44
+hot dog,add,39,2023-09-01 11:26:21
+hot dog,remove,12,2023-09-01 11:26:20
+green onion,remove,1,2023-09-01 11:25:52
+butter,remove,1,2023-09-01 11:25:37
+dill,remove,2,2023-09-01 11:25:21
+clam chowder,remove,2,2023-09-01 11:25:18
+chili,remove,5,2023-09-01 11:24:53
+chives,remove,2,2023-09-01 11:24:49
+chicken breast,remove,17,2023-09-01 11:24:37
+cabbage,remove,3,2023-09-01 11:24:18
+beef burgers,add,2,2023-09-01 11:24:05
+beef burgers,remove,31,2023-09-01 11:23:59
+bean sprouts,remove,1,2023-09-01 11:23:56
+bacon,add,5,2023-09-01 11:23:39
+bacon,remove,24,2023-09-01 11:23:30
+avacodo,remove,3,2023-09-01 11:23:29
+haddock fish,remove,10,2023-09-01 11:23:21
+ground beef,remove,6,2023-09-01 11:23:07
+pretzel,remove,1,2023-09-01 11:23:01
+pico,remove,4,2023-09-01 11:22:53
+sour cream,remove,4,2023-09-01 11:22:42
+relish,remove,1,2023-09-01 11:22:25
+pickles,remove,5,2023-09-01 11:22:20
+mayo,remove,1,2023-09-01 11:22:10
+shredded cheese,remove,1,2023-09-01 11:21:57
+red onions,remove,1,2023-09-01 11:21:51
+cheese mozzarella,remove,1,2023-09-01 11:21:29
+cheese curds,add,10,2023-09-01 11:20:56
+cheese curds,remove,34,2023-09-01 11:20:55
+peameal bacon,add,6,2023-09-01 11:20:45
+burger lettuce,remove,4,2023-09-01 11:20:22
+tomato,add,3,2023-09-01 11:20:13
+tomato,add,3,2023-09-01 11:20:12
+fries,add,150,2023-09-01 11:19:47
+fries,remove,210,2023-09-01 11:19:16
+ciabatta,add,1,2023-08-31 13:11:53
+fries,add,90,2023-08-31 13:11:24
+salsa,remove,3,2023-08-31 13:07:30
+paper towels,remove,2,2023-08-31 13:07:12
+pad thai,add,1,2023-08-31 13:06:55
+oil,add,14,2023-08-31 13:06:50
+napkins,remove,3,2023-08-31 13:06:31
+ketchup,remove,3,2023-08-31 13:06:13
+jalapeno,add,2,2023-08-31 13:06:00
+hoisin,add,1,2023-08-31 13:05:45
+gravy,remove,2,2023-08-31 13:05:36
+gravy,remove,4,2023-08-31 13:05:35
+gravy,remove,8,2023-08-31 13:05:33
+gloves,add,1,2023-08-31 13:06:12
+doritos,add,4,2023-08-31 13:04:45
+checkered basket,remove,1,2023-08-31 13:04:21
+beans,remove,1,2023-08-31 13:04:06
+belgian waffle,remove,1,2023-08-31 13:03:46
+bbq sauce,remove,1,2023-08-31 13:03:44
+5 piece cutlery,remove,2,2023-08-31 13:03:33
+#8,remove,2,2023-08-31 12:58:34
+#1,remove,4,2023-08-31 12:58:24
+haddock fish,remove,1,2023-08-30 12:43:09
+hot dog,remove,6,2023-08-30 12:42:21
+cheese curds,add,8,2023-08-30 12:42:12
+shrimp,add,9,2023-08-30 12:22:27
+avacodo,add,3,2023-08-30 12:22:18
+snowcrab,add,5,2023-08-30 12:22:02
+softshell crab,add,2,2023-08-30 12:21:57
+clam chowder,add,2,2023-08-30 12:21:49
+chili,add,5,2023-08-30 12:21:41
+bacon,add,15,2023-08-30 12:21:29
+ground beef,add,7,2023-08-30 12:21:19
+beef burgers,add,18,2023-08-30 12:21:10
+pork,add,40,2023-08-30 12:21:00
+hot dog,add,18,2023-08-30 12:20:47
+cheese curds,add,26,2023-08-30 12:20:02
+chicken breast,add,14,2023-08-30 12:19:49
+supreme crunch,add,23,2023-08-30 12:19:33
+lobster,add,5,2023-08-30 12:19:14
+bacon,add,2,2023-08-30 12:08:07
+chili,remove,4,2023-08-30 12:07:33
+chili,add,2,2023-08-30 12:07:32
+bacon,add,7,2023-08-30 12:07:09
+pork,add,12,2023-08-30 12:06:11
+pork,add,16,2023-08-30 12:06:07
+pork,add,6,2023-08-30 12:06:03
+beef burgers,add,13,2023-08-30 12:05:37
+water,add,20,2023-08-30 12:05:07
+tomato,add,6,2023-08-30 12:04:52
+tofu,remove,1,2023-08-30 12:04:44
+supreme crunch,remove,8,2023-08-30 12:04:39
+sour cream,remove,4,2023-08-30 12:04:25
+softshell crab,remove,3,2023-08-30 12:04:20
+snowcrab,remove,6,2023-08-30 12:04:18
+shrimp,remove,6,2023-08-30 12:04:15
+shredded cheese,remove,1,2023-08-30 12:04:08
+ribeye,remove,1,2023-08-30 12:03:56
+pork,remove,90,2023-08-30 12:03:41
+peameal bacon,remove,5,2023-08-30 12:03:29
+bean sprouts,add,1,2023-08-30 12:02:28
+lobster,remove,7,2023-08-30 12:01:56
+kimchi,remove,1,2023-08-30 12:01:50
+hot dog,remove,24,2023-08-30 12:01:32
+ground beef,remove,8,2023-08-30 12:01:19
+green onion,add,4,2023-08-30 12:01:13
+fries,remove,80,2023-08-30 12:00:57
+eggs,remove,2,2023-08-30 12:00:43
+clam chowder,remove,1,2023-08-30 12:00:32
+ciabatta,remove,2,2023-08-30 12:00:26
+chives,remove,1,2023-08-30 12:00:19
+chicken breast,add,3,2023-08-30 12:00:10
+chicken breast,remove,22,2023-08-30 12:00:09
+cheese mozzarella,remove,1,2023-08-30 11:59:57
+cheese curds,remove,41,2023-08-30 11:59:54
+cabbage,add,2,2023-08-30 11:59:44
+beef burgers,remove,30,2023-08-30 11:58:50
+bean sprouts,add,1,2023-08-30 11:58:41
+bacon,remove,34,2023-08-30 11:58:23
+avacodo,remove,2,2023-08-30 11:58:22
+bomba chicken,remove,1,2023-08-30 11:57:49
+grill brick,add,1,2023-08-30 11:53:53
+water,remove,33,2023-08-30 11:53:10
+tortilla,remove,1,2023-08-30 11:53:00
+salsa,add,4,2023-08-30 11:52:26
+plumsauce,add,4,2023-08-30 11:52:11
+paper towels,remove,1,2023-08-30 11:51:54
+old bay,remove,3,2023-08-30 11:51:41
+oil,remove,5,2023-08-30 11:51:33
+napkins,remove,3,2023-08-30 11:51:26
+ketchup,add,5,2023-08-30 11:51:13
+jalapeno,remove,1,2023-08-30 11:50:56
+gravy,remove,2,2023-08-30 11:50:37
+gravy,remove,16,2023-08-30 11:50:35
+gloves,remove,4,2023-08-30 11:50:21
+doritos,remove,6,2023-08-30 11:50:01
+checkered basket,remove,1,2023-08-30 11:49:31
+belgian waffle,add,1,2023-08-30 11:48:54
+bbq sauce,remove,1,2023-08-30 11:48:47
+5 piece cutlery,remove,1,2023-08-30 11:48:37
+5 piece cutlery,remove,1,2023-08-30 11:48:29
+#8,remove,3,2023-08-30 11:48:26
+#2,add,8,2023-08-30 11:48:11
+#1,remove,2,2023-08-30 11:47:54
+salt box,remove,1,2023-08-29 12:19:49
+salt box,remove,1,2023-08-29 12:19:47
+supreme crunch,add,17,2023-08-29 11:54:26
+pork,add,19,2023-08-29 11:54:08
+pork,add,24,2023-08-29 11:53:54
+chicken breast,add,3,2023-08-29 11:53:31
+beef burgers,add,18,2023-08-29 11:53:21
+chicken breast,add,15,2023-08-29 11:52:31
+avacodo,add,2,2023-08-29 11:52:21
+cheese curds,add,24,2023-08-29 11:52:16
+shrimp,add,6,2023-08-29 11:51:22
+hot dog,add,18,2023-08-29 11:51:12
+bacon,add,15,2023-08-29 11:50:59
+bacon,add,15,2023-08-29 11:50:49
+lobster,add,7,2023-08-29 11:50:39
+ground beef,add,7,2023-08-29 11:50:28
+chili,add,2,2023-08-29 11:50:18
+clam chowder,add,1,2023-08-29 11:50:13
+softshell crab,add,3,2023-08-29 11:50:06
+snowcrab,add,6,2023-08-29 11:50:01
+haddock fish,add,11,2023-08-29 11:49:52
+cheese curds,add,17,2023-08-29 11:47:55
+beef burgers,add,12,2023-08-29 11:47:34
+bacon,add,4,2023-08-29 11:47:17
+hot dog,add,6,2023-08-29 11:47:11
+pork,add,9,2023-08-29 11:46:45
+pork,add,16,2023-08-29 11:46:43
+pork,add,16,2023-08-29 11:46:40
+pork,add,6,2023-08-29 11:46:37
+ground beef,add,2,2023-08-29 11:46:22
+chicken breast,add,4,2023-08-29 11:46:14
+supreme crunch,add,10,2023-08-29 11:46:09
+supreme crunch,remove,33,2023-08-29 11:45:39
+snowcrab,remove,2,2023-08-29 11:45:30
+shrimp,remove,3,2023-08-29 11:45:28
+shredded cheese,add,1,2023-08-29 11:45:21
+shredded cheese,add,3,2023-08-29 11:45:19
+ribeye,remove,2,2023-08-29 11:45:07
+pretzel,remove,2,2023-08-29 11:44:55
+pork,remove,87,2023-08-29 11:44:49
+pico,remove,2,2023-08-29 11:44:45
+pickles,remove,1,2023-08-29 11:44:38
+peameal bacon,add,3,2023-08-29 11:44:31
+mayo,remove,1,2023-08-29 11:44:14
+lobster,remove,5,2023-08-29 11:44:10
+kimchi,add,2,2023-08-29 11:44:05
+kimchi,add,5,2023-08-29 11:44:02
+hot dog,remove,30,2023-08-29 11:43:54
+ground beef,remove,10,2023-08-29 11:43:47
+green onion,remove,2,2023-08-29 11:43:35
+fries,remove,40,2023-08-29 11:43:19
+fries,add,60,2023-08-29 11:43:04
+clam chowder,remove,2,2023-08-29 11:42:37
+ciabatta,add,3,2023-08-29 11:42:31
+chili,remove,4,2023-08-29 11:42:22
+chicken breast,remove,8,2023-08-29 11:41:42
+cheese sliced br,remove,1,2023-08-29 11:41:38
+cheese ribbons,remove,1,2023-08-29 11:41:35
+cheese curds,remove,49,2023-08-29 11:41:24
+cabbage,remove,2,2023-08-29 11:41:13
+beef burgers,remove,35,2023-08-29 11:41:00
+bean sprouts,remove,2,2023-08-29 11:40:57
+bacon,remove,39,2023-08-29 11:40:47
+avacodo,remove,4,2023-08-29 11:40:45
+krispy kreme,add,3,2023-08-29 11:40:27
+krispy kreme,add,45,2023-08-29 11:39:19
+krispy kreme,remove,160,2023-08-29 11:39:17
+haddock fish,remove,6,2023-08-29 11:39:02
+tortilla,add,3,2023-08-29 11:25:46
+thermal foil wrap,remove,1,2023-08-29 11:25:11
+salsa,remove,4,2023-08-29 11:24:23
+paper towels,remove,1,2023-08-29 11:24:01
+pad thai,add,2,2023-08-29 11:23:50
+pad thai,remove,1,2023-08-29 11:23:47
+oil,add,30,2023-08-29 11:23:40
+oil,remove,6,2023-08-29 11:23:38
+ketchup,remove,1,2023-08-29 11:22:36
+hoisin,remove,1,2023-08-29 11:22:14
+gravy,add,15,2023-08-29 11:21:59
+gravy,add,10,2023-08-29 11:21:58
+gravy,add,2,2023-08-29 11:21:55
+gloves,remove,1,2023-08-29 11:21:29
+franks,add,2,2023-08-29 11:20:19
+cheese sauce,remove,2,2023-08-29 11:19:38
+checkered basket,remove,1,2023-08-29 11:19:32
+beans,add,2,2023-08-29 11:17:36
+belgian waffle,remove,1,2023-08-29 11:17:07
+#8,remove,2,2023-08-29 11:16:06
+200 savaday,remove,1,2023-08-29 11:15:48
+#2,remove,1,2023-08-29 11:15:34
+cheese curds,add,32,2023-08-28 14:34:32
+haddock fish,add,6,2023-08-28 14:34:26
+ribeye,add,1,2023-08-28 14:34:18
+snowcrab,add,2,2023-08-28 14:34:08
+chicken breast,add,8,2023-08-28 14:34:01
+pork,add,40,2023-08-28 14:33:49
+beef burgers,add,18,2023-08-28 14:33:39
+avacodo,add,4,2023-08-28 14:33:30
+ground beef,add,7,2023-08-28 14:33:10
+shrimp,add,3,2023-08-28 14:32:36
+bacon,add,27,2023-08-28 14:32:08
+lobster,add,5,2023-08-28 14:32:01
+hot dog,add,30,2023-08-28 14:31:52
+clam chowder,add,2,2023-08-28 14:31:45
+chili,add,4,2023-08-28 14:31:38
+supreme crunch,add,33,2023-08-28 14:31:25
+plumsauce,remove,2,2023-08-28 14:25:54
+oil,add,1,2023-08-28 14:25:45
+oil,remove,15,2023-08-28 14:25:44
+water,add,22,2023-08-28 14:21:12
+tomato,remove,1,2023-08-28 14:20:58
+tofu,remove,1,2023-08-28 14:20:56
+supreme crunch,remove,27,2023-08-28 14:20:52
+snowcrab,remove,3,2023-08-28 14:20:40
+shrimp,remove,7,2023-08-28 14:20:35
+shredded lettuce,remove,1,2023-08-28 14:20:32
+shredded cheese,remove,1,2023-08-28 14:20:22
+relish,remove,1,2023-08-28 14:20:11
+red cabbage,add,3,2023-08-28 14:20:05
+pork,add,6,2023-08-28 14:19:47
+pork,add,9,2023-08-28 14:19:41
+pork,add,16,2023-08-28 14:19:36
+pork,add,16,2023-08-28 14:19:33
+pork,remove,93,2023-08-28 14:19:26
+plumsauce,remove,2,2023-08-28 14:19:21
+pico,remove,1,2023-08-28 14:19:17
+perogie,remove,1,2023-08-28 14:19:05
+peameal bacon,add,5,2023-08-28 14:18:55
+mayo,add,2,2023-08-28 14:18:31
+lobster,remove,7,2023-08-28 14:18:28
+kimchi,remove,2,2023-08-28 14:18:18
+hot dog,remove,40,2023-08-28 14:18:09
+ground beef,remove,5,2023-08-28 14:18:04
+green onion,remove,1,2023-08-28 14:17:59
+fries,add,15,2023-08-28 14:17:43
+dill,add,1,2023-08-28 14:17:33
+clam chowder,remove,1,2023-08-28 14:17:27
+cilantro,add,2,2023-08-28 14:17:25
+ciabatta,remove,3,2023-08-28 14:17:17
+chili,remove,1,2023-08-28 14:17:01
+chicken breast,remove,15,2023-08-28 14:16:59
+cheese ribbons,remove,1,2023-08-28 14:16:52
+cheese curds,add,17,2023-08-28 14:16:44
+cheese curds,remove,38,2023-08-28 14:16:33
+cabbage,remove,2,2023-08-28 14:16:22
+beef burgers,add,17,2023-08-28 14:16:06
+beef burgers,remove,44,2023-08-28 14:15:48
+bean sprouts,remove,2,2023-08-28 14:15:45
+banana pepper,remove,2,2023-08-28 14:15:35
+bacon,add,12,2023-08-28 14:15:26
+bacon,remove,21,2023-08-28 14:15:13
+avacodo,remove,5,2023-08-28 14:15:11
+krispy kreme,add,100,2023-08-28 14:15:04
+krispy kreme,add,60,2023-08-28 14:14:53
+krispy kreme,remove,140,2023-08-28 14:14:52
+haddock fish,remove,8,2023-08-28 14:14:42
+bomba chicken,remove,1,2023-08-28 14:14:35
+bbq sauce,add,1,2023-08-28 14:14:30
+bbq sauce,remove,2,2023-08-28 14:14:28
+#8,remove,1,2023-08-28 14:14:22
+water,add,11,2023-08-28 13:09:04
+water,remove,38,2023-08-28 13:09:03
+tortilla,remove,2,2023-08-28 13:08:44
+salsa,add,3,2023-08-28 13:07:36
+oil,remove,9,2023-08-28 13:07:03
+ketchup,remove,2,2023-08-28 13:06:37
+jalapeno,remove,2,2023-08-28 13:06:14
+hoisin,remove,1,2023-08-28 13:06:06
+gravy,add,1,2023-08-28 13:05:36
+gravy,remove,6,2023-08-28 13:05:35
+gloves,remove,1,2023-08-28 13:05:20
+doritos,add,5,2023-08-28 13:04:57
+cheese sauce,remove,1,2023-08-28 13:04:06
+bleach,remove,1,2023-08-28 13:03:50
+beans,remove,1,2023-08-28 13:03:40
+bbq sauce,remove,5,2023-08-28 13:03:13
+5 piece cutlery,add,3,2023-08-28 13:02:55
+#1,add,8,2023-08-28 13:02:03
+cheese curds,add,24,2023-08-27 13:21:52
+ribeye,add,2,2023-08-27 13:21:38
+snowcrab,remove,1,2023-08-27 13:21:27
+chicken breast,remove,2,2023-08-27 13:21:14
+pork,add,40,2023-08-27 13:20:55
+beef burgers,add,39,2023-08-27 13:20:47
+avacodo,remove,3,2023-08-27 13:20:39
+ground beef,add,6,2023-08-27 13:20:27
+white onion,remove,1,2023-08-27 13:20:19
+shrimp,add,4,2023-08-27 13:20:11
+bacon,add,10,2023-08-27 13:20:02
+lobster,add,2,2023-08-27 13:19:55
+hot dog,remove,8,2023-08-27 13:19:45
+supreme crunch,remove,8,2023-08-27 13:19:32
+chili,remove,1,2023-08-27 13:19:21
+fries,add,165,2023-08-27 13:19:00
+fries,remove,234,2023-08-27 13:18:57
+krispy kreme,add,10,2023-08-27 13:18:46
+pork,add,53,2023-08-27 13:18:38
+pork,remove,116,2023-08-27 13:18:36
+water,add,24,2023-08-27 13:18:24
+cheese curds,add,14,2023-08-27 13:18:11
+cheese curds,remove,47,2023-08-27 13:18:10
+beef burgers,add,5,2023-08-27 13:18:03
+beef burgers,remove,48,2023-08-27 13:17:58
+peameal bacon,remove,7,2023-08-27 13:17:50
+pico,remove,2,2023-08-27 13:17:40
+eggs,remove,2,2023-08-27 13:17:09
+red onions,remove,2,2023-08-27 13:16:45
+ground beef,add,2,2023-08-27 13:16:34
+ground beef,remove,10,2023-08-27 13:16:33
+ribeye,remove,3,2023-08-27 13:16:20
+pretzel,remove,1,2023-08-27 13:15:56
+ciabatta,remove,2,2023-08-27 13:15:42
+shredded cheese,remove,1,2023-08-27 13:15:33
+bacon,add,11,2023-08-27 13:15:22
+bacon,remove,27,2023-08-27 13:15:21
+red cabbage,remove,1,2023-08-27 13:15:00
+cabbage,remove,2,2023-08-27 13:14:40
+cilantro,remove,2,2023-08-27 13:14:30
+burger lettuce,remove,1,2023-08-27 13:14:11
+butter,remove,1,2023-08-27 13:13:45
+tomato,remove,1,2023-08-27 13:13:35
+dill,remove,1,2023-08-27 13:13:27
+kimchi,remove,1,2023-08-27 13:13:18
+cheese sliced br,remove,1,2023-08-27 13:13:02
+water,add,14,2023-08-27 12:19:56
+water,remove,29,2023-08-27 12:19:55
+wowbutter,remove,1,2023-08-27 12:19:26
+tortilla,remove,2,2023-08-27 12:19:16
+siracha,remove,1,2023-08-27 12:18:49
+salt box,remove,1,2023-08-27 12:18:41
+salsa,remove,2,2023-08-27 12:18:38
+paper towels,remove,3,2023-08-27 12:18:12
+pad thai,remove,1,2023-08-27 12:17:55
+old bay,remove,6,2023-08-27 12:17:52
+oil,remove,7,2023-08-27 12:17:46
+napkins,remove,4,2023-08-27 12:17:38
+ketchup,add,2,2023-08-27 12:17:19
+jalapeno,remove,1,2023-08-27 12:17:08
+hoisin,remove,1,2023-08-27 12:17:03
+gravy,add,6,2023-08-27 12:16:47
+gloves,remove,4,2023-08-27 12:16:36
+franks,remove,1,2023-08-27 12:16:21
+foil,remove,1,2023-08-27 12:16:11
+doritos,remove,6,2023-08-27 12:16:02
+5 piece cutlery,remove,1,2023-08-27 12:14:40
+#8,remove,1,2023-08-27 12:14:29
+#8,remove,1,2023-08-27 12:14:27
+#8,remove,6,2023-08-27 12:14:25
+#2,remove,1,2023-08-27 12:12:10
+#1,remove,3,2023-08-27 12:12:02
+pork,add,40,2023-08-26 15:06:44
+perogie,remove,1,2023-08-26 15:06:34
+beef burgers,add,38,2023-08-26 15:03:50
+bomba chicken,add,1,2023-08-26 14:51:53
+bacon,add,10,2023-08-26 14:51:24
+ground beef,add,8,2023-08-26 14:51:06
+peameal bacon,add,3,2023-08-26 14:50:57
+bacon,add,10,2023-08-26 14:50:44
+supreme crunch,remove,1,2023-08-26 14:50:31
+supreme crunch,remove,7,2023-08-26 14:50:29
+lobster,remove,5,2023-08-26 14:49:33
+avacodo,add,2,2023-08-26 14:49:17
+chicken breast,add,5,2023-08-26 14:48:46
+chicken breast,add,12,2023-08-26 14:48:38
+chicken breast,remove,21,2023-08-26 14:48:37
+avacodo,add,1,2023-08-26 14:43:28
+cheese curds,add,24,2023-08-26 14:43:05
+shrimp,remove,6,2023-08-26 14:42:30
+chili,add,2,2023-08-26 14:42:21
+clam chowder,remove,1,2023-08-26 14:42:15
+ribeye,remove,1,2023-08-26 14:42:09
+softshell crab,remove,2,2023-08-26 14:42:03
+snowcrab,remove,1,2023-08-26 14:41:59
+haddock fish,remove,3,2023-08-26 14:41:52
+cheese curds,add,23,2023-08-26 14:40:57
+cheese curds,remove,43,2023-08-26 14:40:40
+bacon,add,7,2023-08-26 14:40:05
+bacon,remove,28,2023-08-26 14:40:01
+beef burgers,add,10,2023-08-26 14:39:44
+beef burgers,remove,45,2023-08-26 14:39:43
+peameal bacon,add,6,2023-08-26 14:39:06
+peameal bacon,remove,13,2023-08-26 14:39:01
+pork,add,16,2023-08-26 14:38:47
+pork,add,1,2023-08-26 14:38:42
+pork,add,12,2023-08-26 14:38:40
+pork,add,16,2023-08-26 14:38:37
+pork,add,3,2023-08-26 14:38:27
+pork,add,12,2023-08-26 14:38:19
+pork,add,9,2023-08-26 14:38:18
+#1,remove,9,2023-08-26 14:38:03
+pork,remove,3,2023-08-26 14:37:57
+#1,remove,12,2023-08-26 14:37:32
+pork,add,3,2023-08-26 14:37:24
+#1,add,12,2023-08-26 14:36:58
+#1,add,9,2023-08-26 14:36:56
+pork,add,7,2023-08-26 14:36:45
+pork,remove,115,2023-08-26 14:36:44
+ground beef,add,2,2023-08-26 14:36:30
+ground beef,remove,12,2023-08-26 14:36:29
+tomato,remove,2,2023-08-26 14:34:33
+red cabbage,remove,1,2023-08-26 14:33:09
+pico,add,4,2023-08-26 14:32:50
+mayo,remove,3,2023-08-26 14:32:21
+kimchi,add,1,2023-08-26 14:32:04
+green onion,remove,1,2023-08-26 14:31:48
+fries,remove,30,2023-08-26 14:31:38
+dill,remove,1,2023-08-26 14:30:56
+ciabatta,remove,1,2023-08-26 14:30:32
+cheese mozzarella,add,3,2023-08-26 14:30:13
+cabbage,add,5,2023-08-26 14:29:55
+burger lettuce,remove,1,2023-08-26 14:29:44
+bean sprouts,add,3,2023-08-26 14:29:14
+banana pepper,remove,3,2023-08-26 14:29:12
+banana pepper,add,3,2023-08-26 14:29:10
+krispy kreme,add,10,2023-08-26 14:28:47
+bomba chicken,remove,1,2023-08-26 14:28:32
+tortilla,add,5,2023-08-26 14:23:01
+salsa,add,2,2023-08-26 14:22:31
+plastic portion,remove,1,2023-08-26 14:22:19
+paper towels,remove,1,2023-08-26 14:22:01
+pad thai,remove,1,2023-08-26 14:21:50
+oil,add,7,2023-08-26 14:21:43
+napkins,remove,1,2023-08-26 14:21:27
+gloves,remove,2,2023-08-26 14:20:13
+franks,remove,2,2023-08-26 14:19:46
+doritos,add,3,2023-08-26 14:19:27
+coleslaw dressing,add,2,2023-08-26 14:19:16
+quaker batter,remove,1,2023-08-26 14:17:47
+belgian waffle,add,1,2023-08-26 14:17:33
+5 piece cutlery,remove,1,2023-08-26 14:17:24
+#8,remove,2,2023-08-26 14:17:16
+200 savaday,add,3,2023-08-26 14:16:54
+#2,remove,2,2023-08-26 14:16:46
+#1,remove,4,2023-08-26 14:16:33
+pork,add,44,2023-08-25 13:19:52
+beans,remove,1,2023-08-25 13:13:09
+belgian waffle,remove,1,2023-08-25 13:13:05
+chicken breast,add,6,2023-08-25 13:09:05
+peameal bacon,add,3,2023-08-25 13:08:15
+supreme crunch,add,12,2023-08-25 13:07:31
+supreme crunch,add,12,2023-08-25 13:07:17
+supreme crunch,add,19,2023-08-25 13:07:11
+softshell crab,remove,3,2023-08-25 13:06:59
+softshell crab,add,5,2023-08-25 13:06:56
+shrimp,add,9,2023-08-25 13:06:46
+snowcrab,add,5,2023-08-25 13:06:38
+lobster,add,10,2023-08-25 13:04:59
+hot dog,add,42,2023-08-25 13:03:44
+ground beef,add,10,2023-08-25 13:03:26
+clam chowder,add,2,2023-08-25 13:03:13
+chicken breast,add,15,2023-08-25 13:02:53
+cheese curds,add,20,2023-08-25 13:02:33
+beef burgers,add,6,2023-08-25 13:02:14
+beef burgers,add,12,2023-08-25 13:01:57
+beef burgers,add,20,2023-08-25 13:01:42
+ribeye,add,4,2023-08-25 13:01:01
+ribeye,add,1,2023-08-25 13:00:26
+pork,add,27,2023-08-25 13:00:23
+bacon,add,9,2023-08-25 12:59:42
+pork,add,44,2023-08-25 12:59:17
+perogie,add,2,2023-08-25 12:58:59
+peameal bacon,add,10,2023-08-25 12:58:40
+hot dog,add,6,2023-08-25 12:56:44
+ground beef,add,2,2023-08-25 12:56:28
+cheese curds,add,23,2023-08-25 12:55:54
+beyond burger,add,4,2023-08-25 12:55:33
+beef burgers,add,7,2023-08-25 12:55:23
+bacon,add,10,2023-08-25 12:53:29
+bacon,add,9,2023-08-25 12:52:23
+avacodo,add,5,2023-08-25 12:51:42
+haddock fish,add,11,2023-08-25 12:51:34
+white onion,add,3,2023-08-25 12:51:06
+water,add,18,2023-08-25 12:51:02
+water,add,11,2023-08-25 12:50:56
+tomato,add,4,2023-08-25 12:50:45
+tofu,add,3,2023-08-25 12:50:41
+sour cream,add,14,2023-08-25 12:50:35
+shredded lettuce,add,4,2023-08-25 12:50:10
+shredded cheese,add,3,2023-08-25 12:50:06
+relish,add,4,2023-08-25 12:49:59
+red cabbage,add,4,2023-08-25 12:49:55
+pretzel,add,8,2023-08-25 12:49:45
+pico,add,7,2023-08-25 12:49:39
+pickles,add,11,2023-08-25 12:49:34
+mayo,add,5,2023-08-25 12:49:23
+kimchi,add,2,2023-08-25 12:49:07
+green onion,add,4,2023-08-25 12:49:00
+fries,add,24,2023-08-25 12:48:40
+fries,add,24,2023-08-25 12:48:35
+fries,add,36,2023-08-25 12:48:31
+fries,add,180,2023-08-25 12:48:21
+eggs,add,8,2023-08-25 12:48:10
+dill,add,3,2023-08-25 12:48:05
+cream,add,1,2023-08-25 12:47:58
+cilantro,add,3,2023-08-25 12:47:54
+ciabatta,add,9,2023-08-25 12:47:45
+chives,add,3,2023-08-25 12:47:36
+cheese sliced br,add,4,2023-08-25 12:47:29
+cheese ribbons,add,3,2023-08-25 12:47:22
+carrots,remove,6,2023-08-25 12:47:14
+carrots,add,3,2023-08-25 12:47:11
+carrots,add,5,2023-08-25 12:47:10
+cabbage,add,4,2023-08-25 12:47:09
+butter,add,2,2023-08-25 12:47:03
+burger lettuce,add,13,2023-08-25 12:46:56
+bean sprouts,add,1,2023-08-25 12:46:29
+bean sprouts,add,3,2023-08-25 12:46:25
+banana pepper,add,4,2023-08-25 12:46:21
+red onions,add,6,2023-08-25 12:46:10
+krispy kreme,add,120,2023-08-25 12:46:01
+tortilla,add,3,2023-08-25 12:22:49
+thermal foil wrap,add,3,2023-08-25 12:22:24
+sugar,add,1,2023-08-25 12:22:15
+saran wrap,add,5,2023-08-25 12:22:06
+siracha,add,2,2023-08-25 12:22:05
+salt packet,add,2,2023-08-25 12:21:58
+salt box,add,3,2023-08-25 12:21:52
+salsa,add,3,2023-08-25 12:21:49
+plumsauce,add,8,2023-08-25 12:21:41
+plastic portion,add,2,2023-08-25 12:21:00
+plastic portion,add,3,2023-08-25 12:20:58
+pepper packet,add,2,2023-08-25 12:20:51
+paper towels,add,10,2023-08-25 12:20:46
+pancake waffle,add,3,2023-08-25 12:20:33
+pan liner,add,1,2023-08-25 12:20:31
+pad thai,add,3,2023-08-25 12:20:30
+old bay,add,9,2023-08-25 12:20:10
+oil,add,29,2023-08-25 12:20:07
+napkins,add,14,2023-08-25 12:19:56
+mustard,add,14,2023-08-25 12:19:45
+ketchup,add,3,2023-08-25 12:19:24
+jalapeno,add,6,2023-08-25 12:19:18
+hoisin,add,5,2023-08-25 12:19:09
+hand soap,add,2,2023-08-25 12:18:59
+gravy,add,26,2023-08-25 12:17:26
+gloves,add,12,2023-08-25 12:17:09
+garlic aioli,add,9,2023-08-25 12:16:54
+franks,add,3,2023-08-25 12:16:46
+forks,add,40,2023-08-25 12:16:43
+foil,add,4,2023-08-25 12:16:40
+doritos,add,6,2023-08-25 12:16:30
+dish soap,add,2,2023-08-25 12:16:19
+coleslaw dressing,add,2,2023-08-25 12:15:10
+clean green pot,add,2,2023-08-25 12:14:07
+cheese sauce,add,4,2023-08-25 12:13:52
+checkered basket,add,7,2023-08-25 12:13:45
+bleach,add,9,2023-08-25 12:13:30
+beans,add,4,2023-08-25 12:13:23
+quaker batter,add,2,2023-08-25 12:13:14
+chipotle sauce,add,5,2023-08-25 12:13:09
+bomba chicken,add,2,2023-08-25 12:13:04
+belgian waffle,add,2,2023-08-25 12:13:00
+bbq sauce dip,add,8,2023-08-25 12:12:50
+bbq sauce,add,12,2023-08-25 12:12:36
+5 piece cutlery,add,4,2023-08-25 12:12:25
+200 savaday,add,5,2023-08-25 12:12:13
+#2,add,6,2023-08-25 12:12:10
+#1,add,13,2023-08-25 12:11:57
+#8,add,31,2023-08-25 12:11:51
+wowbutter,add,2,2023-08-25 11:36:38
+wowbutter,remove,2,2023-08-25 11:36:35
+white onion,remove,3,2023-08-25 11:36:33
+water,remove,35,2023-08-25 11:36:31
+tortilla,remove,5,2023-08-25 11:36:27
+tomato,remove,5,2023-08-25 11:36:25
+tofu,remove,3,2023-08-25 11:36:24
+thermal foil wrap,remove,4,2023-08-25 11:36:22
+supreme crunch,remove,11,2023-08-25 11:36:15
+sugar,remove,1,2023-08-25 11:36:12
+sour cream,remove,16,2023-08-25 11:36:09
+softshell crab,remove,2,2023-08-25 11:36:06
+snowcrab,remove,6,2023-08-25 11:36:04
+saran wrap,remove,6,2023-08-25 11:36:02
+siracha,remove,2,2023-08-25 11:36:00
+shrimp,remove,12,2023-08-25 11:35:58
+shredded lettuce,remove,4,2023-08-25 11:35:56
+shredded cheese,remove,3,2023-08-25 11:35:54
+salt packet,remove,2,2023-08-25 11:35:52
+salt box,remove,3,2023-08-25 11:35:50
+salsa,remove,5,2023-08-25 11:35:48
+ribeye,remove,6,2023-08-25 11:35:44
+relish,remove,4,2023-08-25 11:35:43
+red cabbage,remove,4,2023-08-25 11:35:40
+pretzel,remove,10,2023-08-25 11:35:38
+pork,remove,153,2023-08-25 11:35:36
+plumsauce,remove,9,2023-08-25 11:35:34
+plastic portion,remove,3,2023-08-25 11:35:30
+plastic portion,remove,2,2023-08-25 11:35:27
+pico,remove,6,2023-08-25 11:35:24
+pickles,remove,12,2023-08-25 11:35:23
+perogie,remove,2,2023-08-25 11:35:20
+pepper packet,remove,2,2023-08-25 11:35:18
+peameal bacon,remove,18,2023-08-25 11:35:17
+paper towels,remove,8,2023-08-25 11:35:13
+pancake waffle,remove,3,2023-08-25 11:35:11
+pan liner,remove,1,2023-08-25 11:35:08
+pad thai,remove,4,2023-08-25 11:35:06
+old bay,remove,6,2023-08-25 11:35:05
+oil,remove,36,2023-08-25 11:35:03
+napkins,remove,16,2023-08-25 11:35:01
+mustard,remove,14,2023-08-25 11:34:57
+mayo,remove,6,2023-08-25 11:34:55
+lobster,remove,10,2023-08-25 11:34:54
+kimchi,remove,4,2023-08-25 11:34:48
+ketchup,remove,4,2023-08-25 11:34:47
+jalapeno,remove,4,2023-08-25 11:34:46
+hot dog,remove,54,2023-08-25 11:34:41
+hoisin,remove,6,2023-08-25 11:34:39
+hand soap,remove,3,2023-08-25 11:34:37
+ground beef,remove,10,2023-08-25 11:34:35
+gravy,remove,26,2023-08-25 11:34:31
+gloves,remove,15,2023-08-25 11:34:29
+garlic aioli,remove,9,2023-08-25 11:34:27
+fries,remove,203,2023-08-25 11:34:24
+forks,remove,40,2023-08-25 11:34:21
+franks,remove,3,2023-08-25 11:34:20
+foil,remove,5,2023-08-25 11:34:15
+eggs,remove,8,2023-08-25 11:34:13
+doritos,remove,6,2023-08-25 11:34:09
+dish soap,remove,2,2023-08-25 11:34:08
+dill,remove,3,2023-08-25 11:34:06
+cream,remove,1,2023-08-25 11:34:03
+coleslaw dressing,remove,5,2023-08-25 11:34:01
+clean green pot,remove,2,2023-08-25 11:33:58
+clam chowder,remove,2,2023-08-25 11:33:57
+cilantro,remove,4,2023-08-25 11:33:55
+ciabatta,remove,7,2023-08-25 11:33:52
+chives,remove,3,2023-08-25 11:33:49
+chili,remove,2,2023-08-25 11:33:46
+chicken breast,remove,25,2023-08-25 11:33:44
+cheese sliced br,remove,5,2023-08-25 11:33:41
+cheese sauce,remove,4,2023-08-25 11:33:39
+cheese ribbons,remove,3,2023-08-25 11:33:38
+cheese mozzarella,remove,2,2023-08-25 11:33:36
+cheese curds,remove,38,2023-08-25 11:33:33
+checkered basket,remove,7,2023-08-25 11:33:29
+carrots,remove,2,2023-08-25 11:33:27
+cabbage,remove,5,2023-08-25 11:33:24
+butter,remove,2,2023-08-25 11:33:22
+burger lettuce,remove,15,2023-08-25 11:33:20
+blueberry,remove,4,2023-08-25 11:33:18
+blueberry filling,remove,4,2023-08-25 11:33:16
+bleach,remove,9,2023-08-25 11:33:14
+beyond burger,remove,4,2023-08-25 11:33:12
+beef burgers,remove,28,2023-08-25 11:33:10
+beans,remove,5,2023-
+bacon,remove,34,2023-08-25 11:33:02
+avacodo,remove,5,2023-08-25 11:33:00
+red onions,remove,6,2023-08-25 11:32:58
+quaker batter,remove,2,2023-08-25 11:32:55
+krispy kreme,remove,124,2023-08-25 11:32:54
+haddock fish,remove,11,2023-08-25 11:32:51
+chipotle sauce,remove,5,2023-08-25 11:32:49
+belgian waffle,remove,2,2023-08-25 11:32:48
+bbq sauce,remove,15,2023-08-25 11:32:45
+bbq sauce dip,remove,8,2023-08-25 11:32:40
+5 piece cutlery,remove,5,2023-08-25 11:32:38
+#8,remove,26,2023-08-25 11:32:35
+200 savaday,remove,5,2023-08-25 11:32:32
+#2,remove,8,2023-08-25 11:32:31
+#1,remove,15,2023-08-25 11:32:29
+tortilla,remove,3,2023-08-24 11:11:34
+siracha,remove,1,2023-08-24 11:10:27
+salt box,remove,2,2023-08-24 11:10:13
+salsa,remove,5,2023-08-24 11:09:55
+paper towels,remove,1,2023-08-24 11:08:08
+paper towels,remove,6,2023-08-24 11:08:06
+pad thai,remove,1,2023-08-24 11:07:35
+oil,remove,6,2023-08-24 11:07:22
+napkins,remove,7,2023-08-24 11:06:13
+mustard,remove,1,2023-08-24 11:05:59
+ketchup,remove,3,2023-08-24 11:06:22
+jalapeno,remove,1,2023-08-24 11:05:14
+gravy,add,2,2023-08-24 11:03:00
+gravy,remove,2,2023-08-24 11:02:56
+gravy,remove,5,2023-08-24 11:02:54
+gravy,remove,4,2023-08-24 11:02:53
+gloves,remove,20,2023-08-24 11:02:38
+garlic aioli,add,4,2023-08-24 11:02:22
+franks,remove,1,2023-08-24 11:01:50
+franks,add,3,2023-08-24 11:01:48
+dish soap,remove,2,2023-08-24 11:01:21
+cheese sauce,remove,1,2023-08-24 11:00:33
+bleach,remove,3,2023-08-24 11:00:03
+#2,remove,1,2023-08-24 10:57:27
+#1,add,2,2023-08-24 10:56:49
+#1,add,1,2023-08-24 10:56:45
+#1,add,3,2023-08-24 10:56:43
+#1,add,6,2023-08-24 10:56:41
+#1,add,3,2023-08-24 10:56:41
+#1,remove,17,2023-08-24 10:56:37
+cheese curds,add,14,2023-08-24 10:31:00
+cheese curds,add,10,2023-08-24 10:30:32
+cheese curds,add,14,2023-08-24 10:30:27
+cheese curds,remove,67,2023-08-24 10:30:05
+cheese curds,add,21,2023-08-24 10:28:57
+pork,add,17,2023-08-24 10:28:29
+pork,add,22,2023-08-24 10:28:10
+beef burgers,add,12,2023-08-24 10:27:38
+beef burgers,add,4,2023-08-24 10:27:26
+beef burgers,add,6,2023-08-24 10:27:16
+chicken breast,add,9,2023-08-24 10:27:03
+chicken breast,add,1,2023-08-24 10:26:48
+chicken breast,add,15,2023-08-24 10:26:42
+chicken breast,remove,24,2023-08-24 10:26:41
+peameal bacon,add,3,2023-08-24 10:26:27
+avacodo,remove,3,2023-08-24 10:25:48
+ground beef,add,8,2023-08-24 10:25:22
+supreme crunch,add,11,2023-08-24 10:25:11
+supreme crunch,remove,23,2023-08-24 10:25:10
+chili,add,2,2023-08-24 10:24:59
+shrimp,add,5,2023-08-24 10:24:50
+bacon,add,15,2023-08-24 10:24:41
+lobster,remove,2,2023-08-24 10:24:29
+softshell crab,add,1,2023-08-24 10:24:14
+snowcrab,add,5,2023-08-24 10:24:09
+clam chowder,remove,1,2023-08-24 10:23:59
+ribeye,add,4,2023-08-24 10:23:55
+haddock fish,add,4,2023-08-24 10:23:32
+beef burgers,add,6,2023-08-24 10:22:52
+beef burgers,remove,18,2023-08-24 10:22:51
+pork,add,1,2023-08-24 10:21:46
+pork,add,12,2023-08-24 10:21:44
+pork,add,19,2023-08-24 10:21:35
+pork,add,3,2023-08-24 10:21:25
+pork,add,16,2023-08-24 10:21:24
+pork,add,13,2023-08-24 10:21:13
+pork,add,9,2023-08-24 10:20:36
+pork,add,12,2023-08-24 10:20:24
+pork,add,3,2023-08-24 10:20:21
+bacon,add,10,2023-08-24 10:19:41
+pork,add,14,2023-08-24 10:19:22
+pork,add,12,2023-08-24 10:19:15
+pork,remove,139,2023-08-24 10:19:08
+peameal bacon,add,9,2023-08-24 10:18:09
+bacon,add,3,2023-08-24 10:18:00
+bacon,add,6,2023-08-24 10:17:58
+bacon,remove,27,2023-08-24 10:17:55
+peameal bacon,add,6,2023-08-24 10:17:49
+peameal bacon,remove,18,2023-08-24 10:17:45
+ribeye,add,2,2023-08-24 10:17:31
+ribeye,remove,6,2023-08-24 10:17:30
+ground beef,add,2,2023-08-24 10:17:22
+ground beef,remove,9,2023-08-24 10:17:21
+water,remove,9,2023-08-24 10:17:02
+shredded cheese,remove,1,2023-08-24 10:16:00
+relish,add,4,2023-08-24 10:15:49
+red cabbage,add,3,2023-08-24 10:15:40
+pico,remove,1,2023-08-24 10:15:18
+pickles,remove,1,2023-08-24 10:15:12
+perogie,remove,1,2023-08-24 10:15:02
+mayo,remove,2,2023-08-24 10:14:28
+kimchi,add,3,2023-08-24 10:14:14
+green onion,remove,1,2023-08-24 10:14:00
+bean sprouts,remove,1,2023-08-24 10:13:21
+fries,add,80,2023-08-24 10:12:56
+cilantro,remove,1,2023-08-24 10:12:28
+ciabatta,remove,3,2023-08-24 10:12:24
+cabbage,remove,2,2023-08-24 10:11:23
+butter,add,1,2023-08-24 10:11:15
+blueberry,add,4,2023-08-24 10:10:48
+blueberry filling,add,4,2023-08-24 10:10:47
+red onions,add,4,2023-08-24 10:10:19
+krispy kreme,add,14,2023-08-24 10:09:09
+krispy kreme,add,25,2023-08-24 10:09:06
+bomba chicken,remove,1,2023-08-24 10:08:44
+haddock fish,remove,1,2023-08-23 13:36:27
+supreme crunch,remove,2,2023-08-23 13:35:02
+supreme crunch,remove,9,2023-08-23 13:35:01
+chicken breast,remove,1,2023-08-23 13:34:52
+cheese curds,remove,1,2023-08-23 13:34:25
+snowcrab,remove,1,2023-08-23 13:34:08
+shrimp,add,1,2023-08-23 13:33:58
+lobster,add,2,2023-08-23 13:33:51
+hot dog,add,54,2023-08-23 13:33:31
+hot dog,remove,82,2023-08-23 13:33:29
+ribeye,remove,1,2023-08-23 13:32:58
+ground beef,remove,3,2023-08-23 13:32:48
+peameal bacon,remove,4,2023-08-23 13:32:30
+bacon,add,27,2023-08-23 13:32:16
+bacon,remove,35,2023-08-23 13:32:15
+pork,remove,21,2023-08-23 13:31:34
+beef burgers,remove,2,2023-08-23 13:31:20
+water,add,28,2023-08-23 12:44:09
+tomato,remove,4,2023-08-23 12:43:43
+shredded cheese,add,3,2023-08-23 12:43:17
+relish,remove,1,2023-08-23 12:43:08
+red cabbage,remove,1,2023-08-23 12:43:06
+pretzel,remove,1,2023-08-23 12:42:57
+pico,remove,2,2023-08-23 12:42:45
+mayo,add,5,2023-08-23 12:42:22
+kimchi,add,1,2023-08-23 12:41:53
+eggs,remove,3,2023-08-23 12:41:29
+chili,remove,2,2023-08-23 12:40:56
+cheese sliced br,remove,2,2023-08-23 12:40:52
+cabbage,remove,2,2023-08-23 12:40:31
+bean sprouts,remove,1,2023-08-23 12:40:05
+red onions,remove,5,2023-08-23 12:39:40
+krispy kreme,add,85,2023-08-23 12:39:08
+krispy kreme,remove,164,2023-08-23 12:39:07
+fries,add,123,2023-08-23 12:38:33
+fries,remove,215,2023-08-23 12:38:32
+pad thai,remove,3,2023-08-23 12:32:44
+oil,remove,13,2023-08-23 12:32:23
+jalapeno,remove,1,2023-08-23 12:30:13
+belgian waffle,remove,1,2023-08-23 12:27:20
+5 piece cutlery,remove,3,2023-08-23 12:27:05
+#1,remove,4,2023-08-23 12:25:21
+krispy kreme,add,48,2023-08-22 13:14:25
+krispy kreme,add,5,2023-08-22 13:14:13
+krispy kreme,add,9,2023-08-22 13:14:08
+krispy kreme,add,4,2023-08-22 13:14:00
+krispy kreme,add,28,2023-08-22 13:13:54
+krispy kreme,add,60,2023-08-22 13:13:47
+krispy kreme,add,10,2023-08-22 13:13:27
+krispy kreme,remove,152,2023-08-22 13:13:25
+cheese curds,add,14,2023-08-22 13:12:52
+cheese curds,add,12,2023-08-22 13:12:43
+snowcrab,remove,1,2023-08-22 13:12:25
+chicken breast,add,9,2023-08-22 13:11:50
+peameal bacon,add,3,2023-08-22 13:11:15
+beef burgers,add,16,2023-08-22 13:10:59
+pork,add,17,2023-08-22 13:10:37
+pork,add,24,2023-08-22 13:10:23
+bacon,add,22,2023-08-22 13:10:05
+lobster,add,1,2023-08-22 13:09:51
+chili,remove,1,2023-08-22 13:09:42
+shrimp,add,1,2023-08-22 13:09:35
+ground beef,add,12,2023-08-22 13:09:24
+ground beef,remove,16,2023-08-22 13:09:14
+ribeye,remove,2,2023-08-22 13:09:03
+chicken breast,add,16,2023-08-22 13:08:43
+chicken breast,remove,25,2023-08-22 13:08:35
+supreme crunch,add,6,2023-08-22 13:08:20
+supreme crunch,add,12,2023-08-22 13:08:10
+supreme crunch,add,16,2023-08-22 13:07:50
+supreme crunch,remove,38,2023-08-22 13:07:49
+beef burgers,add,4,2023-08-22 12:59:57
+beef burgers,remove,28,2023-08-22 12:59:56
+pork,add,13,2023-08-22 12:59:24
+pork,add,19,2023-08-22 12:59:02
+pork,add,3,2023-08-22 12:58:52
+pork,add,16,2023-08-22 12:58:46
+pork,add,3,2023-08-22 12:57:59
+pork,add,6,2023-08-22 12:57:20
+pork,add,12,2023-08-22 12:57:17
+pork,add,4,2023-08-22 12:57:16
+pork,add,2,2023-08-22 12:57:06
+pork,add,12,2023-08-22 12:57:03
+pork,add,12,2023-08-22 12:56:58
+pork,add,17,2023-08-22 12:56:50
+pork,remove,100,2023-08-22 12:56:49
+peameal bacon,remove,7,2023-08-22 12:56:29
+bacon,add,1,2023-08-22 12:56:10
+cheese curds,add,21,2023-08-22 12:55:54
+cheese curds,remove,55,2023-08-22 12:55:50
+bacon,add,12,2023-08-22 12:55:43
+bacon,remove,38,2023-08-22 12:55:11
+water,add,2,2023-08-22 12:54:46
+water,remove,15,2023-08-22 12:54:44
+tomato,remove,3,2023-08-22 12:54:30
+tofu,add,3,2023-08-22 12:54:08
+shredded lettuce,remove,1,2023-08-22 12:42:19
+red cabbage,remove,1,2023-08-22 12:41:24
+pico,add,5,2023-08-22 12:41:11
+perogie,remove,1,2023-08-22 12:40:58
+mayo,remove,2,2023-08-22 12:40:37
+green onion,remove,1,2023-08-22 12:40:07
+ciabatta,remove,2,2023-08-22 12:38:59
+cabbage,remove,1,2023-08-22 12:37:00
+burger lettuce,remove,4,2023-08-22 12:36:40
+red onions,add,4,2023-08-22 12:35:50
+red onions,remove,3,2023-08-22 12:35:25
+fries,add,215,2023-08-22 12:34:10
+fries,remove,280,2023-08-22 12:33:51
+ketchup,remove,1,2023-08-22 12:08:51
+clam chowder,add,2,2023-08-22 12:05:54
+beans,remove,1,2023-08-22 12:04:45
+#8,add,2,2023-08-22 12:02:59
+#1,remove,4,2023-08-22 12:00:20
+pan liner,add,1,2023-08-21 11:11:19
+salsa,add,4,2023-08-21 11:10:09
+plumsauce,add,9,2023-08-21 11:09:53
+old bay,remove,3,2023-08-21 11:09:03
+oil,add,55,2023-08-21 11:08:33
+oil,remove,73,2023-08-21 11:08:32
+oil,add,10,2023-08-21 11:07:37
+oil,add,9,2023-08-21 11:07:29
+oil,add,54,2023-08-21 11:07:27
+oil,remove,45,2023-08-21 11:07:24
+oil,add,1,2023-08-21 11:07:08
+oil,add,44,2023-08-21 11:06:52
+oil,remove,79,2023-08-21 11:06:51
+ketchup,add,8,2023-08-21 11:06:05
+ketchup,remove,21,2023-08-21 11:06:04
+jalapeno,remove,1,2023-08-21 11:05:31
+gravy,remove,9,2023-08-21 11:04:47
+goldfish,remove,1,2023-08-21 11:04:11
+doritos,add,6,2023-08-21 11:03:56
+doritos,remove,14,2023-08-21 11:03:54
+dish soap,add,3,2023-08-21 11:03:46
+dish soap,add,1,2023-08-21 11:03:28
+checkered basket,add,1,2023-08-21 11:02:52
+bleach,add,12,2023-08-21 11:02:35
+beans,remove,6,2023-08-21 11:02:16
+bbq sauce dip,remove,9,2023-08-21 11:01:09
+bbq sauce,remove,5,2023-08-21 11:00:46
+#8,remove,2,2023-08-21 11:00:35
+#1,remove,1,2023-08-21 11:00:15
+tofu,remove,1,2023-08-21 10:43:50
+ground beef,add,1,2023-08-21 10:42:35
+avacodo,remove,3,2023-08-21 10:40:46
+shrimp,remove,1,2023-08-21 10:40:36
+lobster,remove,11,2023-08-21 10:40:28
+cheese curds,add,24,2023-08-21 10:39:45
+beef burgers,add,6,2023-08-21 10:39:21
+chicken breast,add,12,2023-08-21 10:39:04
+ribeye,remove,2,2023-08-21 10:37:04
+ground beef,add,15,2023-08-21 10:36:54
+ground beef,remove,16,2023-08-21 10:36:39
+chili,remove,2,2023-08-21 10:36:27
+clam chowder,remove,2,2023-08-21 10:36:18
+snowcrab,remove,2,2023-08-21 10:36:10
+softshell crab,remove,3,2023-08-21 10:36:04
+beef burgers,add,10,2023-08-21 10:35:49
+bacon,add,12,2023-08-21 10:35:13
+bacon,add,13,2023-08-21 10:35:10
+beef burgers,add,4,2023-08-21 10:32:30
+peameal bacon,add,26,2023-08-21 10:31:52
+peameal bacon,remove,23,2023-08-21 10:31:21
+beef burgers,add,8,2023-08-21 10:30:50
+beef burgers,remove,33,2023-08-21 10:30:22
+bacon,add,9,2023-08-21 10:29:45
+bacon,add,4,2023-08-21 10:29:25
+bacon,remove,35,2023-08-21 10:29:21
+cheese curds,add,6,2023-08-21 10:29:10
+cheese curds,add,9,2023-08-21 10:29:07
+cheese curds,add,9,2023-08-21 10:29:05
+cheese curds,add,7,2023-08-21 10:29:02
+cheese curds,remove,61,2023-08-21 10:28:57
+water,add,18,2023-08-21 10:28:37
+water,add,3,2023-08-21 10:28:30
+krispy kreme,add,8,2023-08-21 10:28:10
+krispy kreme,add,12,2023-08-21 10:28:07
+krispy kreme,add,12,2023-08-21 10:28:03
+krispy kreme,add,8,2023-08-21 10:27:59
+krispy kreme,add,8,2023-08-21 10:27:57
+krispy kreme,add,8,2023-08-21 10:27:54
+krispy kreme,add,8,2023-08-21 10:27:52
+krispy kreme,add,22,2023-08-21 10:27:48
+krispy kreme,add,66,2023-08-21 10:27:39
+krispy kreme,remove,160,2023-08-21 10:27:38
+mayo,add,5,2023-08-21 10:27:18
+relish,add,1,2023-08-21 10:27:06
+banana pepper,add,1,2023-08-21 10:26:54
+pico,remove,4,2023-08-21 10:26:07
+sour cream,add,4,2023-08-21 10:25:46
+cheese sliced br,remove,1,2023-08-21 10:24:47
+eggs,add,4,2023-08-21 10:24:24
+white onion,add,1,2023-08-21 10:23:40
+bean sprouts,remove,5,2023-08-21 10:23:06
+white onion,add,2,2023-08-21 10:22:45
+burger lettuce,add,1,2023-08-21 10:21:12
+burger lettuce,add,5,2023-08-21 10:20:28
+red onions,add,3,2023-08-21 10:17:15
+red onions,add,3,2023-08-21 10:17:14
+red cabbage,add,2,2023-08-21 10:16:55
+green onion,add,1,2023-08-21 10:16:28
+cabbage,remove,1,2023-08-21 10:16:20
+dill,add,3,2023-08-21 10:16:06
+cilantro,add,2,2023-08-21 10:15:54
+shredded lettuce,add,2,2023-08-21 10:15:43
+burger lettuce,add,1,2023-08-21 10:15:10
+burger lettuce,add,5,2023-08-21 10:15:09
+tomato,add,8,2023-08-21 10:14:36
+chives,add,2,2023-08-21 10:12:05
+cheese mozzarella,add,2,2023-08-21 10:11:50
+pretzel,add,3,2023-08-21 10:10:57
+ciabatta,remove,4,2023-08-21 10:10:40
+fries,remove,20,2023-08-21 10:10:20
+vinegar,add,2,2023-08-20 13:08:03
+salt box,add,3,2023-08-20 13:07:11
+salsa,add,1,2023-08-20 13:06:23
+oil,add,5,2023-08-20 13:05:58
+oil,add,25,2023-08-20 13:06:57
+napkins,add,22,2023-08-20 13:02:46
+jalapeno,add,5,2023-08-20 13:01:23
+dish soap,remove,3,2023-08-20 13:00:40
+forks,add,22,2023-08-20 12:59:31
+dish soap,add,3,2023-08-20 12:58:51
+checkered basket,add,3,2023-08-20 12:58:06
+bleach,remove,2,2023-08-20 12:57:55
+bbq sauce,add,3,2023-08-20 12:57:34
+bbq sauce,remove,4,2023-08-20 12:57:27
+bbq sauce dip,remove,2,2023-08-20 12:57:12
+bbq sauce dip,add,16,2023-08-20 12:57:11
+#8,add,26,2023-08-20 12:55:22
+#8,remove,44,2023-08-20 12:55:20
+#1,add,16,2023-08-20 12:48:36
+sugar,add,1,2023-08-18 16:45:12
+wowbutter,add,2,2023-08-18 16:44:59
+checkered basket,add,3,2023-08-18 16:44:43
+bbq sauce dip,add,3,2023-08-18 16:44:00
+pepper packet,add,2,2023-08-18 16:43:03
+thermal foil wrap,add,4,2023-08-18 16:42:24
+vinegar,add,1,2023-08-18 16:41:40
+quaker batter,add,2,2023-08-18 16:40:58
+belgian waffle,add,1,2023-08-18 16:40:11
+clean green pot,add,2,2023-08-18 16:39:59
+hand soap,add,3,2023-08-18 16:39:54
+200 savaday,add,5,2023-08-18 16:39:05
+#2,add,9,2023-08-18 16:38:47
+saran wrap,add,6,2023-08-18 16:38:12
+foil,add,5,2023-08-18 16:38:03
+chipotle sauce,add,5,2023-08-18 16:37:26
+kbbg sauce,add,16,2023-08-18 16:37:01
+belgian waffle,remove,1,2023-08-18 16:36:29
+old bay,add,9,2023-08-18 16:35:46
+icing sugar,add,1,2023-08-18 16:35:32
+franks,add,1,2023-08-18 16:35:11
+water,add,8,2023-08-18 16:34:53
+tortilla,add,8,2023-08-18 16:34:45
+siracha,add,3,2023-08-18 16:34:31
+shredded cheese,add,1,2023-08-18 16:34:28
+salt packet,add,2,2023-08-18 16:34:09
+salt box,add,2,2023-08-18 16:34:04
+salsa,add,5,2023-08-18 16:33:37
+paper towels,add,15,2023-08-18 16:33:17
+pancake waffle,add,3,2023-08-18 16:32:36
+pad thai,add,8,2023-08-18 16:32:34
+oil,add,20,2023-08-18 16:32:15
+oil,add,29,2023-08-18 16:32:00
+oil,remove,47,2023-08-18 16:31:58
+oil,add,20,2023-08-18 16:30:38
+oil,add,14,2023-08-18 16:30:19
+oil,add,13,2023-08-18 16:30:10
+napkins,add,1,2023-08-18 16:27:03
+mustard,add,6,2023-08-18 16:26:56
+mustard,add,9,2023-08-18 16:26:47
+lemon juice,add,1,2023-08-18 16:26:27
+kimchi,remove,1,2023-08-18 16:26:23
+ketchup,add,21,2023-08-18 16:26:21
+jalapeno,add,2,2023-08-18 16:25:49
+hoisin,add,6,2023-08-18 16:25:43
+gravy,add,44,2023-08-18 16:25:25
+goldfish,add,1,2023-08-18 16:23:19
+gloves,add,35,2023-08-18 16:22:54
+garlic aioli,add,5,2023-08-18 16:22:50
+forks,add,18,2023-08-18 16:22:37
+dill,remove,1,2023-08-18 16:22:11
+coleslaw dressing,add,5,2023-08-18 16:22:06
+cheese sauce,add,5,2023-08-18 16:21:51
+bleach,add,2,2023-08-18 16:21:06
+beans,add,12,2023-08-18 16:21:01
+belgian waffle,add,3,2023-08-18 16:20:06
+bbq sauce,add,5,2023-08-18 16:20:00
+5 piece cutlery,add,8,2023-08-18 16:19:51
+plastic portion,add,2,2023-08-18 16:19:36
+plastic portion,add,3,2023-08-18 16:19:16
+doritos,add,14,2023-08-18 16:19:06
+#1,add,10,2023-08-18 16:18:52
+#8,add,4,2023-08-18 16:17:54
+#8,remove,4,2023-08-18 16:17:52
+#8,add,44,2023-08-18 16:17:48
+shrimp,remove,2,2023-08-18 12:37:05
+shrimp,add,2,2023-08-18 12:36:42
+bacon,add,17,2023-08-18 12:35:35
+peameal bacon,add,23,2023-08-18 12:34:29
+bacon,add,9,2023-08-18 12:33:57
+bacon,add,9,2023-08-18 12:33:37
+ground beef,add,3,2023-08-18 12:33:09
+ribeye,add,2,2023-08-18 12:32:55
+beef burgers,add,14,2023-08-18 12:32:27
+chili,add,3,2023-08-18 12:31:42
+cheese curds,add,24,2023-08-18 12:30:57
+cheese curds,add,37,2023-08-18 12:30:54
+hot dog,add,10,2023-08-18 12:30:33
+ground beef,add,13,2023-08-18 12:29:08
+avacodo,add,11,2023-08-18 12:28:38
+chicken breast,add,13,2023-08-18 12:28:03
+supreme crunch,add,17,2023-08-18 12:27:27
+hot dog,add,72,2023-08-18 12:23:37
+shrimp,add,6,2023-08-18 12:21:55
+supreme crunch,add,21,2023-08-18 12:21:42
+lobster,add,20,2023-08-18 12:21:00
+chili,add,2,2023-08-18 12:20:27
+clam chowder,add,3,2023-08-18 12:20:21
+beef burgers,add,3,2023-08-18 12:20:16
+beef burgers,add,16,2023-08-18 12:19:53
+snowcrab,add,5,2023-08-18 12:18:20
+softshell crab,add,4,2023-08-18 12:18:14
+haddock fish,add,8,2023-08-18 12:18:09
+ribeye,add,9,2023-08-18 12:18:01
+burger lettuce,add,4,2023-08-18 11:22:42
+bomba chicken,add,1,2023-08-18 11:21:56
+cream,add,1,2023-08-18 11:21:46
+butter,add,1,2023-08-18 11:21:42
+kimchi,add,1,2023-08-18 11:21:35
+pickles,add,13,2023-08-18 11:21:18
+cheese sliced br,add,8,2023-08-18 11:20:45
+green onion,add,1,2023-08-18 11:19:58
+tofu,add,1,2023-08-18 11:19:46
+beyond burger,add,4,2023-08-18 11:19:26
+sour cream,add,12,2023-08-18 11:19:17
+pico,add,8,2023-08-18 11:19:06
+carrots,add,2,2023-08-18 11:19:00
+eggs,add,7,2023-08-18 11:18:55
+burger lettuce,add,3,2023-08-18 11:18:36
+cabbage,add,11,2023-08-18 11:18:19
+lemon,add,1,2023-08-18 11:18:06
+bean sprouts,add,10,2023-08-18 11:17:38
+tomato,add,4,2023-08-18 11:17:27
+cilantro,add,3,2023-08-18 11:17:18
+dill,add,1,2023-08-18 11:17:12
+cheese ribbons,add,3,2023-08-18 11:16:44
+chives,add,1,2023-08-18 11:16:25
+red cabbage,add,1,2023-08-18 11:16:08
+shredded lettuce,add,3,2023-08-18 11:15:44
+perogie,add,4,2023-08-18 11:15:28
+krispy kreme,add,160,2023-08-18 11:15:21
+pork,add,100,2023-08-18 11:13:55
+fries,add,300,2023-08-18 11:13:49
+pretzel,add,8,2023-08-18 11:10:43
+ciabatta,add,16,2023-08-18 11:10:31
+water,remove,49,2023-08-18 10:34:16
+tortilla,remove,9,2023-08-18 10:34:13
+tomato,remove,7,2023-08-18 10:34:06
+thunder chicken,remove,1,2023-08-18 10:34:04
+supreme crunch,remove,21,2023-08-18 10:34:03
+sour cream,remove,3,2023-08-18 10:34:00
+soup spoons,remove,2,2023-08-18 10:33:59
+softshell crab,remove,1,2023-08-18 10:33:55
+soap dispenser,remove,6,2023-08-18 10:33:53
+snowcrab,remove,3,2023-08-18 10:33:50
+snake sack,remove,1,2023-08-18 10:33:47
+siracha,remove,7,2023-08-18 10:33:44
+shrimp,remove,5,2023-08-18 10:33:36
+shredded lettuce,remove,4,2023-08-18 10:33:35
+shredded chicken,remove,6,2023-08-18 10:33:34
+shredded cheese,remove,5,2023-08-18 10:33:32
+salt,remove,1,2023-08-18 10:33:29
+salsa,remove,4,2023-08-18 10:33:28
+ribeye,remove,1,2023-08-18 10:33:27
+pretzel,remove,9,2023-08-18 10:33:26
+pork,remove,85,2023-08-18 10:33:24
+plastic portion,remove,1,2023-08-18 10:33:21
+pico,remove,1,2023-08-18 10:33:20
+pickles,remove,2,2023-08-18 10:33:18
+perogie,remove,8,2023-08-18 10:33:16
+peameal bacon,remove,12,2023-08-18 10:33:14
+paper towels,remove,7,2023-08-18 10:33:11
+pancake waffle,remove,2,2023-08-18 10:33:09
+pad thai,remove,5,2023-08-18 10:33:08
+oil,remove,45,2023-08-18 10:33:06
+napkins,remove,9,2023-08-18 10:33:04
+mustard,remove,4,2023-08-18 10:33:02
+mozzarella,remove,2,2023-08-18 10:32:59
+lobster,remove,22,2023-08-18 10:32:58
+limes,remove,1,2023-08-18 10:32:57
+lemon juice,remove,1,2023-08-18 10:32:54
+kimchi,remove,6,2023-08-18 10:32:50
+jalapeno,remove,4,2023-08-18 10:32:46
+hoisin,remove,2,2023-08-18 10:32:45
+ground beef,remove,2,2023-08-18 10:32:44
+gravy,remove,101,2023-08-18 10:32:40
+goldfish,remove,2,2023-08-18 10:32:38
+golden malted,remove,3,2023-08-18 10:32:36
+garlic aioli,remove,4,2023-08-18 10:32:34
+fries,remove,150,2023-08-18 10:32:33
+forks,remove,13,2023-08-18 10:32:28
+eggs,remove,2,2023-08-18 10:32:27
+doritos,remove,10,2023-08-18 10:32:26
+dish soap,remove,3,2023-08-18 10:32:24
+dill,remove,3,2023-08-18 10:32:21
+cream,remove,1,2023-08-18 10:32:20
+coleslaw dressing,remove,4,2023-08-18 10:32:19
+clam chowder,remove,3,2023-08-18 10:32:17
+cilantro,remove,1,2023-08-18 10:32:10
+ciabatta,remove,3,2023-08-18 10:32:09
+cholula,remove,2,2023-08-18 10:32:06
+chives,remove,3,2023-08-18 10:32:04
+chili,remove,3,2023-08-18 10:32:02
+chicken breast,remove,1,2023-08-18 10:32:00
+cheese sliced,remove,18,2023-08-18 10:31:59
+cheese sauce,remove,1,2023-08-18 10:31:57
+cheese ribbons,remove,2,2023-08-18 10:31:47
+cheese curds,remove,12,2023-08-18 10:31:42
+carrots,remove,2,2023-08-18 10:31:40
+butter milk,remove,2,2023-08-18 10:31:39
+butter,remove,1,2023-08-18 10:31:36
+burger lettuce,remove,14,2023-08-18 10:31:35
+bleach,remove,2,2023-08-18 10:31:34
+beyond burger,remove,7,2023-08-18 10:31:31
+beef burgers,remove,8,2023-08-18 10:31:30
+beans,remove,2,2023-08-18 10:31:28
+bacon,remove,14,2023-08-18 10:31:26
+avacodo,remove,2,2023-08-18 10:31:25
+red onions,remove,5,2023-08-18 10:31:24
+quaker mix,remove,2,2023-08-18 10:31:22
+haddock fish,remove,13,2023-08-18 10:31:19
+bomba chicken,remove,1,2023-08-18 10:31:17
+belgian waffle,remove,3,2023-08-18 10:31:16
+bbq sauce,remove,5,2023-08-18 10:31:15
+5 piece cutlery,remove,3,2023-08-18 10:31:13
+#8,remove,5,2023-08-18 10:31:08
+#3,remove,8,2023-08-18 10:31:00
+#1,remove,5,2023-08-18 10:30:55
+pickles,remove,1,2022-08-28 10:59:23
+kimchi,remove,1,2022-08-28 10:58:32
+shrimp,remove,1,2022-08-28 10:48:05
+chicken breast,remove,1,2022-08-28 10:47:58
+softshell crab,add,1,2022-08-28 10:47:36
+beef burgers,remove,2,2022-08-28 10:45:41
+tomato,add,1,2022-08-28 10:45:25
+peameal bacon,remove,1,2022-08-28 10:45:00
+bacon,remove,4,2022-08-28 10:44:43
+pork,add,17,2022-08-28 10:44:20
+ground beef,remove,1,2022-08-28 10:43:33
+kimchi,add,1,2022-08-28 10:43:22
+burger lettuce,remove,1,2022-08-28 10:43:16
+ciabatta,remove,4,2022-08-28 10:42:49
+pretzel,remove,3,2022-08-28 10:42:40
+cheese sliced,add,8,2022-08-28 10:42:11
+cheese sliced,remove,3,2022-08-28 10:40:38
+pork,remove,7,2022-08-28 10:40:10
+pork,add,50,2022-08-28 10:40:08
+fries,remove,30,2022-08-28 10:39:07
+cabbage,remove,4,2022-08-27 20:52:05
+thunder chicken,remove,1,2022-08-27 20:49:54
+snowcrab,add,1,2022-08-27 20:49:49
+softshell crab,remove,1,2022-08-27 20:49:48
+snowcrab,remove,2,2022-08-27 20:49:18
+ribeye,remove,2,2022-08-27 20:49:10
+pork,remove,95,2022-08-27 20:49:03
+pico,remove,3,2022-08-27 20:48:45
+ground beef,add,1,2022-08-27 20:48:23
+fries,remove,40,2022-08-27 20:48:08
+ciabatta,add,5,2022-08-27 20:47:54
+chicken breast,remove,3,2022-08-27 20:47:32
+carrots,remove,1,2022-08-27 20:46:51
+bean sprouts,remove,2,2022-08-27 20:46:41
+avacodo,remove,1,2022-08-27 20:46:31
+krispy kreme,remove,20,2022-08-27 20:46:04
+mayo,remove,1,2022-08-27 20:45:54
+eggs,remove,1,2022-08-27 20:45:40
+sour cream,remove,1,2022-08-27 20:45:35
+red onions,remove,1,2022-08-27 20:45:10
+beef burgers,remove,5,2022-08-27 20:45:00
+peameal bacon,add,2,2022-08-27 20:44:53
+tomato,remove,2,2022-08-27 20:44:46
+tomato,remove,6,2022-08-27 20:44:44
+bacon,add,18,2022-08-27 20:44:32
+bacon,remove,32,2022-08-27 20:44:31
+peameal bacon,remove,3,2022-08-27 20:44:22
+cheese curds,add,12,2022-08-27 20:44:05
+cheese curds,remove,26,2022-08-27 20:44:04
+ground beef,remove,2,2022-08-27 11:10:56
+pico,remove,4,2022-08-27 11:10:39
+cheese curds,add,2,2022-08-27 11:10:18
+cheese curds,add,6,2022-08-27 11:10:17
+beef burgers,remove,7,2022-08-27 11:10:00
+ribeye,add,1,2022-08-27 11:09:44
+peameal bacon,remove,6,2022-08-27 11:09:34
+bacon,add,10,2022-08-27 11:09:24
+ciabatta,remove,5,2022-08-27 11:09:01
+red onions,remove,2,2022-08-27 11:08:39
+perogie,add,1,2022-08-27 11:08:31
+mayo,remove,2,2022-08-27 11:08:08
+sour cream,add,2,2022-08-27 11:07:58
+shredded chicken,remove,2,2022-08-27 11:06:44
+perogie,remove,1,2022-08-27 11:06:25
+thunder chicken,remove,5,2022-08-27 11:06:07
+supreme crunch,remove,4,2022-08-27 11:06:57
+chicken breast,add,4,2022-08-27 11:05:46
+shrimp,add,4,2022-08-27 11:05:38
+snowcrab,add,3,2022-08-27 11:05:29
+softshell crab,add,1,2022-08-27 11:06:22
+lobster,add,15,2022-08-27 11:05:14
+haddock fish,add,10,2022-08-27 11:05:05
+ribeye,add,1,2022-08-27 11:04:55
+chili,add,3,2022-08-27 11:04:42
+pork,add,10,2022-08-27 11:04:28
+pork,add,27,2022-08-27 11:04:03
+pork,add,23,2022-08-27 11:03:46
+pork,add,60,2022-08-27 11:03:33
+pork,remove,46,2022-08-27 11:03:22
+pork,remove,6,2022-08-27 11:03:17
+kimchi,add,1,2022-08-27 11:03:12
+lobster,add,4,2022-08-27 11:02:55
+tortilla,remove,2,2022-08-25 11:43:10
+doritos,add,6,2022-08-25 11:28:37
+cream,remove,1,2022-08-25 11:28:29
+peameal bacon,remove,1,2022-08-25 10:56:08
+bacon,remove,3,2022-08-25 10:56:05
+bean sprouts,remove,1,2022-08-25 10:56:00
+eggs,remove,1,2022-08-25 10:55:56
+ground beef,remove,1,2022-08-25 10:55:46
+ribeye,remove,1,2022-08-25 10:55:39
+napkins,remove,1,2022-08-25 10:42:24
+#1,remove,2,2022-08-25 10:42:17
+#8,remove,2,2022-08-25 10:42:13
+gloves,remove,1,2022-08-25 10:41:58
+gloves,remove,3,2022-08-25 10:41:57
+pad thai,add,3,2022-08-25 10:25:48
+dish soap,add,3,2022-08-25 09:57:16
+coleslaw dressing,add,4,2022-08-25 09:56:39
+napkins,add,1,2022-08-25 09:56:26
+napkins,add,2,2022-08-25 09:56:24
+napkins,add,2,2022-08-25 09:56:13
+garlic aioli,add,4,2022-08-25 09:56:02
+5 piece cutlery,remove,2,2022-08-25 09:55:11
+napkins,add,4,2022-08-25 09:55:04
+jalapeno,add,2,2022-08-25 09:54:56
+paper towels,add,4,2022-08-25 09:54:25
+bbq sauce,remove,3,2022-08-25 09:54:15
+#1,remove,3,2022-08-25 09:54:05
+#8,add,1,2022-08-25 09:53:54
+oil,add,25,2022-08-25 09:52:47
+beans,remove,1,2022-08-25 09:52:04
+salsa,remove,2,2022-08-25 09:52:00
+forks,add,7,2022-08-25 09:51:36
+lobster,remove,2,2022-08-25 09:43:25
+perogie,remove,2,2022-08-25 09:42:56
+cheese curds,add,3,2022-08-25 09:42:47
+thunder chicken,remove,3,2022-08-25 09:42:33
+supreme crunch,remove,4,2022-08-25 09:42:23
+chicken breast,remove,5,2022-08-25 09:42:04
+shredded chicken,remove,2,2022-08-25 09:41:57
+shrimp,remove,2,2022-08-25 09:41:43
+tomato,add,1,2022-08-25 09:41:16
+tomato,add,4,2022-08-25 09:40:53
+cabbage,add,3,2022-08-25 09:40:39
+shredded cheese,remove,1,2022-08-25 09:40:10
+limes,remove,1,2022-08-25 09:39:57
+tomato,remove,2,2022-08-25 09:38:23
+cheese curds,remove,4,2022-08-25 09:38:15
+avacodo,remove,2,2022-08-25 09:38:11
+eggs,remove,2,2022-08-25 09:34:23
+mayo,remove,1,2022-08-25 09:34:17
+cheese curds,add,19,2022-08-25 09:34:11
+cheese curds,remove,43,2022-08-25 09:34:10
+peameal bacon,add,2,2022-08-25 09:33:55
+peameal bacon,remove,5,2022-08-25 09:33:37
+bomba chicken,remove,1,2022-08-25 09:33:20
+pork,add,10,2022-08-25 09:33:01
+ribeye,remove,1,2022-08-25 09:32:45
+beef burgers,add,1,2022-08-25 09:32:39
+beef burgers,remove,9,2022-08-25 09:32:37
+bacon,remove,6,2022-08-25 09:32:22
+sour cream,remove,2,2022-08-25 09:32:01
+pico,add,2,2022-08-25 09:31:53
+pork,add,42,2022-08-25 09:31:46
+pork,remove,56,2022-08-25 09:31:41
+ciabatta,remove,3,2022-08-25 09:30:51
+kimchi,remove,1,2022-08-25 09:30:42
+burger lettuce,remove,1,2022-08-25 09:30:35
+ground beef,remove,1,2022-08-25 09:29:42
+krispy kreme,add,5,2022-08-25 09:29:35
+krispy kreme,remove,25,2022-08-25 09:29:32
+fries,add,70,2022-08-25 09:29:10
+lobster,add,4,2022-08-25 09:28:52
+tomato,remove,1,2022-08-24 11:18:57
+softshell crab,remove,1,2022-08-24 11:18:40
+peameal bacon,remove,1,2022-08-24 11:09:41
+cabbage,remove,2,2022-08-24 11:09:37
+shrimp,remove,2,2022-08-24 11:09:24
+haddock fish,remove,2,2022-08-24 11:09:19
+pico,remove,1,2022-08-24 11:09:10
+cheese sauce,remove,1,2022-08-24 10:56:00
+#1,add,10,2022-08-24 10:55:39
+#1,remove,29,2022-08-24 10:55:36
+#8,add,6,2022-08-24 10:55:19
+#8,remove,32,2022-08-24 10:55:18
+paper towels,remove,3,2022-08-24 10:55:00
+napkins,remove,4,2022-08-24 10:54:38
+forks,add,3,2022-08-24 10:54:14
+salsa,add,2,2022-08-24 10:53:24
+pad thai,add,2,2022-08-24 10:53:16
+bbq sauce,add,5,2022-08-24 10:52:57
+#3,add,5,2022-08-24 10:52:30
+jalapeno,add,2,2022-08-24 10:51:19
+clam chowder,add,3,2022-08-24 10:50:51
+eggs,remove,1,2022-08-24 10:22:57
+mayo,remove,1,2022-08-24 10:22:52
+cheese curds,add,43,2022-08-24 10:22:43
+cheese curds,remove,43,2022-08-24 10:22:31
+shrimp,remove,2,2022-08-24 10:22:06
+haddock fish,add,1,2022-08-24 10:21:56
+lobster,remove,6,2022-08-24 10:21:34
+snowcrab,remove,1,2022-08-24 10:21:30
+sour cream,remove,1,2022-08-24 10:21:16
+pork,add,29,2022-08-24 10:21:04
+pork,add,10,2022-08-24 10:20:33
+pork,add,17,2022-08-24 10:20:29
+pork,remove,70,2022-08-24 10:20:28
+cabbage,remove,2,2022-08-24 10:19:38
+ciabatta,remove,1,2022-08-24 10:19:22
+avacodo,add,3,2022-08-24 10:19:05
+red onions,add,3,2022-08-24 10:18:53
+ground beef,remove,1,2022-08-24 10:18:45
+ribeye,add,3,2022-08-24 10:18:37
+krispy kreme,remove,10,2022-08-24 10:18:32
+pretzel,remove,1,2022-08-24 10:18:18
+fries,remove,60,2022-08-24 10:18:08
+kimchi,add,4,2022-08-24 10:17:57
+water,add,20,2022-08-24 10:17:50
+chili,remove,1,2022-08-23 10:35:18
+5 piece cutlery,remove,2,2022-08-23 10:32:01
+#8,add,20,2022-08-23 10:15:51
+#1,add,15,2022-08-23 10:15:40
+#1,add,8,2022-08-23 10:15:07
+#8,add,12,2022-08-23 10:14:58
+#8,remove,55,2022-08-23 10:14:57
+#3,remove,4,2022-08-23 10:14:29
+mustard,remove,1,2022-08-23 10:14:24
+bbq sauce,remove,3,2022-08-23 10:14:16
+paper towels,remove,1,2022-08-23 10:14:05
+hoisin,add,2,2022-08-23 10:13:40
+napkins,remove,4,2022-08-23 10:13:32
+#1,add,6,2022-08-23 10:13:21
+forks,remove,15,2022-08-23 10:12:42
+salsa,remove,8,2022-08-23 10:12:36
+water,add,25,2022-08-23 10:10:17
+pico,add,7,2022-08-23 10:09:59
+red onions,add,5,2022-08-23 10:09:51
+tomato,add,12,2022-08-23 10:09:44
+haddock fish,add,1,2022-08-23 10:09:22
+pork,add,29,2022-08-23 10:08:50
+cheese curds,add,18,2022-08-23 10:08:09
+haddock fish,remove,2,2022-08-23 10:07:44
+pork,add,30,2022-08-23 10:07:28
+shrimp,add,2,2022-08-23 10:06:54
+chicken breast,remove,3,2022-08-23 10:06:30
+perogie,add,6,2022-08-23 10:06:08
+perogie,add,2,2022-08-23 10:06:37
+cabbage,add,1,2022-08-23 10:05:18
+bacon,add,9,2022-08-23 10:04:48
+bacon,add,11,2022-08-23 10:04:30
+burger lettuce,add,1,2022-08-23 10:03:39
+kimchi,add,2,2022-08-23 10:03:03
+avacodo,remove,1,2022-08-23 10:02:58
+burger lettuce,add,4,2022-08-23 10:02:40
+fries,add,210,2022-08-23 10:02:14
+fries,remove,282,2022-08-23 10:02:06
+krispy kreme,add,10,2022-08-23 10:01:53
+cheese sliced,add,1,2022-08-23 10:01:11
+shredded lettuce,add,3,2022-08-23 10:00:47
+limes,add,2,2022-08-23 10:00:35
+cilantro,remove,1,2022-08-23 10:00:24
+carrots,add,3,2022-08-23 10:00:10
+dill,add,2,2022-08-23 10:00:03
+chives,add,3,2022-08-23 09:59:49
+bean sprouts,add,2,2022-08-23 09:59:43
+ground beef,add,2,2022-08-23 09:59:19
+pickles,add,1,2022-08-23 09:59:10
+mayo,add,4,2022-08-23 09:58:58
+cheese curds,remove,17,2022-08-23 09:58:48
+ground beef,remove,1,2022-08-21 20:46:43
+avacodo,remove,4,2022-08-21 20:46:37
+haddock fish,add,1,2022-08-21 20:32:55
+softshell crab,remove,1,2022-08-21 20:32:48
+snowcrab,remove,1,2022-08-21 20:32:10
+thunder chicken,remove,2,2022-08-21 20:32:00
+pork,add,11,2022-08-21 20:31:51
+pork,remove,44,2022-08-21 20:31:49
+perogie,remove,2,2022-08-21 20:31:42
+chicken breast,remove,2,2022-08-21 20:31:11
+lobster,add,4,2022-08-21 20:30:50
+haddock fish,remove,2,2022-08-21 20:30:24
+lobster,remove,1,2022-08-21 20:30:18
+mayo,remove,2,2022-08-21 20:27:51
+eggs,remove,1,2022-08-21 20:27:46
+cheese curds,add,3,2022-08-21 20:27:27
+beef burgers,remove,2,2022-08-21 20:26:51
+cheese ribbons,remove,2,2022-08-21 20:26:10
+cheese sliced,add,3,2022-08-21 20:26:02
+bacon,remove,5,2022-08-21 20:24:41
+cabbage,remove,1,2022-08-21 20:24:07
+pretzel,add,2,2022-08-21 20:23:55
+pretzel,remove,5,2022-08-21 20:23:50
+ciabatta,remove,2,2022-08-21 20:23:45
+avacodo,remove,1,2022-08-21 20:23:26
+ground beef,remove,1,2022-08-21 20:23:19
+krispy kreme,add,5,2022-08-21 20:23:11
+ciabatta,remove,1,2022-08-21 20:23:02
+tomato,remove,1,2022-08-21 10:23:31
+limes,remove,1,2022-08-21 10:15:13
+pico,remove,2,2022-08-21 09:57:58
+chicken breast,remove,1,2022-08-21 09:43:10
+thunder chicken,remove,1,2022-08-21 09:43:03
+thunder chicken,add,2,2022-08-20 21:46:52
+thunder chicken,add,1,2022-08-20 21:46:41
+cheese curds,add,9,2022-08-20 21:46:34
+cheese ribbons,add,2,2022-08-20 21:44:29
+cheese sliced,add,9,2022-08-20 21:44:12
+cheese ribbons,remove,2,2022-08-20 21:42:58
+shredded lettuce,remove,1,2022-08-20 21:42:26
+shredded cheese,remove,1,2022-08-20 21:42:19
+green onion,remove,3,2022-08-20 21:41:16
+mayo,add,3,2022-08-20 21:40:53
+carrots,remove,1,2022-08-20 21:40:16
+krispy kreme,remove,30,2022-08-20 21:40:01
+avacodo,remove,7,2022-08-20 21:39:41
+ground beef,remove,1,2022-08-20 21:39:09
+sour cream,remove,1,2022-08-20 21:38:56
+pico,remove,2,2022-08-20 21:38:51
+cabbage,remove,2,2022-08-20 21:38:45
+bacon,remove,7,2022-08-20 21:38:04
+beef burgers,remove,6,2022-08-20 21:37:38
+snowcrab,add,1,2022-08-20 21:36:57
+softshell crab,add,1,2022-08-20 21:36:53
+thunder chicken,remove,1,2022-08-20 21:36:35
+chicken breast,add,3,2022-08-20 21:36:18
+chili,remove,1,2022-08-20 21:36:00
+ribeye,remove,2,2022-08-20 21:35:53
+perogie,remove,2,2022-08-20 21:35:41
+supreme crunch,add,3,2022-08-20 21:35:33
+supreme crunch,remove,2,2022-08-20 21:35:22
+softshell crab,remove,1,2022-08-20 21:34:57
+snowcrab,remove,1,2022-08-20 21:34:52
+shredded chicken,add,3,2022-08-20 21:34:41
+shredded chicken,remove,3,2022-08-20 21:34:31
+haddock fish,remove,1,2022-08-20 21:34:22
+lobster,remove,3,2022-08-20 21:34:08
+pork,add,4,2022-08-20 21:33:51
+pork,remove,23,2022-08-20 21:33:50
+cabbage,remove,4,2022-08-20 14:15:10
+green onion,add,3,2022-08-20 13:07:09
+haddock fish,add,1,2022-08-20 12:55:49
+snowcrab,add,1,2022-08-20 12:55:43
+ribeye,add,1,2022-08-20 12:53:05
+supreme crunch,remove,2,2022-08-20 12:52:37
+shrimp,remove,3,2022-08-20 12:51:41
+shredded chicken,add,2,2022-08-20 12:51:05
+haddock fish,remove,2,2022-08-20 12:50:47
+lobster,add,2,2022-08-20 12:50:36
+cheese curds,remove,40,2022-08-20 12:47:52
+carrots,add,1,2022-08-20 12:46:03
+avacodo,add,1,2022-08-20 12:45:46
+avacodo,add,2,2022-08-20 12:45:36
+peameal bacon,remove,5,2022-08-20 12:44:39
+bacon,remove,3,2022-08-20 12:44:12
+bacon,add,6,2022-08-20 12:43:52
+bacon,remove,7,2022-08-20 12:43:40
+cheddar sliced,remove,5,2022-08-20 12:39:41
+pretzel,add,1,2022-08-20 12:37:45
+krispy kreme,add,5,2022-08-20 12:37:17
+krispy kreme,remove,45,2022-08-20 12:37:15
+ground beef,remove,1,2022-08-20 10:09:00
+ribeye,add,1,2022-08-20 09:51:44
+bacon,remove,2,2022-08-20 09:29:32
+bacon,remove,8,2022-08-20 09:28:41
+chives,remove,1,2022-08-20 09:27:53
+lobster,remove,2,2022-08-20 09:27:46
+lobster,remove,1,2022-08-20 09:19:05
+oil,remove,5,2022-08-20 09:16:56
+forks,remove,2,2022-08-20 09:16:30
+soup spoons,add,2,2022-08-20 09:15:20
+gloves,remove,1,2022-08-20 09:14:23
+napkins,add,1,2022-08-20 09:14:18
+plastic portion,remove,1,2022-08-20 09:13:21
+kimchi,remove,2,2022-08-19 21:23:59
+fries,remove,7,2022-08-19 21:23:55
+carrots,remove,1,2022-08-19 20:09:05
+kimchi,remove,4,2022-08-19 20:08:55
+shrimp,remove,2,2022-08-19 20:08:32
+chicken breast,remove,3,2022-08-19 18:46:29
+chicken breast,remove,2,2022-08-19 18:45:53
+thunder chicken,remove,2,2022-08-19 18:45:41
+gloves,remove,1,2022-08-19 18:19:22
+fries,remove,7,2022-08-19 18:19:17
+pork,add,6,2022-08-19 18:05:11
+krispy kreme,add,50,2022-08-19 18:04:46
+butter milk,add,2,2022-08-19 18:00:28
+salt,add,1,2022-08-19 18:00:05
+5 piece cutlery,add,7,2022-08-19 17:59:47
+napkins,add,8,2022-08-19 17:59:00
+paper towels,add,2,2022-08-19 17:58:48
+#8,add,15,2022-08-19 17:58:19
+krispy kreme,remove,15,2022-08-19 17:51:07
+ciabatta,remove,2,2022-08-19 17:51:02
+water,add,1,2022-08-19 17:41:50
+water,remove,1,2022-08-19 17:41:48
+water,remove,1,2022-08-19 17:41:46
+doritos,remove,2,2022-08-19 17:36:27
+bomba chicken,add,2,2022-08-19 17:36:22
+veal,remove,4,2022-08-19 17:36:07
+veal,remove,1,2022-08-19 17:33:49
+water,remove,1,2022-08-19 17:33:44
+pork,remove,15,2022-08-19 17:33:38
+salsa,add,5,2022-08-19 17:25:02
+golden malted,add,3,2022-08-19 17:24:51
+lemon juice,add,1,2022-08-19 17:24:45
+quaker mix,add,2,2022-08-19 17:24:29
+veal,remove,1,2022-08-19 17:24:02
+tortilla,add,8,2022-08-19 17:17:58
+siracha,add,6,2022-08-19 17:17:43
+paper towels,add,3,2022-08-19 17:17:30
+gloves,add,3,2022-08-19 17:17:24
+cholula,add,2,2022-08-19 17:17:06
+snake sack,add,1,2022-08-19 17:16:57
+#3,add,3,2022-08-19 17:12:34
+bleach,add,2,2022-08-19 17:12:17
+plastic portion,add,2,2022-08-19 17:12:11
+#3,add,2,2022-08-19 17:12:04
+#3,add,2,2022-08-19 17:11:57
+paper towels,add,2,2022-08-19 17:11:33
+bbq sauce,add,6,2022-08-19 17:11:27
+beans,add,3,2022-08-19 17:10:48
+goldfish,add,2,2022-08-19 17:10:30
+gloves,add,3,2022-08-19 17:10:17
+forks,add,2,2022-08-19 17:06:38
+mustard,add,3,2022-08-19 17:06:25
+oil,add,25,2022-08-19 17:06:14
+cheese sauce,add,2,2022-08-19 17:05:24
+pancake waffle,add,2,2022-08-19 17:05:02
+mustard,remove,1,2022-08-19 17:03:07
+salsa,add,4,2022-08-19 17:01:53
+gravy,add,31,2022-08-19 17:01:39
+mustard,add,2,2022-08-19 17:01:18
+tortilla,add,3,2022-08-19 17:01:10
+doritos,add,6,2022-08-19 17:00:58
+belgian waffle,add,3,2022-08-19 17:00:49
+forks,add,18,2022-08-19 17:00:39
+salsa,add,3,2022-08-19 17:00:18
+siracha,add,1,2022-08-19 16:59:33
+#8,add,40,2022-08-19 16:55:50
+mustard,add,1,2022-08-19 16:54:43
+soap dispenser,add,6,2022-08-19 16:54:37
+gravy,add,70,2022-08-19 16:54:27
+shredded lettuce,add,2,2022-08-19 16:43:27
+pretzel,add,15,2022-08-19 16:42:11
+pickles,add,2,2022-08-19 16:41:52
+bacon,add,3,2022-08-19 16:41:38
+peameal bacon,add,8,2022-08-19 16:41:31
+fries,add,296,2022-08-19 16:41:07
+water,add,6,2022-08-19 16:40:54
+ground beef,add,3,2022-08-19 16:40:47
+salad,add,2,2022-08-19 16:40:42
+shredded cheese,add,7,2022-08-19 16:40:36
+mozzarella,add,2,2022-08-19 16:40:19
+cheddar sliced,add,15,2022-08-19 16:40:14
+cheese ribbons,add,4,2022-08-19 16:39:58
+bean sprouts,add,1,2022-08-19 16:39:50
+dill,add,1,2022-08-19 16:39:39
+chives,add,1,2022-08-19 16:39:35
+cilantro,add,2,2022-08-19 16:39:30
+eggs,add,8,2022-08-19 16:39:23
+ciabatta,add,16,2022-08-19 16:39:12
+cheese curds,add,37,2022-08-19 16:36:34
+cheese curds,add,4,2022-08-19 16:34:25
+avacodo,add,12,2022-08-19 16:34:07
+ground beef,add,4,2022-08-19 16:33:30
+cheese curds,add,9,2022-08-19 16:33:17
+butter,add,1,2022-08-19 16:32:57
+krispy kreme,add,70,2022-08-19 16:32:11
+burger lettuce,add,11,2022-08-19 16:31:41
+kimchi,add,6,2022-08-19 16:31:20
+carrots,add,1,2022-08-19 16:31:09
+tomato,add,1,2022-08-19 16:31:05
+pico,add,4,2022-08-19 16:30:56
+ground beef,add,2,2022-08-19 16:30:12
+limes,add,1,2022-08-19 16:29:47
+salted butter,add,1,2022-08-19 16:29:43
+cream,add,2,2022-08-19 16:28:43
+beyond burger,add,7,2022-08-19 16:27:53
+bacon,add,12,2022-08-19 16:26:44
+bacon,add,11,2022-08-19 16:26:37
+bacon,add,11,2022-08-19 16:26:30
+bacon,remove,34,2022-08-19 16:26:18
+bacon,add,23,2022-08-19 16:25:43
+sour cream,add,6,2022-08-19 16:25:08
+cabbage,add,11,2022-08-19 16:24:54
+bacon,add,11,2022-08-19 16:24:25
+peameal bacon,add,11,2022-08-19 16:24:02
+peameal bacon,add,11,2022-08-19 16:23:54
+beef burgers,add,38,2022-08-19 16:23:30
+pork,add,72,2022-08-19 16:09:34
+chicken breast,add,14,2022-08-19 16:03:20
+supreme crunch,add,1,2022-08-19 16:03:02
+supreme crunch,add,8,2022-08-19 16:02:01
+cheese curds,add,4,2022-08-19 16:01:41
+cheese curds,add,16,2022-08-19 16:01:03
+thunder chicken,add,13,2022-08-19 16:00:04
+perogie,add,6,2022-08-19 15:59:49
+chili,add,2,2022-08-19 15:59:41
+veal,add,7,2022-08-19 15:59:07
+supreme crunch,add,21,2022-08-19 15:58:38
+snowcrab,add,2,2022-08-19 15:56:45
+softshell crab,add,2,2022-08-19 15:56:33
+shredded chicken,add,8,2022-08-19 15:56:08
+lobster,add,3,2022-08-19 15:55:33
+lobster,add,5,2022-08-19 15:54:58
+shrimp,add,2,2022-08-19 15:54:44
+shrimp,add,9,2022-08-19 15:54:34
+haddock fish,add,8,2022-08-19 15:53:37
+fries,add,1,2022-08-05 09:23:23
