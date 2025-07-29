@@ -36,7 +36,9 @@
 	"dependencies": {
 		"arima": "^0.2.5",
 		"chart.js": "^4.4.5",
-		"firebase": "^10.12.2",
+		"csv-parse": "^6.1.0",
+		"dotenv": "^17.2.1",
+		"firebase": "^10.14.1",
 		"postcss-load-config": "^5.1.0",
 		"svelte-themes": "^1.0.10",
 		"sweetalert2": "^11.11.1"
