@@ -1,0 +1,14 @@
+{
+  "name": "inventory-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Scripts for inventory management",
+  "scripts": {
+    "add-items": "node add-unique-items.js",
+    "test": "node test-items.js"
+  },
+  "dependencies": {
+    "firebase": "^10.0.0",
+    "dotenv": "^16.0.0"
+  }
+}
