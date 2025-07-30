@@ -13,9 +13,10 @@ function createItemStore() {
 			const items = [];
 			querySnapshot.forEach((doc) => {
 				const data = doc.data();
-				items.push({ 
-					id: doc.id, 
+				items.push({
+					id: doc.id,
 					...data,
+					count: parseInt(data.count, 10) || 0, // Ensure count is always a number
 					changeAmount: 0 // Initialize changeAmount for each item
 				});
 			});
@@ -59,9 +60,14 @@ function createItemStore() {
 
 	async function updateItem(id, updatedItem) {
 		try {
+			// Ensure count is always stored as a number in the database
+			if (updatedItem.count !== undefined) {
+				updatedItem.count = parseInt(updatedItem.count, 10) || 0;
+			}
+			
 			const itemRef = doc(db, 'items', id);
 			await updateDoc(itemRef, updatedItem);
-			update(items => items.map(item => 
+			update(items => items.map(item =>
 				item.id === id ? { ...item, ...updatedItem } : item
 			));
 		} catch (error) {
@@ -126,7 +132,11 @@ function createItemStore() {
 				throw new Error('Item not found');
 			}
 			
-			const newCount = Math.max(0, item.count + amount);
+			// Ensure both values are numbers to prevent string concatenation
+			const currentCount = parseInt(item.count, 10) || 0;
+			const changeAmount = parseInt(amount, 10) || 0;
+			const newCount = Math.max(0, currentCount + changeAmount);
+			
 			await updateItem(id, { count: newCount });
 		} catch (error) {
 			console.error('Error changing count:', error);
@@ -159,8 +169,10 @@ function createItemStore() {
 	}
 
 	function setChangeAmount(id, amount) {
-		update(items => items.map(item => 
-			item.id === id ? { ...item, changeAmount: amount } : item
+		// Ensure changeAmount is always a number
+		const numericAmount = parseInt(amount, 10) || 0;
+		update(items => items.map(item =>
+			item.id === id ? { ...item, changeAmount: numericAmount } : item
 		));
 	}
 
