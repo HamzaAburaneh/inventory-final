@@ -1,6 +1,6 @@
 <script>
 	import { Chart, registerables } from 'chart.js';
-	import { fade, fly } from 'svelte/transition';
+	import { fly } from 'svelte/transition';
 	import { fadeAndSlide } from '$lib/transitions';
 	import { browser } from '$app/environment';
 	import {
@@ -10,6 +10,22 @@
 		getSummaryStats
 	} from '../../lib/transactionAnalysis';
 	import { notificationStore } from '../../stores/notificationStore';
+
+	// Constants
+	const CHART_COLORS = {
+		stockIn: '#4CAF50',
+		stockOut: '#F44336',
+		netChange: '#2196F3',
+		activity: '#9C27B0',
+		cne: '#FF6B35'
+	};
+
+	const CNE_DATES = {
+		2022: { start: new Date(2022, 7, 19), end: new Date(2022, 8, 5, 23, 59, 59) },
+		2023: { start: new Date(2023, 7, 18), end: new Date(2023, 8, 4, 23, 59, 59) },
+		2024: { start: new Date(2024, 7, 16), end: new Date(2024, 8, 2, 23, 59, 59) },
+		2025: { start: new Date(2025, 7, 13), end: new Date(2025, 8, 1, 23, 59, 59) }
+	};
 
 	// State variables
 	let loading = $state(true);
@@ -21,21 +37,20 @@
 	let hourlyActivity = $state([]);
 	let topMovers = $state([]);
 	let summaryStats = $state(null);
+	let activeFilter = $state(30);
 	
 	// Chart instances
 	let dailyTrendChart = $state(null);
 	let hourlyHeatmapChart = $state(null);
 	let topMoversChart = $state(null);
 	let transactionTypeChart = $state(null);
-	
-	// Track if charts need redrawing
-	let chartsNeedRedraw = $state(false);
 
-	// Formatted date strings for inputs
+	// Computed values
 	const startDateStr = $derived(dateRange.start.toISOString().split('T')[0]);
 	const endDateStr = $derived(dateRange.end.toISOString().split('T')[0]);
+	const daysDifference = $derived(Math.ceil((dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24)));
 
-	// Format date range for display
+	// Utility functions
 	function formatDateRange() {
 		const start = dateRange.start;
 		const end = dateRange.end;
@@ -43,33 +58,54 @@
 		const yesterday = new Date(today);
 		yesterday.setDate(yesterday.getDate() - 1);
 		
-		// Check for special cases
 		if (start.toDateString() === today.toDateString() && end.toDateString() === today.toDateString()) {
 			return 'Today';
 		} else if (start.toDateString() === yesterday.toDateString() && end.toDateString() === yesterday.toDateString()) {
 			return 'Yesterday';
+		} else if (daysDifference === 1) {
+			return start.toLocaleDateString();
 		} else {
-			// Calculate days difference
-			const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-			if (daysDiff === 1) {
-				return start.toLocaleDateString();
-			} else {
-				return `Last ${daysDiff} Days`;
-			}
+			return `Last ${daysDifference} Days`;
 		}
 	}
 
-	// Load all data
+	function formatHourLabel(hour) {
+		if (hour === 0) return '12 AM';
+		if (hour === 12) return '12 PM';
+		if (hour < 12) return `${hour} AM`;
+		return `${hour - 12} PM`;
+	}
+
+	function formatDateLabel(dateStr) {
+		const date = new Date(dateStr);
+		const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+		const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+		return `${dayName} ${monthDay}`;
+	}
+
+	function destroyChart(chart) {
+		if (chart) {
+			chart.destroy();
+			return null;
+		}
+		return chart;
+	}
+
+	function destroyAllCharts() {
+		dailyTrendChart = destroyChart(dailyTrendChart);
+		hourlyHeatmapChart = destroyChart(hourlyHeatmapChart);
+		topMoversChart = destroyChart(topMoversChart);
+		transactionTypeChart = destroyChart(transactionTypeChart);
+	}
+
+	// Data loading
 	async function loadAnalysisData() {
 		loading = true;
 		try {
-			// Calculate days difference for the selected range
-			const daysDiff = Math.ceil((dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24));
-			
 			const [daily, hourly, movers, summary] = await Promise.all([
 				getDailyAnalysis(dateRange.start, dateRange.end),
-				getHourlyActivityPattern(daysDiff, dateRange.start, dateRange.end),
-				getTopMovers(10, daysDiff, dateRange.start, dateRange.end),
+				getHourlyActivityPattern(daysDifference, dateRange.start, dateRange.end),
+				getTopMovers(10, daysDifference, dateRange.start, dateRange.end),
 				getSummaryStats(dateRange.start, dateRange.end)
 			]);
 
@@ -78,7 +114,6 @@
 			topMovers = movers;
 			summaryStats = summary;
 
-			// Update charts after data is loaded
 			updateCharts();
 		} catch (error) {
 			console.error('Error loading analysis data:', error);
@@ -88,206 +123,191 @@
 		}
 	}
 
-	// Initialize and update charts
-	function updateCharts() {
-		// Use requestAnimationFrame to ensure DOM is ready
-		requestAnimationFrame(() => {
-			// Daily Trend Chart
-			const dailyCtx = document.getElementById('dailyTrendChart');
-			if (dailyCtx && dailyCtx.getContext) {
-				if (dailyTrendChart) {
-					dailyTrendChart.destroy();
-					dailyTrendChart = null;
-				}
-				
-				dailyTrendChart = new Chart(dailyCtx.getContext('2d'), {
-				type: 'line',
-				data: {
-					labels: dailyAnalysis.map(d => {
-						const date = new Date(d.date);
-						const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-						const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-						return `${dayName} ${monthDay}`;
-					}),
-					datasets: [
-						{
-							label: 'Stock In',
-							data: dailyAnalysis.map(d => d.totalAdded),
-							borderColor: '#4CAF50',
-							backgroundColor: 'rgba(76, 175, 80, 0.1)',
-							tension: 0.1
-						},
-						{
-							label: 'Stock Out',
-							data: dailyAnalysis.map(d => d.totalRemoved),
-							borderColor: '#F44336',
-							backgroundColor: 'rgba(244, 67, 54, 0.1)',
-							tension: 0.1
-						},
-						{
-							label: 'Net Change',
-							data: dailyAnalysis.map(d => d.netChange),
-							borderColor: '#2196F3',
-							backgroundColor: 'rgba(33, 150, 243, 0.1)',
-							tension: 0.1
-						}
-					]
+	// Chart creation functions
+	function createDailyTrendChart() {
+		const ctx = document.getElementById('dailyTrendChart');
+		if (!ctx?.getContext) return;
+
+		dailyTrendChart = destroyChart(dailyTrendChart);
+		
+		dailyTrendChart = new Chart(ctx.getContext('2d'), {
+			type: 'line',
+			data: {
+				labels: dailyAnalysis.map(d => formatDateLabel(d.date)),
+				datasets: [
+					{
+						label: 'Stock In',
+						data: dailyAnalysis.map(d => d.totalAdded),
+						borderColor: CHART_COLORS.stockIn,
+						backgroundColor: `${CHART_COLORS.stockIn}1A`,
+						tension: 0.1
+					},
+					{
+						label: 'Stock Out',
+						data: dailyAnalysis.map(d => d.totalRemoved),
+						borderColor: CHART_COLORS.stockOut,
+						backgroundColor: `${CHART_COLORS.stockOut}1A`,
+						tension: 0.1
+					},
+					{
+						label: 'Net Change',
+						data: dailyAnalysis.map(d => d.netChange),
+						borderColor: CHART_COLORS.netChange,
+						backgroundColor: `${CHART_COLORS.netChange}1A`,
+						tension: 0.1
+					}
+				]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					title: {
+						display: true,
+						text: 'Daily Transaction Trends'
+					},
+					legend: {
+						position: 'top'
+					}
 				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					plugins: {
+				scales: {
+					y: {
+						beginAtZero: true,
 						title: {
 							display: true,
-							text: 'Daily Transaction Trends'
-						},
-						legend: {
-							position: 'top'
-						}
-					},
-					scales: {
-						y: {
-							beginAtZero: true,
-							title: {
-								display: true,
-								text: 'Quantity'
-							}
+							text: 'Quantity'
 						}
 					}
-				}
-			});
-			}
-
-			// Hourly Activity Heatmap
-			const hourlyCtx = document.getElementById('hourlyHeatmapChart');
-			if (hourlyCtx && hourlyCtx.getContext) {
-				if (hourlyHeatmapChart) {
-					hourlyHeatmapChart.destroy();
-					hourlyHeatmapChart = null;
-				}
-				
-				hourlyHeatmapChart = new Chart(hourlyCtx.getContext('2d'), {
-				type: 'bar',
-				data: {
-					labels: hourlyActivity.map(h => {
-						const hour = h.hour;
-						if (hour === 0) return '12 AM';
-						if (hour === 12) return '12 PM';
-						if (hour < 12) return `${hour} AM`;
-						return `${hour - 12} PM`;
-					}),
-					datasets: [{
-						label: 'Transactions',
-						data: hourlyActivity.map(h => h.transactionCount),
-						backgroundColor: hourlyActivity.map(h => {
-							const intensity = h.transactionCount / Math.max(...hourlyActivity.map(a => a.transactionCount));
-							return `rgba(33, 150, 243, ${0.2 + intensity * 0.8})`;
-						})
-					}]
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					plugins: {
-						title: {
-							display: true,
-							text: `Hourly Activity Pattern (${formatDateRange()})`
-						},
-						legend: {
-							display: false
-						}
-					},
-					scales: {
-						y: {
-							beginAtZero: true,
-							title: {
-								display: true,
-								text: 'Number of Transactions'
-							}
-						}
-					}
-				}
-			});
-			}
-
-			// Top Movers Chart
-			const moversCtx = document.getElementById('topMoversChart');
-			if (moversCtx && moversCtx.getContext) {
-				if (topMoversChart) {
-					topMoversChart.destroy();
-					topMoversChart = null;
-				}
-				
-				topMoversChart = new Chart(moversCtx.getContext('2d'), {
-				type: 'bar',
-				data: {
-					labels: topMovers.map(m => m.itemName),
-					datasets: [
-						{
-							label: 'Total Transactions',
-							data: topMovers.map(m => m.totalTransactions),
-							backgroundColor: '#9C27B0'
-						}
-					]
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					indexAxis: 'y',
-					plugins: {
-						title: {
-							display: true,
-							text: `Top 10 Most Active Items (${formatDateRange()})`
-						}
-					},
-					scales: {
-						x: {
-							beginAtZero: true,
-							title: {
-								display: true,
-								text: 'Number of Transactions'
-							}
-						}
-					}
-				}
-			});
-			}
-
-			// Transaction Type Distribution
-			if (summaryStats) {
-				const typeCtx = document.getElementById('transactionTypeChart');
-				if (typeCtx && typeCtx.getContext) {
-					if (transactionTypeChart) {
-						transactionTypeChart.destroy();
-						transactionTypeChart = null;
-					}
-					
-					transactionTypeChart = new Chart(typeCtx.getContext('2d'), {
-					type: 'doughnut',
-					data: {
-						labels: ['Stock In', 'Stock Out'],
-						datasets: [{
-							data: [summaryStats.totalAdded, summaryStats.totalRemoved],
-							backgroundColor: ['#4CAF50', '#F44336']
-						}]
-					},
-					options: {
-						responsive: true,
-						maintainAspectRatio: false,
-						plugins: {
-							title: {
-								display: true,
-								text: 'Transaction Type Distribution'
-							}
-						}
-					}
-				});
 				}
 			}
 		});
 	}
 
-	// Handle date range changes
+	function createHourlyActivityChart() {
+		const ctx = document.getElementById('hourlyHeatmapChart');
+		if (!ctx?.getContext) return;
+
+		hourlyHeatmapChart = destroyChart(hourlyHeatmapChart);
+		
+		const maxCount = Math.max(...hourlyActivity.map(h => h.transactionCount));
+		
+		hourlyHeatmapChart = new Chart(ctx.getContext('2d'), {
+			type: 'bar',
+			data: {
+				labels: hourlyActivity.map(h => formatHourLabel(h.hour)),
+				datasets: [{
+					label: 'Transactions',
+					data: hourlyActivity.map(h => h.transactionCount),
+					backgroundColor: hourlyActivity.map(h => {
+						const intensity = h.transactionCount / maxCount;
+						return `${CHART_COLORS.netChange}${Math.round((0.2 + intensity * 0.8) * 255).toString(16).padStart(2, '0')}`;
+					})
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					title: {
+						display: true,
+						text: `Hourly Activity Pattern (${formatDateRange()})`
+					},
+					legend: {
+						display: false
+					}
+				},
+				scales: {
+					y: {
+						beginAtZero: true,
+						title: {
+							display: true,
+							text: 'Number of Transactions'
+						}
+					}
+				}
+			}
+		});
+	}
+
+	function createTopMoversChart() {
+		const ctx = document.getElementById('topMoversChart');
+		if (!ctx?.getContext) return;
+
+		topMoversChart = destroyChart(topMoversChart);
+		
+		topMoversChart = new Chart(ctx.getContext('2d'), {
+			type: 'bar',
+			data: {
+				labels: topMovers.map(m => m.itemName),
+				datasets: [{
+					label: 'Total Transactions',
+					data: topMovers.map(m => m.totalTransactions),
+					backgroundColor: CHART_COLORS.activity
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				indexAxis: 'y',
+				plugins: {
+					title: {
+						display: true,
+						text: `Top 10 Most Active Items (${formatDateRange()})`
+					}
+				},
+				scales: {
+					x: {
+						beginAtZero: true,
+						title: {
+							display: true,
+							text: 'Number of Transactions'
+						}
+					}
+				}
+			}
+		});
+	}
+
+	function createTransactionTypeChart() {
+		if (!summaryStats) return;
+		
+		const ctx = document.getElementById('transactionTypeChart');
+		if (!ctx?.getContext) return;
+
+		transactionTypeChart = destroyChart(transactionTypeChart);
+		
+		transactionTypeChart = new Chart(ctx.getContext('2d'), {
+			type: 'doughnut',
+			data: {
+				labels: ['Stock In', 'Stock Out'],
+				datasets: [{
+					data: [summaryStats.totalAdded, summaryStats.totalRemoved],
+					backgroundColor: [CHART_COLORS.stockIn, CHART_COLORS.stockOut]
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					title: {
+						display: true,
+						text: 'Transaction Type Distribution'
+					}
+				}
+			}
+		});
+	}
+
+	function updateCharts() {
+		requestAnimationFrame(() => {
+			createDailyTrendChart();
+			createHourlyActivityChart();
+			createTopMoversChart();
+			createTransactionTypeChart();
+		});
+	}
+
+	// Event handlers
 	function handleDateChange(type, value) {
 		const newDate = new Date(value);
 		if (type === 'start') {
@@ -295,69 +315,44 @@
 		} else {
 			dateRange.end = newDate;
 		}
-		activeFilter = null; // Clear active filter when using custom dates
+		activeFilter = null;
 		loadAnalysisData();
 	}
 
-	// Track active filter (default to 30 days which was the initial range)
-	let activeFilter = $state(30);
-
-	// Quick date range presets
 	function setQuickRange(days) {
 		const now = new Date();
 		dateRange.end = new Date();
-		activeFilter = days; // Set active filter
+		activeFilter = days;
 		
 		if (days === 0) {
-			// Today - set start to beginning of today
 			dateRange.start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 		} else if (days === 1) {
-			// Yesterday - set both start and end to yesterday
 			const yesterday = new Date(now);
 			yesterday.setDate(yesterday.getDate() - 1);
 			dateRange.start = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
 			dateRange.end = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59);
 		} else {
-			// Other ranges - go back N days from now
 			dateRange.start = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 		}
 		
 		loadAnalysisData();
 	}
 
-	// CNE date range presets
 	function setCNERange(year) {
-		activeFilter = `cne${year}`; // Set active filter for CNE
-		
-		switch(year) {
-			case 2022:
-				// CNE 2022: August 19 to September 5, 2022
-				dateRange.start = new Date(2022, 7, 19); // Month is 0-indexed, so 7 = August
-				dateRange.end = new Date(2022, 8, 5, 23, 59, 59); // 8 = September
-				break;
-			case 2023:
-				// CNE 2023: August 18 to September 4, 2023
-				dateRange.start = new Date(2023, 7, 18);
-				dateRange.end = new Date(2023, 8, 4, 23, 59, 59);
-				break;
-			case 2024:
-				// CNE 2024: August 16 to September 2, 2024
-				dateRange.start = new Date(2024, 7, 16);
-				dateRange.end = new Date(2024, 8, 2, 23, 59, 59);
-				break;
-			case 2025:
-				// CNE 2025: August 15 to September 1, 2025
-				dateRange.start = new Date(2025, 7, 13);
-				dateRange.end = new Date(2025, 8, 1, 23, 59, 59);
-				break;
+		activeFilter = `cne${year}`;
+		const cneDate = CNE_DATES[year];
+		if (cneDate) {
+			dateRange.start = new Date(cneDate.start);
+			dateRange.end = new Date(cneDate.end);
+			loadAnalysisData();
 		}
-		
-		loadAnalysisData();
 	}
 
-	// Export data as CSV
 	function exportToCSV() {
-		if (!dailyAnalysis.length) return;
+		if (!dailyAnalysis.length) {
+			notificationStore.showNotification('No data to export', 'warning');
+			return;
+		}
 
 		const headers = ['Date', 'Total Added', 'Total Removed', 'Net Change', 'Transaction Count'];
 		const rows = dailyAnalysis.map(d => [
@@ -380,31 +375,18 @@
 		notificationStore.showNotification('Analysis exported successfully', 'success');
 	}
 
-	// Load data on mount and cleanup on unmount
+	// Effects
 	$effect(() => {
-		// Register Chart.js components
 		Chart.register(...registerables);
 		
-		// Set initial active filter to 30 days since that's the default range
-		activeFilter = 30;
-		
-		// Load data after a short delay to ensure DOM is ready
-		const timer = setTimeout(() => {
-			loadAnalysisData();
-		}, 100);
+		const timer = setTimeout(loadAnalysisData, 100);
 
-		// Cleanup function
 		return () => {
 			clearTimeout(timer);
-			// Destroy all charts on unmount
-			if (dailyTrendChart) dailyTrendChart.destroy();
-			if (hourlyHeatmapChart) hourlyHeatmapChart.destroy();
-			if (topMoversChart) topMoversChart.destroy();
-			if (transactionTypeChart) transactionTypeChart.destroy();
+			destroyAllCharts();
 		};
 	});
 	
-	// Handle viewport changes
 	$effect(() => {
 		if (!browser) return;
 		
@@ -417,30 +399,9 @@
 				const currentWidth = window.innerWidth;
 				const widthDiff = Math.abs(currentWidth - previousWidth);
 				
-				// Only redraw if width changed significantly (more than 50px)
 				if (widthDiff > 50) {
-					console.log(`Viewport width changed significantly: ${previousWidth}px -> ${currentWidth}px`);
 					previousWidth = currentWidth;
-					
-					// Destroy and recreate charts to ensure proper sizing
-					if (dailyTrendChart) {
-						dailyTrendChart.destroy();
-						dailyTrendChart = null;
-					}
-					if (hourlyHeatmapChart) {
-						hourlyHeatmapChart.destroy();
-						hourlyHeatmapChart = null;
-					}
-					if (topMoversChart) {
-						topMoversChart.destroy();
-						topMoversChart = null;
-					}
-					if (transactionTypeChart) {
-						transactionTypeChart.destroy();
-						transactionTypeChart = null;
-					}
-					
-					// Redraw charts
+					destroyAllCharts();
 					updateCharts();
 				}
 			}, 250);
