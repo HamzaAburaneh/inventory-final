@@ -347,7 +347,7 @@
 				break;
 			case 2025:
 				// CNE 2025: August 15 to September 1, 2025
-				dateRange.start = new Date(2025, 7, 15);
+				dateRange.start = new Date(2025, 7, 13);
 				dateRange.end = new Date(2025, 8, 1, 23, 59, 59);
 				break;
 		}
