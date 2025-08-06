@@ -1,5 +1,4 @@
 <script>
-	import Swal from 'sweetalert2';
 	import ItemForm from '../../components/ItemForm.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Table from '../../components/Table.svelte';
@@ -26,6 +25,10 @@
 	let currentSortColumn = $state('name');
 	let sortAscending = $state(true);
 	let itemsLoaded = $state(false);
+	let isEditingInProgress = $state(false);
+	let showEditModal = $state(false);
+	let editData = $state({ id: null, field: '', value: '', title: '' });
+	let scrollPreservationActive = $state(false);
 	
 	const paginationStore = getPaginationStore('manageItems');
 	const { currentPage, itemsPerPage, setTotalItems } = paginationStore;
@@ -35,13 +38,34 @@
 	let searchTermValue = $state('');
 	let notificationValue = $state(null);
 	
+	// Global scroll preservation
+	let lastScrollPosition = 0;
+	
+	function preserveScroll() {
+		lastScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+		scrollPreservationActive = true;
+	}
+	
+	function restoreScroll() {
+		if (scrollPreservationActive && lastScrollPosition > 0) {
+			requestAnimationFrame(() => {
+				window.scrollTo(0, lastScrollPosition);
+				scrollPreservationActive = false;
+			});
+		}
+	}
+
 	// Subscribe to stores
 	$effect(() => {
 		const unsubscribeItems = itemStore.subscribe(value => {
+			preserveScroll();
 			items = value;
+			setTimeout(restoreScroll, 0);
 		});
 		const unsubscribeSearch = searchTerm.subscribe(value => {
+			preserveScroll();
 			searchTermValue = value;
+			setTimeout(restoreScroll, 0);
 		});
 		const unsubscribeNotification = notificationStore.subscribe(value => {
 			notificationValue = value;
@@ -62,7 +86,9 @@
 	);
 	
 	$effect(() => {
+		preserveScroll();
 		setTotalItems(filteredItemsList.length);
+		setTimeout(restoreScroll, 0);
 	});
 	
 	const sortedItems = $derived(applySorting(filteredItemsList, currentSortColumn, sortAscending));
@@ -106,24 +132,40 @@
 	};
 
 	const handleEdit = async (id, field, oldValue) => {
-		const result = await Swal.fire({
-			title: `Edit ${String(field).charAt(0).toUpperCase() + String(field).slice(1)}`,
-			input: 'text',
-			inputValue: oldValue != null ? oldValue.toString() : '',
-			showCancelButton: true,
-			confirmButtonText: 'Confirm',
-			cancelButtonText: 'Cancel',
-			confirmButtonColor: '#3085d6',
-			cancelButtonColor: '#d33',
-			background: '#1a1a1a',
-			color: '#FFFFFF'
-		});
-		if (result.isConfirmed) {
-			await updateItem(id, field, result.value);
+		// Prevent multiple simultaneous edit dialogs
+		if (isEditingInProgress) {
+			return;
+		}
+		
+		isEditingInProgress = true;
+		
+		editData = {
+			id,
+			field,
+			value: oldValue != null ? oldValue.toString() : '',
+			title: `Edit ${String(field).charAt(0).toUpperCase() + String(field).slice(1)}`
+		};
+		
+		showEditModal = true;
+	};
+
+	const confirmEdit = async () => {
+		try {
+			await updateItem(editData.id, editData.field, editData.value);
+		} finally {
+			closeEditModal();
 		}
 	};
 
+	const closeEditModal = () => {
+		showEditModal = false;
+		editData = { id: null, field: '', value: '', title: '' };
+		isEditingInProgress = false;
+	};
+
 	const updateItem = async (id, field, value) => {
+		preserveScroll();
+		
 		try {
 			const item = items.find((item) => item.id === id);
 			if (!item) {
@@ -137,6 +179,9 @@
 				notificationStore.showNotification(error.message, 'error');
 			}
 		}
+		
+		// Restore scroll after all updates complete
+		setTimeout(restoreScroll, 100);
 	};
 
 	const handleSearch = (value) => {
@@ -195,6 +240,30 @@
 	</div>
 {/if}
 
+{#if showEditModal}
+	<div class="modal-overlay">
+		<form class="edit-modal" on:submit|preventDefault={confirmEdit}>
+			<h3>{editData.title}</h3>
+			<input
+				type="text"
+				bind:value={editData.value}
+				class="edit-input"
+				placeholder="Enter value..."
+				required
+			/>
+			<div class="modal-buttons">
+				<button type="button" class="cancel-btn" on:click={closeEditModal}>
+					Cancel
+				</button>
+				<button type="submit" class="confirm-btn">
+					Confirm
+				</button>
+			</div>
+		</form>
+		<div class="modal-backdrop" on:click={closeEditModal}></div>
+	</div>
+{/if}
+
 <style>
 	.filter-legend {
 		font-size: 0.9rem;
@@ -246,5 +315,105 @@
 			padding: 2.5rem;
 			max-width: 90%;
 		}
+	}
+
+	/* Custom edit modal */
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 10000;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.modal-backdrop {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgba(0, 0, 0, 0.5);
+		z-index: 1;
+	}
+
+	.edit-modal {
+		background-color: var(--container-bg);
+		border-radius: 12px;
+		padding: 2rem;
+		margin: 1rem;
+		max-width: 400px;
+		width: 90%;
+		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+		border: 1px solid var(--table-border-color);
+		position: relative;
+		z-index: 2;
+	}
+
+	.edit-modal h3 {
+		margin: 0 0 1rem 0;
+		color: var(--text-color);
+		font-size: 1.25rem;
+	}
+
+	.edit-input {
+		width: 100%;
+		padding: 0.75rem;
+		border: 1px solid var(--table-border-color);
+		border-radius: 8px;
+		background-color: var(--input-bg);
+		color: var(--text-color);
+		font-size: 1rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.edit-input:focus {
+		outline: none;
+		border-color: #3085d6;
+		box-shadow: 0 0 0 2px rgba(48, 133, 214, 0.2);
+	}
+
+	.modal-buttons {
+		display: flex;
+		gap: 1rem;
+	}
+
+	.modal-buttons button {
+		flex: 1;
+		padding: 0.75rem 1rem;
+		border: none;
+		border-radius: 8px;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		touch-action: manipulation;
+		-webkit-tap-highlight-color: transparent;
+		user-select: none;
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+	}
+
+	.cancel-btn {
+		background-color: var(--table-border-color);
+		color: var(--text-color);
+	}
+
+	.cancel-btn:hover {
+		background-color: var(--hover-bg-color);
+	}
+
+	.confirm-btn {
+		background-color: #3085d6;
+		color: white;
+	}
+
+	.confirm-btn:hover {
+		background-color: #2574c7;
+		transform: translateY(-1px);
 	}
 </style>

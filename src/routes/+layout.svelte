@@ -30,19 +30,17 @@
 				const newWidth = window.innerWidth;
 				const newHeight = window.innerHeight;
 				
-				console.log(`Viewport changed: ${viewportWidth}x${viewportHeight} -> ${newWidth}x${newHeight}`);
-				
-				viewportWidth = newWidth;
-				viewportHeight = newHeight;
-				
-				// Force a reflow to ensure CSS recalculates
-				document.body.style.display = 'none';
-				document.body.offsetHeight; // Trigger reflow
-				document.body.style.display = '';
-				
-				// Log current device type
-				const deviceType = newWidth < 768 ? 'mobile' : newWidth < 1024 ? 'tablet' : 'desktop';
-				console.log(`Device type: ${deviceType}`);
+				// Only update if there's a significant change to avoid unnecessary updates
+				if (Math.abs(newWidth - viewportWidth) > 10 || Math.abs(newHeight - viewportHeight) > 10) {
+					console.log(`Viewport changed: ${viewportWidth}x${viewportHeight} -> ${newWidth}x${newHeight}`);
+					
+					viewportWidth = newWidth;
+					viewportHeight = newHeight;
+					
+					// Log current device type
+					const deviceType = newWidth < 768 ? 'mobile' : newWidth < 1024 ? 'tablet' : 'desktop';
+					console.log(`Device type: ${deviceType}`);
+				}
 			}, 100);
 		}
 

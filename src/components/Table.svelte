@@ -36,6 +36,9 @@
 	}
 
 	async function confirmDelete() {
+		// Preserve scroll position during delete
+		const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
+		
 		if (itemToDelete) {
 			deletingItemId = itemToDelete.id;
 			await onDelete(itemToDelete.id);
@@ -43,6 +46,11 @@
 		}
 		showDeleteConfirm = false;
 		itemToDelete = null;
+		
+		// Restore scroll position after delete
+		setTimeout(() => {
+			window.scrollTo(0, scrollPos);
+		}, 100);
 	}
 
 	function cancelDelete() {
@@ -81,7 +89,16 @@
 			<thead>
 				<tr class="table-header">
 					{#each ['name', 'barcode', 'count', 'lowCount', 'cost', 'storageType', ''] as column, i}
-						<th class="{column}-col" onclick={() => column && sortBy(column)}>
+						<th class="{column}-col" onclick={() => {
+							if (column) {
+								// Preserve scroll position during sorting
+								const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
+								sortBy(column);
+								setTimeout(() => {
+									window.scrollTo(0, scrollPos);
+								}, 50);
+							}
+						}}>
 							<div class="header">
 								{#if column}
 									{column.charAt(0).toUpperCase() + column.slice(1)}
@@ -109,7 +126,11 @@
 										class="icon-button"
 										data-tooltip="Edit Name"
 										aria-label="Edit Name"
-										onclick={() => onEdit(item.id, 'name', item.name)}
+										onclick={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											onEdit(item.id, 'name', item.name);
+										}}
 										onmouseenter={showTooltip}
 										onmouseleave={hideTooltip}
 									>
@@ -124,7 +145,11 @@
 										class="icon-button"
 										data-tooltip="Edit Barcode"
 										aria-label="Edit Barcode"
-										onclick={() => onEdit(item.id, 'barcode', item.barcode)}
+										onclick={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											onEdit(item.id, 'barcode', item.barcode);
+										}}
 										onmouseenter={showTooltip}
 										onmouseleave={hideTooltip}
 									>
@@ -147,7 +172,11 @@
 										class="icon-button"
 										data-tooltip="Edit Low Count"
 										aria-label="Edit Low Count"
-										onclick={() => onEdit(item.id, 'lowCount', item.lowCount)}
+										onclick={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											onEdit(item.id, 'lowCount', item.lowCount);
+										}}
 										onmouseenter={showTooltip}
 										onmouseleave={hideTooltip}
 									>
@@ -162,7 +191,11 @@
 										class="icon-button"
 										data-tooltip="Edit Cost"
 										aria-label="Edit Cost"
-										onclick={() => onEdit(item.id, 'cost', item.cost)}
+										onclick={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											onEdit(item.id, 'cost', item.cost);
+										}}
 										onmouseenter={showTooltip}
 										onmouseleave={hideTooltip}
 									>
@@ -183,7 +216,11 @@
 										class="icon-button"
 										data-tooltip="Edit Storage Type"
 										aria-label="Edit Storage Type"
-										onclick={() => onEdit(item.id, 'storageType', item.storageType)}
+										onclick={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											onEdit(item.id, 'storageType', item.storageType);
+										}}
 										onmouseenter={showTooltip}
 										onmouseleave={hideTooltip}
 									>
@@ -375,7 +412,7 @@
 		padding: 8px 12px;
 		border-radius: 6px;
 		font-size: 14px;
-		z-index: 1000;
+		z-index: 2000;
 		pointer-events: none;
 		transform: translate(-50%, -100%);
 		transition:
@@ -516,7 +553,7 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		z-index: 1000;
+		z-index: 5000;
 	}
 
 	.delete-modal {

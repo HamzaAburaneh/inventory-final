@@ -5,14 +5,29 @@
 
 	function goToPage(page) {
 		if (page >= 1 && page <= $totalPages) {
+			// Preserve scroll position during pagination
+			const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
 			setCurrentPage(page);
+			
+			// Restore scroll position after pagination update
+			setTimeout(() => {
+				window.scrollTo(0, scrollPos);
+			}, 50);
 		}
 	}
 
 	function handleItemsPerPageChange(event) {
 		const select = event.target;
 		const newItemsPerPage = select.value === 'all' ? 'all' : parseInt(select.value);
+		
+		// Preserve scroll position during items per page change
+		const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
 		setItemsPerPage(newItemsPerPage);
+		
+		// Restore scroll position after items per page update
+		setTimeout(() => {
+			window.scrollTo(0, scrollPos);
+		}, 50);
 	}
 </script>
 

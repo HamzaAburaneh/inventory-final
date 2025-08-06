@@ -43,13 +43,23 @@
 
 	const handleAdd = async () => {
 		if (formData.name.trim() === '') {
+			// Preserve scroll position before showing alert
+			const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
+			
 			await Swal.fire({
 				icon: 'error',
 				title: 'Empty Item Name',
 				text: 'Item name cannot be empty.',
 				background: 'var(--container-bg)',
-				color: 'var(--text-color)'
+				color: 'var(--text-color)',
+				scrollbarPadding: false,
+				heightAuto: false
 			});
+			
+			// Restore scroll position after alert
+			setTimeout(() => {
+				window.scrollTo(0, scrollPos);
+			}, 50);
 			return;
 		}
 
