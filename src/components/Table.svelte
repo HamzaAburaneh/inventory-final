@@ -14,6 +14,8 @@
 	let hoveredButton = $state(null);
 	let deletingItemId = $state(null);
 	let tooltipStyle = $state('');
+	let showDeleteConfirm = $state(false);
+	let itemToDelete = $state(null);
 
 	function showTooltip(event) {
 		const button = event.currentTarget;
@@ -28,10 +30,24 @@
 		hoveredButton = null;
 	}
 
-	async function handleDelete(id) {
-		deletingItemId = id;
-		await onDelete(id);
-		deletingItemId = null;
+	function handleDelete(id, itemName) {
+		itemToDelete = { id, name: itemName };
+		showDeleteConfirm = true;
+	}
+
+	async function confirmDelete() {
+		if (itemToDelete) {
+			deletingItemId = itemToDelete.id;
+			await onDelete(itemToDelete.id);
+			deletingItemId = null;
+		}
+		showDeleteConfirm = false;
+		itemToDelete = null;
+	}
+
+	function cancelDelete() {
+		showDeleteConfirm = false;
+		itemToDelete = null;
 	}
 
 	function capitalizeWords(str) {
@@ -116,7 +132,14 @@
 									</button>
 								</div>
 							</td>
-							<td class="count-col" data-label="Count">{item.count}</td>
+							<td class="count-col" data-label="Count">
+								<div class="cell-content">
+									<span>{item.count}</span>
+									<button class="icon-button" style="opacity: 0; pointer-events: none;" aria-hidden="true">
+										<i class="fas fa-edit"></i>
+									</button>
+								</div>
+							</td>
 							<td class="lowcount-col" data-label="Low Count">
 								<div class="cell-content">
 									<span>{item.lowCount != null ? item.lowCount : ''}</span>
@@ -147,7 +170,7 @@
 									</button>
 								</div>
 							</td>
-							<td class="storage-col" data-label="Storage Type">
+							<td class="storage-col" data-label="Type">
 								<div class="cell-content">
 									<span
 										class="storage-type"
@@ -168,12 +191,12 @@
 									</button>
 								</div>
 							</td>
-							<td class="action-col" data-label="Actions">
+							<td class="action-col" data-label="">
 								<button
 									class="delete-button"
 									data-tooltip="Delete Item"
 									aria-label="Delete Item"
-									onclick={() => handleDelete(item.id)}
+									onclick={() => handleDelete(item.id, item.name)}
 									onmouseenter={showTooltip}
 									onmouseleave={hideTooltip}
 								>
@@ -191,6 +214,20 @@
 {#if hoveredButton}
 	<div class="tooltip" style={tooltipStyle} in:fly={{ y: 10, duration: 200 }} out:fade={{ duration: 200 }}>
 		{hoveredButton.dataset.tooltip}
+	</div>
+{/if}
+
+{#if showDeleteConfirm}
+	<div class="modal-overlay" in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}>
+		<div class="delete-modal" in:fly={{ y: 50, duration: 300 }} out:fly={{ y: 50, duration: 300 }}>
+			<h3>Delete Item</h3>
+			<p>Are you sure you want to delete <strong>"{itemToDelete?.name}"</strong>?</p>
+			<p class="warning">This action cannot be undone.</p>
+			<div class="modal-buttons">
+				<button class="cancel-btn" onclick={cancelDelete}>Cancel</button>
+				<button class="confirm-btn" onclick={confirmDelete}>Delete</button>
+			</div>
+		</div>
 	</div>
 {/if}
 
@@ -380,13 +417,20 @@
 			border: 1px solid var(--table-border-color);
 			border-radius: 8px;
 			overflow: hidden;
+			padding: 0.75rem;
+			gap: 0.5rem;
+			background-color: var(--container-bg);
 		}
 
 		.custom-table td {
-			text-align: right;
-			padding-left: 50%;
-			position: relative;
-			border-bottom: 1px solid var(--table-border-color);
+			display: grid;
+			grid-template-columns: 80px 1fr 40px;
+			align-items: center;
+			gap: 0.5rem;
+			padding: 0.25rem 0;
+			border: none;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+			font-size: 0.9rem;
 		}
 
 		.custom-table td:last-child {
@@ -394,28 +438,149 @@
 		}
 
 		.custom-table td::before {
-			content: attr(data-label);
-			position: absolute;
-			left: 0;
-			width: 45%;
-			padding-left: 1rem;
+			content: attr(data-label) ": ";
 			font-weight: bold;
-			text-align: left;
-			white-space: nowrap;
-		}
-
-		.action-col {
-			text-align: center;
-			padding: 1rem;
+			color: var(--text-color);
+			grid-column: 1;
 		}
 
 		.cell-content {
-			justify-content: flex-end;
+			grid-column: 2 / 4;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 0.5rem;
+		}
+
+		.cell-content span {
+			text-align: center;
+			flex: 1;
+		}
+
+
+
+		/* Special handling for action column - center delete button across all columns */
+		.action-col {
+			display: flex !important;
+			justify-content: center;
+			align-items: center;
+			grid-template-columns: none;
+		}
+
+		.action-col::before {
+			display: none;
+		}
+
+		.action-col .delete-button {
+			font-size: 1.2rem;
+			padding: 0.75rem;
+			color: #ff4444;
+			background-color: rgba(255, 68, 68, 0.1);
+			border-radius: 8px;
+			transition: all 0.2s ease;
+		}
+
+		.action-col .delete-button:hover {
+			color: #ff0000;
+			background-color: rgba(255, 68, 68, 0.2);
+			transform: scale(1.1);
 		}
 
 		.icon-button,
 		.delete-button {
 			opacity: 1;
+			font-size: 0.9rem;
+			padding: 0.3rem;
+			margin-left: 0.5rem;
 		}
+
+		.storage-type {
+			font-size: 0.8rem;
+			padding: 4px 10px;
+		}
+
+		/* Better visual separation */
+		.custom-table td {
+			position: relative;
+		}
+	}
+
+	/* Mobile-friendly delete confirmation modal */
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgba(0, 0, 0, 0.5);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		z-index: 1000;
+	}
+
+	.delete-modal {
+		background-color: var(--container-bg);
+		border-radius: 12px;
+		padding: 2rem;
+		margin: 1rem;
+		max-width: 400px;
+		width: 90%;
+		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+		border: 1px solid var(--table-border-color);
+	}
+
+	.delete-modal h3 {
+		margin: 0 0 1rem 0;
+		color: var(--text-color);
+		font-size: 1.25rem;
+	}
+
+	.delete-modal p {
+		margin: 0 0 1rem 0;
+		color: var(--text-color);
+		line-height: 1.5;
+	}
+
+	.delete-modal .warning {
+		color: #ff6b6b;
+		font-weight: 600;
+		font-size: 0.9rem;
+	}
+
+	.modal-buttons {
+		display: flex;
+		gap: 1rem;
+		margin-top: 1.5rem;
+	}
+
+	.modal-buttons button {
+		flex: 1;
+		padding: 0.75rem 1rem;
+		border: none;
+		border-radius: 8px;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.cancel-btn {
+		background-color: var(--table-border-color);
+		color: var(--text-color);
+	}
+
+	.cancel-btn:hover {
+		background-color: var(--hover-bg-color);
+	}
+
+	.confirm-btn {
+		background-color: #ff4444;
+		color: white;
+	}
+
+	.confirm-btn:hover {
+		background-color: #ff0000;
+		transform: translateY(-1px);
 	}
 </style>
