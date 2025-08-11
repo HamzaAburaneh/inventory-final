@@ -88,7 +88,7 @@
 		<table class="custom-table">
 			<thead>
 				<tr class="table-header">
-					{#each ['name', 'barcode', 'count', 'lowCount', 'cost', 'storageType', ''] as column, i}
+					{#each ['name', 'count', 'lowCount', 'cost', 'storageType', ''] as column, i}
 						<th class="{column}-col" onclick={() => {
 							if (column) {
 								// Preserve scroll position during sorting
@@ -130,25 +130,6 @@
 											e.preventDefault();
 											e.stopPropagation();
 											onEdit(item.id, 'name', item.name);
-										}}
-										onmouseenter={showTooltip}
-										onmouseleave={hideTooltip}
-									>
-										<i class="fas fa-edit"></i>
-									</button>
-								</div>
-							</td>
-							<td class="barcode-col" data-label="Barcode">
-								<div class="cell-content">
-									<span>{item.barcode}</span>
-									<button
-										class="icon-button"
-										data-tooltip="Edit Barcode"
-										aria-label="Edit Barcode"
-										onclick={(e) => {
-											e.preventDefault();
-											e.stopPropagation();
-											onEdit(item.id, 'barcode', item.barcode);
 										}}
 										onmouseenter={showTooltip}
 										onmouseleave={hideTooltip}
@@ -379,10 +360,6 @@
 	.name-col {
 		width: 20%;
 		min-width: min(180px, 25vw);
-	}
-	.barcode-col {
-		width: 15%;
-		min-width: min(150px, 20vw);
 	}
 	.count-col {
 		width: 8%;

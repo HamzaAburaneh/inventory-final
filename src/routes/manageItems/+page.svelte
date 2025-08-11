@@ -14,7 +14,6 @@
 
 	let formData = $state({
 		name: '',
-		barcode: '',
 		count: '',
 		lowCount: '',
 		cost: '',
@@ -80,8 +79,7 @@
 
 	const filteredItemsList = $derived(
 		items.filter(item =>
-			item.name.toLowerCase().includes(searchTermValue.toLowerCase()) ||
-			item.barcode.toLowerCase().includes(searchTermValue.toLowerCase())
+			item.name.toLowerCase().includes(searchTermValue.toLowerCase())
 		)
 	);
 	

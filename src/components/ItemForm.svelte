@@ -6,7 +6,6 @@
 
 	let formData = $state({
 		name: '',
-		barcode: '',
 		count: '',
 		lowCount: '',
 		cost: '',
@@ -64,7 +63,7 @@
 		}
 
 		onAdd({ formData });
-		formData = { name: '', barcode: '', count: '', lowCount: '', cost: '', storageType: '' };
+		formData = { name: '', count: '', lowCount: '', cost: '', storageType: '' };
 		errors = {};
 	};
 </script>
@@ -89,18 +88,6 @@
 		</div>
 	</div>
 
-	<!-- Barcode Field -->
-	<div class="form-group col-span-1 sm:col-span-1 lg:col-span-1">
-		<label for="barcode" class="form-label"><span>Barcode</span></label>
-		<div class="input-wrapper">
-			<input
-				id="barcode"
-				class="form-control-input {errors.barcode ? 'is-invalid' : ''}"
-				bind:value={formData.barcode}
-				placeholder="Enter barcode"
-			/>
-		</div>
-	</div>
 
 	<!-- Count Field -->
 	<div class="form-group col-span-1">
