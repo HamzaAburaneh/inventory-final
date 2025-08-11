@@ -250,12 +250,12 @@
 				<tbody>
 					{#each paginatedItemsList() as item (item.id)}
 						<tr class="border-b border-zinc-800" in:fade={{ duration: 200 }}>
-							<td class="px-6 py-4 text-left whitespace-nowrap" data-label="Item Name">{item.name}</td>
+							<td class="px-6 py-4 whitespace-nowrap" data-label="Item Name">{item.name}</td>
 							<td class="px-6 py-4 text-center" data-label="Count">
 								<div class="relative inline-block w-full h-6">
 									{#key item.count}
 										<span
-											class="absolute inset-0 flex items-center justify-center"
+											class="absolute inset-0 flex items-center justify-end"
 											transition:fly={{ y: -20, duration: 300, easing: elasticOut }}
 										>
 											{item.count}
@@ -264,9 +264,11 @@
 								</div>
 							</td>
 							<td class="px-6 py-4" data-label="Change Amount">
-								<div class="flex justify-center">
+								<div class="flex justify-end">
 									<input
-										type="text"
+										type="number"
+										inputmode="numeric"
+										pattern="[0-9]*"
 										placeholder="0"
 										value={item.changeAmount === 0 ? '' : item.changeAmount}
 										oninput={(e) => handleChangeAmountInput(item, e)}
@@ -275,29 +277,27 @@
 								</div>
 							</td>
 							<td class="px-6 py-4" data-label="Actions">
-								<div
-									class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-2"
-								>
+								<div class="grid grid-cols-3 gap-2 w-full max-w-xs mx-auto">
 									<button
-										class="w-full sm:w-auto bg-emerald-700 text-white font-bold py-2 px-3 rounded-lg hover:bg-emerald-500 transition-transform active:scale-95 hover:shadow-lg"
+										class="flex justify-center items-center h-8 bg-emerald-700 text-white text-xs font-medium rounded-md shadow-sm hover:bg-emerald-600 active:bg-emerald-800 transition-colors"
 										onclick={() => changeCount(item, +item.changeAmount)}
 										disabled={item.changeAmount === 0}
 									>
-										Increase
+										<span class="px-1">+</span>
 									</button>
 									<button
-										class="w-full sm:w-auto bg-red-800 text-white font-bold py-2 px-3 rounded-lg hover:bg-red-600 transition-transform active:scale-95 hover:shadow-lg"
+										class="flex justify-center items-center h-8 bg-red-700 text-white text-xs font-medium rounded-md shadow-sm hover:bg-red-600 active:bg-red-800 transition-colors"
 										onclick={() => changeCount(item, -item.changeAmount)}
 										disabled={item.changeAmount === 0}
 									>
-										Decrease
+										<span class="px-1">−</span>
 									</button>
 									<button
-										class="w-full sm:w-auto bg-yellow-700 text-white font-bold py-2 px-3 rounded-lg hover:bg-yellow-500 transition-transform active:scale-95 hover:shadow-lg"
+										class="flex justify-center items-center h-8 bg-amber-600 text-white text-xs font-medium rounded-md shadow-sm hover:bg-amber-500 active:bg-amber-700 transition-colors"
 										onclick={() => resetCount(item)}
 										disabled={item.count === 0}
 									>
-										Reset
+										<span class="px-1">Reset</span>
 									</button>
 								</div>
 							</td>
