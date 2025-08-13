@@ -284,9 +284,11 @@
 	.custom-table th {
 		position: sticky;
 		top: 0;
-		background-color: var(--container-bg);
+		background-color: var(--table-header-bg);
 		z-index: 10;
 		box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+		color: var(--nav-logo-color);
+		font-weight: 600;
 	}
 
 	.custom-table tbody tr {
@@ -302,7 +304,7 @@
 		display: flex;
 		align-items: center;
 		cursor: pointer;
-		transition: color 0.3s ease;
+		transition: all 0.3s ease;
 	}
 
 	.header i {
@@ -313,6 +315,7 @@
 
 	.header:hover {
 		color: var(--icon-hover-color);
+		transform: scale(1.05);
 	}
 
 	.header:hover i {
@@ -356,30 +359,30 @@
 		color: red;
 	}
 
-	/* Fixed column widths */
+	/* Optimized column widths after barcode removal */
 	.name-col {
-		width: 20%;
-		min-width: min(180px, 25vw);
+		width: 30%;
+		min-width: min(200px, 30vw);
 	}
 	.count-col {
-		width: 8%;
-		min-width: min(80px, 15vw);
-	}
-	.lowcount-col {
-		width: 8%;
+		width: 12%;
 		min-width: min(100px, 15vw);
 	}
+	.lowcount-col {
+		width: 15%;
+		min-width: min(120px, 18vw);
+	}
 	.cost-col {
-		width: 12%;
-		min-width: min(100px, 18vw);
+		width: 15%;
+		min-width: min(120px, 18vw);
 	}
 	.storage-col {
-		width: 12%;
-		min-width: min(150px, 20vw);
+		width: 20%;
+		min-width: min(160px, 22vw);
 	}
 	.action-col {
-		width: 15%;
-		min-width: min(120px, 20vw);
+		width: 8%;
+		min-width: min(80px, 12vw);
 	}
 
 	.tooltip {

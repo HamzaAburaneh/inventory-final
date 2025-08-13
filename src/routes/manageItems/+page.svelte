@@ -147,7 +147,8 @@
 		showEditModal = true;
 	};
 
-	const confirmEdit = async () => {
+	const confirmEdit = async (event) => {
+		event.preventDefault();
 		try {
 			await updateItem(editData.id, editData.field, editData.value);
 		} finally {
@@ -202,30 +203,40 @@
 </script>
 
 {#if itemsLoaded}
-	<div
-		class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4"
-		in:fadeAndSlide={{ duration: 300, y: 75 }}
-	>
-		<ItemForm onAdd={handleItemAdd} />
-
-		<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClearSearch} />
-
-		<div class="filter-legend text-white mb-4">
-			{filteredItemsList.length} results of {items.length} total items.
+	<div class="page-container" in:fadeAndSlide={{ duration: 300, y: 75 }}>
+		<!-- Form Section -->
+		<div class="form-section">
+			<ItemForm onAdd={handleItemAdd} />
 		</div>
 
-		<div class="table-container">
-			<Table
-				paginatedItems={paginatedItemsList()}
-				onEdit={handleEdit}
-				onDelete={handleDelete}
-				{sortBy}
-				{currentSortColumn}
-				{sortAscending}
-			/>
-		</div>
+		<!-- Inventory Section -->
+		<div class="inventory-section">
+			<div class="inventory-header">
+				<h2 class="inventory-title">Inventory Items</h2>
+				<div class="inventory-stats">
+					<span class="stats-text">{filteredItemsList.length} of {items.length} items</span>
+				</div>
+			</div>
 
-		<Pagination store={paginationStore} />
+			<div class="search-section">
+				<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClearSearch} />
+			</div>
+
+			<div class="table-section">
+				<Table
+					paginatedItems={paginatedItemsList()}
+					onEdit={handleEdit}
+					onDelete={handleDelete}
+					{sortBy}
+					{currentSortColumn}
+					{sortAscending}
+				/>
+			</div>
+
+			<div class="pagination-section">
+				<Pagination store={paginationStore} />
+			</div>
+		</div>
 	</div>
 {:else}
 	<div class="flex justify-center items-center h-screen">
@@ -240,7 +251,7 @@
 
 {#if showEditModal}
 	<div class="modal-overlay">
-		<form class="edit-modal" on:submit|preventDefault={confirmEdit}>
+		<form class="edit-modal" onsubmit={confirmEdit}>
 			<h3>{editData.title}</h3>
 			<input
 				type="text"
@@ -250,7 +261,7 @@
 				required
 			/>
 			<div class="modal-buttons">
-				<button type="button" class="cancel-btn" on:click={closeEditModal}>
+				<button type="button" class="cancel-btn" onclick={closeEditModal}>
 					Cancel
 				</button>
 				<button type="submit" class="confirm-btn">
@@ -258,27 +269,80 @@
 				</button>
 			</div>
 		</form>
-		<div class="modal-backdrop" on:click={closeEditModal}></div>
+		<button type="button" class="modal-backdrop" onclick={closeEditModal} aria-label="Close modal"></button>
 	</div>
 {/if}
 
 <style>
-	.filter-legend {
-		font-size: 0.9rem;
-		color: #949494;
-	}
-
-	.container {
-		margin-top: 20px;
+	.page-container {
+		max-width: 95%;
+		margin: 0 auto;
 		padding: 1rem;
-		max-width: 90%;
-		background-color: var(--container-bg);
-		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-		border-radius: 1rem;
+		min-height: 100vh;
+		width: 100%;
 	}
 
-	.table-container {
-		margin-bottom: 1rem;
+	.form-section {
+		margin-bottom: 3rem;
+	}
+
+	.inventory-section {
+		background: var(--container-bg);
+		border-radius: var(--border-radius);
+		padding: 0;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		border: 1px solid var(--table-border-color);
+		overflow: hidden;
+	}
+
+	.inventory-header {
+		background: var(--table-header-bg);
+		padding: 1.5rem 2rem;
+		border-bottom: 1px solid var(--table-border-color);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+
+	.inventory-title {
+		margin: 0;
+		font-size: 1.375rem;
+		font-weight: 700;
+		color: var(--table-header-text);
+		letter-spacing: -0.025em;
+	}
+
+	.inventory-stats {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.stats-text {
+		font-size: 0.875rem;
+		color: var(--text-color-dimmed);
+		font-weight: 500;
+		padding: 0.5rem 1rem;
+		background: var(--hover-bg-color);
+		border-radius: var(--border-radius);
+		border: 1px solid var(--table-border-color);
+	}
+
+	.search-section {
+		padding: 1.5rem 2rem;
+		border-bottom: 1px solid var(--table-border-color);
+	}
+
+	.table-section {
+		padding: 0;
+	}
+
+	.pagination-section {
+		padding: 1.5rem 2rem;
+		border-top: 1px solid var(--table-border-color);
+		background: var(--hover-bg-color);
 	}
 
 	.notification {
@@ -287,32 +351,27 @@
 		right: 20px;
 		color: white;
 		padding: 1rem 2rem;
-		border-radius: 0.5rem;
+		border-radius: var(--border-radius);
 		z-index: 1000;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		font-weight: 500;
 	}
 
 	.notification.success {
-		background-color: var(--add-item-color); /* Green */
+		background: var(--add-item-color);
 	}
 
 	.notification.error {
-		background-color: #dc3545; /* Red */
+		background: #dc3545;
 	}
 
 	.notification.warning {
-		background-color: #ffc107; /* Yellow */
-		color: #333; /* Dark text for contrast */
+		background: #ffc107;
+		color: #333;
 	}
 
 	.notification.info {
-		background-color: #17a2b8; /* Blue */
-	}
-	@media (min-width: 768px) {
-		.container {
-			padding: 2.5rem;
-			max-width: 90%;
-		}
+		background: var(--nav-logo-color);
 	}
 
 	/* Custom edit modal */
@@ -326,6 +385,7 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
+		backdrop-filter: blur(4px);
 	}
 
 	.modal-backdrop {
@@ -334,18 +394,18 @@
 		left: 0;
 		width: 100%;
 		height: 100%;
-		background-color: rgba(0, 0, 0, 0.5);
+		background-color: rgba(0, 0, 0, 0.6);
 		z-index: 1;
 	}
 
 	.edit-modal {
 		background-color: var(--container-bg);
-		border-radius: 12px;
+		border-radius: var(--border-radius);
 		padding: 2rem;
 		margin: 1rem;
 		max-width: 400px;
 		width: 90%;
-		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 		border: 1px solid var(--table-border-color);
 		position: relative;
 		z-index: 2;
@@ -355,23 +415,25 @@
 		margin: 0 0 1rem 0;
 		color: var(--text-color);
 		font-size: 1.25rem;
+		font-weight: 700;
 	}
 
 	.edit-input {
 		width: 100%;
-		padding: 0.75rem;
-		border: 1px solid var(--table-border-color);
-		border-radius: 8px;
+		padding: 0.875rem 1rem;
+		border: 2px solid var(--input-border-color);
+		border-radius: var(--border-radius);
 		background-color: var(--input-bg);
-		color: var(--text-color);
+		color: var(--input-text);
 		font-size: 1rem;
 		margin-bottom: 1.5rem;
+		transition: all 0.2s ease;
 	}
 
 	.edit-input:focus {
 		outline: none;
-		border-color: #3085d6;
-		box-shadow: 0 0 0 2px rgba(48, 133, 214, 0.2);
+		border-color: var(--focus-border-color);
+		box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
 	}
 
 	.modal-buttons {
@@ -381,37 +443,88 @@
 
 	.modal-buttons button {
 		flex: 1;
-		padding: 0.75rem 1rem;
+		padding: 0.875rem 1rem;
 		border: none;
-		border-radius: 8px;
+		border-radius: var(--border-radius);
 		font-size: 1rem;
 		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.2s ease;
-		touch-action: manipulation;
-		-webkit-tap-highlight-color: transparent;
-		user-select: none;
-		-webkit-user-select: none;
-		-moz-user-select: none;
-		-ms-user-select: none;
 	}
 
 	.cancel-btn {
-		background-color: var(--table-border-color);
+		background-color: var(--hover-bg-color);
 		color: var(--text-color);
+		border: 1px solid var(--table-border-color);
 	}
 
 	.cancel-btn:hover {
-		background-color: var(--hover-bg-color);
+		background-color: var(--table-row-hover-bg);
 	}
 
 	.confirm-btn {
-		background-color: #3085d6;
+		background: var(--nav-logo-color);
 		color: white;
 	}
 
 	.confirm-btn:hover {
-		background-color: #2574c7;
+		background: var(--nav-logo-hover-color);
 		transform: translateY(-1px);
+	}
+
+	/* Responsive Design */
+	@media (min-width: 640px) {
+		.page-container {
+			max-width: 98%;
+			padding: 1.5rem;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.page-container {
+			max-width: 96%;
+			padding: 2rem;
+		}
+		
+		.inventory-header {
+			padding: 2rem 2.5rem;
+		}
+		
+		.search-section {
+			padding: 2rem 2.5rem;
+		}
+		
+		.pagination-section {
+			padding: 2rem 2.5rem;
+		}
+		
+		.inventory-title {
+			font-size: 1.5rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.page-container {
+			max-width: 94%;
+			padding: 2.5rem;
+		}
+		
+		.form-section {
+			margin-bottom: 4rem;
+		}
+	}
+
+	@media (min-width: 1280px) {
+		.page-container {
+			max-width: 92%;
+			padding: 3rem;
+		}
+	}
+
+	@media (min-width: 1536px) {
+		.page-container {
+			max-width: 90%;
+			padding: 3.5rem;
+		}
 	}
 </style>

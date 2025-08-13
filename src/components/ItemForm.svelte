@@ -16,7 +16,7 @@
 
 	const validateField = (field, value) => {
 		const validations = {
-			name: () => (value.trim().length < 3 ? 'Name must be at least 3 characters' : ''),
+			name: () => (value.trim().length < 2 ? 'Name must be at least 2 characters' : ''),
 			count: () =>
 				isNaN(parseInt(value)) || parseInt(value) < 0 ? 'Must be a positive number' : '',
 			lowCount: () =>
@@ -68,257 +68,363 @@
 	};
 </script>
 
-<div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-4 mb-4">
-	<!-- Name Field -->
-	<div class="form-group col-span-1 sm:col-span-1 lg:col-span-1">
-		<label for="name" class="form-label"><span>Name</span></label>
-		<div class="input-wrapper">
-			<input
-				id="name"
-				class="form-control-input {errors.name ? 'is-invalid' : ''}"
-				bind:value={formData.name}
-				placeholder="Enter item name"
-				oninput={() => validateField('name', formData.name)}
-			/>
-			{#if errors.name}
-				<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
-					{errors.name}
+<div class="form-card">
+	<div class="form-header">
+		<h3 class="form-title">Add New Item</h3>
+		<p class="form-subtitle">Enter item details to add to your inventory</p>
+	</div>
+	
+	<div class="form-content">
+		<div class="form-row primary-row">
+			<div class="form-group">
+				<label for="name" class="form-label">Item Name</label>
+				<div class="input-wrapper">
+					<input
+						id="name"
+						class="form-input {errors.name ? 'error' : ''}"
+						bind:value={formData.name}
+						placeholder="Enter item name"
+						oninput={() => validateField('name', formData.name)}
+					/>
+					{#if errors.name}
+						<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
+							{errors.name}
+						</div>
+					{/if}
 				</div>
-			{/if}
-		</div>
-	</div>
+			</div>
 
-
-	<!-- Count Field -->
-	<div class="form-group col-span-1">
-		<label for="count" class="form-label"><span>Count</span></label>
-		<div class="input-wrapper">
-			<input
-				id="count"
-				class="form-control-input {errors.count ? 'is-invalid' : ''}"
-				type="text"
-				bind:value={formData.count}
-				pattern="^[0-9]*$"
-				placeholder="Enter count"
-				oninput={(event) => handleInput(event, 'count')}
-			/>
-			{#if errors.count}
-				<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
-					{errors.count}
+			<div class="form-group">
+				<label for="storageType" class="form-label">Storage Type</label>
+				<div class="input-wrapper">
+					<select
+						id="storageType"
+						class="form-input {errors.storageType ? 'error' : ''}"
+						bind:value={formData.storageType}
+						class:placeholder-selected={!formData.storageType}
+					>
+						<option value="" disabled>Select storage type...</option>
+						<option value="Freezer">Freezer</option>
+						<option value="Refrigerator">Refrigerator</option>
+						<option value="Dry Storage">Dry Storage</option>
+					</select>
 				</div>
-			{/if}
+			</div>
 		</div>
-	</div>
 
-	<!-- Low Count Field -->
-	<div class="form-group col-span-1">
-		<label for="lowCount" class="form-label"><span>Low Item</span></label>
-		<div class="input-wrapper">
-			<input
-				id="lowCount"
-				class="form-control-input {errors.lowCount ? 'is-invalid' : ''}"
-				type="text"
-				bind:value={formData.lowCount}
-				pattern="^[0-9]*$"
-				placeholder="Enter low stock"
-				oninput={(event) => handleInput(event, 'lowCount')}
-			/>
-			{#if errors.lowCount}
-				<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
-					{errors.lowCount}
+		<div class="form-row secondary-row">
+			<div class="form-group">
+				<label for="count" class="form-label">Current Stock</label>
+				<div class="input-wrapper">
+					<input
+						id="count"
+						class="form-input {errors.count ? 'error' : ''}"
+						type="text"
+						bind:value={formData.count}
+						pattern="^[0-9]*$"
+						placeholder="0"
+						oninput={(event) => handleInput(event, 'count')}
+					/>
+					{#if errors.count}
+						<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
+							{errors.count}
+						</div>
+					{/if}
 				</div>
-			{/if}
-		</div>
-	</div>
+			</div>
 
-	<!-- Cost Field -->
-	<div class="form-group col-span-1">
-		<label for="cost" class="form-label"><span>Cost</span></label>
-		<div class="input-wrapper">
-			<input
-				id="cost"
-				class="form-control-input {errors.cost ? 'is-invalid' : ''}"
-				type="text"
-				bind:value={formData.cost}
-				placeholder="Enter cost"
-				oninput={(event) => handleInput(event, 'cost', true)}
-			/>
-			{#if errors.cost}
-				<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
-					{errors.cost}
+			<div class="form-group">
+				<label for="lowCount" class="form-label">Low Stock Alert</label>
+				<div class="input-wrapper">
+					<input
+						id="lowCount"
+						class="form-input {errors.lowCount ? 'error' : ''}"
+						type="text"
+						bind:value={formData.lowCount}
+						pattern="^[0-9]*$"
+						placeholder="0"
+						oninput={(event) => handleInput(event, 'lowCount')}
+					/>
+					{#if errors.lowCount}
+						<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
+							{errors.lowCount}
+						</div>
+					{/if}
 				</div>
-			{/if}
-		</div>
-	</div>
+			</div>
 
-	<!-- Storage Type Field -->
-	<div class="form-group col-span-1">
-		<label for="storageType" class="form-label"><span>Storage</span></label>
-		<div class="input-wrapper">
-			<select
-				id="storageType"
-				class="form-control-input {errors.storageType ? 'is-invalid' : ''}"
-				bind:value={formData.storageType}
-				class:placeholder-selected={!formData.storageType}
-			>
-				<option value="" disabled>Select type...</option>
-				<option value="Freezer">Freezer</option>
-				<option value="Refrigerator">Refrigerator</option>
-				<option value="Dry Storage">Dry Storage</option>
-			</select>
+			<div class="form-group">
+				<label for="cost" class="form-label">Unit Cost ($)</label>
+				<div class="input-wrapper">
+					<input
+						id="cost"
+						class="form-input {errors.cost ? 'error' : ''}"
+						type="text"
+						bind:value={formData.cost}
+						placeholder="0.00"
+						oninput={(event) => handleInput(event, 'cost', true)}
+					/>
+					{#if errors.cost}
+						<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
+							{errors.cost}
+						</div>
+					{/if}
+				</div>
+			</div>
 		</div>
-	</div>
 
-	<!-- Add Item Button -->
-	<div class="form-group col-span-2 sm:col-span-2 lg:col-span-3">
-		<button class="btn btn-primary w-full" id="add-item" onclick={handleAdd}>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="16"
-				height="16"
-				fill="currentColor"
-				class="bi bi-plus"
-				viewBox="0 0 16 16"
-			>
-				<path d="M8 7V1a1 1 0 0 1 2 0v6h6a1 1 0 0 1 0 2H10v6a1 1 0 0 1-2 0V9H2a1 1 0 0 1 0-2h6z" />
-			</svg>Add Item</button
-		>
+		<div class="form-actions">
+			<button class="add-button" onclick={handleAdd}>
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<line x1="12" y1="5" x2="12" y2="19"></line>
+					<line x1="5" y1="12" x2="19" y2="12"></line>
+				</svg>
+				Add Item
+			</button>
+		</div>
 	</div>
 </div>
 
 <style>
+	.form-card {
+		background: var(--container-bg);
+		border-radius: var(--border-radius);
+		padding: 0;
+		margin-bottom: 2rem;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		border: 1px solid var(--table-border-color);
+		overflow: hidden;
+	}
+
+	.form-header {
+		background: var(--table-header-bg);
+		padding: 1.5rem 2rem;
+		border-bottom: 1px solid var(--table-border-color);
+	}
+
+	.form-title {
+		margin: 0 0 0.25rem 0;
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: var(--text-color);
+		letter-spacing: -0.025em;
+	}
+
+	.form-subtitle {
+		margin: 0;
+		font-size: 0.875rem;
+		color: var(--text-color-dimmed);
+		font-weight: 400;
+	}
+
+	.form-content {
+		padding: 2rem;
+	}
+
+	.form-row {
+		display: grid;
+		gap: 1.5rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.primary-row {
+		grid-template-columns: 1fr;
+	}
+
+	.secondary-row {
+		grid-template-columns: 1fr;
+	}
+
 	.form-group {
 		position: relative;
-		display: flex;
-		flex-direction: column;
-		margin-bottom: 0;
+	}
+
+	.form-label {
+		display: block;
+		margin-bottom: 0.5rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-color);
+		letter-spacing: 0.025em;
+	}
+
+	.input-wrapper {
+		position: relative;
+	}
+
+	.form-input {
+		width: 100%;
+		padding: 0.875rem 1rem;
+		border: 2px solid var(--input-border-color);
+		border-radius: var(--border-radius);
+		background-color: var(--input-bg);
+		color: var(--input-text);
+		font-size: 0.95rem;
+		font-weight: 500;
+		transition: all 0.2s ease;
+	}
+
+	.form-input::placeholder {
+		color: var(--placeholder-text);
+		font-weight: 400;
+	}
+
+	.form-input:focus {
+		outline: none;
+		border-color: var(--focus-border-color);
+		box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+	}
+
+	.form-input:hover:not(:focus) {
+		border-color: var(--input-hover-border-color);
+		background-color: var(--input-hover-bg);
+	}
+
+	.form-input.error {
+		border-color: #dc3545;
+		box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
 	}
 
 	.placeholder-selected {
 		color: var(--placeholder-text) !important;
 	}
 
-	.form-label {
-		margin-bottom: 0.5rem;
-		font-weight: 600;
-		color: var(--text-color);
-		font-size: 0.875rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	.form-label span {
-		cursor: pointer;
-	}
-
-	.input-wrapper {
-		position: relative;
-		width: 100%;
-	}
-
-	.form-control-input {
-		width: 100%;
-		padding: 0.75rem;
-		border: 2px solid var(--input-border-color);
-		border-radius: var(--border-radius);
-		background-color: var(--input-bg);
-		color: var(--input-text);
-		font-size: 1rem;
-		transition:
-			border-color 0.3s ease,
-			box-shadow 0.3s ease,
-			transform 0.2s ease;
-	}
-
-	.is-invalid {
-		border-color: #ff0019 !important;
-	}
-
-	.form-control-input::placeholder {
-		color: var(--placeholder-text);
-	}
-
-	.input-wrapper:hover .form-control-input:not(:focus) {
-		border-color: var(--input-hover-border-color);
-		box-shadow: 0 0 0 1px var(--input-hover-border-color);
-		transform: scale(1.02);
-	}
-
-	.form-control-input:focus {
-		transform: scale(1.02);
-		outline: none;
-		border-color: var(--focus-border-color);
-		box-shadow: 0 0 0 1px var(--focus-border-color);
-	}
-
-	.form-control-input.is-invalid:focus,
-	.form-control-input.is-invalid:hover {
-		border-color: #ff0019 !important;
-		box-shadow: 0 0 0 1px #ff0019 !important;
-	}
-
 	.error-message {
-		border: 1px solid #ff0019;
-		padding: 0.75rem;
 		position: absolute;
 		top: 100%;
 		left: 0;
-		margin-top: 0.25rem;
-		padding: 0.5rem;
-		color: #fff;
-		background-color: #ff0019;
+		right: 0;
+		margin-top: 0.5rem;
+		padding: 0.75rem 1rem;
+		background: #dc3545;
+		color: white;
 		border-radius: var(--border-radius);
-		font-size: 0.875rem;
-		width: 100%;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		font-size: 0.8rem;
+		font-weight: 500;
+		box-shadow: 0 4px 6px -1px rgba(220, 53, 69, 0.3);
+		z-index: 10;
 	}
 
-	#add-item {
-		background-color: var(--add-item-color);
-		color: var(--background-color);
-		font-weight: 700;
-		border-radius: var(--border-radius);
-		padding: 0.5rem 1rem;
-		border: none;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-		cursor: pointer;
-		text-align: center;
-		font-size: 0.875rem;
-		max-width: 100%; /* Full width on smaller screens */
-		margin: 2rem auto 0 auto;
+	.form-actions {
+		margin-top: 2rem;
 		display: flex;
+		justify-content: center;
+	}
+
+	.add-button {
+		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		gap: 0.5rem;
+		gap: 0.75rem;
+		padding: 1rem 2.5rem;
+		background: var(--add-item-color);
+		color: black;
+		border: none;
+		border-radius: var(--border-radius);
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		box-shadow:
+			0 4px 15px rgba(0, 0, 0, 0.12),
+			0 2px 6px rgba(0, 0, 0, 0.08);
+		letter-spacing: 0.025em;
 		text-transform: uppercase;
-		transition:
-			all 0.3s ease,
-			transform 0.2s ease;
+		position: relative;
+		overflow: hidden;
+		user-select: none;
+		-webkit-tap-highlight-color: transparent;
 	}
 
-	#add-item svg {
-		fill: currentColor;
+	.add-button::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: -100%;
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.3),
+			transparent
+		);
+		transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
-	#add-item:hover {
-		transform: translateY(-4px) scale(1.05);
-		box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-		background-color: var(--icon-hover-color);
+	.add-button:hover {
+		transform: translateY(-2px);
+		box-shadow:
+			0 8px 25px rgba(0, 0, 0, 0.15),
+			0 4px 12px rgba(0, 0, 0, 0.1);
+		filter: brightness(1.25);
 	}
 
-	#add-item:active {
+	.add-button:hover::before {
+		left: 100%;
+	}
+
+	.add-button:active {
 		transform: translateY(0);
+		transition-duration: 0.1s;
+		box-shadow:
+			0 2px 8px rgba(0, 0, 0, 0.15),
+			0 1px 4px rgba(0, 0, 0, 0.1);
 	}
 
+	.add-button:focus-visible {
+		outline: 2px solid var(--add-item-color);
+		outline-offset: 3px;
+	}
+
+	.add-button:active {
+		transform: translateY(0);
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	}
+
+	.add-button svg {
+		width: 18px;
+		height: 18px;
+	}
+
+	/* Responsive Design */
 	@media (min-width: 640px) {
-		#add-item {
-			max-width: 50%; /* Adjust as needed for sm screens */
+		.primary-row {
+			grid-template-columns: 1fr 1fr;
+		}
+		
+		.secondary-row {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+
+	@media (min-width: 768px) {
+		.form-header {
+			padding: 2rem 2.5rem;
+		}
+		
+		.form-content {
+			padding: 2.5rem;
+		}
+		
+		.form-title {
+			font-size: 1.375rem;
 		}
 	}
 
 	@media (min-width: 1024px) {
-		#add-item {
-			max-width: 25%; /* Original width for larger screens */
+		.form-row {
+			gap: 2rem;
+		}
+		
+		.form-input {
+			padding: 1rem 1.25rem;
+			font-size: 1rem;
+		}
+		
+		.add-button {
+			padding: 1rem 2.5rem;
+			font-size: 1rem;
 		}
 	}
 </style>
