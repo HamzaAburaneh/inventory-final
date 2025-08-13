@@ -89,9 +89,11 @@
 		setTimeout(restoreScroll, 0);
 	});
 	
-	const sortedItems = $derived(applySorting(filteredItemsList, currentSortColumn, sortAscending));
+	const sortedItems = $derived.by(() => {
+		return applySorting(filteredItemsList, currentSortColumn, sortAscending);
+	});
 	
-	const paginatedItemsList = $derived(() => {
+	const paginatedItemsList = $derived.by(() => {
 		if ($itemsPerPage === 'all') {
 			return sortedItems;
 		}
@@ -113,6 +115,8 @@
 		try {
 			const newItem = {
 				...formData,
+				count: formData.count ? parseInt(formData.count, 10) : 0,
+				lowCount: formData.lowCount ? parseInt(formData.lowCount, 10) : 0,
 				cost: formData.cost ? parseFloat(parseFloat(formData.cost).toFixed(2)) : 0
 			};
 			await itemStore.addItem(newItem);
@@ -170,8 +174,18 @@
 			if (!item) {
 				throw new Error('Item not found');
 			}
-			const updatedItem = { ...item, [field]: value };
-			await itemStore.updateItem(id, updatedItem);
+			
+			// Convert value to appropriate type based on field
+			let processedValue = value;
+			if (field === 'count' || field === 'lowCount') {
+				processedValue = parseInt(value, 10) || 0;
+			} else if (field === 'cost') {
+				processedValue = parseFloat(value) || 0;
+			}
+			
+			// Only update the specific field, not the entire item
+			const updateData = { [field]: processedValue };
+			await itemStore.updateItem(id, updateData);
 			notificationStore.showNotification('Item updated successfully!', 'success');
 		} catch (error) {
 			if (error instanceof Error) {
@@ -224,13 +238,17 @@
 
 			<div class="table-section">
 				<Table
-					paginatedItems={paginatedItemsList()}
+					paginatedItems={paginatedItemsList}
 					onEdit={handleEdit}
 					onDelete={handleDelete}
 					{sortBy}
 					{currentSortColumn}
 					{sortAscending}
 				/>
+				<!-- Debug info -->
+				<div style="display: none;">
+					Filtered: {filteredItemsList.length}, Sorted: {sortedItems.length}, Paginated: {paginatedItemsList.length}
+				</div>
 			</div>
 
 			<div class="pagination-section">

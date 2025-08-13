@@ -79,7 +79,9 @@
 	}
 
 	function formatCost(cost) {
-		return cost != null ? `$ ${cost.toFixed(2)}` : '';
+		if (cost == null || cost === '') return '';
+		const numericCost = parseFloat(cost);
+		return !isNaN(numericCost) ? `$ ${numericCost.toFixed(2)}` : '';
 	}
 </script>
 
