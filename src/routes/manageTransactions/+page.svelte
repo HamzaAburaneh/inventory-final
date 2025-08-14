@@ -120,6 +120,8 @@
 				user: getCurrentUser()
 			});
 		}
+		// Reset the input field after operation
+		itemStore.setChangeAmount(item.id, 0);
 		notificationStore.showNotification(`Count for "${item.name}" updated successfully!`, 'success');
 	};
 
@@ -147,6 +149,8 @@
 				newCount: 0,
 				user: getCurrentUser()
 			});
+			// Reset the input field after operation
+			itemStore.setChangeAmount(item.id, 0);
 			notificationStore.showNotification(`Count for "${item.name}" reset successfully!`, 'success');
 		}
 	};
