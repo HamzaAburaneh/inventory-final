@@ -1,29 +1,41 @@
 import { writable, get } from 'svelte/store';
 import { db } from '../firebase';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { subscribeToItems } from '../lib/items';
 import { addTransaction } from '../lib/transactions';
 import { authStore } from './authStore';
 
 function createItemStore() {
 	const { subscribe, set, update } = writable([]);
+	let unsubscribeFromItems = null;
 
 	async function loadItems() {
 		try {
-			const querySnapshot = await getDocs(collection(db, 'items'));
-			const items = [];
-			querySnapshot.forEach((doc) => {
-				const data = doc.data();
-				items.push({
-					id: doc.id,
-					...data,
-					count: parseInt(data.count, 10) || 0, // Ensure count is always a number
+			// If already subscribed, unsubscribe first
+			if (unsubscribeFromItems) {
+				unsubscribeFromItems();
+			}
+
+			// Set up real-time subscription
+			unsubscribeFromItems = subscribeToItems((items) => {
+				const processedItems = items.map((item) => ({
+					id: item.id,
+					...item,
+					count: parseInt(item.count, 10) || 0, // Ensure count is always a number
 					changeAmount: 0 // Initialize changeAmount for each item
-				});
+				}));
+				set(processedItems);
 			});
-			set(items);
 		} catch (error) {
 			console.error('Error loading items:', error);
 			throw error;
+		}
+	}
+
+	function stopListening() {
+		if (unsubscribeFromItems) {
+			unsubscribeFromItems();
+			unsubscribeFromItems = null;
 		}
 	}
 
@@ -187,7 +199,8 @@ function createItemStore() {
 		changeCount,
 		resetItemCount,
 		resetAllCounts,
-		setChangeAmount
+		setChangeAmount,
+		stopListening
 	};
 }
 

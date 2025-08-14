@@ -7,7 +7,8 @@ import {
 	query,
 	where,
 	updateDoc,
-	writeBatch
+	writeBatch,
+	onSnapshot
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -60,6 +61,24 @@ export async function getItems() {
 	const itemsQuery = collection(db, 'items');
 	const snapshot = await getDocs(itemsQuery);
 	return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+}
+
+/**
+ * Subscribes to real-time updates for all items in the database.
+ * @param {function(Item[]): void} callback - Function called when items change.
+ * @returns {function(): void} Unsubscribe function to stop listening.
+ */
+export function subscribeToItems(callback) {
+	const itemsQuery = collection(db, 'items');
+	return onSnapshot(itemsQuery, (snapshot) => {
+		const items = snapshot.docs.map((doc) => ({
+			id: doc.id,
+			...doc.data()
+		}));
+		callback(items);
+	}, (error) => {
+		console.error('Error in items subscription:', error);
+	});
 }
 
 /**
@@ -187,16 +206,27 @@ export function sortItems(items, column, ascending) {
 		const valA = a[column];
 		const valB = b[column];
 
+		// Primary sort by the selected column
+		let primaryComparison = 0;
 		if (typeof valA === 'string' && typeof valB === 'string') {
 			const lowerA = valA.toLowerCase();
 			const lowerB = valB.toLowerCase();
-			if (lowerA < lowerB) return ascending ? -1 : 1;
-			if (lowerA > lowerB) return ascending ? 1 : -1;
+			if (lowerA < lowerB) primaryComparison = ascending ? -1 : 1;
+			else if (lowerA > lowerB) primaryComparison = ascending ? 1 : -1;
 		} else {
-			if (valA < valB) return ascending ? -1 : 1;
-			if (valA > valB) return ascending ? 1 : -1;
+			if (valA < valB) primaryComparison = ascending ? -1 : 1;
+			else if (valA > valB) primaryComparison = ascending ? 1 : -1;
 		}
-		return 0;
+
+		// If primary sort values are equal, sort alphabetically by name as secondary sort
+		if (primaryComparison === 0 && column !== 'name' && a.name && b.name) {
+			const nameA = a.name.toLowerCase();
+			const nameB = b.name.toLowerCase();
+			if (nameA < nameB) return -1;
+			if (nameA > nameB) return 1;
+		}
+
+		return primaryComparison;
 	});
 }
 
