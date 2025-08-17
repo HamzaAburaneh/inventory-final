@@ -276,7 +276,7 @@
 										placeholder="0"
 										value={item.changeAmount === 0 ? '' : item.changeAmount}
 										oninput={(e) => handleChangeAmountInput(item, e)}
-										class="change-amount-input w-16 rounded-md shadow-sm sm:text-sm text-center"
+										class="change-amount-input w-16 h-8 rounded-md shadow-sm sm:text-sm text-center"
 									/>
 								</div>
 							</td>
@@ -287,21 +287,21 @@
 										onclick={() => changeCount(item, +item.changeAmount)}
 										disabled={item.changeAmount === 0}
 									>
-										<span class="px-1">+</span>
+										+
 									</button>
 									<button
 										class="flex justify-center items-center h-8 bg-red-700 text-white text-xs font-medium rounded-md shadow-sm hover:bg-red-600 active:bg-red-800 transition-colors"
 										onclick={() => changeCount(item, -item.changeAmount)}
 										disabled={item.changeAmount === 0}
 									>
-										<span class="px-1">−</span>
+										−
 									</button>
 									<button
-										class="flex justify-center items-center h-8 bg-amber-600 text-white text-xs font-medium rounded-md shadow-sm hover:bg-amber-500 active:bg-amber-700 transition-colors"
+										class="flex justify-center items-center h-8 bg-amber-600 text-white text-xs font-medium rounded-md shadow-sm hover:bg-amber-500 active:bg-amber-700 transition-colors text-center"
 										onclick={() => resetCount(item)}
 										disabled={item.count === 0}
 									>
-										<span class="px-1">Reset</span>
+										Reset
 									</button>
 								</div>
 							</td>
@@ -450,6 +450,23 @@
 		color: var(--input-text);
 		border: 1px solid var(--input-border);
 		transition: all 0.3s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		/* Hide number input spinner arrows */
+		-moz-appearance: textfield;
+	}
+
+	.change-amount-input::-webkit-outer-spin-button,
+	.change-amount-input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+
+	.change-amount-input::placeholder {
+		text-align: center;
+		color: var(--input-text);
+		opacity: 0.6;
 	}
 
 	.change-amount-input:hover {
