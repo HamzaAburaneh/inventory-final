@@ -262,8 +262,12 @@
 		width: 100%;
 		overflow-x: auto;
 		overflow-y: scroll;
-		max-height: 670px; /* Or a suitable max-height */
-		min-height: 300px; /* A more flexible min-height */
+		max-height: 670px;
+		min-height: 300px;
+		/* Performance optimizations for smooth scrolling */
+		will-change: scroll-position;
+		transform: translateZ(0);
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.custom-table {
@@ -288,9 +292,12 @@
 		top: 0;
 		background-color: var(--table-header-bg);
 		z-index: 10;
-		box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 		color: var(--nav-logo-color);
 		font-weight: 600;
+		/* Performance optimization for sticky header */
+		will-change: transform;
+		transform: translateZ(0);
 	}
 
 	.custom-table tbody tr {
@@ -336,10 +343,8 @@
 		border: none;
 		cursor: pointer;
 		opacity: 0;
-		transition:
-			opacity 0.2s ease-in-out,
-			color 0.2s ease-in-out,
-			transform 0.2s ease;
+		transition: opacity 0.15s ease, transform 0.1s ease;
+		will-change: opacity, transform;
 	}
 
 	.table-row:hover .icon-button,
@@ -363,24 +368,24 @@
 
 	/* Optimized column widths after barcode removal */
 	.name-col {
-		width: 30%;
-		min-width: min(200px, 30vw);
+		width: 28%;
+		min-width: min(180px, 28vw);
 	}
 	.count-col {
+		width: 10%;
+		min-width: min(80px, 12vw);
+	}
+	.lowcount-col {
 		width: 12%;
 		min-width: min(100px, 15vw);
 	}
-	.lowcount-col {
-		width: 15%;
-		min-width: min(120px, 18vw);
-	}
 	.cost-col {
-		width: 15%;
-		min-width: min(120px, 18vw);
+		width: 12%;
+		min-width: min(100px, 15vw);
 	}
 	.storage-col {
-		width: 20%;
-		min-width: min(160px, 22vw);
+		width: 25%;
+		min-width: min(180px, 25vw);
 	}
 	.action-col {
 		width: 8%;
@@ -405,17 +410,21 @@
 	}
 
 	.storage-type {
-		padding: 6px 14px;
+		padding: clamp(4px, 1vw, 6px) clamp(8px, 2vw, 14px);
 		border-radius: 20px;
-		font-size: 0.9rem;
+		font-size: clamp(0.75rem, 2vw, 0.9rem);
 		font-weight: 600;
-		background-color: #f8f9fa; /* Light background for contrast */
-		color: #333; /* Darker text for readability */
-		box-shadow:
-			0 4px 8px rgba(0, 0, 0, 0.15),
-			0 1px 3px rgba(0, 0, 0, 0.1); /* Softer, layered shadow */
-		border: 1px solid rgba(0, 0, 0, 0.1); /* Optional subtle border */
-		transition: all 0.2s ease-in-out; /* Smooth hover effect */
+		background-color: #f8f9fa;
+		color: #333;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		border: 1px solid rgba(0, 0, 0, 0.1);
+		transition: transform 0.1s ease;
+		white-space: nowrap;
+		display: inline-block;
+		min-width: max-content;
+		/* Performance optimization */
+		will-change: transform;
+		transform: translateZ(0);
 	}
 	@media (max-width: 768px) {
 		.custom-table thead {
@@ -514,8 +523,9 @@
 		}
 
 		.storage-type {
-			font-size: 0.8rem;
-			padding: 4px 10px;
+			font-size: clamp(0.7rem, 3vw, 0.8rem);
+			padding: clamp(3px, 1vw, 4px) clamp(6px, 2vw, 10px);
+			border-radius: 16px;
 		}
 
 		/* Better visual separation */
