@@ -83,6 +83,15 @@
 		const numericCost = parseFloat(cost);
 		return !isNaN(numericCost) ? `$ ${numericCost.toFixed(2)}` : '';
 	}
+
+	function formatTotalValue(count, cost) {
+		if (count == null || cost == null || count === '' || cost === '') return '';
+		const numericCount = parseFloat(count);
+		const numericCost = parseFloat(cost);
+		if (isNaN(numericCount) || isNaN(numericCost)) return '';
+		const totalValue = numericCount * numericCost;
+		return `$ ${totalValue.toFixed(2)}`;
+	}
 </script>
 
 <div class="table-wrapper">
@@ -90,7 +99,7 @@
 		<table class="custom-table">
 			<thead>
 				<tr class="table-header">
-					{#each ['name', 'count', 'lowCount', 'cost', 'storageType', ''] as column, i}
+					{#each ['name', 'count', 'lowCount', 'cost', 'totalValue', 'storageType', ''] as column, i}
 						<th class="{column}-col" onclick={() => {
 							if (column) {
 								// Preserve scroll position during sorting
@@ -103,7 +112,7 @@
 						}}>
 							<div class="header">
 								{#if column}
-									{column.charAt(0).toUpperCase() + column.slice(1)}
+									{column === 'totalValue' ? 'Total Value' : column.charAt(0).toUpperCase() + column.slice(1)}
 									<i
 										class="fas fa-sort{currentSortColumn === column
 											? sortAscending
@@ -182,6 +191,14 @@
 										onmouseenter={showTooltip}
 										onmouseleave={hideTooltip}
 									>
+										<i class="fas fa-edit"></i>
+									</button>
+								</div>
+							</td>
+							<td class="totalvalue-col" data-label="Total Value">
+								<div class="cell-content">
+									<span>{formatTotalValue(item.count, item.cost)}</span>
+									<button class="icon-button" style="opacity: 0; pointer-events: none;" aria-hidden="true">
 										<i class="fas fa-edit"></i>
 									</button>
 								</div>
@@ -366,26 +383,30 @@
 		color: red;
 	}
 
-	/* Optimized column widths after barcode removal */
+	/* Optimized column widths with total value column */
 	.name-col {
-		width: 28%;
-		min-width: min(180px, 28vw);
+		width: 22%;
+		min-width: min(160px, 22vw);
 	}
 	.count-col {
-		width: 10%;
-		min-width: min(80px, 12vw);
+		width: 8%;
+		min-width: min(70px, 10vw);
 	}
 	.lowcount-col {
-		width: 12%;
-		min-width: min(100px, 15vw);
+		width: 10%;
+		min-width: min(90px, 12vw);
 	}
 	.cost-col {
+		width: 10%;
+		min-width: min(90px, 12vw);
+	}
+	.totalvalue-col {
 		width: 12%;
-		min-width: min(100px, 15vw);
+		min-width: min(110px, 14vw);
 	}
 	.storage-col {
-		width: 25%;
-		min-width: min(180px, 25vw);
+		width: 20%;
+		min-width: min(160px, 20vw);
 	}
 	.action-col {
 		width: 8%;
