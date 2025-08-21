@@ -83,6 +83,23 @@
 		)
 	);
 	
+	const totalInventoryValue = $derived(
+		filteredItemsList.reduce((total, item) => {
+			const count = parseFloat(item.count) || 0;
+			const cost = parseFloat(item.cost) || 0;
+			return total + (count * cost);
+		}, 0)
+	);
+	
+	const formatCurrency = (value) => {
+		return new Intl.NumberFormat('en-CA', {
+			style: 'currency',
+			currency: 'CAD',
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2
+		}).format(value);
+	};
+	
 	$effect(() => {
 		preserveScroll();
 		setTotalItems(filteredItemsList.length);
@@ -90,6 +107,14 @@
 	});
 	
 	const sortedItems = $derived.by(() => {
+		if (currentSortColumn === 'totalValue') {
+			// Custom sorting for total value (count * cost)
+			return [...filteredItemsList].sort((a, b) => {
+				const aTotal = (a.count || 0) * (a.cost || 0);
+				const bTotal = (b.count || 0) * (b.cost || 0);
+				return sortAscending ? aTotal - bTotal : bTotal - aTotal;
+			});
+		}
 		return applySorting(filteredItemsList, currentSortColumn, sortAscending);
 	});
 	
@@ -147,6 +172,14 @@
 			value: oldValue != null ? oldValue.toString() : '',
 			title: `Edit ${String(field).charAt(0).toUpperCase() + String(field).slice(1)}`
 		};
+		
+		// Normalize storage type values for proper dropdown selection
+		if (field === 'storageType' && editData.value) {
+			const normalizedValue = editData.value.toLowerCase();
+			if (normalizedValue === 'dry storage') editData.value = 'Dry Storage';
+			else if (normalizedValue === 'refrigerator') editData.value = 'Refrigerator';
+			else if (normalizedValue === 'freezer') editData.value = 'Freezer';
+		}
 		
 		showEditModal = true;
 	};
@@ -229,6 +262,7 @@
 				<h2 class="inventory-title">Inventory Items</h2>
 				<div class="inventory-stats">
 					<span class="stats-text">{filteredItemsList.length} of {items.length} items</span>
+					<span class="stats-text total-value">Total Value: {formatCurrency(totalInventoryValue)}</span>
 				</div>
 			</div>
 
@@ -271,13 +305,25 @@
 	<div class="modal-overlay">
 		<form class="edit-modal" onsubmit={confirmEdit}>
 			<h3>{editData.title}</h3>
-			<input
-				type="text"
-				bind:value={editData.value}
-				class="edit-input"
-				placeholder="Enter value..."
-				required
-			/>
+			{#if editData.field === 'storageType'}
+				<select
+					bind:value={editData.value}
+					class="edit-input"
+					required
+				>
+					<option value="Dry Storage">Dry Storage</option>
+					<option value="Refrigerator">Refrigerator</option>
+					<option value="Freezer">Freezer</option>
+				</select>
+			{:else}
+				<input
+					type="text"
+					bind:value={editData.value}
+					class="edit-input"
+					placeholder="Enter value..."
+					required
+				/>
+			{/if}
 			<div class="modal-buttons">
 				<button type="button" class="cancel-btn" onclick={closeEditModal}>
 					Cancel
@@ -346,6 +392,13 @@
 		background: var(--hover-bg-color);
 		border-radius: var(--border-radius);
 		border: 1px solid var(--table-border-color);
+	}
+	
+	.stats-text.total-value {
+		background: var(--add-item-color);
+		color: #000;
+		font-weight: 600;
+		border-color: var(--add-item-color);
 	}
 
 	.search-section {
