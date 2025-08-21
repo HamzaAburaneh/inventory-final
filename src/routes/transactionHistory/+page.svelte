@@ -1,6 +1,6 @@
 <script>
 	import { db } from '../../firebase';
-	import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+	import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 	import TransactionTable from '../../components/TransactionTable.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
@@ -14,6 +14,7 @@
 	let currentSortColumn = $state('timestamp');
 	let sortAscending = $state(false);
 	let transactionsLoaded = $state(false);
+	let unsubscribeFromTransactions = null;
 	
 	const paginationStore = getPaginationStore('transactionHistory');
 	const { currentPage, itemsPerPage, setTotalItems, setCurrentPage } = paginationStore;
@@ -26,10 +27,13 @@
 		searchTermValue = value;
 	});
 	
-	// Clean up subscription on component destroy
+	// Clean up subscriptions on component destroy
 	$effect(() => {
 		return () => {
 			unsubscribeSearch();
+			if (unsubscribeFromTransactions) {
+				unsubscribeFromTransactions();
+			}
 		};
 	});
 
@@ -81,35 +85,40 @@
 		});
 	}
 
-	async function fetchTransactions() {
+	function subscribeToTransactions() {
 		loading = true;
 		const transactionsRef = collection(db, 'transactions');
 		let q = query(transactionsRef, orderBy('timestamp', 'desc'));
 
 		try {
-			const querySnapshot = await getDocs(q);
-			allTransactions = querySnapshot.docs.map((doc) => {
-				const data = doc.data();
-				return {
-					id: doc.id,
-					itemId: data.itemId,
-					itemName: data.itemName,
-					type: data.type,
-					previousCount: data.previousCount,
-					newCount: data.newCount,
-					timestamp: data.timestamp?.toDate() || new Date(),
-					user: data.user
-				};
+			// Set up real-time subscription
+			unsubscribeFromTransactions = onSnapshot(q, (querySnapshot) => {
+				allTransactions = querySnapshot.docs.map((doc) => {
+					const data = doc.data();
+					return {
+						id: doc.id,
+						itemId: data.itemId,
+						itemName: data.itemName,
+						type: data.type,
+						previousCount: data.previousCount,
+						newCount: data.newCount,
+						timestamp: data.timestamp?.toDate() || new Date(),
+						user: data.user
+					};
+				});
+				loading = false;
+			}, (error) => {
+				console.error('Error in transactions subscription:', error);
+				loading = false;
 			});
 		} catch (error) {
-			console.error('Error fetching transactions:', error);
-		} finally {
+			console.error('Error setting up transactions subscription:', error);
 			loading = false;
 		}
 	}
 
 	$effect(() => {
-		fetchTransactions();
+		subscribeToTransactions();
 	});
 
 	function handleSearch(value) {
