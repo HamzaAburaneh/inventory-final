@@ -9,7 +9,8 @@
 		count: '',
 		lowCount: '',
 		cost: '',
-		storageType: ''
+		storageType: '',
+		booths: []
 	});
 
 	let errors = $state({});
@@ -63,7 +64,7 @@
 		}
 
 		onAdd({ formData });
-		formData = { name: '', count: '', lowCount: '', cost: '', storageType: '' };
+		formData = { name: '', count: '', lowCount: '', cost: '', storageType: '', booths: [] };
 		errors = {};
 	};
 </script>
@@ -108,6 +109,45 @@
 						<option value="Refrigerator">Refrigerator</option>
 						<option value="Dry Storage">Dry Storage</option>
 					</select>
+				</div>
+			</div>
+
+			<div class="form-group booths-group">
+				<label class="form-label">Booths</label>
+				<div class="input-wrapper">
+					<div class="booths-container">
+						{#each [
+							{ value: 'freshly', label: 'Freshly', color: '#10B981' },
+							{ value: 'b1', label: 'B1', color: '#3B82F6' },
+							{ value: 'b2', label: 'B2', color: '#8B5CF6' },
+							{ value: 'jakes', label: 'Jakes', color: '#F59E0B' },
+							{ value: 'epic', label: 'Epic', color: '#EF4444' },
+							{ value: 'pulled', label: 'Pulled', color: '#6B7280' }
+						] as booth}
+							<label class="booth-option">
+								<input
+									type="checkbox"
+									value={booth.value}
+									bind:group={formData.booths}
+									class="booth-checkbox"
+								/>
+								<div class="booth-card" style="--booth-color: {booth.color}">
+									<div class="booth-indicator"></div>
+									<span class="booth-name">{booth.label}</span>
+									<div class="checkmark">
+										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+											<polyline points="20,6 9,17 4,12"></polyline>
+										</svg>
+									</div>
+								</div>
+							</label>
+						{/each}
+					</div>
+					{#if errors.booths}
+						<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
+							{errors.booths}
+						</div>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -425,6 +465,136 @@
 		.add-button {
 			padding: 1rem 2.5rem;
 			font-size: 1rem;
+		}
+	}
+
+	.booths-group {
+		grid-column: 1 / -1;
+	}
+
+	.booths-container {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+		gap: 0.75rem;
+		margin-top: 0.75rem;
+	}
+
+	/* Mobile responsiveness */
+	@media (max-width: 640px) {
+		.booths-container {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 0.5rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.booths-container {
+			grid-template-columns: 1fr;
+			gap: 0.5rem;
+		}
+	}
+
+	.booth-option {
+		position: relative;
+		cursor: pointer;
+	}
+
+	.booth-checkbox {
+		position: absolute;
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.booth-card {
+		position: relative;
+		display: flex;
+		align-items: center;
+		padding: 0.75rem;
+		background: var(--input-bg);
+		border: 2px solid var(--input-border-color);
+		border-radius: var(--border-radius);
+		transition: all 0.2s ease;
+		min-height: 50px;
+		overflow: hidden;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	/* Mobile adjustments */
+	@media (max-width: 640px) {
+		.booth-card {
+			padding: 0.5rem;
+			min-height: 45px;
+		}
+	}
+
+	.booth-card:hover {
+		border-color: var(--input-hover-border-color);
+		background: var(--input-hover-bg);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	}
+
+	.booth-indicator {
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 4px;
+		background: var(--booth-color);
+		opacity: 0.7;
+		transition: all 0.2s ease;
+	}
+
+	.booth-name {
+		flex: 1;
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: var(--text-color);
+		margin-left: 0.75rem;
+	}
+
+	.checkmark {
+		opacity: 0;
+		color: var(--booth-color);
+		transition: all 0.2s ease;
+		transform: scale(0.8);
+	}
+
+	.booth-checkbox:checked + .booth-card {
+		border-color: var(--booth-color);
+		background: color-mix(in srgb, var(--booth-color) 10%, var(--input-bg));
+	}
+
+	.booth-checkbox:checked + .booth-card .booth-indicator {
+		opacity: 1;
+		width: 6px;
+	}
+
+	.booth-checkbox:checked + .booth-card .checkmark {
+		opacity: 1;
+		transform: scale(1);
+	}
+
+	.booth-checkbox:checked + .booth-card .booth-name {
+		color: var(--booth-color);
+	}
+
+	/* Dark mode improvements */
+	@media (prefers-color-scheme: dark) {
+		.booth-card {
+			background: var(--container-bg);
+			border-color: var(--table-border-color);
+		}
+
+		.booth-card:hover {
+			background: var(--hover-bg-color);
+			border-color: var(--input-hover-border-color);
+		}
+
+		.booth-checkbox:checked + .booth-card {
+			background: color-mix(in srgb, var(--booth-color) 15%, var(--container-bg));
+			border-color: var(--booth-color);
 		}
 	}
 </style>

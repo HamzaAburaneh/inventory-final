@@ -142,7 +142,8 @@
 				...formData,
 				count: formData.count ? parseInt(formData.count, 10) : 0,
 				lowCount: formData.lowCount ? parseInt(formData.lowCount, 10) : 0,
-				cost: formData.cost ? parseFloat(parseFloat(formData.cost).toFixed(2)) : 0
+				cost: formData.cost ? parseFloat(parseFloat(formData.cost).toFixed(2)) : 0,
+				booths: formData.booths || []
 			};
 			await itemStore.addItem(newItem);
 			notificationStore.showNotification('Item added successfully!', 'success');
@@ -181,6 +182,18 @@
 			else if (normalizedValue === 'freezer') editData.value = 'Freezer';
 		}
 		
+		// Handle booths field - keep as array for checkbox editing
+		if (field === 'booths') {
+			if (Array.isArray(oldValue)) {
+				editData.value = [...oldValue];
+			} else if (oldValue) {
+				editData.value = [oldValue];
+			} else {
+				editData.value = [];
+			}
+			editData.title = 'Edit Booths';
+		}
+		
 		showEditModal = true;
 	};
 
@@ -214,6 +227,9 @@
 				processedValue = parseInt(value, 10) || 0;
 			} else if (field === 'cost') {
 				processedValue = parseFloat(value) || 0;
+			} else if (field === 'booths') {
+				// Value is already an array from checkbox binding
+				processedValue = Array.isArray(value) ? value : [];
 			}
 			
 			// Only update the specific field, not the entire item
@@ -315,6 +331,37 @@
 					<option value="Refrigerator">Refrigerator</option>
 					<option value="Freezer">Freezer</option>
 				</select>
+			{:else if editData.field === 'booths'}
+				<div class="booths-edit-container">
+					<div class="booths-container">
+						{#each [
+							{ value: 'freshly', label: 'Freshly', color: '#10B981' },
+							{ value: 'b1', label: 'B1', color: '#3B82F6' },
+							{ value: 'b2', label: 'B2', color: '#8B5CF6' },
+							{ value: 'jakes', label: 'Jakes', color: '#F59E0B' },
+							{ value: 'epic', label: 'Epic', color: '#EF4444' },
+							{ value: 'pulled', label: 'Pulled', color: '#6B7280' }
+						] as booth}
+							<label class="booth-option">
+								<input
+									type="checkbox"
+									value={booth.value}
+									bind:group={editData.value}
+									class="booth-checkbox"
+								/>
+								<div class="booth-card" style="--booth-color: {booth.color}">
+									<div class="booth-indicator"></div>
+									<span class="booth-name">{booth.label}</span>
+									<div class="checkmark">
+										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+											<polyline points="20,6 9,17 4,12"></polyline>
+										</svg>
+									</div>
+								</div>
+							</label>
+						{/each}
+					</div>
+				</div>
 			{:else}
 				<input
 					type="text"
@@ -399,6 +446,172 @@
 		color: #000;
 		font-weight: 600;
 		border-color: var(--add-item-color);
+	}
+
+	.booths-edit-container {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.booths-container {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+		gap: 0.75rem;
+		margin-top: 0.75rem;
+	}
+
+	/* Mobile responsiveness */
+	@media (max-width: 640px) {
+		.booths-container {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 0.5rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.booths-container {
+			grid-template-columns: 1fr;
+			gap: 0.5rem;
+		}
+	}
+
+	.booth-option {
+		position: relative;
+		cursor: pointer;
+	}
+
+	.booth-checkbox {
+		position: absolute;
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.booth-card {
+		position: relative;
+		display: flex;
+		align-items: center;
+		padding: 0.75rem;
+		background: var(--input-bg);
+		border: 2px solid var(--input-border-color);
+		border-radius: var(--border-radius);
+		transition: all 0.2s ease;
+		min-height: 50px;
+		overflow: hidden;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	/* Mobile adjustments */
+	@media (max-width: 640px) {
+		.booth-card {
+			padding: 0.5rem;
+			min-height: 45px;
+		}
+	}
+
+	.booth-card:hover {
+		border-color: var(--input-hover-border-color);
+		background: var(--input-hover-bg);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	}
+
+	.booth-indicator {
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 4px;
+		background: var(--booth-color);
+		opacity: 0.7;
+		transition: all 0.2s ease;
+	}
+
+	.booth-name {
+		flex: 1;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--text-color);
+		margin-left: 0.5rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		min-width: 0;
+	}
+
+	/* Mobile font adjustments */
+	@media (max-width: 640px) {
+		.booth-name {
+			font-size: 0.8rem;
+			margin-left: 0.4rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.booth-name {
+			font-size: 0.85rem;
+			margin-left: 0.5rem;
+		}
+	}
+
+	.checkmark {
+		opacity: 0;
+		color: var(--booth-color);
+		transition: all 0.2s ease;
+		transform: scale(0.8);
+		flex-shrink: 0;
+		margin-left: 0.25rem;
+	}
+
+	.checkmark svg {
+		width: 14px;
+		height: 14px;
+	}
+
+	/* Mobile checkmark adjustments */
+	@media (max-width: 640px) {
+		.checkmark svg {
+			width: 12px;
+			height: 12px;
+		}
+	}
+
+	.booth-checkbox:checked + .booth-card {
+		border-color: var(--booth-color);
+		background: color-mix(in srgb, var(--booth-color) 10%, var(--input-bg));
+	}
+
+	.booth-checkbox:checked + .booth-card .booth-indicator {
+		opacity: 1;
+		width: 6px;
+	}
+
+	.booth-checkbox:checked + .booth-card .checkmark {
+		opacity: 1;
+		transform: scale(1);
+	}
+
+	.booth-checkbox:checked + .booth-card .booth-name {
+		color: var(--booth-color);
+	}
+
+	/* Dark mode improvements */
+	@media (prefers-color-scheme: dark) {
+		.booth-card {
+			background: var(--container-bg);
+			border-color: var(--table-border-color);
+		}
+
+		.booth-card:hover {
+			background: var(--hover-bg-color);
+			border-color: var(--input-hover-border-color);
+		}
+
+		.booth-checkbox:checked + .booth-card {
+			background: color-mix(in srgb, var(--booth-color) 15%, var(--container-bg));
+			border-color: var(--booth-color);
+		}
 	}
 
 	.search-section {

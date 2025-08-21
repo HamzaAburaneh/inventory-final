@@ -92,6 +92,25 @@
 		const totalValue = numericCount * numericCost;
 		return `$ ${totalValue.toFixed(2)}`;
 	}
+
+	function getBoothStyle(booth) {
+		const boothColors = {
+			'freshly': { backgroundColor: '#10B981', color: '#FFFFFF' }, // Green
+			'b1': { backgroundColor: '#3B82F6', color: '#FFFFFF' }, // Blue
+			'b2': { backgroundColor: '#8B5CF6', color: '#FFFFFF' }, // Purple
+			'jakes': { backgroundColor: '#F59E0B', color: '#FFFFFF' }, // Amber
+			'epic': { backgroundColor: '#EF4444', color: '#FFFFFF' }, // Red
+			'pulled': { backgroundColor: '#6B7280', color: '#FFFFFF' } // Gray
+		};
+		return boothColors[booth.toLowerCase()] || { backgroundColor: '#374151', color: '#E5E7EB' };
+	}
+
+	function formatBooths(booths) {
+		if (!booths || booths.length === 0) return [];
+		// Ensure booths is an array and normalize casing
+		const boothArray = Array.isArray(booths) ? booths : [booths];
+		return boothArray.map(booth => booth.charAt(0).toUpperCase() + booth.slice(1).toLowerCase());
+	}
 </script>
 
 <div class="table-wrapper">
@@ -99,7 +118,7 @@
 		<table class="custom-table">
 			<thead>
 				<tr class="table-header">
-					{#each ['name', 'count', 'lowCount', 'cost', 'totalValue', 'storageType', ''] as column, i}
+					{#each ['name', 'count', 'lowCount', 'cost', 'totalValue', 'storageType', 'booths', ''] as column, i}
 						<th class="{column}-col" onclick={() => {
 							if (column) {
 								// Preserve scroll position during sorting
@@ -112,7 +131,7 @@
 						}}>
 							<div class="header">
 								{#if column}
-									{column === 'totalValue' ? 'Total Value' : column.charAt(0).toUpperCase() + column.slice(1)}
+									{column === 'totalValue' ? 'Total Value' : column === 'booths' ? 'Booths' : column.charAt(0).toUpperCase() + column.slice(1)}
 									<i
 										class="fas fa-sort{currentSortColumn === column
 											? sortAscending
@@ -228,6 +247,34 @@
 									</button>
 								</div>
 							</td>
+							<td class="booths-col" data-label="Booths">
+								<div class="cell-content">
+									<div class="booths-container">
+										{#each formatBooths(item.booths) as booth}
+											<span
+												class="booth-tag"
+												style="background-color: {getBoothStyle(booth).backgroundColor}; color: {getBoothStyle(booth).color};"
+											>
+												{booth}
+											</span>
+										{/each}
+									</div>
+									<button
+										class="icon-button"
+										data-tooltip="Edit Booths"
+										aria-label="Edit Booths"
+										onclick={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											onEdit(item.id, 'booths', item.booths);
+										}}
+										onmouseenter={showTooltip}
+										onmouseleave={hideTooltip}
+									>
+										<i class="fas fa-edit"></i>
+									</button>
+								</div>
+							</td>
 							<td class="action-col" data-label="">
 								<button
 									class="delete-button"
@@ -304,6 +351,22 @@
 		white-space: nowrap;
 	}
 
+	/* Allow booths column to wrap */
+	.booths-col {
+		white-space: normal !important;
+		overflow: visible;
+		text-overflow: unset;
+		vertical-align: top;
+		min-width: 0;
+	}
+
+	.booths-col .cell-content {
+		white-space: normal;
+		overflow: visible;
+		min-width: 0;
+		width: 100%;
+	}
+
 	.custom-table th {
 		position: sticky;
 		top: 0;
@@ -354,6 +417,14 @@
 		align-items: center;
 	}
 
+	/* Special layout for booths column */
+	.booths-col .cell-content {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 0.5rem;
+	}
+
 	.icon-button,
 	.delete-button {
 		background: none;
@@ -383,34 +454,38 @@
 		color: red;
 	}
 
-	/* Optimized column widths with total value column */
+	/* Optimized column widths with total value and booths columns */
 	.name-col {
-		width: 22%;
-		min-width: min(160px, 22vw);
+		width: 18%;
+		min-width: min(140px, 18vw);
 	}
 	.count-col {
-		width: 8%;
-		min-width: min(70px, 10vw);
+		width: 7%;
+		min-width: min(60px, 8vw);
 	}
 	.lowcount-col {
-		width: 10%;
-		min-width: min(90px, 12vw);
+		width: 8%;
+		min-width: min(80px, 10vw);
 	}
 	.cost-col {
-		width: 10%;
-		min-width: min(90px, 12vw);
+		width: 8%;
+		min-width: min(80px, 10vw);
 	}
 	.totalvalue-col {
-		width: 12%;
-		min-width: min(110px, 14vw);
+		width: 10%;
+		min-width: min(100px, 12vw);
 	}
 	.storage-col {
+		width: 15%;
+		min-width: min(120px, 15vw);
+	}
+	.booths-col {
 		width: 20%;
 		min-width: min(160px, 20vw);
 	}
 	.action-col {
-		width: 8%;
-		min-width: min(80px, 12vw);
+		width: 7%;
+		min-width: min(70px, 10vw);
 	}
 
 	.tooltip {
@@ -447,6 +522,63 @@
 		will-change: transform;
 		transform: translateZ(0);
 	}
+
+	.booths-container {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem;
+		align-items: baseline;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.booth-tag {
+		padding: 0.25rem 0.5rem;
+		border-radius: 12px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		white-space: nowrap;
+		display: inline-block;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+		border: 1px solid rgba(0, 0, 0, 0.1);
+		transition: transform 0.1s ease;
+		text-align: center;
+		line-height: 1.2;
+	}
+
+	.booth-tag:hover {
+		transform: scale(1.05);
+	}
+
+	/* Mobile responsiveness for booth tags */
+	@media (max-width: 768px) {
+		.booths-container {
+			gap: 0.3rem;
+		}
+
+		.booth-tag {
+			font-size: 0.7rem;
+			padding: 0.3rem 0.5rem;
+			border-radius: 8px;
+		}
+
+		.booths-col .cell-content {
+			align-items: flex-start;
+			gap: 0.5rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.booths-container {
+			gap: 0.25rem;
+		}
+
+		.booth-tag {
+			font-size: 0.65rem;
+			padding: 0.25rem 0.4rem;
+			border-radius: 6px;
+		}
+	}
 	@media (max-width: 768px) {
 		.custom-table thead {
 			display: none;
@@ -480,6 +612,33 @@
 			border: none;
 			border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 			font-size: 0.9rem;
+		}
+
+		/* Special handling for booths column on mobile */
+		.booths-col .cell-content {
+			grid-column: 2 / 4;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 0.5rem;
+		}
+
+		.booths-col .booths-container {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.25rem;
+			flex: 1;
+			align-items: center;
+		}
+
+		.booths-col .icon-button {
+			margin: 0;
+			align-self: flex-start;
+		}
+
+		.booths-col .booth-tag {
+			flex: 0 0 auto;
+			min-width: auto;
 		}
 
 		.custom-table td:last-child {
