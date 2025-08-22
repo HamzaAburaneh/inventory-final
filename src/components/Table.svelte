@@ -118,22 +118,34 @@
 		<table class="custom-table">
 			<thead>
 				<tr class="table-header">
-					{#each ['name', 'count', 'lowCount', 'cost', 'totalValue', 'storageType', 'booths', ''] as column, i}
-						<th class="{column}-col" onclick={() => {
-							if (column) {
-								// Preserve scroll position during sorting
-								const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
-								sortBy(column);
-								setTimeout(() => {
-									window.scrollTo(0, scrollPos);
-								}, 50);
-							}
-						}}>
+					{#each [
+						{name: 'name', width: '18%', minWidth: '9rem'},
+						{name: 'count', width: '7%', minWidth: '5rem'},
+						{name: 'lowCount', width: '8%', minWidth: '7rem'},
+						{name: 'cost', width: '8%', minWidth: '5.5rem'},
+						{name: 'totalValue', width: '10%', minWidth: '8rem'},
+						{name: 'storageType', width: '15%', minWidth: '9rem'},
+						{name: 'booths', width: '20%', minWidth: '9.4rem'},
+						{name: '', width: '3%', minWidth: '1.2rem'}
+					] as column, i}
+						<th
+							class="{column.name}-col"
+							style="width: {column.width}; min-width: {column.minWidth}; max-width: {column.name === '' ? '2.2rem' : 'none'};"
+							onclick={() => {
+								if (column.name) {
+									// Preserve scroll position during sorting
+									const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
+									sortBy(column.name);
+									setTimeout(() => {
+										window.scrollTo(0, scrollPos);
+									}, 50);
+								}
+							}}>
 							<div class="header">
-								{#if column}
-									{column === 'totalValue' ? 'Total Value' : column === 'booths' ? 'Booths' : column.charAt(0).toUpperCase() + column.slice(1)}
+								{#if column.name}
+									{column.name === 'totalValue' ? 'Total Value' : column.name === 'booths' ? 'Booths' : column.name.charAt(0).toUpperCase() + column.name.slice(1)}
 									<i
-										class="fas fa-sort{currentSortColumn === column
+										class="fas fa-sort{currentSortColumn === column.name
 											? sortAscending
 												? '-up'
 												: '-down'
@@ -261,6 +273,7 @@
 									</div>
 									<button
 										class="icon-button"
+										style="margin-left: auto;"
 										data-tooltip="Edit Booths"
 										aria-label="Edit Booths"
 										onclick={(e) => {
@@ -326,29 +339,54 @@
 		width: 100%;
 		overflow-x: auto;
 		overflow-y: scroll;
-		max-height: 670px;
-		min-height: 300px;
+		max-height: 41.9rem;
+		min-height: 18.8rem;
 		/* Performance optimizations for smooth scrolling */
 		will-change: scroll-position;
 		transform: translateZ(0);
 		-webkit-overflow-scrolling: touch;
+		/* Remove padding since we're not using sticky positioning */
+		padding-right: 0;
 	}
 
 	.custom-table {
 		border-collapse: separate;
 		border-spacing: 0;
 		width: 100%;
-		table-layout: fixed;
+		table-layout: auto;
+		/* Increase minimum width to accommodate full headers */
+		min-width: 60rem;
 	}
 
 	.custom-table th,
 	.custom-table td {
-		padding: 0.75rem;
+		padding: 0.5rem;
 		text-align: left;
-		border-bottom: 1px solid var(--table-border-color);
+		border-bottom: 0.063rem solid var(--table-border-color);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	/* Prevent truncation for numeric columns and their headers */
+	.count-col,
+	.lowcount-col,
+	.cost-col,
+	.totalvalue-col {
+		overflow: visible !important;
+		text-overflow: unset !important;
+		white-space: nowrap !important;
+		min-width: max-content !important;
+	}
+
+	.count-col .cell-content span,
+	.lowcount-col .cell-content span,
+	.cost-col .cell-content span,
+	.totalvalue-col .cell-content span {
+		overflow: visible !important;
+		text-overflow: unset !important;
+		white-space: nowrap !important;
+		flex-shrink: 0 !important;
 	}
 
 	/* Allow booths column to wrap */
@@ -372,12 +410,16 @@
 		top: 0;
 		background-color: var(--table-header-bg);
 		z-index: 10;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+		box-shadow: 0 0.063rem 0.188rem rgba(0, 0, 0, 0.2);
 		color: var(--nav-logo-color);
 		font-weight: 600;
 		/* Performance optimization for sticky header */
 		will-change: transform;
 		transform: translateZ(0);
+		/* Prevent header truncation */
+		overflow: visible !important;
+		text-overflow: unset !important;
+		white-space: nowrap !important;
 	}
 
 	.custom-table tbody tr {
@@ -389,17 +431,28 @@
 		background-color: var(--table-row-hover-bg);
 	}
 
+	.custom-table tbody tr:hover .action-col {
+		background-color: var(--table-row-hover-bg);
+	}
+
 	.header {
 		display: flex;
 		align-items: center;
 		cursor: pointer;
 		transition: all 0.3s ease;
+		/* Ensure header content doesn't truncate */
+		overflow: visible !important;
+		white-space: nowrap !important;
+		min-width: max-content;
 	}
 
 	.header i {
 		margin-left: 0.5rem;
 		font-size: 0.8em;
 		transition: transform 0.3s ease;
+		/* Ensure sort icon always has space */
+		flex-shrink: 0;
+		min-width: 1rem;
 	}
 
 	.header:hover {
@@ -413,15 +466,24 @@
 
 	.cell-content {
 		display: flex;
-		justify-content: space-between;
 		align-items: center;
+		gap: 0.5rem; /* Add gap for spacing between text and button */
+		flex-grow: 1; /* Allow content to grow */
+		min-width: 0; /* Allow content to shrink */
+	}
+
+	.cell-content span {
+		flex-grow: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		min-width: 0; /* Allow flex item to shrink below content size */
 	}
 
 	/* Special layout for booths column */
 	.booths-col .cell-content {
 		display: flex;
-		justify-content: space-between;
-		align-items: baseline;
+		align-items: center; /* Changed from baseline to center */
 		gap: 0.5rem;
 	}
 
@@ -433,6 +495,15 @@
 		opacity: 0;
 		transition: opacity 0.15s ease, transform 0.1s ease;
 		will-change: opacity, transform;
+		flex-shrink: 0; /* Prevent button from shrinking */
+		padding: 0.25rem; /* Reduce padding for smaller size */
+		font-size: 0.8rem; /* Smaller icon size */
+	}
+
+	/* Apply specific styles for delete button to match icon-button sizing */
+	.delete-button {
+		padding: 0.25rem;
+		font-size: 0.8rem;
 	}
 
 	.table-row:hover .icon-button,
@@ -447,54 +518,54 @@
 	}
 
 	.delete-button {
-		color: darkred;
+		color: darkred; /* Default color for delete button */
 	}
 
 	.delete-button:hover {
-		color: red;
+		color: #ff0000; /* Bright red on hover */
 	}
 
-	/* Optimized column widths with total value and booths columns */
-	.name-col {
-		width: 18%;
-		min-width: min(140px, 18vw);
-	}
-	.count-col {
-		width: 7%;
-		min-width: min(60px, 8vw);
-	}
-	.lowcount-col {
-		width: 8%;
-		min-width: min(80px, 10vw);
-	}
-	.cost-col {
-		width: 8%;
-		min-width: min(80px, 10vw);
-	}
-	.totalvalue-col {
-		width: 10%;
-		min-width: min(100px, 12vw);
-	}
-	.storage-col {
-		width: 15%;
-		min-width: min(120px, 15vw);
-	}
-	.booths-col {
-		width: 20%;
-		min-width: min(160px, 20vw);
-	}
+	/* Column-specific styling (widths now defined inline) */
 	.action-col {
-		width: 7%;
-		min-width: min(70px, 10vw);
+		/* Remove sticky positioning to prevent overlap */
+		position: static;
+		background-color: var(--container-bg);
+		overflow: hidden;
+		text-align: center;
+	}
+
+	/* Remove sticky positioning from header as well */
+	.custom-table thead th.action-col {
+		position: static;
+		background-color: var(--table-header-bg);
+	}
+
+	/* Responsive adjustments for smaller screens */
+	@media (max-width: 64rem) {
+		.custom-table th:last-child,
+		.custom-table td:last-child {
+			width: 2rem !important;
+			min-width: 2rem !important;
+			max-width: 2rem !important;
+		}
+	}
+
+	@media (max-width: 56.25rem) {
+		.custom-table th:last-child,
+		.custom-table td:last-child {
+			width: 1.8rem !important;
+			min-width: 1.8rem !important;
+			max-width: 1.8rem !important;
+		}
 	}
 
 	.tooltip {
 		position: fixed;
 		background-color: #333;
 		color: white;
-		padding: 8px 12px;
-		border-radius: 6px;
-		font-size: 14px;
+		padding: 0.5rem 0.75rem;
+		border-radius: 0.375rem;
+		font-size: 0.875rem;
 		z-index: 2000;
 		pointer-events: none;
 		transform: translate(-50%, -100%);
@@ -502,22 +573,24 @@
 			opacity 0.2s,
 			transform 0.2s;
 		white-space: nowrap;
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+		box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
 	}
 
 	.storage-type {
-		padding: clamp(4px, 1vw, 6px) clamp(8px, 2vw, 14px);
-		border-radius: 20px;
-		font-size: clamp(0.75rem, 2vw, 0.9rem);
+		padding: 0.375rem 0.75rem;
+		border-radius: 1.25rem;
+		font-size: 0.875rem;
 		font-weight: 600;
 		background-color: #f8f9fa;
 		color: #333;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-		border: 1px solid rgba(0, 0, 0, 0.1);
+		box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
+		border: 0.063rem solid rgba(0, 0, 0, 0.1);
 		transition: transform 0.1s ease;
 		white-space: nowrap;
 		display: inline-block;
-		min-width: max-content;
+		/* Size to content with fixed padding */
+		width: fit-content;
+		text-align: center;
 		/* Performance optimization */
 		will-change: transform;
 		transform: translateZ(0);
@@ -534,16 +607,21 @@
 
 	.booth-tag {
 		padding: 0.25rem 0.5rem;
-		border-radius: 12px;
+		border-radius: 0.75rem;
 		font-size: 0.75rem;
 		font-weight: 600;
 		white-space: nowrap;
 		display: inline-block;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-		border: 1px solid rgba(0, 0, 0, 0.1);
+		box-shadow: 0 0.063rem 0.125rem rgba(0, 0, 0, 0.1);
+		border: 0.063rem solid rgba(0, 0, 0, 0.1);
 		transition: transform 0.1s ease;
 		text-align: center;
 		line-height: 1.2;
+		/* Fixed intrinsic sizing - won't change when wrapping */
+		width: fit-content;
+		flex-shrink: 0;
+		flex-grow: 0;
+		flex-basis: auto;
 	}
 
 	.booth-tag:hover {
@@ -551,7 +629,7 @@
 	}
 
 	/* Mobile responsiveness for booth tags */
-	@media (max-width: 768px) {
+	@media (max-width: 48rem) {
 		.booths-container {
 			gap: 0.3rem;
 		}
@@ -559,7 +637,7 @@
 		.booth-tag {
 			font-size: 0.7rem;
 			padding: 0.3rem 0.5rem;
-			border-radius: 8px;
+			border-radius: 0.5rem;
 		}
 
 		.booths-col .cell-content {
@@ -568,7 +646,7 @@
 		}
 	}
 
-	@media (max-width: 480px) {
+	@media (max-width: 30rem) {
 		.booths-container {
 			gap: 0.25rem;
 		}
@@ -576,10 +654,29 @@
 		.booth-tag {
 			font-size: 0.65rem;
 			padding: 0.25rem 0.4rem;
-			border-radius: 6px;
+			border-radius: 0.375rem;
 		}
 	}
-	@media (max-width: 768px) {
+	@media (max-width: 48rem) {
+		/* Reset sticky positioning for mobile */
+		.table-scroll {
+			padding-right: 0;
+		}
+
+		.action-col,
+		.custom-table thead th.action-col {
+			position: static;
+			box-shadow: none;
+		}
+
+		.action-col::before {
+			display: none;
+		}
+
+		.custom-table {
+			min-width: auto;
+		}
+
 		.custom-table thead {
 			display: none;
 		}
@@ -595,8 +692,8 @@
 			display: flex;
 			flex-direction: column;
 			margin-bottom: 1rem;
-			border: 1px solid var(--table-border-color);
-			border-radius: 8px;
+			border: 0.063rem solid var(--table-border-color);
+			border-radius: 0.5rem;
 			overflow: hidden;
 			padding: 0.75rem;
 			gap: 0.5rem;
@@ -605,12 +702,12 @@
 
 		.custom-table td {
 			display: grid;
-			grid-template-columns: 80px 1fr 40px;
+			grid-template-columns: 5rem 1fr 2.5rem;
 			align-items: center;
 			gap: 0.5rem;
 			padding: 0.25rem 0;
 			border: none;
-			border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+			border-bottom: 0.063rem solid rgba(255, 255, 255, 0.1);
 			font-size: 0.9rem;
 		}
 
@@ -618,9 +715,9 @@
 		.booths-col .cell-content {
 			grid-column: 2 / 4;
 			display: flex;
-			justify-content: space-between;
 			align-items: center;
 			gap: 0.5rem;
+			flex-wrap: wrap; /* Allow booths to wrap on mobile */
 		}
 
 		.booths-col .booths-container {
@@ -628,12 +725,13 @@
 			flex-wrap: wrap;
 			gap: 0.25rem;
 			flex: 1;
-			align-items: center;
+			align-items: center; /* Ensure booth tags are centered */
 		}
 
 		.booths-col .icon-button {
 			margin: 0;
-			align-self: flex-start;
+			margin-left: auto; /* Ensure it's pushed to the right on mobile too */
+			align-self: center; /* Align to center on mobile */
 		}
 
 		.booths-col .booth-tag {
@@ -658,6 +756,8 @@
 			justify-content: space-between;
 			align-items: center;
 			gap: 0.5rem;
+			padding-right: 0;
+			flex-wrap: wrap; /* Allow content to wrap on mobile */
 		}
 
 		.cell-content span {
@@ -684,7 +784,7 @@
 			padding: 0.75rem;
 			color: #ff4444;
 			background-color: rgba(255, 68, 68, 0.1);
-			border-radius: 8px;
+			border-radius: 0.5rem;
 			transition: all 0.2s ease;
 		}
 
@@ -700,12 +800,13 @@
 			font-size: 0.9rem;
 			padding: 0.3rem;
 			margin-left: 0.5rem;
+			flex-shrink: 0; /* Prevent button from shrinking on mobile */
 		}
 
 		.storage-type {
 			font-size: clamp(0.7rem, 3vw, 0.8rem);
-			padding: clamp(3px, 1vw, 4px) clamp(6px, 2vw, 10px);
-			border-radius: 16px;
+			padding: 0.25rem 0.5rem;
+			border-radius: 1rem;
 		}
 
 		/* Better visual separation */
@@ -730,13 +831,13 @@
 
 	.delete-modal {
 		background-color: var(--container-bg);
-		border-radius: 12px;
+		border-radius: 0.75rem;
 		padding: 2rem;
 		margin: 1rem;
-		max-width: 400px;
+		max-width: 25rem;
 		width: 90%;
-		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-		border: 1px solid var(--table-border-color);
+		box-shadow: 0 0.625rem 1.875rem rgba(0, 0, 0, 0.3);
+		border: 0.063rem solid var(--table-border-color);
 	}
 
 	.delete-modal h3 {
@@ -767,7 +868,7 @@
 		flex: 1;
 		padding: 0.75rem 1rem;
 		border: none;
-		border-radius: 8px;
+		border-radius: 0.5rem;
 		font-size: 1rem;
 		font-weight: 600;
 		cursor: pointer;
@@ -790,6 +891,6 @@
 
 	.confirm-btn:hover {
 		background-color: #ff0000;
-		transform: translateY(-1px);
+		transform: translateY(-0.063rem);
 	}
 </style>

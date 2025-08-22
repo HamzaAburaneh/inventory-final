@@ -1,8 +1,21 @@
 import { writable, derived, get } from 'svelte/store';
 
-function createPaginationStore() {
+function createPaginationStore(key) {
 	const currentPage = writable(1);
-	const itemsPerPage = writable(10);
+	
+	// Get saved itemsPerPage from localStorage or default to 10
+	const getInitialItemsPerPage = () => {
+		if (typeof window !== 'undefined') {
+			const saved = localStorage.getItem(`pagination_${key}_itemsPerPage`);
+			if (saved) {
+				const parsed = saved === 'all' ? 'all' : parseInt(saved);
+				return !isNaN(parsed) || parsed === 'all' ? parsed : 10;
+			}
+		}
+		return 10;
+	};
+	
+	const itemsPerPage = writable(getInitialItemsPerPage());
 	const totalItems = writable(0);
 
 	const totalPages = derived(
@@ -42,6 +55,11 @@ function createPaginationStore() {
 	function setItemsPerPage(items) {
 		itemsPerPage.set(items);
 		currentPage.set(1); // Reset to first page when changing items per page
+		
+		// Save to localStorage
+		if (typeof window !== 'undefined') {
+			localStorage.setItem(`pagination_${key}_itemsPerPage`, items.toString());
+		}
 	}
 
 	function setTotalItems(total) {
@@ -98,7 +116,7 @@ const paginationStores = new Map();
 
 export function getPaginationStore(key) {
 	if (!paginationStores.has(key)) {
-		paginationStores.set(key, createPaginationStore());
+		paginationStores.set(key, createPaginationStore(key));
 	}
 	return paginationStores.get(key);
 }
