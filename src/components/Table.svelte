@@ -311,7 +311,7 @@
 </div>
 
 {#if hoveredButton}
-	<div class="tooltip" style={tooltipStyle} in:fly={{ y: 10, duration: 200 }} out:fade={{ duration: 200 }}>
+	<div class="tooltip" style={tooltipStyle} in:fade={{ duration: 150 }} out:fade={{ duration: 150 }}>
 		{hoveredButton.dataset.tooltip}
 	</div>
 {/if}
@@ -571,9 +571,7 @@
 		z-index: 2000;
 		pointer-events: none;
 		transform: translate(-50%, -100%);
-		transition:
-			opacity 0.2s,
-			transform 0.2s;
+		transition: opacity 0.2s;
 		white-space: nowrap;
 		box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
 	}
