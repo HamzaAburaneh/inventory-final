@@ -21,8 +21,10 @@
 		const button = event.currentTarget;
 		hoveredButton = button;
 		const rect = button.getBoundingClientRect();
-		const left = rect.left + rect.width / 2;
-		const top = rect.top - 8;
+		const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+		const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+		const left = rect.left + scrollX + rect.width / 2;
+		const top = rect.top + scrollY - 8;
 		tooltipStyle = `left: ${left}px; top: ${top}px;`;
 	}
 
@@ -560,7 +562,7 @@
 	}
 
 	.tooltip {
-		position: fixed;
+		position: absolute;
 		background-color: #333;
 		color: white;
 		padding: 0.5rem 0.75rem;
