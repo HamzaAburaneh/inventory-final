@@ -1,0 +1,968 @@
+diff --git a/src/components/Table.svelte b/src/components/Table.svelte
+index 25e47cf..63ca5f9 100644
+--- a/src/components/Table.svelte
++++ b/src/components/Table.svelte
+@@ -1,5 +1,9 @@
+ <script>
+ 	import { fade, fly } from 'svelte/transition';
++	import TableHeader from './TableHeader.svelte';
++	import TableCell from './TableCell.svelte';
++	import DeleteModal from './DeleteModal.svelte';
++	import Tooltip from './Tooltip.svelte';
+ 
+ 	let {
+ 		paginatedItems = [],
+@@ -10,26 +14,32 @@
+ 		sortAscending
+ 	} = $props();
+ 
+-
+ 	let hoveredButton = $state(null);
+ 	let deletingItemId = $state(null);
+ 	let tooltipStyle = $state('');
+ 	let showDeleteConfirm = $state(false);
+ 	let itemToDelete = $state(null);
++	let tooltipText = $state('');
++	let tooltipX = $state(0);
++	let tooltipY = $state(0);
++	let showTooltip = $state(false);
+ 
+-	function showTooltip(event) {
++	function handleTooltipShow(event) {
+ 		const button = event.currentTarget;
+ 		hoveredButton = button;
+ 		const rect = button.getBoundingClientRect();
+ 		const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+ 		const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+-		const left = rect.left + scrollX + rect.width / 2;
+-		const top = rect.top + scrollY - 8;
+-		tooltipStyle = `left: ${left}px; top: ${top}px;`;
++		
++		tooltipX = rect.left + scrollX + rect.width / 2;
++		tooltipY = rect.top + scrollY - 8;
++		tooltipText = button.dataset.tooltip;
++		showTooltip = true;
+ 	}
+ 
+-	function hideTooltip() {
++	function handleTooltipHide() {
+ 		hoveredButton = null;
++		showTooltip = false;
+ 	}
+ 
+ 	function handleDelete(id, itemName) {
+@@ -59,249 +69,88 @@
+ 		showDeleteConfirm = false;
+ 		itemToDelete = null;
+ 	}
+-
+-	function capitalizeWords(str) {
+-		return str
+-			.split(' ')
+-			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+-			.join(' ');
+-	}
+-
+-	function getStorageTypeStyle(storageType) {
+-		switch (storageType.toLowerCase()) {
+-			case 'freezer':
+-				return { backgroundColor: '#1E3A8A', color: '#BFDBFE' }; // Dark blue background, light blue text
+-			case 'dry storage':
+-				return { backgroundColor: '#92400E', color: '#FDE68A' }; // Brown background, light yellow text
+-			case 'refrigerator':
+-				return { backgroundColor: '#065F46', color: '#A7F3D0' }; // Dark green background, light green text
+-			default:
+-				return { backgroundColor: '#374151', color: '#E5E7EB' }; // Dark gray background, light gray text
+-		}
+-	}
+-
+-	function formatCost(cost) {
+-		if (cost == null || cost === '') return '';
+-		const numericCost = parseFloat(cost);
+-		return !isNaN(numericCost) ? `$ ${numericCost.toFixed(2)}` : '';
+-	}
+-
+-	function formatTotalValue(count, cost) {
+-		if (count == null || cost == null || count === '' || cost === '') return '';
+-		const numericCount = parseFloat(count);
+-		const numericCost = parseFloat(cost);
+-		if (isNaN(numericCount) || isNaN(numericCost)) return '';
+-		const totalValue = numericCount * numericCost;
+-		return `$ ${totalValue.toFixed(2)}`;
+-	}
+-
+-	function getBoothStyle(booth) {
+-		const boothColors = {
+-			'freshly': { backgroundColor: '#10B981', color: '#FFFFFF' }, // Green
+-			'b1': { backgroundColor: '#3B82F6', color: '#FFFFFF' }, // Blue
+-			'b2': { backgroundColor: '#8B5CF6', color: '#FFFFFF' }, // Purple
+-			'jakes': { backgroundColor: '#F59E0B', color: '#FFFFFF' }, // Amber
+-			'epic': { backgroundColor: '#EF4444', color: '#FFFFFF' }, // Red
+-			'pulled': { backgroundColor: '#6B7280', color: '#FFFFFF' } // Gray
+-		};
+-		return boothColors[booth.toLowerCase()] || { backgroundColor: '#374151', color: '#E5E7EB' };
+-	}
+-
+-	function formatBooths(booths) {
+-		if (!booths || booths.length === 0) return [];
+-		// Ensure booths is an array and normalize casing
+-		const boothArray = Array.isArray(booths) ? booths : [booths];
+-		return boothArray.map(booth => booth.charAt(0).toUpperCase() + booth.slice(1).toLowerCase());
+-	}
+ </script>
+ 
+ <div class="table-wrapper">
+ 	<div class="table-scroll">
+ 		<table class="custom-table">
+-			<thead>
+-				<tr class="table-header">
+-					{#each [
+-						{name: 'name', width: '18%', minWidth: '9rem'},
+-						{name: 'count', width: '7%', minWidth: '5rem'},
+-						{name: 'lowCount', width: '8%', minWidth: '7rem'},
+-						{name: 'cost', width: '8%', minWidth: '5.5rem'},
+-						{name: 'totalValue', width: '10%', minWidth: '8rem'},
+-						{name: 'storageType', width: '15%', minWidth: '9rem'},
+-						{name: 'booths', width: '20%', minWidth: '9.4rem'},
+-						{name: '', width: '3%', minWidth: '1.2rem'}
+-					] as column, i}
+-						<th
+-							class="{column.name}-col"
+-							style="width: {column.width}; min-width: {column.minWidth}; max-width: {column.name === '' ? '2.2rem' : 'none'};"
+-							onclick={() => {
+-								if (column.name) {
+-									// Preserve scroll position during sorting
+-									const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
+-									sortBy(column.name);
+-									setTimeout(() => {
+-										window.scrollTo(0, scrollPos);
+-									}, 50);
+-								}
+-							}}>
+-							<div class="header">
+-								{#if column.name}
+-									{column.name === 'totalValue' ? 'Total Value' : column.name === 'booths' ? 'Booths' : column.name.charAt(0).toUpperCase() + column.name.slice(1)}
+-									<i
+-										class="fas fa-sort{currentSortColumn === column.name
+-											? sortAscending
+-												? '-up'
+-												: '-down'
+-											: ''}"
+-									></i>
+-								{/if}
+-							</div>
+-						</th>
+-					{/each}
+-				</tr>
+-			</thead>
++			<TableHeader {sortBy} {currentSortColumn} {sortAscending} />
+ 			<tbody>
+ 				{#each paginatedItems as item (item.id)}
+ 					{#if item.id !== deletingItemId}
+ 						<tr class="table-row" in:fly={{ y: 20, duration: 300 }} out:fade={{ duration: 300 }}>
+-							<td class="name-col" data-label="Name">
+-								<div class="cell-content">
+-									<span>{item.name}</span>
+-									<button
+-										class="icon-button"
+-										data-tooltip="Edit Name"
+-										aria-label="Edit Name"
+-										onclick={(e) => {
+-											e.preventDefault();
+-											e.stopPropagation();
+-											onEdit(item.id, 'name', item.name);
+-										}}
+-										onmouseenter={showTooltip}
+-										onmouseleave={hideTooltip}
+-									>
+-										<i class="fas fa-edit"></i>
+-									</button>
+-								</div>
+-							</td>
+-							<td class="count-col" data-label="Count">
+-								<div class="cell-content">
+-									<span>{item.count}</span>
+-									<button class="icon-button" style="opacity: 0; pointer-events: none;" aria-hidden="true">
+-										<i class="fas fa-edit"></i>
+-									</button>
+-								</div>
+-							</td>
+-							<td class="lowcount-col" data-label="Low Count">
+-								<div class="cell-content">
+-									<span>{item.lowCount != null ? item.lowCount : ''}</span>
+-									<button
+-										class="icon-button"
+-										data-tooltip="Edit Low Count"
+-										aria-label="Edit Low Count"
+-										onclick={(e) => {
+-											e.preventDefault();
+-											e.stopPropagation();
+-											onEdit(item.id, 'lowCount', item.lowCount);
+-										}}
+-										onmouseenter={showTooltip}
+-										onmouseleave={hideTooltip}
+-									>
+-										<i class="fas fa-edit"></i>
+-									</button>
+-								</div>
+-							</td>
+-							<td class="cost-col" data-label="Cost">
+-								<div class="cell-content">
+-									<span>{formatCost(item.cost)}</span>
+-									<button
+-										class="icon-button"
+-										data-tooltip="Edit Cost"
+-										aria-label="Edit Cost"
+-										onclick={(e) => {
+-											e.preventDefault();
+-											e.stopPropagation();
+-											onEdit(item.id, 'cost', item.cost);
+-										}}
+-										onmouseenter={showTooltip}
+-										onmouseleave={hideTooltip}
+-									>
+-										<i class="fas fa-edit"></i>
+-									</button>
+-								</div>
+-							</td>
+-							<td class="totalvalue-col" data-label="Total Value">
+-								<div class="cell-content">
+-									<span>{formatTotalValue(item.count, item.cost)}</span>
+-									<button class="icon-button" style="opacity: 0; pointer-events: none;" aria-hidden="true">
+-										<i class="fas fa-edit"></i>
+-									</button>
+-								</div>
+-							</td>
+-							<td class="storage-col" data-label="Type">
+-								<div class="cell-content">
+-									<span
+-										class="storage-type"
+-										style="background-color: {getStorageTypeStyle(item.storageType)
+-											.backgroundColor}; color: {getStorageTypeStyle(item.storageType).color};"
+-									>
+-										{capitalizeWords(item.storageType)}
+-									</span>
+-									<button
+-										class="icon-button"
+-										data-tooltip="Edit Storage Type"
+-										aria-label="Edit Storage Type"
+-										onclick={(e) => {
+-											e.preventDefault();
+-											e.stopPropagation();
+-											onEdit(item.id, 'storageType', item.storageType);
+-										}}
+-										onmouseenter={showTooltip}
+-										onmouseleave={hideTooltip}
+-									>
+-										<i class="fas fa-edit"></i>
+-									</button>
+-								</div>
+-							</td>
+-							<td class="booths-col" data-label="Booths">
+-								<div class="cell-content">
+-									<div class="booths-container">
+-										{#each formatBooths(item.booths) as booth}
+-											<span
+-												class="booth-tag"
+-												style="background-color: {getBoothStyle(booth).backgroundColor}; color: {getBoothStyle(booth).color};"
+-											>
+-												{booth}
+-											</span>
+-										{/each}
+-									</div>
+-									<button
+-										class="icon-button"
+-										style="margin-left: auto;"
+-										data-tooltip="Edit Booths"
+-										aria-label="Edit Booths"
+-										onclick={(e) => {
+-											e.preventDefault();
+-											e.stopPropagation();
+-											onEdit(item.id, 'booths', item.booths);
+-										}}
+-										onmouseenter={showTooltip}
+-										onmouseleave={hideTooltip}
+-									>
+-										<i class="fas fa-edit"></i>
+-									</button>
+-								</div>
+-							</td>
+-							<td class="action-col" data-label="">
+-								<button
+-									class="delete-button"
+-									data-tooltip="Delete Item"
+-									aria-label="Delete Item"
+-									onclick={() => handleDelete(item.id, item.name)}
+-									onmouseenter={showTooltip}
+-									onmouseleave={hideTooltip}
+-								>
+-									<i class="fas fa-trash-alt"></i>
+-								</button>
+-							</td>
++							<TableCell 
++								type="name" 
++								value={item.name} 
++								{item} 
++								{onEdit} 
++								onDelete={handleDelete}
++								onTooltipShow={handleTooltipShow}
++								onTooltipHide={handleTooltipHide}
++							/>
++							<TableCell 
++								type="count" 
++								value={item.count} 
++								{item} 
++								{onEdit} 
++								onDelete={handleDelete}
++								onTooltipShow={handleTooltipShow}
++								onTooltipHide={handleTooltipHide}
++							/>
++							<TableCell 
++								type="lowCount" 
++								value={item.lowCount} 
++								{item} 
++								{onEdit} 
++								onDelete={handleDelete}
++								onTooltipShow={handleTooltipShow}
++								onTooltipHide={handleTooltipHide}
++							/>
++							<TableCell 
++								type="cost" 
++								value={item.cost} 
++								{item} 
++								{onEdit} 
++								onDelete={handleDelete}
++								onTooltipShow={handleTooltipShow}
++								onTooltipHide={handleTooltipHide}
++							/>
++							<TableCell 
++								type="totalValue" 
++								value={item.totalValue} 
++								{item} 
++								{onEdit} 
++								onDelete={handleDelete}
++								onTooltipShow={handleTooltipShow}
++								onTooltipHide={handleTooltipHide}
++							/>
++							<TableCell 
++								type="storageType" 
++								value={item.storageType} 
++								{item} 
++								{onEdit} 
++								onDelete={handleDelete}
++								onTooltipShow={handleTooltipShow}
++								onTooltipHide={handleTooltipHide}
++							/>
++							<TableCell 
++								type="booths" 
++								value={item.booths} 
++								{item} 
++								{onEdit} 
++								onDelete={handleDelete}
++								onTooltipShow={handleTooltipShow}
++								onTooltipHide={handleTooltipHide}
++							/>
++							<TableCell 
++								type="action" 
++								value="" 
++								{item} 
++								{onEdit} 
++								onDelete={handleDelete}
++								onTooltipShow={handleTooltipShow}
++								onTooltipHide={handleTooltipHide}
++							/>
+ 						</tr>
+ 					{/if}
+ 				{/each}
+@@ -310,25 +159,19 @@
+ 	</div>
+ </div>
+ 
+-{#if hoveredButton}
+-	<div class="tooltip" style={tooltipStyle} in:fade={{ duration: 150 }} out:fade={{ duration: 150 }}>
+-		{hoveredButton.dataset.tooltip}
+-	</div>
+-{/if}
++<Tooltip 
++	text={tooltipText} 
++	x={tooltipX} 
++	y={tooltipY} 
++	visible={showTooltip} 
++/>
+ 
+-{#if showDeleteConfirm}
+-	<div class="modal-overlay" in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}>
+-		<div class="delete-modal" in:fly={{ y: 50, duration: 300 }} out:fly={{ y: 50, duration: 300 }}>
+-			<h3>Delete Item</h3>
+-			<p>Are you sure you want to delete <strong>"{itemToDelete?.name}"</strong>?</p>
+-			<p class="warning">This action cannot be undone.</p>
+-			<div class="modal-buttons">
+-				<button class="cancel-btn" onclick={cancelDelete}>Cancel</button>
+-				<button class="confirm-btn" onclick={confirmDelete}>Delete</button>
+-			</div>
+-		</div>
+-	</div>
+-{/if}
++<DeleteModal 
++	visible={showDeleteConfirm}
++	itemName={itemToDelete?.name || ''}
++	onConfirm={confirmDelete}
++	onCancel={cancelDelete}
++/>
+ 
+ <style>
+ 	.table-wrapper {
+@@ -343,11 +186,9 @@
+ 		overflow-y: scroll;
+ 		max-height: 41.9rem;
+ 		min-height: 18.8rem;
+-		/* Performance optimizations for smooth scrolling */
+ 		will-change: scroll-position;
+ 		transform: translateZ(0);
+ 		-webkit-overflow-scrolling: touch;
+-		/* Remove padding since we're not using sticky positioning */
+ 		padding-right: 0;
+ 	}
+ 
+@@ -356,74 +197,9 @@
+ 		border-spacing: 0;
+ 		width: 100%;
+ 		table-layout: auto;
+-		/* Increase minimum width to accommodate full headers */
+ 		min-width: 60rem;
+ 	}
+ 
+-	.custom-table th,
+-	.custom-table td {
+-		padding: 0.5rem;
+-		text-align: left;
+-		border-bottom: 0.063rem solid var(--table-border-color);
+-		overflow: hidden;
+-		text-overflow: ellipsis;
+-		white-space: nowrap;
+-	}
+-
+-	/* Prevent truncation for numeric columns and their headers */
+-	.count-col,
+-	.lowcount-col,
+-	.cost-col,
+-	.totalvalue-col {
+-		overflow: visible !important;
+-		text-overflow: unset !important;
+-		white-space: nowrap !important;
+-		min-width: max-content !important;
+-	}
+-
+-	.count-col .cell-content span,
+-	.lowcount-col .cell-content span,
+-	.cost-col .cell-content span,
+-	.totalvalue-col .cell-content span {
+-		overflow: visible !important;
+-		text-overflow: unset !important;
+-		white-space: nowrap !important;
+-		flex-shrink: 0 !important;
+-	}
+-
+-	/* Allow booths column to wrap */
+-	.booths-col {
+-		white-space: normal !important;
+-		overflow: visible;
+-		text-overflow: unset;
+-		vertical-align: top;
+-		min-width: 0;
+-	}
+-
+-	.booths-col .cell-content {
+-		white-space: normal;
+-		overflow: visible;
+-		min-width: 0;
+-		width: 100%;
+-	}
+-
+-	.custom-table th {
+-		position: sticky;
+-		top: 0;
+-		background-color: var(--table-header-bg);
+-		z-index: 10;
+-		box-shadow: 0 0.063rem 0.188rem rgba(0, 0, 0, 0.2);
+-		color: var(--nav-logo-color);
+-		font-weight: 600;
+-		/* Performance optimization for sticky header */
+-		will-change: transform;
+-		transform: translateZ(0);
+-		/* Prevent header truncation */
+-		overflow: visible !important;
+-		text-overflow: unset !important;
+-		white-space: nowrap !important;
+-	}
+-
+ 	.custom-table tbody tr {
+ 		background-color: var(--container-bg);
+ 		transition: background-color 0.3s ease;
+@@ -433,262 +209,28 @@
+ 		background-color: var(--table-row-hover-bg);
+ 	}
+ 
+-	.custom-table tbody tr:hover .action-col {
+-		background-color: var(--table-row-hover-bg);
+-	}
+-
+-	.header {
+-		display: flex;
+-		align-items: center;
+-		cursor: pointer;
+-		transition: all 0.3s ease;
+-		/* Ensure header content doesn't truncate */
+-		overflow: visible !important;
+-		white-space: nowrap !important;
+-		min-width: max-content;
+-	}
+-
+-	.header i {
+-		margin-left: 0.5rem;
+-		font-size: 0.8em;
+-		transition: transform 0.3s ease;
+-		/* Ensure sort icon always has space */
+-		flex-shrink: 0;
+-		min-width: 1rem;
+-	}
+-
+-	.header:hover {
+-		color: var(--icon-hover-color);
+-		transform: scale(1.05);
+-	}
+-
+-	.header:hover i {
+-		transform: scale(1.2);
+-	}
+-
+-	.cell-content {
+-		display: flex;
+-		align-items: center;
+-		gap: 0.5rem; /* Add gap for spacing between text and button */
+-		flex-grow: 1; /* Allow content to grow */
+-		min-width: 0; /* Allow content to shrink */
+-	}
+-
+-	.cell-content span {
+-		flex-grow: 1;
+-		overflow: hidden;
+-		text-overflow: ellipsis;
+-		white-space: nowrap;
+-		min-width: 0; /* Allow flex item to shrink below content size */
+-	}
+-
+-	/* Special layout for booths column */
+-	.booths-col .cell-content {
+-		display: flex;
+-		align-items: center; /* Changed from baseline to center */
+-		gap: 0.5rem;
+-	}
+-
+-	.icon-button,
+-	.delete-button {
+-		background: none;
+-		border: none;
+-		cursor: pointer;
+-		opacity: 0;
+-		transition: opacity 0.15s ease, transform 0.1s ease;
+-		will-change: opacity, transform;
+-		flex-shrink: 0; /* Prevent button from shrinking */
+-		padding: 0.25rem; /* Reduce padding for smaller size */
+-		font-size: 0.8rem; /* Smaller icon size */
+-	}
+-
+-	/* Apply specific styles for delete button to match icon-button sizing */
+-	.delete-button {
+-		padding: 0.25rem;
+-		font-size: 0.8rem;
+-	}
+-
+-	.table-row:hover .icon-button,
+-	.table-row:hover .delete-button {
+-		opacity: 1;
+-	}
+-
+-	.icon-button:hover,
+-	.delete-button:hover {
+-		color: var(--icon-hover-color);
+-		transform: scale(1.2);
+-	}
+-
+-	.delete-button {
+-		color: darkred; /* Default color for delete button */
+-	}
+-
+-	.delete-button:hover {
+-		color: #ff0000; /* Bright red on hover */
+-	}
+-
+-	/* Column-specific styling (widths now defined inline) */
+-	.action-col {
+-		/* Remove sticky positioning to prevent overlap */
+-		position: static;
+-		background-color: var(--container-bg);
+-		overflow: hidden;
+-		text-align: center;
+-	}
+-
+-	/* Remove sticky positioning from header as well */
+-	.custom-table thead th.action-col {
+-		position: static;
+-		background-color: var(--table-header-bg);
+-	}
+-
+ 	/* Responsive adjustments for smaller screens */
+-	@media (max-width: 64rem) {
+-		.custom-table th:last-child,
+-		.custom-table td:last-child {
+-			width: 2rem !important;
+-			min-width: 2rem !important;
+-			max-width: 2rem !important;
+-		}
+-	}
+-
+-	@media (max-width: 56.25rem) {
+-		.custom-table th:last-child,
+-		.custom-table td:last-child {
+-			width: 1.8rem !important;
+-			min-width: 1.8rem !important;
+-			max-width: 1.8rem !important;
+-		}
+-	}
+-
+-	.tooltip {
+-		position: absolute;
+-		background-color: #333;
+-		color: white;
+-		padding: 0.5rem 0.75rem;
+-		border-radius: 0.375rem;
+-		font-size: 0.875rem;
+-		z-index: 2000;
+-		pointer-events: none;
+-		transform: translate(-50%, -100%);
+-		transition: opacity 0.2s;
+-		white-space: nowrap;
+-		box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+-	}
+-
+-	.storage-type {
+-		padding: 0.375rem 0.75rem;
+-		border-radius: 1.25rem;
+-		font-size: 0.875rem;
+-		font-weight: 600;
+-		background-color: #f8f9fa;
+-		color: #333;
+-		box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
+-		border: 0.063rem solid rgba(0, 0, 0, 0.1);
+-		transition: transform 0.1s ease;
+-		white-space: nowrap;
+-		display: inline-block;
+-		/* Size to content with fixed padding */
+-		width: fit-content;
+-		text-align: center;
+-		/* Performance optimization */
+-		will-change: transform;
+-		transform: translateZ(0);
+-	}
+-
+-	.booths-container {
+-		display: flex;
+-		flex-wrap: wrap;
+-		gap: 0.25rem;
+-		align-items: baseline;
+-		flex: 1;
+-		min-width: 0;
+-	}
+-
+-	.booth-tag {
+-		padding: 0.25rem 0.5rem;
+-		border-radius: 0.75rem;
+-		font-size: 0.75rem;
+-		font-weight: 600;
+-		white-space: nowrap;
+-		display: inline-block;
+-		box-shadow: 0 0.063rem 0.125rem rgba(0, 0, 0, 0.1);
+-		border: 0.063rem solid rgba(0, 0, 0, 0.1);
+-		transition: transform 0.1s ease;
+-		text-align: center;
+-		line-height: 1.2;
+-		/* Fixed intrinsic sizing - won't change when wrapping */
+-		width: fit-content;
+-		flex-shrink: 0;
+-		flex-grow: 0;
+-		flex-basis: auto;
+-	}
+-
+-	.booth-tag:hover {
+-		transform: scale(1.05);
+-	}
+-
+-	/* Mobile responsiveness for booth tags */
+ 	@media (max-width: 48rem) {
+-		.booths-container {
+-			gap: 0.3rem;
+-		}
+-
+-		.booth-tag {
+-			font-size: 0.7rem;
+-			padding: 0.3rem 0.5rem;
+-			border-radius: 0.5rem;
+-		}
+-
+-		.booths-col .cell-content {
+-			align-items: flex-start;
+-			gap: 0.5rem;
+-		}
+-	}
+-
+-	@media (max-width: 30rem) {
+-		.booths-container {
+-			gap: 0.25rem;
+-		}
+-
+-		.booth-tag {
+-			font-size: 0.65rem;
+-			padding: 0.25rem 0.4rem;
+-			border-radius: 0.375rem;
+-		}
+-	}
+-	@media (max-width: 48rem) {
+-		/* Reset sticky positioning for mobile */
+ 		.table-scroll {
+ 			padding-right: 0;
+ 		}
+ 
+-		.action-col,
+-		.custom-table thead th.action-col {
+-			position: static;
+-			box-shadow: none;
+-		}
+-
+-		.action-col::before {
+-			display: none;
+-		}
+-
+ 		.custom-table {
+ 			min-width: auto;
+ 		}
+ 
+-		.custom-table thead {
++		.custom-table :global(thead) {
+ 			display: none;
+ 		}
+ 
+ 		.custom-table,
+-		.custom-table tbody,
+-		.custom-table tr,
+-		.custom-table td {
++		.custom-table :global(tbody),
++		.custom-table :global(tr),
++		.custom-table :global(td) {
+ 			width: 100%;
+ 		}
+ 
+-		.custom-table tr {
++		.custom-table :global(tr) {
+ 			display: flex;
+ 			flex-direction: column;
+ 			margin-bottom: 1rem;
+@@ -700,197 +242,8 @@
+ 			background-color: var(--container-bg);
+ 		}
+ 
+-		.custom-table td {
+-			display: grid;
+-			grid-template-columns: 5rem 1fr 2.5rem;
+-			align-items: center;
+-			gap: 0.5rem;
+-			padding: 0.25rem 0;
+-			border: none;
+-			border-bottom: 0.063rem solid rgba(255, 255, 255, 0.1);
+-			font-size: 0.9rem;
+-		}
+-
+-		/* Special handling for booths column on mobile */
+-		.booths-col .cell-content {
+-			grid-column: 2 / 4;
+-			display: flex;
+-			align-items: center;
+-			gap: 0.5rem;
+-			flex-wrap: wrap; /* Allow booths to wrap on mobile */
+-		}
+-
+-		.booths-col .booths-container {
+-			display: flex;
+-			flex-wrap: wrap;
+-			gap: 0.25rem;
+-			flex: 1;
+-			align-items: center; /* Ensure booth tags are centered */
+-		}
+-
+-		.booths-col .icon-button {
+-			margin: 0;
+-			margin-left: auto; /* Ensure it's pushed to the right on mobile too */
+-			align-self: center; /* Align to center on mobile */
+-		}
+-
+-		.booths-col .booth-tag {
+-			flex: 0 0 auto;
+-			min-width: auto;
+-		}
+-
+-		.custom-table td:last-child {
++		.custom-table :global(td:last-child) {
+ 			border-bottom: none;
+ 		}
+-
+-		.custom-table td::before {
+-			content: attr(data-label) ": ";
+-			font-weight: bold;
+-			color: var(--text-color);
+-			grid-column: 1;
+-		}
+-
+-		.cell-content {
+-			grid-column: 2 / 4;
+-			display: flex;
+-			justify-content: space-between;
+-			align-items: center;
+-			gap: 0.5rem;
+-			padding-right: 0;
+-			flex-wrap: wrap; /* Allow content to wrap on mobile */
+-		}
+-
+-		.cell-content span {
+-			text-align: center;
+-			flex: 1;
+-		}
+-
+-
+-
+-		/* Special handling for action column - center delete button across all columns */
+-		.action-col {
+-			display: flex !important;
+-			justify-content: center;
+-			align-items: center;
+-			grid-template-columns: none;
+-		}
+-
+-		.action-col::before {
+-			display: none;
+-		}
+-
+-		.action-col .delete-button {
+-			font-size: 1.2rem;
+-			padding: 0.75rem;
+-			color: #ff4444;
+-			background-color: rgba(255, 68, 68, 0.1);
+-			border-radius: 0.5rem;
+-			transition: all 0.2s ease;
+-		}
+-
+-		.action-col .delete-button:hover {
+-			color: #ff0000;
+-			background-color: rgba(255, 68, 68, 0.2);
+-			transform: scale(1.1);
+-		}
+-
+-		.icon-button,
+-		.delete-button {
+-			opacity: 1;
+-			font-size: 0.9rem;
+-			padding: 0.3rem;
+-			margin-left: 0.5rem;
+-			flex-shrink: 0; /* Prevent button from shrinking on mobile */
+-		}
+-
+-		.storage-type {
+-			font-size: clamp(0.7rem, 3vw, 0.8rem);
+-			padding: 0.25rem 0.5rem;
+-			border-radius: 1rem;
+-		}
+-
+-		/* Better visual separation */
+-		.custom-table td {
+-			position: relative;
+-		}
+-	}
+-
+-	/* Mobile-friendly delete confirmation modal */
+-	.modal-overlay {
+-		position: fixed;
+-		top: 0;
+-		left: 0;
+-		width: 100%;
+-		height: 100%;
+-		background-color: rgba(0, 0, 0, 0.5);
+-		display: flex;
+-		justify-content: center;
+-		align-items: center;
+-		z-index: 5000;
+-	}
+-
+-	.delete-modal {
+-		background-color: var(--container-bg);
+-		border-radius: 0.75rem;
+-		padding: 2rem;
+-		margin: 1rem;
+-		max-width: 25rem;
+-		width: 90%;
+-		box-shadow: 0 0.625rem 1.875rem rgba(0, 0, 0, 0.3);
+-		border: 0.063rem solid var(--table-border-color);
+-	}
+-
+-	.delete-modal h3 {
+-		margin: 0 0 1rem 0;
+-		color: var(--text-color);
+-		font-size: 1.25rem;
+-	}
+-
+-	.delete-modal p {
+-		margin: 0 0 1rem 0;
+-		color: var(--text-color);
+-		line-height: 1.5;
+-	}
+-
+-	.delete-modal .warning {
+-		color: #ff6b6b;
+-		font-weight: 600;
+-		font-size: 0.9rem;
+-	}
+-
+-	.modal-buttons {
+-		display: flex;
+-		gap: 1rem;
+-		margin-top: 1.5rem;
+-	}
+-
+-	.modal-buttons button {
+-		flex: 1;
+-		padding: 0.75rem 1rem;
+-		border: none;
+-		border-radius: 0.5rem;
+-		font-size: 1rem;
+-		font-weight: 600;
+-		cursor: pointer;
+-		transition: all 0.2s ease;
+-	}
+-
+-	.cancel-btn {
+-		background-color: var(--table-border-color);
+-		color: var(--text-color);
+-	}
+-
+-	.cancel-btn:hover {
+-		background-color: var(--hover-bg-color);
+-	}
+-
+-	.confirm-btn {
+-		background-color: #ff4444;
+-		color: white;
+-	}
+-
+-	.confirm-btn:hover {
+-		background-color: #ff0000;
+-		transform: translateY(-0.063rem);
+ 	}
+ </style>
