@@ -18,12 +18,32 @@
 		onTooltipHide 
 	} = $props();
 
-	function handleEdit(field, currentValue) {
-		onEdit(item.id, field, currentValue);
+	function handleEdit(event, field, currentValue) {
+		const button = event.currentTarget;
+		const rect = button.getBoundingClientRect();
+		const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+		const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+		
+		const position = {
+			x: rect.left + scrollX + rect.width / 2,
+			y: rect.top + scrollY + rect.height / 2
+		};
+		
+		onEdit(item.id, field, currentValue, position);
 	}
 
-	function handleDelete() {
-		onDelete(item.id, item.name);
+	function handleDelete(event) {
+		const button = event.currentTarget;
+		const rect = button.getBoundingClientRect();
+		const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+		const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+		
+		const position = {
+			x: rect.left + scrollX + rect.width / 2,
+			y: rect.top + scrollY + rect.height / 2
+		};
+		
+		onDelete(item.id, item.name, position);
 	}
 </script>
 
@@ -38,7 +58,7 @@
 				onclick={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
-					handleEdit('name', value);
+					handleEdit(e, 'name', value);
 				}}
 				onmouseenter={onTooltipShow}
 				onmouseleave={onTooltipHide}
@@ -67,7 +87,7 @@
 				onclick={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
-					handleEdit('lowCount', value);
+					handleEdit(e, 'lowCount', value);
 				}}
 				onmouseenter={onTooltipShow}
 				onmouseleave={onTooltipHide}
@@ -87,7 +107,7 @@
 				onclick={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
-					handleEdit('cost', value);
+					handleEdit(e, 'cost', value);
 				}}
 				onmouseenter={onTooltipShow}
 				onmouseleave={onTooltipHide}
@@ -121,7 +141,7 @@
 				onclick={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
-					handleEdit('storageType', value);
+					handleEdit(e, 'storageType', value);
 				}}
 				onmouseenter={onTooltipShow}
 				onmouseleave={onTooltipHide}
@@ -151,7 +171,7 @@
 				onclick={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
-					handleEdit('booths', value);
+					handleEdit(e, 'booths', value);
 				}}
 				onmouseenter={onTooltipShow}
 				onmouseleave={onTooltipHide}

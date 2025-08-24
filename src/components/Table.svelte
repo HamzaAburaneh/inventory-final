@@ -19,6 +19,8 @@
 	let tooltipStyle = $state('');
 	let showDeleteConfirm = $state(false);
 	let itemToDelete = $state(null);
+	let deleteButtonPosition = $state({ x: 0, y: 0 });
+	let editButtonPosition = $state({ x: 0, y: 0 });
 	let tooltipText = $state('');
 	let tooltipX = $state(0);
 	let tooltipY = $state(0);
@@ -42,9 +44,15 @@
 		showTooltip = false;
 	}
 
-	function handleDelete(id, itemName) {
+	function handleDelete(id, itemName, position) {
 		itemToDelete = { id, name: itemName };
+		deleteButtonPosition = position;
 		showDeleteConfirm = true;
+	}
+
+	function handleEdit(id, field, oldValue, position) {
+		editButtonPosition = position;
+		onEdit(id, field, oldValue, position);
 	}
 
 	async function confirmDelete() {
@@ -79,74 +87,74 @@
 				{#each paginatedItems as item (item.id)}
 					{#if item.id !== deletingItemId}
 						<tr class="table-row" in:fly={{ y: 20, duration: 300 }} out:fade={{ duration: 300 }}>
-							<TableCell 
-								type="name" 
-								value={item.name} 
-								{item} 
-								{onEdit} 
+							<TableCell
+								type="name"
+								value={item.name}
+								{item}
+								onEdit={handleEdit}
 								onDelete={handleDelete}
 								onTooltipShow={handleTooltipShow}
 								onTooltipHide={handleTooltipHide}
 							/>
-							<TableCell 
-								type="count" 
-								value={item.count} 
-								{item} 
-								{onEdit} 
+							<TableCell
+								type="count"
+								value={item.count}
+								{item}
+								onEdit={handleEdit}
 								onDelete={handleDelete}
 								onTooltipShow={handleTooltipShow}
 								onTooltipHide={handleTooltipHide}
 							/>
-							<TableCell 
-								type="lowCount" 
-								value={item.lowCount} 
-								{item} 
-								{onEdit} 
+							<TableCell
+								type="lowCount"
+								value={item.lowCount}
+								{item}
+								onEdit={handleEdit}
 								onDelete={handleDelete}
 								onTooltipShow={handleTooltipShow}
 								onTooltipHide={handleTooltipHide}
 							/>
-							<TableCell 
-								type="cost" 
-								value={item.cost} 
-								{item} 
-								{onEdit} 
+							<TableCell
+								type="cost"
+								value={item.cost}
+								{item}
+								onEdit={handleEdit}
 								onDelete={handleDelete}
 								onTooltipShow={handleTooltipShow}
 								onTooltipHide={handleTooltipHide}
 							/>
-							<TableCell 
-								type="totalValue" 
-								value={item.totalValue} 
-								{item} 
-								{onEdit} 
+							<TableCell
+								type="totalValue"
+								value={item.totalValue}
+								{item}
+								onEdit={handleEdit}
 								onDelete={handleDelete}
 								onTooltipShow={handleTooltipShow}
 								onTooltipHide={handleTooltipHide}
 							/>
-							<TableCell 
-								type="storageType" 
-								value={item.storageType} 
-								{item} 
-								{onEdit} 
+							<TableCell
+								type="storageType"
+								value={item.storageType}
+								{item}
+								onEdit={handleEdit}
 								onDelete={handleDelete}
 								onTooltipShow={handleTooltipShow}
 								onTooltipHide={handleTooltipHide}
 							/>
-							<TableCell 
-								type="booths" 
-								value={item.booths} 
-								{item} 
-								{onEdit} 
+							<TableCell
+								type="booths"
+								value={item.booths}
+								{item}
+								onEdit={handleEdit}
 								onDelete={handleDelete}
 								onTooltipShow={handleTooltipShow}
 								onTooltipHide={handleTooltipHide}
 							/>
-							<TableCell 
-								type="action" 
-								value="" 
-								{item} 
-								{onEdit} 
+							<TableCell
+								type="action"
+								value=""
+								{item}
+								onEdit={handleEdit}
 								onDelete={handleDelete}
 								onTooltipShow={handleTooltipShow}
 								onTooltipHide={handleTooltipHide}
@@ -159,16 +167,17 @@
 	</div>
 </div>
 
-<Tooltip 
-	text={tooltipText} 
-	x={tooltipX} 
-	y={tooltipY} 
-	visible={showTooltip} 
+<Tooltip
+	text={tooltipText}
+	x={tooltipX}
+	y={tooltipY}
+	visible={showTooltip}
 />
 
-<DeleteModal 
+<DeleteModal
 	visible={showDeleteConfirm}
 	itemName={itemToDelete?.name || ''}
+	position={deleteButtonPosition}
 	onConfirm={confirmDelete}
 	onCancel={cancelDelete}
 />

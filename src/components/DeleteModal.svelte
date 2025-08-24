@@ -1,17 +1,24 @@
 <script>
 	import { fade, fly } from 'svelte/transition';
 
-	let { 
-		visible = false, 
-		itemName = '', 
-		onConfirm, 
-		onCancel 
+	let {
+		visible = false,
+		itemName = '',
+		position = { x: 0, y: 0 },
+		onConfirm,
+		onCancel
 	} = $props();
 </script>
 
 {#if visible}
-	<div class="modal-overlay" in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}>
-		<div class="delete-modal" in:fly={{ y: 50, duration: 300 }} out:fly={{ y: 50, duration: 300 }}>
+	<div class="modal-backdrop" onclick={onCancel} in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}></div>
+	<div
+		class="modal-overlay"
+		style="left: 50%; top: {position.y}px;"
+		in:fade={{ duration: 200 }}
+		out:fade={{ duration: 200 }}
+	>
+		<div class="delete-modal" onclick={(e) => e.stopPropagation()} in:fly={{ y: 50, duration: 300 }} out:fly={{ y: 50, duration: 300 }}>
 			<h3>Delete Item</h3>
 			<p>Are you sure you want to delete <strong>"{itemName}"</strong>?</p>
 			<p class="warning">This action cannot be undone.</p>
@@ -24,16 +31,21 @@
 {/if}
 
 <style>
-	.modal-overlay {
+	.modal-backdrop {
 		position: fixed;
 		top: 0;
 		left: 0;
 		width: 100%;
 		height: 100%;
-		background-color: rgba(0, 0, 0, 0.5);
-		display: flex;
-		justify-content: center;
-		align-items: center;
+		background-color: rgba(0, 0, 0, 0.4);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		z-index: 4999;
+	}
+
+	.modal-overlay {
+		position: fixed;
+		transform: translate(-50%, -50%);
 		z-index: 5000;
 	}
 
@@ -41,11 +53,11 @@
 		background-color: var(--container-bg);
 		border-radius: 0.75rem;
 		padding: 2rem;
-		margin: 1rem;
 		max-width: 25rem;
-		width: 90%;
-		box-shadow: 0 0.625rem 1.875rem rgba(0, 0, 0, 0.3);
+		width: 300px;
+		box-shadow: 0 0.625rem 1.875rem rgba(0, 0, 0, 0.4);
 		border: 0.063rem solid var(--table-border-color);
+		position: relative;
 	}
 
 	.delete-modal h3 {

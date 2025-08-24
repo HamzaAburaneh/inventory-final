@@ -27,6 +27,7 @@
 	let isEditingInProgress = $state(false);
 	let showEditModal = $state(false);
 	let editData = $state({ id: null, field: '', value: '', title: '' });
+	let editButtonPosition = $state({ x: 0, y: 300 });
 	let scrollPreservationActive = $state(false);
 	
 	const paginationStore = getPaginationStore('manageItems');
@@ -159,13 +160,16 @@
 		notificationStore.showNotification('Item deleted successfully!', 'success');
 	};
 
-	const handleEdit = async (id, field, oldValue) => {
+	const handleEdit = async (id, field, oldValue, position) => {
 		// Prevent multiple simultaneous edit dialogs
 		if (isEditingInProgress) {
 			return;
 		}
 		
 		isEditingInProgress = true;
+		if (position) {
+			editButtonPosition = position;
+		}
 		
 		editData = {
 			id,
@@ -318,8 +322,9 @@
 {/if}
 
 {#if showEditModal}
-	<div class="modal-overlay">
-		<form class="edit-modal" onsubmit={confirmEdit}>
+	<div class="modal-backdrop" onclick={closeEditModal}></div>
+	<div class="modal-overlay" style="left: 50%; top: {editButtonPosition?.y || 300}px;">
+		<form class="edit-modal" onclick={(e) => e.stopPropagation()} onsubmit={confirmEdit}>
 			<h3>{editData.title}</h3>
 			{#if editData.field === 'storageType'}
 				<select
@@ -659,40 +664,36 @@
 	}
 
 	/* Custom edit modal */
-	.modal-overlay {
+	.modal-backdrop {
 		position: fixed;
 		top: 0;
 		left: 0;
 		width: 100%;
 		height: 100%;
-		z-index: 10000;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		backdrop-filter: blur(4px);
+		background-color: rgba(0, 0, 0, 0.4);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		z-index: 9999;
 	}
 
-	.modal-backdrop {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background-color: rgba(0, 0, 0, 0.6);
-		z-index: 1;
+	.modal-overlay {
+		position: fixed;
+		transform: translate(-50%, -50%);
+		z-index: 10000;
 	}
 
 	.edit-modal {
-		background-color: var(--container-bg);
+		background-color: var(--container-bg); 
 		border-radius: var(--border-radius);
 		padding: 2rem;
-		margin: 1rem;
-		max-width: 400px;
-		width: 90%;
-		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-		border: 1px solid var(--table-border-color);
+		max-width: 25rem;
+		width: 300px;
+		box-shadow: 0 0.625rem 1.875rem rgba(0, 0, 0, 0.4);
+		border: none;
 		position: relative;
-		z-index: 2;
+		z-index: 10001;
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
 	}
 
 	.edit-modal h3 {
@@ -723,6 +724,8 @@
 	.modal-buttons {
 		display: flex;
 		gap: 1rem;
+		margin-top: 1.5rem;
+		margin-bottom: 1rem;
 	}
 
 	.modal-buttons button {
