@@ -220,7 +220,7 @@
 </script>
 
 {#if itemsLoaded}
-	<div class="page-container" in:fadeAndSlide={{ duration: 300, y: 75 }}>
+	<div class="page-container">
 		<!-- Form Section -->
 		<div class="form-section">
 			<ItemForm onAdd={handleItemAdd} />

@@ -1,6 +1,5 @@
 <script>
 	import { fade, fly } from 'svelte/transition';
-	import { fadeAndSlide } from '$lib/transitions';
 	import { authStore } from '../stores/authStore.js';
 
 	let showFeatures = $state(false);
@@ -90,8 +89,8 @@
 	});
 </script>
 
-<main class="container mx-auto px-4 sm:px-6 lg:px-8 py-12" in:fadeAndSlide={{ duration: 300, y: 75 }}>
-	<section id="hero" class="hero mb-16 md:mb-24" in:fade={{ duration: 300 }}>
+<main class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+	<section id="hero" class="hero mb-16 md:mb-24">
 		<h1
 			class="text-4xl md:text-6xl font-bold mb-6 md:mb-8 text-center logo-text"
 		>
@@ -143,7 +142,7 @@
 		</h2>
 		<div class="relative testimonial-container">
 			{#each [testimonials[activeTestimonial]] as testimonial (activeTestimonial)}
-				<div in:fade={{ duration: 300 }} role="region" aria-live="polite" class="p-8">
+				<div role="region" aria-live="polite" class="p-8">
 					<p class="text-xl mb-6 italic">"{testimonial.text}"</p>
 					<p class="font-semibold text-lg">{testimonial.name}</p>
 					<p class="text-secondary">{testimonial.role}</p>
@@ -167,7 +166,7 @@
 	</section>
 
 	{#if !authUser}
-		<section id="cta" class="cta mb-24" in:fade={{ duration: 300 }} aria-labelledby="cta-heading">
+		<section id="cta" class="cta mb-24" aria-labelledby="cta-heading">
 			<div class="cta-container">
 				<h2 id="cta-heading" class="text-4xl font-semibold mb-6 logo-text">
 					Ready to optimize your inventory?

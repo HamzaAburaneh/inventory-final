@@ -1,6 +1,6 @@
 <script>
 	import StockPredictions from '../../components/StockPredictions.svelte';
-	import { fade, fly } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
 	import { notificationStore } from '../../stores/notificationStore.js';
 	import {
 		Chart,
@@ -140,7 +140,7 @@
 </svelte:head>
 
 <div class="inventory-predictions-page">
-	<div class="dashboard-overview" in:fly={{ y: 50, duration: 300, delay: 300 }}>
+	<div class="dashboard-overview">
 		<h2 class="text-xl font-medium mb-4">Overview</h2>
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 			<div class="metric-card">
@@ -162,16 +162,12 @@
 		<canvas id="overviewChart" class="mt-4"></canvas>
 	</div>
 
-	<div
-		class="container mx-auto p-6 rounded-lg shadow-lg bg-container mt-8"
-		in:fly={{ y: 50, duration: 300, delay: 400 }}
-		out:fade={{ duration: 200 }}
-	>
-		<h1 class="text-4xl font-bold mb-6" in:fly={{ y: 20, duration: 300, delay: 500 }}>
+	<div class="container mx-auto p-6 rounded-lg shadow-lg bg-container mt-8">
+		<h1 class="text-4xl font-bold mb-6">
 			<i class="fas fa-chart-line" style="font-size: 32px;"></i>
 			Inventory Predictions
 		</h1>
-		<p class="mb-8 text-lg font-light" in:fly={{ y: 20, duration: 300, delay: 600 }}>
+		<p class="mb-8 text-lg font-light">
 			Welcome to the Inventory Predictions page. Here you can view AI-powered stock level
 			predictions based on historical sales data. Use these insights to optimize your inventory
 			management and avoid stockouts.
@@ -180,11 +176,7 @@
 	</div>
 
 	{#if latestNotification}
-		<div
-			class="notification {latestNotification.type}"
-			in:fly={{ y: -50, duration: 300 }}
-			out:fade={{ duration: 200 }}
-		>
+		<div class="notification {latestNotification.type}">
 			{latestNotification.message}
 		</div>
 	{/if}

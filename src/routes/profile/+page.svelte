@@ -1,6 +1,5 @@
 <script>
 	import { authStore } from '../../stores/authStore.js';
-	import { fadeAndSlide } from '$lib/transitions';
 	import { db } from '../../firebase.js';
 	import { doc, getDoc } from 'firebase/firestore';
 
@@ -61,7 +60,7 @@
 	}
 </script>
 
-<div class="container" in:fadeAndSlide={{ duration: 300, y: 75 }}>
+<div class="container">
 	<h1 class="title">Profile</h1>
 	{#if user}
 		<div class="profile-card">

@@ -15,7 +15,6 @@
 	import TransactionTable from '../../components/TransactionTable.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import { searchTerm, setSearchTerm, clearSearch } from '../../stores/searchStore';
-	import { fadeAndSlide } from '$lib/transitions';
 
 	let transactions = $state([]);
 	let loading = $state(false);
@@ -219,10 +218,7 @@
 	<title>Transaction History</title>
 </svelte:head>
 
-<div
-	class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4"
-	in:fadeAndSlide={{ duration: 300, y: 75 }}
->
+<div class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4">
 	<h1 class="text-3xl font-bold mb-6">Transaction History</h1>
 
 	<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClear} />

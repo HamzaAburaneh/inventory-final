@@ -1,7 +1,6 @@
 <script>
 	import { authStore } from '../../stores/authStore';
 	import { goto } from '$app/navigation';
-	import { fadeAndSlide } from '$lib/transitions';
 	import { fade } from 'svelte/transition';
 	import { createUserWithEmailAndPassword } from 'firebase/auth';
 	import { auth } from '../../firebase';
@@ -46,13 +45,18 @@
 <div class="flex items-center justify-center min-h-screen bg-background-color">
 	<div
 		class="container mx-auto p-8 rounded-lg shadow-md bg-container mt-4 max-w-md"
-		in:fadeAndSlide={{ duration: 300, y: 75 }}
 		style="margin-top: -10vh;"
 	>
 		<h3 class="text-2xl font-bold text-center mb-6 text-text-color">
 			{isRegistering ? 'Create an account' : 'Login to your account'}
 		</h3>
-		<form onsubmit={(e) => { e.preventDefault(); handleAuth(); }} class="space-y-6">
+		<form
+			onsubmit={(e) => {
+				e.preventDefault();
+				handleAuth();
+			}}
+			class="space-y-6"
+		>
 			<div>
 				<label for="email" class="block mb-2 text-sm font-medium text-text-color">Email</label>
 				<input
@@ -65,7 +69,8 @@
 				/>
 			</div>
 			<div>
-				<label for="password" class="block mb-2 text-sm font-medium text-text-color">Password</label>
+				<label for="password" class="block mb-2 text-sm font-medium text-text-color">Password</label
+				>
 				<input
 					type="password"
 					id="password"
@@ -75,7 +80,10 @@
 					class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-input-bg text-input-text"
 				/>
 			</div>
-			<button type="submit" class="w-full px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm transition-colors duration-200">
+			<button
+				type="submit"
+				class="w-full px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm transition-colors duration-200"
+			>
 				<i class="fas fa-sign-in-alt mr-2"></i>
 				{isRegistering ? 'Register' : 'Log in'}
 			</button>

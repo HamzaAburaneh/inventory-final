@@ -2,7 +2,6 @@
 	import Navbar from '../components/Navbar.svelte';
 	import '../styles/global.css';
 	import { authStore } from '../stores/authStore.js';
-	import { page } from '$app/stores';
 
 	let { children } = $props();
 
@@ -15,17 +14,12 @@
 	// Use Svelte's $ prefix for auto-subscription to stores
 	// This is cleaner than manual subscribe/unsubscribe in $effect
 	const user = $derived($authStore);
-
-	// Get current route for keying page transitions
-	const currentRoute = $derived($page.url.pathname);
 </script>
 
 <Navbar {user} />
 
 <main class="main-container">
-	{#key currentRoute}
-		{@render children()}
-	{/key}
+	{@render children()}
 </main>
 
 <style>

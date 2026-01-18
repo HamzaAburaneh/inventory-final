@@ -18,7 +18,7 @@
 	let currentSortColumn = $state('name');
 	let sortAscending = $state(true);
 	let itemsLoaded = $state(false);
-	
+
 	const paginationStore = getPaginationStore('manageTransactions');
 	const { currentPage, itemsPerPage, setTotalItems } = paginationStore;
 
@@ -28,25 +28,25 @@
 	let notificationValue = $state(null);
 	let currentTheme = $state('light');
 	let authUser = $state(null);
-	
+
 	// Subscribe to stores
 	$effect(() => {
-		const unsubscribeItems = itemStore.subscribe(value => {
+		const unsubscribeItems = itemStore.subscribe((value) => {
 			items = value;
 		});
-		const unsubscribeSearch = searchTerm.subscribe(value => {
+		const unsubscribeSearch = searchTerm.subscribe((value) => {
 			searchTermValue = value;
 		});
-		const unsubscribeNotification = notificationStore.subscribe(value => {
+		const unsubscribeNotification = notificationStore.subscribe((value) => {
 			notificationValue = value;
 		});
-		const unsubscribeTheme = themeStore.subscribe(value => {
+		const unsubscribeTheme = themeStore.subscribe((value) => {
 			currentTheme = value;
 		});
-		const unsubscribeAuth = authStore.subscribe(value => {
+		const unsubscribeAuth = authStore.subscribe((value) => {
 			authUser = value;
 		});
-		
+
 		return () => {
 			unsubscribeItems();
 			unsubscribeSearch();
@@ -61,17 +61,15 @@
 			return items;
 		}
 		const lowerCaseSearchTerm = searchTermValue.toLowerCase();
-		return items.filter(item =>
-			item.name.toLowerCase().includes(lowerCaseSearchTerm)
-		);
+		return items.filter((item) => item.name.toLowerCase().includes(lowerCaseSearchTerm));
 	});
-	
+
 	$effect(() => {
 		setTotalItems(filteredItemsList().length);
 	});
-	
+
 	const sortedItems = $derived(applySorting(filteredItemsList(), currentSortColumn, sortAscending));
-	
+
 	const paginatedItemsList = $derived(() => {
 		if ($itemsPerPage === 'all') {
 			return sortedItems;
@@ -80,8 +78,10 @@
 		const endIndex = startIndex + $itemsPerPage;
 		return sortedItems.slice(startIndex, endIndex);
 	});
-	
-	const filterLegend = $derived(`${filteredItemsList().length} results of ${items.length} total items.`);
+
+	const filterLegend = $derived(
+		`${filteredItemsList().length} results of ${items.length} total items.`
+	);
 
 	$effect(async () => {
 		await itemStore.loadItems();
@@ -201,15 +201,8 @@
 </script>
 
 {#if itemsLoaded}
-	<div
-		class="container mx-auto p-4 sm:p-6 rounded-lg shadow-md bg-container mt-4"
-		in:fadeAndSlide={{ duration: 300, y: 75 }}
-	>
-		<SearchBar
-			searchValue={searchTermValue}
-			onSearch={handleSearch}
-			onClear={clearSearch}
-		/>
+	<div class="container mx-auto p-4 sm:p-6 rounded-lg shadow-md bg-container mt-4">
+		<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={clearSearch} />
 
 		<div class="filter-legend text-white mb-4">
 			{filterLegend}
@@ -253,7 +246,7 @@
 				</thead>
 				<tbody>
 					{#each paginatedItemsList() as item (item.id)}
-						<tr class="border-b border-zinc-800" in:fade={{ duration: 200 }}>
+						<tr class="border-b border-zinc-800">
 							<td class="px-6 py-4 whitespace-nowrap" data-label="Item Name">{item.name}</td>
 							<td class="px-6 py-4 text-center" data-label="Count">
 								<div class="relative inline-block w-full h-6">
@@ -526,20 +519,20 @@
 			white-space: nowrap;
 		}
 
-		.custom-table td[data-label="Actions"] {
+		.custom-table td[data-label='Actions'] {
 			justify-content: center;
 			padding: 1rem;
 		}
 
-		.custom-table td[data-label="Actions"]::before {
+		.custom-table td[data-label='Actions']::before {
 			display: none;
 		}
 
-		.custom-table td[data-label="Change Amount"] {
+		.custom-table td[data-label='Change Amount'] {
 			justify-content: space-between;
 		}
 
-		.custom-table td[data-label="Change Amount"] .flex {
+		.custom-table td[data-label='Change Amount'] .flex {
 			justify-content: flex-end;
 		}
 	}

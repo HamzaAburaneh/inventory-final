@@ -14,8 +14,6 @@
 		Tooltip,
 		Legend
 	} from 'chart.js';
-	import { fly } from 'svelte/transition';
-	import { fadeAndSlide } from '$lib/transitions';
 	import { browser } from '$app/environment';
 	import {
 		getDailyAnalysis,
@@ -480,7 +478,7 @@
 
 <div class="analysis-page">
 	<!-- Summary Cards -->
-	<div class="summary-section" in:fly={{ y: 50, duration: 300, delay: 100 }}>
+	<div class="summary-section">
 		<h1 class="text-3xl font-bold mb-6">
 			<i class="fas fa-chart-line mr-2"></i>
 			Transaction Analysis
@@ -539,7 +537,7 @@
 	</div>
 
 	<!-- Date Range Controls -->
-	<div class="controls-section" in:fly={{ y: 50, duration: 300, delay: 200 }}>
+	<div class="controls-section">
 		<div class="date-controls">
 			<div class="date-inputs">
 				<label>
@@ -628,7 +626,7 @@
 			<p class="mt-4">Loading analysis data...</p>
 		</div>
 	{:else}
-		<div class="charts-grid" in:fadeAndSlide={{ duration: 300, y: 50 }}>
+		<div class="charts-grid">
 			<!-- Daily Trend Chart -->
 			<div class="chart-container full-width">
 				<canvas id="dailyTrendChart"></canvas>
@@ -651,7 +649,7 @@
 		</div>
 
 		<!-- Top Movers Table -->
-		<div class="table-section" in:fadeAndSlide={{ duration: 300, y: 50, delay: 100 }}>
+		<div class="table-section">
 			<h2 class="text-2xl font-bold mb-4">Top Moving Items Details</h2>
 			<div class="table-wrapper">
 				<table class="data-table">
