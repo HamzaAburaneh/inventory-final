@@ -49,7 +49,6 @@
 	async function handleProfileClick(event) {
 		event.preventDefault();
 		closeDropdown();
-		console.log('Profile button clicked, navigating to /profile');
 		await goto('/profile');
 	}
 
@@ -88,7 +87,7 @@
 			clearTimeout(timeoutId);
 		};
 	});
-	
+
 	// Handle viewport changes
 	$effect(() => {
 		if (!browser) return;
@@ -96,12 +95,12 @@
 		function handleResize() {
 			const wasMobile = isMobile;
 			isMobile = window.innerWidth < 768;
-			
+
 			// Close mobile menu when switching from mobile to desktop
 			if (wasMobile && !isMobile && isOpen) {
 				closeMenu();
 			}
-			
+
 			// Close dropdown when switching viewports
 			if (wasMobile !== isMobile) {
 				closeDropdown();
@@ -109,12 +108,12 @@
 		}
 
 		window.addEventListener('resize', handleResize);
-		
+
 		return () => {
 			window.removeEventListener('resize', handleResize);
 		};
 	});
-	
+
 	$effect(() => {
 		if (!isOpen) return;
 
@@ -276,14 +275,26 @@
 						>
 					</li>
 					<li>
-						<a href="/profile" class="nav-link" onclick={() => { closeMenu(); handleProfileClick(event); }}>Profile</a>
+						<a
+							href="/profile"
+							class="nav-link"
+							onclick={() => {
+								closeMenu();
+								handleProfileClick(event);
+							}}>Profile</a
+						>
 					</li>
 					<li>
 						<button onclick={handleLogout} class="nav-link">Logout</button>
 					</li>
 				{:else}
 					<li>
-						<a href="/login" class="nav-link" class:active={currentPath === '/login'} onclick={closeMenu}>Login</a>
+						<a
+							href="/login"
+							class="nav-link"
+							class:active={currentPath === '/login'}
+							onclick={closeMenu}>Login</a
+						>
 					</li>
 				{/if}
 				<li><ThemeToggle /></li>
@@ -549,11 +560,11 @@
 		.navbar {
 			padding: 0.75rem 1rem;
 		}
-		
+
 		.brand {
 			font-size: 1.25rem;
 		}
-		
+
 		/* Ensure mobile menu is properly positioned */
 		.nav-list.mobile {
 			width: 100%;
@@ -573,18 +584,18 @@
 		.nav-list.mobile {
 			display: none !important;
 		}
-		
+
 		.navbar {
 			padding: 1rem 2rem;
 		}
 	}
-	
+
 	@media (orientation: landscape) and (max-height: 500px) {
 		.navbar {
 			padding-top: 0.5rem;
 			padding-bottom: 0.5rem;
 		}
-		
+
 		.nav-list.mobile {
 			max-height: calc(100vh - 60px);
 			padding: 0.75rem;
