@@ -2,16 +2,18 @@
 	import { authStore } from '../../stores/authStore.js';
 	import { fadeAndSlide } from '$lib/transitions';
 	import { db } from '../../firebase.js';
-	import { doc, getDoc, setDoc } from 'firebase/firestore';
-	import { onMount } from 'svelte';
+	import { doc, getDoc } from 'firebase/firestore';
 
-	let user = $state(null);
+	// Form state
 	let name = $state('');
 	let email = $state('');
 	let phone = $state('');
 	let errorMessage = $state('');
 	let successMessage = $state('');
 	let isUpdating = $state(false);
+
+	// Use Svelte's $ prefix for auto-subscription
+	const user = $derived($authStore);
 
 	async function fetchPhoneNumber(userId) {
 		try {
@@ -25,26 +27,22 @@
 		return '';
 	}
 
-	async function loadUserData(authUser) {
+	// Load user data when user changes
+	$effect(() => {
+		const authUser = user;
 		if (authUser) {
 			name = authUser.displayName || '';
 			email = authUser.email || '';
-			phone = await fetchPhoneNumber(authUser.uid);
+			// Fetch phone number asynchronously
+			fetchPhoneNumber(authUser.uid).then((phoneNumber) => {
+				phone = phoneNumber;
+			});
 		} else {
 			// Reset form when no user
 			name = '';
 			email = '';
 			phone = '';
 		}
-	}
-
-	onMount(() => {
-		const unsubscribe = authStore.subscribe(async (authUser) => {
-			user = authUser;
-			await loadUserData(authUser);
-		});
-
-		return unsubscribe;
 	});
 
 	async function handleSubmit() {
@@ -67,7 +65,13 @@
 	<h1 class="title">Profile</h1>
 	{#if user}
 		<div class="profile-card">
-			<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="profile-form">
+			<form
+				onsubmit={(e) => {
+					e.preventDefault();
+					handleSubmit();
+				}}
+				class="profile-form"
+			>
 				<div class="form-group">
 					<label for="name">Username</label>
 					<input type="text" id="name" bind:value={name} required />
