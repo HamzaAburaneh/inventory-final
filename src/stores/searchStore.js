@@ -1,19 +1,13 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 
 export const searchTerm = writable('');
 export const searchResults = writable([]);
 export const isSearching = writable(false);
 export const searchHistory = writable([]);
 
-export const hasResults = derived(
-	searchResults,
-	$searchResults => $searchResults.length > 0
-);
+export const hasResults = derived(searchResults, ($searchResults) => $searchResults.length > 0);
 
-export const hasSearchTerm = derived(
-	searchTerm,
-	$searchTerm => $searchTerm.trim().length > 0
-);
+export const hasSearchTerm = derived(searchTerm, ($searchTerm) => $searchTerm.trim().length > 0);
 
 export function setSearchTerm(term) {
 	searchTerm.set(term);
@@ -29,10 +23,10 @@ export function setIsSearching(searching) {
 
 export function addToHistory(term) {
 	if (!term || term.trim().length === 0) return;
-	
-	searchHistory.update(history => {
+
+	searchHistory.update((history) => {
 		const trimmedTerm = term.trim();
-		const filteredHistory = history.filter(item => item !== trimmedTerm);
+		const filteredHistory = history.filter((item) => item !== trimmedTerm);
 		return [trimmedTerm, ...filteredHistory].slice(0, 10); // Keep only last 10 searches
 	});
 }
@@ -48,11 +42,12 @@ export function clearSearch() {
 }
 
 export function removeFromHistory(term) {
-	searchHistory.update(history => history.filter(item => item !== term));
+	searchHistory.update((history) => history.filter((item) => item !== term));
 }
 
 export async function performSearch(searchFunction) {
-	const currentTerm = searchTerm.subscribe(term => term)();
+	// Fixed: use get() instead of broken subscribe pattern
+	const currentTerm = get(searchTerm);
 	if (!currentTerm || currentTerm.trim().length === 0) {
 		setSearchResults([]);
 		return;
