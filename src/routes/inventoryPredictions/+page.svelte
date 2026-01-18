@@ -2,54 +2,57 @@
 	import StockPredictions from '../../components/StockPredictions.svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { notificationStore } from '../../stores/notificationStore.js';
-	import { Chart, registerables } from 'chart.js';
+	import {
+		Chart,
+		BarController,
+		BarElement,
+		CategoryScale,
+		LinearScale,
+		Title,
+		Tooltip,
+		Legend
+	} from 'chart.js';
 	import { itemStore } from '../../stores/itemStore.js';
 
-	let overviewChart = $state();
+	// Register Chart.js components at module level
+	Chart.register(BarController, BarElement, CategoryScale, LinearScale, Title, Tooltip, Legend);
+
+	// Chart instance - not reactive (mutable object)
+	let overviewChart = null;
 	let predictions = $state({});
-	
-	// Store values as reactive state
-	let items = $state([]);
-	let notificationValue = $state(null);
-	
-	// Subscribe to stores
-	$effect(() => {
-		const unsubscribeItems = itemStore.subscribe(value => {
-			items = value;
-		});
-		const unsubscribeNotification = notificationStore.subscribe(value => {
-			notificationValue = value;
-		});
-		
-		return () => {
-			unsubscribeItems();
-			unsubscribeNotification();
-		};
-	});
+
+	// Use Svelte's $ prefix for auto-subscription
+	const items = $derived($itemStore);
+	const notifications = $derived($notificationStore);
+	const latestNotification = $derived(notifications?.[notifications.length - 1] || null);
 
 	const totalItems = $derived(items.length);
-	const itemsNeedingRestock = $derived(items.filter((item) => {
-		const predictionData = predictions[item.id];
-		if (!predictionData) return false;
-		
-		// Handle both old format (array) and new format (object with prediction array)
-		const prediction = Array.isArray(predictionData) ? predictionData : predictionData.prediction;
-		if (!Array.isArray(prediction)) return false;
-		
-		const totalPrediction = prediction.reduce((sum, daily) => sum + daily, 0);
-		return item.count < totalPrediction;
-	}).length);
-	const potentialOverstock = $derived(items.filter((item) => {
-		const predictionData = predictions[item.id];
-		if (!predictionData) return false;
-		
-		// Handle both old format (array) and new format (object with prediction array)
-		const prediction = Array.isArray(predictionData) ? predictionData : predictionData.prediction;
-		if (!Array.isArray(prediction)) return false;
-		
-		const totalPrediction = prediction.reduce((sum, daily) => sum + daily, 0);
-		return item.count > totalPrediction * 1.5;
-	}).length);
+	const itemsNeedingRestock = $derived(
+		items.filter((item) => {
+			const predictionData = predictions[item.id];
+			if (!predictionData) return false;
+
+			// Handle both old format (array) and new format (object with prediction array)
+			const prediction = Array.isArray(predictionData) ? predictionData : predictionData.prediction;
+			if (!Array.isArray(prediction)) return false;
+
+			const totalPrediction = prediction.reduce((sum, daily) => sum + daily, 0);
+			return item.count < totalPrediction;
+		}).length
+	);
+	const potentialOverstock = $derived(
+		items.filter((item) => {
+			const predictionData = predictions[item.id];
+			if (!predictionData) return false;
+
+			// Handle both old format (array) and new format (object with prediction array)
+			const prediction = Array.isArray(predictionData) ? predictionData : predictionData.prediction;
+			if (!Array.isArray(prediction)) return false;
+
+			const totalPrediction = prediction.reduce((sum, daily) => sum + daily, 0);
+			return item.count > totalPrediction * 1.5;
+		}).length
+	);
 
 	async function fetchPredictions() {
 		try {
@@ -64,51 +67,60 @@
 		}
 	}
 
-	$effect(async () => {
-		Chart.register(...registerables);
-
-		await Promise.all([itemStore.fetchItems(), fetchPredictions()]);
-
-		// Initialize dashboard chart
-		const ctx = document.getElementById('overviewChart');
-		overviewChart = new Chart(ctx, {
-			type: 'bar',
-			data: {
-				labels: ['Total Items', 'Needs Restock', 'Potential Overstock'],
-				datasets: [
-					{
-						label: 'Inventory Overview',
-						data: [totalItems, itemsNeedingRestock, potentialOverstock],
-						backgroundColor: ['#4CAF50', '#FFC107', '#F44336']
-					}
-				]
-			},
-			options: {
-				responsive: true,
-				plugins: {
-					legend: { display: false },
-					title: {
-						display: true,
-						text: 'Inventory Status Overview'
-					}
-				},
-				scales: {
-					y: {
-						beginAtZero: true,
-						title: {
-							display: true,
-							text: 'Number of Items'
-						}
+	// Initialize data and chart on mount
+	$effect(() => {
+		Promise.all([itemStore.fetchItems(), fetchPredictions()]).then(() => {
+			// Initialize dashboard chart after data is loaded
+			const ctx = document.getElementById('overviewChart');
+			if (ctx && !overviewChart) {
+				overviewChart = new Chart(ctx, {
+					type: 'bar',
+					data: {
+						labels: ['Total Items', 'Needs Restock', 'Potential Overstock'],
+						datasets: [
+							{
+								label: 'Inventory Overview',
+								data: [totalItems, itemsNeedingRestock, potentialOverstock],
+								backgroundColor: ['#4CAF50', '#FFC107', '#F44336']
+							}
+						]
 					},
-					x: {
-						title: {
-							display: true,
-							text: 'Inventory Categories'
+					options: {
+						responsive: true,
+						plugins: {
+							legend: { display: false },
+							title: {
+								display: true,
+								text: 'Inventory Status Overview'
+							}
+						},
+						scales: {
+							y: {
+								beginAtZero: true,
+								title: {
+									display: true,
+									text: 'Number of Items'
+								}
+							},
+							x: {
+								title: {
+									display: true,
+									text: 'Inventory Categories'
+								}
+							}
 						}
 					}
-				}
+				});
 			}
 		});
+
+		// Cleanup on unmount
+		return () => {
+			if (overviewChart) {
+				overviewChart.destroy();
+				overviewChart = null;
+			}
+		};
 	});
 
 	$effect(() => {
@@ -167,9 +179,13 @@
 		<StockPredictions />
 	</div>
 
-	{#if notificationValue}
-		<div class="notification {notificationValue.type}" in:fly={{ y: -50, duration: 300 }} out:fade={{ duration: 200 }}>
-			{notificationValue.message}
+	{#if latestNotification}
+		<div
+			class="notification {latestNotification.type}"
+			in:fly={{ y: -50, duration: 300 }}
+			out:fade={{ duration: 200 }}
+		>
+			{latestNotification.message}
 		</div>
 	{/if}
 </div>

@@ -1,5 +1,19 @@
 <script>
-	import { Chart, registerables } from 'chart.js';
+	import {
+		Chart,
+		LineController,
+		BarController,
+		DoughnutController,
+		LineElement,
+		BarElement,
+		ArcElement,
+		PointElement,
+		CategoryScale,
+		LinearScale,
+		Title,
+		Tooltip,
+		Legend
+	} from 'chart.js';
 	import { fly } from 'svelte/transition';
 	import { fadeAndSlide } from '$lib/transitions';
 	import { browser } from '$app/environment';
@@ -10,6 +24,23 @@
 		getSummaryStats
 	} from '../../lib/transactionAnalysis';
 	import { notificationStore } from '../../stores/notificationStore';
+
+	// Register Chart.js components at module level (not in $effect)
+	// Only register what we actually use for better tree-shaking
+	Chart.register(
+		LineController,
+		BarController,
+		DoughnutController,
+		LineElement,
+		BarElement,
+		ArcElement,
+		PointElement,
+		CategoryScale,
+		LinearScale,
+		Title,
+		Tooltip,
+		Legend
+	);
 
 	// Constants
 	const CHART_COLORS = {
@@ -38,17 +69,20 @@
 	let topMovers = $state([]);
 	let summaryStats = $state(null);
 	let activeFilter = $state(30);
-	
-	// Chart instances
-	let dailyTrendChart = $state(null);
-	let hourlyHeatmapChart = $state(null);
-	let topMoversChart = $state(null);
-	let transactionTypeChart = $state(null);
+
+	// Chart instances - using plain 'let' instead of $state
+	// Chart.js instances are mutable objects that shouldn't trigger reactivity
+	let dailyTrendChart = null;
+	let hourlyHeatmapChart = null;
+	let topMoversChart = null;
+	let transactionTypeChart = null;
 
 	// Computed values
 	const startDateStr = $derived(dateRange.start.toISOString().split('T')[0]);
 	const endDateStr = $derived(dateRange.end.toISOString().split('T')[0]);
-	const daysDifference = $derived(Math.ceil((dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24)));
+	const daysDifference = $derived(
+		Math.ceil((dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24))
+	);
 
 	// Utility functions
 	function formatDateRange() {
@@ -57,10 +91,16 @@
 		const today = new Date();
 		const yesterday = new Date(today);
 		yesterday.setDate(yesterday.getDate() - 1);
-		
-		if (start.toDateString() === today.toDateString() && end.toDateString() === today.toDateString()) {
+
+		if (
+			start.toDateString() === today.toDateString() &&
+			end.toDateString() === today.toDateString()
+		) {
 			return 'Today';
-		} else if (start.toDateString() === yesterday.toDateString() && end.toDateString() === yesterday.toDateString()) {
+		} else if (
+			start.toDateString() === yesterday.toDateString() &&
+			end.toDateString() === yesterday.toDateString()
+		) {
 			return 'Yesterday';
 		} else if (daysDifference === 1) {
 			return start.toLocaleDateString();
@@ -86,9 +126,8 @@
 	function destroyChart(chart) {
 		if (chart) {
 			chart.destroy();
-			return null;
 		}
-		return chart;
+		return null;
 	}
 
 	function destroyAllCharts() {
@@ -129,29 +168,29 @@
 		if (!ctx?.getContext) return;
 
 		dailyTrendChart = destroyChart(dailyTrendChart);
-		
+
 		dailyTrendChart = new Chart(ctx.getContext('2d'), {
 			type: 'line',
 			data: {
-				labels: dailyAnalysis.map(d => formatDateLabel(d.date)),
+				labels: dailyAnalysis.map((d) => formatDateLabel(d.date)),
 				datasets: [
 					{
 						label: 'Stock In',
-						data: dailyAnalysis.map(d => d.totalAdded),
+						data: dailyAnalysis.map((d) => d.totalAdded),
 						borderColor: CHART_COLORS.stockIn,
 						backgroundColor: `${CHART_COLORS.stockIn}1A`,
 						tension: 0.1
 					},
 					{
 						label: 'Stock Out',
-						data: dailyAnalysis.map(d => d.totalRemoved),
+						data: dailyAnalysis.map((d) => d.totalRemoved),
 						borderColor: CHART_COLORS.stockOut,
 						backgroundColor: `${CHART_COLORS.stockOut}1A`,
 						tension: 0.1
 					},
 					{
 						label: 'Net Change',
-						data: dailyAnalysis.map(d => d.netChange),
+						data: dailyAnalysis.map((d) => d.netChange),
 						borderColor: CHART_COLORS.netChange,
 						backgroundColor: `${CHART_COLORS.netChange}1A`,
 						tension: 0.1
@@ -188,21 +227,25 @@
 		if (!ctx?.getContext) return;
 
 		hourlyHeatmapChart = destroyChart(hourlyHeatmapChart);
-		
-		const maxCount = Math.max(...hourlyActivity.map(h => h.transactionCount));
-		
+
+		const maxCount = Math.max(...hourlyActivity.map((h) => h.transactionCount));
+
 		hourlyHeatmapChart = new Chart(ctx.getContext('2d'), {
 			type: 'bar',
 			data: {
-				labels: hourlyActivity.map(h => formatHourLabel(h.hour)),
-				datasets: [{
-					label: 'Transactions',
-					data: hourlyActivity.map(h => h.transactionCount),
-					backgroundColor: hourlyActivity.map(h => {
-						const intensity = h.transactionCount / maxCount;
-						return `${CHART_COLORS.netChange}${Math.round((0.2 + intensity * 0.8) * 255).toString(16).padStart(2, '0')}`;
-					})
-				}]
+				labels: hourlyActivity.map((h) => formatHourLabel(h.hour)),
+				datasets: [
+					{
+						label: 'Transactions',
+						data: hourlyActivity.map((h) => h.transactionCount),
+						backgroundColor: hourlyActivity.map((h) => {
+							const intensity = h.transactionCount / maxCount;
+							return `${CHART_COLORS.netChange}${Math.round((0.2 + intensity * 0.8) * 255)
+								.toString(16)
+								.padStart(2, '0')}`;
+						})
+					}
+				]
 			},
 			options: {
 				responsive: true,
@@ -234,16 +277,18 @@
 		if (!ctx?.getContext) return;
 
 		topMoversChart = destroyChart(topMoversChart);
-		
+
 		topMoversChart = new Chart(ctx.getContext('2d'), {
 			type: 'bar',
 			data: {
-				labels: topMovers.map(m => m.itemName),
-				datasets: [{
-					label: 'Total Transactions',
-					data: topMovers.map(m => m.totalTransactions),
-					backgroundColor: CHART_COLORS.activity
-				}]
+				labels: topMovers.map((m) => m.itemName),
+				datasets: [
+					{
+						label: 'Total Transactions',
+						data: topMovers.map((m) => m.totalTransactions),
+						backgroundColor: CHART_COLORS.activity
+					}
+				]
 			},
 			options: {
 				responsive: true,
@@ -270,20 +315,22 @@
 
 	function createTransactionTypeChart() {
 		if (!summaryStats) return;
-		
+
 		const ctx = document.getElementById('transactionTypeChart');
 		if (!ctx?.getContext) return;
 
 		transactionTypeChart = destroyChart(transactionTypeChart);
-		
+
 		transactionTypeChart = new Chart(ctx.getContext('2d'), {
 			type: 'doughnut',
 			data: {
 				labels: ['Stock In', 'Stock Out'],
-				datasets: [{
-					data: [summaryStats.totalAdded, summaryStats.totalRemoved],
-					backgroundColor: [CHART_COLORS.stockIn, CHART_COLORS.stockOut]
-				}]
+				datasets: [
+					{
+						data: [summaryStats.totalAdded, summaryStats.totalRemoved],
+						backgroundColor: [CHART_COLORS.stockIn, CHART_COLORS.stockOut]
+					}
+				]
 			},
 			options: {
 				responsive: true,
@@ -323,18 +370,29 @@
 		const now = new Date();
 		dateRange.end = new Date();
 		activeFilter = days;
-		
+
 		if (days === 0) {
 			dateRange.start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 		} else if (days === 1) {
 			const yesterday = new Date(now);
 			yesterday.setDate(yesterday.getDate() - 1);
-			dateRange.start = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
-			dateRange.end = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59);
+			dateRange.start = new Date(
+				yesterday.getFullYear(),
+				yesterday.getMonth(),
+				yesterday.getDate()
+			);
+			dateRange.end = new Date(
+				yesterday.getFullYear(),
+				yesterday.getMonth(),
+				yesterday.getDate(),
+				23,
+				59,
+				59
+			);
 		} else {
 			dateRange.start = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 		}
-		
+
 		loadAnalysisData();
 	}
 
@@ -355,7 +413,7 @@
 		}
 
 		const headers = ['Date', 'Total Added', 'Total Removed', 'Net Change', 'Transaction Count'];
-		const rows = dailyAnalysis.map(d => [
+		const rows = dailyAnalysis.map((d) => [
 			d.date,
 			d.totalAdded,
 			d.totalRemoved,
@@ -363,7 +421,7 @@
 			d.transactionCount
 		]);
 
-		const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+		const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
 		const blob = new Blob([csv], { type: 'text/csv' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
@@ -375,10 +433,8 @@
 		notificationStore.showNotification('Analysis exported successfully', 'success');
 	}
 
-	// Effects
+	// Effects - Chart.register is now at module level, not in effect
 	$effect(() => {
-		Chart.register(...registerables);
-		
 		const timer = setTimeout(loadAnalysisData, 100);
 
 		return () => {
@@ -386,19 +442,19 @@
 			destroyAllCharts();
 		};
 	});
-	
+
 	$effect(() => {
 		if (!browser) return;
-		
+
 		let resizeTimer;
 		let previousWidth = window.innerWidth;
-		
+
 		function handleResize() {
 			clearTimeout(resizeTimer);
 			resizeTimer = setTimeout(() => {
 				const currentWidth = window.innerWidth;
 				const widthDiff = Math.abs(currentWidth - previousWidth);
-				
+
 				if (widthDiff > 50) {
 					previousWidth = currentWidth;
 					destroyAllCharts();
@@ -406,10 +462,10 @@
 				}
 			}, 250);
 		}
-		
+
 		window.addEventListener('resize', handleResize);
 		window.addEventListener('orientationchange', handleResize);
-		
+
 		return () => {
 			window.removeEventListener('resize', handleResize);
 			window.removeEventListener('orientationchange', handleResize);
@@ -429,7 +485,7 @@
 			<i class="fas fa-chart-line mr-2"></i>
 			Transaction Analysis
 		</h1>
-		
+
 		{#if summaryStats}
 			<div class="summary-grid">
 				<div class="summary-card">
@@ -488,8 +544,8 @@
 			<div class="date-inputs">
 				<label>
 					Start Date:
-					<input 
-						type="date" 
+					<input
+						type="date"
 						value={startDateStr}
 						max={endDateStr}
 						onchange={(e) => handleDateChange('start', e.target.value)}
@@ -497,8 +553,8 @@
 				</label>
 				<label>
 					End Date:
-					<input 
-						type="date" 
+					<input
+						type="date"
 						value={endDateStr}
 						min={startDateStr}
 						max={new Date().toISOString().split('T')[0]}
@@ -507,20 +563,56 @@
 				</label>
 			</div>
 			<div class="quick-ranges">
-				<button onclick={() => setQuickRange(0)} class="quick-btn" class:active={activeFilter === 0}>Today</button>
-				<button onclick={() => setQuickRange(1)} class="quick-btn" class:active={activeFilter === 1}>Yesterday</button>
-				<button onclick={() => setQuickRange(3)} class="quick-btn" class:active={activeFilter === 3}>Last 3 Days</button>
-				<button onclick={() => setQuickRange(7)} class="quick-btn" class:active={activeFilter === 7}>Last 7 Days</button>
-				<button onclick={() => setQuickRange(14)} class="quick-btn" class:active={activeFilter === 14}>Last 14 Days</button>
-				<button onclick={() => setQuickRange(21)} class="quick-btn" class:active={activeFilter === 21}>Last 21 Days</button>
-				<button onclick={() => setQuickRange(30)} class="quick-btn" class:active={activeFilter === 30}>Last 30 Days</button>
+				<button onclick={() => setQuickRange(0)} class="quick-btn" class:active={activeFilter === 0}
+					>Today</button
+				>
+				<button onclick={() => setQuickRange(1)} class="quick-btn" class:active={activeFilter === 1}
+					>Yesterday</button
+				>
+				<button onclick={() => setQuickRange(3)} class="quick-btn" class:active={activeFilter === 3}
+					>Last 3 Days</button
+				>
+				<button onclick={() => setQuickRange(7)} class="quick-btn" class:active={activeFilter === 7}
+					>Last 7 Days</button
+				>
+				<button
+					onclick={() => setQuickRange(14)}
+					class="quick-btn"
+					class:active={activeFilter === 14}>Last 14 Days</button
+				>
+				<button
+					onclick={() => setQuickRange(21)}
+					class="quick-btn"
+					class:active={activeFilter === 21}>Last 21 Days</button
+				>
+				<button
+					onclick={() => setQuickRange(30)}
+					class="quick-btn"
+					class:active={activeFilter === 30}>Last 30 Days</button
+				>
 			</div>
 			<div class="cne-ranges">
 				<span class="filter-label">CNE Periods:</span>
-				<button onclick={() => setCNERange(2022)} class="quick-btn cne-btn" class:active={activeFilter === 'cne2022'}>CNE 2022</button>
-				<button onclick={() => setCNERange(2023)} class="quick-btn cne-btn" class:active={activeFilter === 'cne2023'}>CNE 2023</button>
-				<button onclick={() => setCNERange(2024)} class="quick-btn cne-btn" class:active={activeFilter === 'cne2024'}>CNE 2024</button>
-				<button onclick={() => setCNERange(2025)} class="quick-btn cne-btn" class:active={activeFilter === 'cne2025'}>CNE 2025</button>
+				<button
+					onclick={() => setCNERange(2022)}
+					class="quick-btn cne-btn"
+					class:active={activeFilter === 'cne2022'}>CNE 2022</button
+				>
+				<button
+					onclick={() => setCNERange(2023)}
+					class="quick-btn cne-btn"
+					class:active={activeFilter === 'cne2023'}>CNE 2023</button
+				>
+				<button
+					onclick={() => setCNERange(2024)}
+					class="quick-btn cne-btn"
+					class:active={activeFilter === 'cne2024'}>CNE 2024</button
+				>
+				<button
+					onclick={() => setCNERange(2025)}
+					class="quick-btn cne-btn"
+					class:active={activeFilter === 'cne2025'}>CNE 2025</button
+				>
 			</div>
 			<button onclick={exportToCSV} class="export-btn">
 				<i class="fas fa-download mr-2"></i>
@@ -655,23 +747,23 @@
 	}
 
 	.summary-card.positive {
-		color: #4CAF50;
+		color: #4caf50;
 	}
 
 	.summary-card.negative {
-		color: #F44336;
+		color: #f44336;
 	}
 
 	.summary-card.inactive {
-		color: #FF9800;
+		color: #ff9800;
 	}
 
 	.summary-card.new-items {
-		color: #2196F3;
+		color: #2196f3;
 	}
 
 	.summary-card.deleted-items {
-		color: #9C27B0;
+		color: #9c27b0;
 	}
 
 	.controls-section {
@@ -762,19 +854,19 @@
 	}
 
 	.cne-btn {
-		background-color: #FF6B35;
-		border-color: #FF6B35;
+		background-color: #ff6b35;
+		border-color: #ff6b35;
 		color: white;
 	}
 
 	.cne-btn:hover {
-		background-color: #E55A2B;
-		border-color: #E55A2B;
+		background-color: #e55a2b;
+		border-color: #e55a2b;
 	}
 
 	.cne-btn.active {
-		background-color: #D14A1F;
-		border-color: #D14A1F;
+		background-color: #d14a1f;
+		border-color: #d14a1f;
 		box-shadow: 0 2px 4px rgba(255, 107, 53, 0.4);
 	}
 
@@ -860,12 +952,12 @@
 	}
 
 	.positive {
-		color: #4CAF50;
+		color: #4caf50;
 		font-weight: 500;
 	}
 
 	.negative {
-		color: #F44336;
+		color: #f44336;
 		font-weight: 500;
 	}
 
