@@ -9,18 +9,9 @@
 	import { notificationStore } from '../../stores/notificationStore';
 	import { fadeAndSlide } from '$lib/transitions';
 	import { fade } from 'svelte/transition';
-	import { applySorting, addTestItems } from '../../lib/items';
-	import { get } from 'svelte/store';
+	import { applySorting } from '../../lib/items';
 
-	let formData = $state({
-		name: '',
-		count: '',
-		lowCount: '',
-		cost: '',
-		storageType: ''
-	});
-
-	let errors = $state({});
+	// UI state
 	let currentSortColumn = $state('name');
 	let sortAscending = $state(true);
 	let itemsLoaded = $state(false);
@@ -28,70 +19,33 @@
 	let showEditModal = $state(false);
 	let editData = $state({ id: null, field: '', value: '', title: '' });
 	let editButtonPosition = $state({ x: 0, y: 300 });
-	let scrollPreservationActive = $state(false);
-	
+
+	// Pagination store (keeping store-based for now as it's shared)
 	const paginationStore = getPaginationStore('manageItems');
 	const { currentPage, itemsPerPage, setTotalItems } = paginationStore;
 
-	// Store values as reactive state
-	let items = $state([]);
-	let searchTermValue = $state('');
-	let notificationValue = $state(null);
-	
-	// Global scroll preservation
-	let lastScrollPosition = 0;
-	
-	function preserveScroll() {
-		lastScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
-		scrollPreservationActive = true;
-	}
-	
-	function restoreScroll() {
-		if (scrollPreservationActive && lastScrollPosition > 0) {
-			requestAnimationFrame(() => {
-				window.scrollTo(0, lastScrollPosition);
-				scrollPreservationActive = false;
-			});
-		}
-	}
+	// Use Svelte's $ prefix for auto-subscription - cleaner than manual subscribe/unsubscribe
+	// This automatically subscribes and unsubscribes when the component mounts/unmounts
+	const items = $derived($itemStore);
+	const searchTermValue = $derived($searchTerm);
+	const notifications = $derived($notificationStore);
 
-	// Subscribe to stores
-	$effect(() => {
-		const unsubscribeItems = itemStore.subscribe(value => {
-			preserveScroll();
-			items = value;
-			setTimeout(restoreScroll, 0);
-		});
-		const unsubscribeSearch = searchTerm.subscribe(value => {
-			preserveScroll();
-			searchTermValue = value;
-			setTimeout(restoreScroll, 0);
-		});
-		const unsubscribeNotification = notificationStore.subscribe(value => {
-			notificationValue = value;
-		});
-		
-		return () => {
-			unsubscribeItems();
-			unsubscribeSearch();
-			unsubscribeNotification();
-		};
-	});
+	// Get the latest notification for display
+	const latestNotification = $derived(notifications?.[notifications.length - 1] || null);
 
+	// Derived computations for filtering, sorting, pagination
 	const filteredItemsList = $derived(
-		items.filter(item =>
-			item.name.toLowerCase().includes(searchTermValue.toLowerCase())
-		)
+		items.filter((item) => item.name.toLowerCase().includes(searchTermValue.toLowerCase()))
 	);
-	
+
 	const totalInventoryValue = $derived(
 		filteredItemsList.reduce((total, item) => {
 			const count = parseFloat(item.count) || 0;
 			const cost = parseFloat(item.cost) || 0;
-			return total + (count * cost);
+			return total + count * cost;
 		}, 0)
 	);
-	
+
 	const formatCurrency = (value) => {
 		return new Intl.NumberFormat('en-CA', {
 			style: 'currency',
@@ -100,13 +54,12 @@
 			maximumFractionDigits: 2
 		}).format(value);
 	};
-	
+
+	// Update pagination total when filtered list changes
 	$effect(() => {
-		preserveScroll();
 		setTotalItems(filteredItemsList.length);
-		setTimeout(restoreScroll, 0);
 	});
-	
+
 	const sortedItems = $derived.by(() => {
 		if (currentSortColumn === 'totalValue') {
 			// Custom sorting for total value (count * cost)
@@ -118,7 +71,7 @@
 		}
 		return applySorting(filteredItemsList, currentSortColumn, sortAscending);
 	});
-	
+
 	const paginatedItemsList = $derived.by(() => {
 		if ($itemsPerPage === 'all') {
 			return sortedItems;
@@ -128,9 +81,11 @@
 		return sortedItems.slice(startIndex, endIndex);
 	});
 
-	$effect(async () => {
-		await itemStore.loadItems();
-		itemsLoaded = true;
+	// Load items on mount
+	$effect(() => {
+		itemStore.loadItems().then(() => {
+			itemsLoaded = true;
+		});
 	});
 
 	const handleItemAdd = async ({ formData }) => {
@@ -165,19 +120,19 @@
 		if (isEditingInProgress) {
 			return;
 		}
-		
+
 		isEditingInProgress = true;
 		if (position) {
 			editButtonPosition = position;
 		}
-		
+
 		editData = {
 			id,
 			field,
 			value: oldValue != null ? oldValue.toString() : '',
 			title: `Edit ${String(field).charAt(0).toUpperCase() + String(field).slice(1)}`
 		};
-		
+
 		// Normalize storage type values for proper dropdown selection
 		if (field === 'storageType' && editData.value) {
 			const normalizedValue = editData.value.toLowerCase();
@@ -185,7 +140,7 @@
 			else if (normalizedValue === 'refrigerator') editData.value = 'Refrigerator';
 			else if (normalizedValue === 'freezer') editData.value = 'Freezer';
 		}
-		
+
 		// Handle booths field - keep as array for checkbox editing
 		if (field === 'booths') {
 			if (Array.isArray(oldValue)) {
@@ -197,7 +152,7 @@
 			}
 			editData.title = 'Edit Booths';
 		}
-		
+
 		showEditModal = true;
 	};
 
@@ -217,14 +172,12 @@
 	};
 
 	const updateItem = async (id, field, value) => {
-		preserveScroll();
-		
 		try {
 			const item = items.find((item) => item.id === id);
 			if (!item) {
 				throw new Error('Item not found');
 			}
-			
+
 			// Convert value to appropriate type based on field
 			let processedValue = value;
 			if (field === 'count' || field === 'lowCount') {
@@ -235,7 +188,7 @@
 				// Value is already an array from checkbox binding
 				processedValue = Array.isArray(value) ? value : [];
 			}
-			
+
 			// Only update the specific field, not the entire item
 			const updateData = { [field]: processedValue };
 			await itemStore.updateItem(id, updateData);
@@ -245,9 +198,6 @@
 				notificationStore.showNotification(error.message, 'error');
 			}
 		}
-		
-		// Restore scroll after all updates complete
-		setTimeout(restoreScroll, 100);
 	};
 
 	const handleSearch = (value) => {
@@ -282,12 +232,18 @@
 				<h2 class="inventory-title">Inventory Items</h2>
 				<div class="inventory-stats">
 					<span class="stats-text">{filteredItemsList.length} of {items.length} items</span>
-					<span class="stats-text total-value">Total Value: {formatCurrency(totalInventoryValue)}</span>
+					<span class="stats-text total-value"
+						>Total Value: {formatCurrency(totalInventoryValue)}</span
+					>
 				</div>
 			</div>
 
 			<div class="search-section">
-				<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClearSearch} />
+				<SearchBar
+					searchValue={searchTermValue}
+					onSearch={handleSearch}
+					onClear={handleClearSearch}
+				/>
 			</div>
 
 			<div class="table-section">
@@ -299,10 +255,6 @@
 					{currentSortColumn}
 					{sortAscending}
 				/>
-				<!-- Debug info -->
-				<div style="display: none;">
-					Filtered: {filteredItemsList.length}, Sorted: {sortedItems.length}, Paginated: {paginatedItemsList.length}
-				</div>
 			</div>
 
 			<div class="pagination-section">
@@ -315,9 +267,9 @@
 		<div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
 	</div>
 {/if}
-{#if notificationValue}
-	<div class="notification {notificationValue.type}" in:fade out:fade>
-		{notificationValue.message}
+{#if latestNotification}
+	<div class="notification {latestNotification.type}" in:fade out:fade>
+		{latestNotification.message}
 	</div>
 {/if}
 
@@ -327,11 +279,7 @@
 		<form class="edit-modal" onclick={(e) => e.stopPropagation()} onsubmit={confirmEdit}>
 			<h3>{editData.title}</h3>
 			{#if editData.field === 'storageType'}
-				<select
-					bind:value={editData.value}
-					class="edit-input"
-					required
-				>
+				<select bind:value={editData.value} class="edit-input" required>
 					<option value="Dry Storage">Dry Storage</option>
 					<option value="Refrigerator">Refrigerator</option>
 					<option value="Freezer">Freezer</option>
@@ -339,14 +287,7 @@
 			{:else if editData.field === 'booths'}
 				<div class="booths-edit-container">
 					<div class="booths-container">
-						{#each [
-							{ value: 'freshly', label: 'Freshly', color: '#10B981' },
-							{ value: 'b1', label: 'B1', color: '#3B82F6' },
-							{ value: 'b2', label: 'B2', color: '#8B5CF6' },
-							{ value: 'jakes', label: 'Jakes', color: '#F59E0B' },
-							{ value: 'epic', label: 'Epic', color: '#EF4444' },
-							{ value: 'pulled', label: 'Pulled', color: '#6B7280' }
-						] as booth}
+						{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth}
 							<label class="booth-option">
 								<input
 									type="checkbox"
@@ -358,7 +299,14 @@
 									<div class="booth-indicator"></div>
 									<span class="booth-name">{booth.label}</span>
 									<div class="checkmark">
-										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+										<svg
+											width="16"
+											height="16"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="3"
+										>
 											<polyline points="20,6 9,17 4,12"></polyline>
 										</svg>
 									</div>
@@ -377,15 +325,12 @@
 				/>
 			{/if}
 			<div class="modal-buttons">
-				<button type="button" class="cancel-btn" onclick={closeEditModal}>
-					Cancel
-				</button>
-				<button type="submit" class="confirm-btn">
-					Confirm
-				</button>
+				<button type="button" class="cancel-btn" onclick={closeEditModal}> Cancel </button>
+				<button type="submit" class="confirm-btn"> Confirm </button>
 			</div>
 		</form>
-		<button type="button" class="modal-backdrop" onclick={closeEditModal} aria-label="Close modal"></button>
+		<button type="button" class="modal-backdrop" onclick={closeEditModal} aria-label="Close modal"
+		></button>
 	</div>
 {/if}
 
@@ -445,7 +390,7 @@
 		border-radius: var(--border-radius);
 		border: 1px solid var(--table-border-color);
 	}
-	
+
 	.stats-text.total-value {
 		background: var(--add-item-color);
 		color: #000;
@@ -683,7 +628,7 @@
 	}
 
 	.edit-modal {
-		background-color: var(--container-bg); 
+		background-color: var(--container-bg);
 		border-radius: var(--border-radius);
 		padding: 2rem;
 		max-width: 25rem;
@@ -772,19 +717,19 @@
 			max-width: 96%;
 			padding: 2rem;
 		}
-		
+
 		.inventory-header {
 			padding: 2rem 2.5rem;
 		}
-		
+
 		.search-section {
 			padding: 2rem 2.5rem;
 		}
-		
+
 		.pagination-section {
 			padding: 2rem 2.5rem;
 		}
-		
+
 		.inventory-title {
 			font-size: 1.5rem;
 		}
@@ -795,7 +740,7 @@
 			max-width: 94%;
 			padding: 2.5rem;
 		}
-		
+
 		.form-section {
 			margin-bottom: 4rem;
 		}
