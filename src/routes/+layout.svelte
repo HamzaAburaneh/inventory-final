@@ -26,11 +26,18 @@
 	main {
 		padding: 1rem;
 		display: flex;
-		justify-content: center;
+		flex-direction: column;
+		align-items: center;
 		width: 100%;
 		min-height: calc(100vh - 80px);
-		overflow-x: auto; /* Changed from hidden to auto to allow scrolling if needed */
+		overflow-x: hidden;
 		overflow-y: visible;
+	}
+
+	/* Ensure page content takes full width and prevents side-by-side rendering */
+	main > :global(*) {
+		width: 100%;
+		max-width: 100%;
 	}
 
 	@media (max-width: 480px) {
