@@ -51,17 +51,16 @@
 </main>
 
 <style>
-	/* Navigation Progress Indicator */
+	/* Navigation Progress Bar */
 	.nav-progress {
 		position: fixed;
 		top: 0;
 		left: 0;
 		right: 0;
-		height: 3px;
+		height: 2px;
 		z-index: 9999;
 		pointer-events: none;
 		opacity: 0;
-		transition: opacity 0.15s ease;
 	}
 
 	.nav-progress.active {
@@ -70,28 +69,18 @@
 
 	.nav-progress-bar {
 		height: 100%;
-		background: linear-gradient(
-			90deg,
-			transparent 0%,
-			var(--nav-logo-color) 15%,
-			var(--nav-logo-hover-color) 50%,
-			var(--nav-logo-color) 85%,
-			transparent 100%
-		);
-		transform: translateX(-100%);
-		animation: none;
+		background: var(--nav-logo-color);
+		transform: scaleX(0);
+		transform-origin: left;
 	}
 
 	.nav-progress.active .nav-progress-bar {
-		animation: progress-sweep 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+		animation: progress-load 250ms ease-out forwards;
 	}
 
-	@keyframes progress-sweep {
-		0% {
-			transform: translateX(-100%);
-		}
-		100% {
-			transform: translateX(100%);
+	@keyframes progress-load {
+		to {
+			transform: scaleX(1);
 		}
 	}
 
@@ -112,78 +101,37 @@
 		max-width: 100%;
 	}
 
-	/* View Transition Animations - Subtle Sass Edition */
-
-	/* Old page: graceful exit with depth */
-	@keyframes -global-page-exit {
-		0% {
-			opacity: 1;
-			transform: translateX(0) scale(1);
-			filter: blur(0);
-		}
-		100% {
-			opacity: 0;
-			transform: translateX(-3%) scale(0.98);
-			filter: blur(2px);
-		}
-	}
-
-	/* New page: confident entrance with spring */
-	@keyframes -global-page-enter {
-		0% {
-			opacity: 0;
-			transform: translateX(5%) scale(1.01);
-			filter: blur(3px);
-		}
-		60% {
-			opacity: 1;
-			transform: translateX(-0.5%) scale(0.995);
-			filter: blur(0);
-		}
-		100% {
-			opacity: 1;
-			transform: translateX(0) scale(1);
-			filter: blur(0);
-		}
-	}
-
-	/* Subtle glow pulse on the transition group */
-	@keyframes -global-transition-glow {
-		0%,
-		100% {
-			box-shadow: none;
-		}
-		50% {
-			box-shadow: 0 0 40px rgba(255, 226, 96, 0.08);
-		}
-	}
-
-	/* Custom view transition styles */
+	/* Clean, fast page transition */
 	:root::view-transition-old(root) {
-		animation: 180ms cubic-bezier(0.4, 0, 0.6, 1) both page-exit;
-		transform-origin: left center;
+		animation: 150ms ease-out both fade-out;
 	}
 
 	:root::view-transition-new(root) {
-		animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter;
-		transform-origin: right center;
+		animation: 150ms ease-out 100ms both fade-in;
 	}
 
-	:root::view-transition-group(root) {
-		animation: 300ms ease-out transition-glow;
+	@keyframes -global-fade-out {
+		to {
+			opacity: 0;
+		}
 	}
 
-	/* Keep navbar crisp during transitions */
+	@keyframes -global-fade-in {
+		from {
+			opacity: 0;
+		}
+	}
+
+	/* Navbar stays fixed */
 	:root::view-transition-old(navbar),
 	:root::view-transition-new(navbar) {
 		animation: none;
 	}
 
-	/* Respect reduced motion preferences */
+	/* Respect reduced motion */
 	@media (prefers-reduced-motion: reduce) {
-		:root::view-transition-group(*),
-		:root::view-transition-old(*),
-		:root::view-transition-new(*) {
+		:root::view-transition-old(root),
+		:root::view-transition-new(root) {
 			animation: none !important;
 		}
 	}
