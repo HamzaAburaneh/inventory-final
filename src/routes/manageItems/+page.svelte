@@ -218,34 +218,40 @@
 	};
 </script>
 
-{#if itemsLoaded}
-	<div class="page-container">
-		<!-- Form Section -->
-		<div class="form-section">
-			<ItemForm onAdd={handleItemAdd} />
+<div class="page-container">
+	<!-- Form Section -->
+	<div class="form-section">
+		<ItemForm onAdd={handleItemAdd} />
+	</div>
+
+	<!-- Inventory Section -->
+	<div class="inventory-section">
+		<div class="inventory-header">
+			<h2 class="inventory-title">Inventory Items</h2>
+			<div class="inventory-stats">
+				<span class="stats-text">{filteredItemsList.length} of {items.length} items</span>
+				<span class="stats-text total-value"
+					>Total Value: {formatCurrency(totalInventoryValue)}</span
+				>
+			</div>
 		</div>
 
-		<!-- Inventory Section -->
-		<div class="inventory-section">
-			<div class="inventory-header">
-				<h2 class="inventory-title">Inventory Items</h2>
-				<div class="inventory-stats">
-					<span class="stats-text">{filteredItemsList.length} of {items.length} items</span>
-					<span class="stats-text total-value"
-						>Total Value: {formatCurrency(totalInventoryValue)}</span
-					>
+		<div class="search-section">
+			<SearchBar
+				searchValue={searchTermValue}
+				onSearch={handleSearch}
+				onClear={handleClearSearch}
+			/>
+		</div>
+
+		<div class="table-section">
+			{#if !itemsLoaded}
+				<div class="flex justify-center items-center h-64">
+					<div
+						class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"
+					></div>
 				</div>
-			</div>
-
-			<div class="search-section">
-				<SearchBar
-					searchValue={searchTermValue}
-					onSearch={handleSearch}
-					onClear={handleClearSearch}
-				/>
-			</div>
-
-			<div class="table-section">
+			{:else}
 				<Table
 					paginatedItems={paginatedItemsList}
 					onEdit={handleEdit}
@@ -254,18 +260,14 @@
 					{currentSortColumn}
 					{sortAscending}
 				/>
-			</div>
+			{/if}
+		</div>
 
-			<div class="pagination-section">
-				<Pagination store={paginationStore} />
-			</div>
+		<div class="pagination-section">
+			<Pagination store={paginationStore} />
 		</div>
 	</div>
-{:else}
-	<div class="flex justify-center items-center h-screen">
-		<div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
-	</div>
-{/if}
+</div>
 {#if latestNotification}
 	<div class="notification {latestNotification.type}">
 		{latestNotification.message}

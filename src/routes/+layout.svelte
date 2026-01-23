@@ -1,34 +1,38 @@
 <script>
-	import { fade } from 'svelte/transition';
-	import { page } from '$app/stores';
+	import { onNavigate } from '$app/navigation';
 	import Navbar from '../components/Navbar.svelte';
 	import '../styles/global.css';
 	import { authStore } from '../stores/authStore.js';
 
 	let { children } = $props();
 
-	// Get the current pathname from page store using $derived
-	const pathname = $derived($page.url.pathname);
-
 	// Initialize auth listener on mount
-	// Using $effect for initialization that needs cleanup
 	$effect(() => {
 		authStore.init();
 	});
 
 	// Use Svelte's $ prefix for auto-subscription to stores
-	// This is cleaner than manual subscribe/unsubscribe in $effect
 	const user = $derived($authStore);
+
+	// Enable View Transitions API for smooth page transitions
+	onNavigate((navigation) => {
+		// @ts-ignore - startViewTransition may not exist in all browsers
+		if (!document.startViewTransition) return;
+
+		return new Promise((resolve) => {
+			// @ts-ignore
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
 </script>
 
 <Navbar {user} />
 
 <main class="main-container">
-	{#key pathname}
-		<div class="page-transition-wrapper" in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}>
-			{@render children()}
-		</div>
-	{/key}
+	{@render children()}
 </main>
 
 <style>
@@ -41,24 +45,55 @@
 		min-height: calc(100vh - 80px);
 		overflow-x: hidden;
 		overflow-y: visible;
-		position: relative;
-	}
-
-	.page-transition-wrapper {
-		width: 100%;
-		position: absolute;
-		top: 0;
-		left: 0;
-		padding: inherit;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
 	}
 
 	/* Ensure page content takes full width and prevents side-by-side rendering */
 	main > :global(*) {
 		width: 100%;
 		max-width: 100%;
+	}
+
+	/* View Transition Animations */
+	@keyframes -global-fade-in {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@keyframes -global-fade-out {
+		to {
+			opacity: 0;
+		}
+	}
+
+	@keyframes -global-slide-from-right {
+		from {
+			transform: translateX(20px);
+		}
+	}
+
+	@keyframes -global-slide-to-left {
+		to {
+			transform: translateX(-20px);
+		}
+	}
+
+	/* Custom view transition styles - no crossfade to avoid flash */
+	:root::view-transition-old(root) {
+		animation: 150ms cubic-bezier(0.4, 0, 0.2, 1) both slide-to-left;
+	}
+
+	:root::view-transition-new(root) {
+		animation: 150ms cubic-bezier(0.4, 0, 0.2, 1) both slide-from-right;
+	}
+
+	/* Respect reduced motion preferences */
+	@media (prefers-reduced-motion: reduce) {
+		:root::view-transition-group(*),
+		:root::view-transition-old(*),
+		:root::view-transition-new(*) {
+			animation: none !important;
+		}
 	}
 
 	@media (max-width: 480px) {

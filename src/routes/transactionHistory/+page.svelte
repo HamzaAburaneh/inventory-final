@@ -189,7 +189,7 @@
 	<title>Transaction History</title>
 </svelte:head>
 
-<div class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4">
+	<div class="container mx-auto p-4 sm:p-6 rounded-lg shadow-md bg-container mt-4">
 
 	<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClear} />
 

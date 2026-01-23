@@ -305,6 +305,7 @@
 		top: 0;
 		z-index: 1000;
 		overflow: visible; /* Changed from overflow-x: hidden to allow mobile menu to show */
+		view-transition-name: navbar;
 	}
 
 	.brand {

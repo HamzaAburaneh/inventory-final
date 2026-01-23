@@ -200,15 +200,21 @@
 	};
 </script>
 
-{#if itemsLoaded}
-	<div class="container mx-auto p-4 sm:p-6 rounded-lg shadow-md bg-container mt-4">
-		<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={clearSearch} />
+<div class="container mx-auto p-4 sm:p-6 rounded-lg shadow-md bg-container mt-4">
+	<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={clearSearch} />
 
-		<div class="filter-legend text-white mb-4">
-			{filterLegend}
-		</div>
+	<div class="filter-legend text-white mb-4">
+		{filterLegend}
+	</div>
 
-		<div class="table-container overflow-x-auto">
+	<div class="table-container overflow-x-auto">
+		{#if !itemsLoaded}
+			<div class="flex justify-center items-center h-64">
+				<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+			</div>
+		{:else if paginatedItemsList.length === 0}
+			<p class="text-center my-4">No items found.</p>
+		{:else}
 			<table class="custom-table w-full">
 				<thead>
 					<tr>
@@ -299,24 +305,20 @@
 					{/each}
 				</tbody>
 			</table>
-		</div>
-
-		<Pagination store={paginationStore} />
-
-		<div class="flex justify-center mt-6">
-			<button
-				class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-500 transition-transform active:scale-95"
-				onclick={resetAll}
-			>
-				Reset All Counts
-			</button>
-		</div>
+		{/if}
 	</div>
-{:else}
-	<div class="flex justify-center items-center h-screen">
-		<div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
+
+	<Pagination store={paginationStore} />
+
+	<div class="flex justify-center mt-6">
+		<button
+			class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-500 transition-transform active:scale-95"
+			onclick={resetAll}
+		>
+			Reset All Counts
+		</button>
 	</div>
-{/if}
+</div>
 
 {#if notificationValue}
 	<div class="notification {notificationValue.type}">
