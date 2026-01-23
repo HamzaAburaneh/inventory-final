@@ -4,7 +4,6 @@
 	import Swal from 'sweetalert2';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Pagination from '../../components/Pagination.svelte';
-	import { fadeAndSlide } from '$lib/transitions';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { itemStore } from '../../stores/itemStore';
 	import { searchTerm, clearSearch, setSearchTerm } from '../../stores/searchStore';
@@ -13,7 +12,7 @@
 	import { themeStore } from '../../stores/themes.js';
 	import { addTransaction } from '../../lib/transactions';
 	import { authStore } from '../../stores/authStore';
-	import { get } from 'svelte/store';
+	import { onMount } from 'svelte';
 
 	let currentSortColumn = $state('name');
 	let sortAscending = $state(true);
@@ -56,7 +55,8 @@
 		};
 	});
 
-	const filteredItemsList = $derived(() => {
+	// Use $derived.by for functions that compute values
+	const filteredItemsList = $derived.by(() => {
 		if (!searchTermValue) {
 			return items;
 		}
@@ -64,13 +64,14 @@
 		return items.filter((item) => item.name.toLowerCase().includes(lowerCaseSearchTerm));
 	});
 
+	// Update total items when filtered list changes
 	$effect(() => {
-		setTotalItems(filteredItemsList().length);
+		setTotalItems(filteredItemsList.length);
 	});
 
-	const sortedItems = $derived(applySorting(filteredItemsList(), currentSortColumn, sortAscending));
+	const sortedItems = $derived(applySorting(filteredItemsList, currentSortColumn, sortAscending));
 
-	const paginatedItemsList = $derived(() => {
+	const paginatedItemsList = $derived.by(() => {
 		if ($itemsPerPage === 'all') {
 			return sortedItems;
 		}
@@ -80,10 +81,11 @@
 	});
 
 	const filterLegend = $derived(
-		`${filteredItemsList().length} results of ${items.length} total items.`
+		`${filteredItemsList.length} results of ${items.length} total items.`
 	);
 
-	$effect(async () => {
+	// Load items on mount instead of async $effect
+	onMount(async () => {
 		await itemStore.loadItems();
 		itemsLoaded = true;
 	});
@@ -245,7 +247,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each paginatedItemsList() as item (item.id)}
+					{#each paginatedItemsList as item (item.id)}
 						<tr class="border-b border-zinc-800">
 							<td class="px-6 py-4 whitespace-nowrap" data-label="Item Name">{item.name}</td>
 							<td class="px-6 py-4 text-center" data-label="Count">

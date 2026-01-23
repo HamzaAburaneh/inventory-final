@@ -4,19 +4,30 @@
 	import { fade } from 'svelte/transition';
 	import { createUserWithEmailAndPassword } from 'firebase/auth';
 	import { auth } from '../../firebase';
+	import { get } from 'svelte/store';
+	import { onMount } from 'svelte';
 
 	let email = $state('');
 	let password = $state('');
 	let error = $state('');
 	let isRegistering = $state(false);
 
+	// Check auth status on mount and redirect if already logged in
+	onMount(() => {
+		const user = get(authStore);
+		if (user) {
+			goto('/');
+		}
+	});
+
+	// Subscribe to auth changes for real-time redirect
 	$effect(() => {
 		const unsubscribe = authStore.subscribe((user) => {
 			if (user) {
-				goto('/'); // Redirect to home page if already logged in
+				// Use queueMicrotask to avoid synchronous navigation in effect
+				queueMicrotask(() => goto('/'));
 			}
 		});
-
 		return unsubscribe;
 	});
 
@@ -24,11 +35,10 @@
 		try {
 			if (isRegistering) {
 				await createUserWithEmailAndPassword(auth, email, password);
-				goto('/'); // Redirect to home page after successful registration
 			} else {
 				await authStore.login(email, password);
-				goto('/'); // Redirect to home page after successful login
 			}
+			// Navigation will happen via the $effect subscription
 		} catch (err) {
 			error = isRegistering
 				? 'Registration failed. Please try again.'

@@ -274,9 +274,15 @@
 {/if}
 
 {#if showEditModal}
-	<div class="modal-backdrop" onclick={closeEditModal}></div>
+	<button
+		type="button"
+		class="modal-backdrop"
+		onclick={closeEditModal}
+		onkeydown={(e) => e.key === 'Escape' && closeEditModal()}
+		aria-label="Close modal"
+	></button>
 	<div class="modal-overlay" style="left: 50%; top: {editButtonPosition?.y || 300}px;">
-		<form class="edit-modal" onclick={(e) => e.stopPropagation()} onsubmit={confirmEdit}>
+		<form class="edit-modal" onsubmit={confirmEdit}>
 			<h3>{editData.title}</h3>
 			{#if editData.field === 'storageType'}
 				<select bind:value={editData.value} class="edit-input" required>
@@ -619,6 +625,8 @@
 		backdrop-filter: blur(8px);
 		-webkit-backdrop-filter: blur(8px);
 		z-index: 9999;
+		border: none;
+		cursor: pointer;
 	}
 
 	.modal-overlay {

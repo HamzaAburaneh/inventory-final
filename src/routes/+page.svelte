@@ -113,7 +113,7 @@
 			Key Features
 		</h2>
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-			{#each features as feature, i}
+			{#each features as feature, i (feature.name)}
 				<div
 					class="feature-card"
 					role="article"
@@ -141,7 +141,7 @@
 			What Our Users Say
 		</h2>
 		<div class="relative testimonial-container">
-			{#each [testimonials[activeTestimonial]] as testimonial (activeTestimonial)}
+			{#each [testimonials[activeTestimonial]] as testimonial (testimonial.name)}
 				<div role="region" aria-live="polite" class="p-8">
 					<p class="text-xl mb-6 italic">"{testimonial.text}"</p>
 					<p class="font-semibold text-lg">{testimonial.name}</p>

@@ -664,7 +664,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each topMovers as mover}
+						{#each topMovers as mover (mover.itemName)}
 							<tr>
 								<td>{mover.itemName}</td>
 								<td>{mover.totalTransactions}</td>
