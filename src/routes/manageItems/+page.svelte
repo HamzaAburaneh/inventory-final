@@ -343,15 +343,16 @@
 
 <style>
 	.page-container {
-		max-width: 95%;
+		max-width: 90%;
 		margin: 0 auto;
-		padding: 1rem;
+		padding: 0 1rem 1rem 1rem;
 		min-height: 100vh;
 		width: 100%;
 	}
 
 	.form-section {
-		margin-bottom: 3rem;
+		margin-top: 4px;
+		margin-bottom: 2rem;
 	}
 
 	.inventory-section {

@@ -236,7 +236,7 @@
 		background: var(--container-bg);
 		border-radius: var(--border-radius);
 		padding: 0;
-		margin-bottom: 2rem;
+		margin-bottom: 0;
 		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 		border: 1px solid var(--table-border-color);
 		overflow: hidden;

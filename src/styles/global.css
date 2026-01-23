@@ -353,20 +353,23 @@ button:disabled {
 	min-width: var(--touch-target-large);
 }
 
-/* View Transition background fix for dark mode */
+/* View Transition Enhancements */
+
+/* Ensure smooth transition backdrop */
+::view-transition {
+	background-color: var(--background-color);
+}
+
+/* Subtle image rendering during transitions */
+::view-transition-image-pair(root) {
+	isolation: isolate;
+}
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
-	animation-duration: 0.2s;
-}
-
-/* Light mode view transition background */
-:root {
-	background-color: #f9f9f9;
-}
-
-/* Dark mode view transition background */
-[data-theme='dark'] {
-	background-color: #1a1a1a;
+	mix-blend-mode: normal;
+	height: 100%;
+	overflow: clip;
 }
 
 /* Accessibility and performance enhancements */

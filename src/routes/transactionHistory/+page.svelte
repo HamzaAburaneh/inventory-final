@@ -16,22 +16,25 @@
 	import TransactionTable from '../../components/TransactionTable.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import { searchTerm, setSearchTerm, clearSearch } from '../../stores/searchStore';
-	import { onMount } from 'svelte';
 
-	let transactions = $state([]);
+	// Get pre-loaded data from +page.js
+	let { data } = $props();
+
+	// Initialize state with pre-loaded data
+	let transactions = $state(data.transactions || []);
 	let loading = $state(false);
 	let currentSortColumn = $state('timestamp');
 	let sortAscending = $state(false);
 
 	// Pagination state
 	let itemsPerPage = $state(10);
-	let lastVisible = $state(null);
-	let firstVisible = $state(null);
+	let lastVisible = $state(data.lastDoc || null);
+	let firstVisible = $state(data.firstDoc || null);
 	let isFirstPage = $state(true);
-	let isLastPage = $state(false);
+	let isLastPage = $state((data.transactions?.length || 0) < 10);
 
 	// Count state
-	let totalItems = $state(0);
+	let totalItems = $state(data.totalItems || 0);
 	let currentPage = $state(1);
 
 	// Track the current search term locally for display
@@ -178,26 +181,22 @@
 		itemsPerPage = parseInt(event.target.value);
 		fetchTransactions('first');
 	}
-
-	// Initial load on mount
-	onMount(() => {
-		fetchTransactions('first');
-	});
 </script>
 
 <svelte:head>
 	<title>Transaction History</title>
 </svelte:head>
 
-	<div class="container mx-auto p-4 sm:p-6 rounded-lg shadow-md bg-container mt-4">
-
+<div class="container mx-auto p-4 sm:p-6 rounded-lg shadow-md bg-container mt-4">
 	<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClear} />
 
 	<p class="filter-legend text-white mb-4">
 		{#if searchTermValue}
 			Showing results for "{searchTermValue}"
 		{:else}
-			Showing transactions sorted by {currentSortColumn} ({sortAscending ? 'Ascending' : 'Descending'})
+			Showing transactions sorted by {currentSortColumn} ({sortAscending
+				? 'Ascending'
+				: 'Descending'})
 		{/if}
 	</p>
 
@@ -268,6 +267,8 @@
 
 <style>
 	.container {
+		margin-top: 20px;
+		padding: 1rem;
 		max-width: 90%;
 		background-color: var(--container-bg);
 		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
@@ -368,6 +369,20 @@
 		.pagination-buttons,
 		.items-per-page {
 			justify-content: center;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.container {
+			padding: 1.5rem;
+			max-width: 95%;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.container {
+			padding: 2.5rem;
+			max-width: 90%;
 		}
 	}
 </style>

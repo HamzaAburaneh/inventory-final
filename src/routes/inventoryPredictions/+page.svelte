@@ -1,6 +1,5 @@
 <script>
 	import StockPredictions from '../../components/StockPredictions.svelte';
-	import { fade } from 'svelte/transition';
 	import { notificationStore } from '../../stores/notificationStore.js';
 	import {
 		Chart,
@@ -14,15 +13,18 @@
 	} from 'chart.js';
 	import { itemStore } from '../../stores/itemStore.js';
 
+	// Get pre-loaded data from +page.js
+	let { data } = $props();
+
 	// Register Chart.js components at module level
 	Chart.register(BarController, BarElement, CategoryScale, LinearScale, Title, Tooltip, Legend);
 
 	// Chart instance - not reactive (mutable object)
 	let overviewChart = null;
-	let predictions = $state({});
+	let predictions = $state(data.predictions || {});
 
 	// Use Svelte's $ prefix for auto-subscription
-	const items = $derived($itemStore);
+	const items = $derived($itemStore.length > 0 ? $itemStore : data.items || []);
 	const notifications = $derived($notificationStore);
 	const latestNotification = $derived(notifications?.[notifications.length - 1] || null);
 
@@ -67,10 +69,10 @@
 		}
 	}
 
-	// Initialize data and chart on mount
+	// Initialize chart on mount (data is pre-loaded)
 	$effect(() => {
-		Promise.all([itemStore.fetchItems(), fetchPredictions()]).then(() => {
-			// Initialize dashboard chart after data is loaded
+		// Initialize dashboard chart after DOM is ready
+		const timer = setTimeout(() => {
 			const ctx = document.getElementById('overviewChart');
 			if (ctx && !overviewChart) {
 				overviewChart = new Chart(ctx, {
@@ -112,10 +114,11 @@
 					}
 				});
 			}
-		});
+		}, 100);
 
 		// Cleanup on unmount
 		return () => {
+			clearTimeout(timer);
 			if (overviewChart) {
 				overviewChart.destroy();
 				overviewChart = null;

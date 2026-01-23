@@ -23,6 +23,9 @@
 	} from '../../lib/transactionAnalysis';
 	import { notificationStore } from '../../stores/notificationStore';
 
+	// Get pre-loaded data from +page.js
+	let { data } = $props();
+
 	// Register Chart.js components at module level (not in $effect)
 	// Only register what we actually use for better tree-shaking
 	Chart.register(
@@ -56,16 +59,18 @@
 		2025: { start: new Date(2025, 7, 13), end: new Date(2025, 8, 1, 23, 59, 59) }
 	};
 
-	// State variables
-	let loading = $state(true);
-	let dateRange = $state({
-		start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-		end: new Date()
-	});
-	let dailyAnalysis = $state([]);
-	let hourlyActivity = $state([]);
-	let topMovers = $state([]);
-	let summaryStats = $state(null);
+	// State variables - initialize with pre-loaded data
+	let loading = $state(false);
+	let dateRange = $state(
+		data.dateRange || {
+			start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+			end: new Date()
+		}
+	);
+	let dailyAnalysis = $state(data.dailyAnalysis || []);
+	let hourlyActivity = $state(data.hourlyActivity || []);
+	let topMovers = $state(data.topMovers || []);
+	let summaryStats = $state(data.summaryStats || null);
 	let activeFilter = $state(30);
 
 	// Chart instances - using plain 'let' instead of $state
@@ -431,9 +436,14 @@
 		notificationStore.showNotification('Analysis exported successfully', 'success');
 	}
 
-	// Effects - Chart.register is now at module level, not in effect
+	// Effects - Initialize charts with pre-loaded data
 	$effect(() => {
-		const timer = setTimeout(loadAnalysisData, 100);
+		// Charts need DOM to be ready, so use a small delay
+		const timer = setTimeout(() => {
+			if (dailyAnalysis.length > 0 || summaryStats) {
+				updateCharts();
+			}
+		}, 100);
 
 		return () => {
 			clearTimeout(timer);
@@ -479,8 +489,7 @@
 <div class="analysis-page">
 	<!-- Summary Cards -->
 	<div class="summary-section">
-		<h1 class="text-3xl font-bold mb-6">
-		</h1>
+		<h1 class="text-3xl font-bold mb-6"></h1>
 
 		{#if summaryStats}
 			<div class="summary-grid">
