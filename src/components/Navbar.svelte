@@ -4,8 +4,6 @@
 	import ThemeToggle from './ThemeToggle.svelte';
 	import { authStore } from '../stores/authStore.js';
 	import { goto } from '$app/navigation';
-	import { fade, slide } from 'svelte/transition';
-	import { cubicOut } from 'svelte/easing';
 
 	let { user } = $props();
 
@@ -207,7 +205,6 @@
 					{#if isDropdownOpen}
 						<ul
 							class="dropdown-menu"
-							transition:slide={{ duration: 200, easing: cubicOut }}
 							bind:this={dropdownNode}
 							onmouseenter={handleMouseEnter}
 							onmouseleave={handleMouseLeave}
@@ -227,12 +224,7 @@
 			<li><ThemeToggle /></li>
 		</ul>
 		{#if isOpen}
-			<ul
-				class="nav-list mobile"
-				id="mobile-menu"
-				transition:slide|local={{ duration: 300, easing: cubicOut }}
-				bind:this={mobileMenuRef}
-			>
+			<ul class="nav-list mobile" id="mobile-menu" bind:this={mobileMenuRef}>
 				{#if user}
 					<li>
 						<a

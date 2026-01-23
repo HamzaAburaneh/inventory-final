@@ -1,5 +1,4 @@
 <script>
-	import { fly, fade } from 'svelte/transition';
 	import Swal from 'sweetalert2';
 
 	let { onAdd } = $props();
@@ -45,7 +44,7 @@
 		if (formData.name.trim() === '') {
 			// Preserve scroll position before showing alert
 			const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
-			
+
 			await Swal.fire({
 				icon: 'error',
 				title: 'Empty Item Name',
@@ -55,7 +54,7 @@
 				scrollbarPadding: false,
 				heightAuto: false
 			});
-			
+
 			// Restore scroll position after alert
 			setTimeout(() => {
 				window.scrollTo(0, scrollPos);
@@ -74,7 +73,7 @@
 		<h3 class="form-title">Add New Item</h3>
 		<p class="form-subtitle">Enter item details to add to your inventory</p>
 	</div>
-	
+
 	<div class="form-content">
 		<div class="form-row primary-row">
 			<div class="form-group">
@@ -88,7 +87,7 @@
 						oninput={() => validateField('name', formData.name)}
 					/>
 					{#if errors.name}
-						<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
+						<div class="error-message">
 							{errors.name}
 						</div>
 					{/if}
@@ -116,14 +115,7 @@
 				<label class="form-label">Booths</label>
 				<div class="input-wrapper">
 					<div class="booths-container">
-						{#each [
-							{ value: 'freshly', label: 'Freshly', color: '#10B981' },
-							{ value: 'b1', label: 'B1', color: '#3B82F6' },
-							{ value: 'b2', label: 'B2', color: '#8B5CF6' },
-							{ value: 'jakes', label: 'Jakes', color: '#F59E0B' },
-							{ value: 'epic', label: 'Epic', color: '#EF4444' },
-							{ value: 'pulled', label: 'Pulled', color: '#6B7280' }
-						] as booth}
+						{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth}
 							<label class="booth-option">
 								<input
 									type="checkbox"
@@ -135,7 +127,14 @@
 									<div class="booth-indicator"></div>
 									<span class="booth-name">{booth.label}</span>
 									<div class="checkmark">
-										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+										<svg
+											width="16"
+											height="16"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="3"
+										>
 											<polyline points="20,6 9,17 4,12"></polyline>
 										</svg>
 									</div>
@@ -144,7 +143,7 @@
 						{/each}
 					</div>
 					{#if errors.booths}
-						<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
+						<div class="error-message">
 							{errors.booths}
 						</div>
 					{/if}
@@ -166,7 +165,7 @@
 						oninput={(event) => handleInput(event, 'count')}
 					/>
 					{#if errors.count}
-						<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
+						<div class="error-message">
 							{errors.count}
 						</div>
 					{/if}
@@ -186,7 +185,7 @@
 						oninput={(event) => handleInput(event, 'lowCount')}
 					/>
 					{#if errors.lowCount}
-						<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
+						<div class="error-message">
 							{errors.lowCount}
 						</div>
 					{/if}
@@ -205,7 +204,7 @@
 						oninput={(event) => handleInput(event, 'cost', true)}
 					/>
 					{#if errors.cost}
-						<div class="error-message" in:fly={{ y: -10, duration: 200 }} out:fade={{ duration: 100 }}>
+						<div class="error-message">
 							{errors.cost}
 						</div>
 					{/if}
@@ -215,7 +214,14 @@
 
 		<div class="form-actions">
 			<button class="add-button" onclick={handleAdd}>
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<svg
+					width="20"
+					height="20"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
 					<line x1="12" y1="5" x2="12" y2="19"></line>
 					<line x1="5" y1="12" x2="19" y2="12"></line>
 				</svg>
@@ -383,12 +389,7 @@
 		left: -100%;
 		width: 100%;
 		height: 100%;
-		background: linear-gradient(
-			90deg,
-			transparent,
-			rgba(255, 255, 255, 0.3),
-			transparent
-		);
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
 		transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
@@ -432,7 +433,7 @@
 		.primary-row {
 			grid-template-columns: 1fr 1fr;
 		}
-		
+
 		.secondary-row {
 			grid-template-columns: repeat(3, 1fr);
 		}
@@ -442,11 +443,11 @@
 		.form-header {
 			padding: 2rem 2.5rem;
 		}
-		
+
 		.form-content {
 			padding: 2.5rem;
 		}
-		
+
 		.form-title {
 			font-size: 1.375rem;
 		}
@@ -456,12 +457,12 @@
 		.form-row {
 			gap: 2rem;
 		}
-		
+
 		.form-input {
 			padding: 1rem 1.25rem;
 			font-size: 1rem;
 		}
-		
+
 		.add-button {
 			padding: 1rem 2.5rem;
 			font-size: 1rem;

@@ -141,7 +141,6 @@
 
 <div class="inventory-predictions-page">
 	<div class="dashboard-overview">
-		<h2 class="text-xl font-medium mb-4">Overview</h2>
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 			<div class="metric-card">
 				<i class="fas fa-box" style="font-size: 24px;"></i>

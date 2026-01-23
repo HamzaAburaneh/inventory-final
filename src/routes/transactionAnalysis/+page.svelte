@@ -480,8 +480,6 @@
 	<!-- Summary Cards -->
 	<div class="summary-section">
 		<h1 class="text-3xl font-bold mb-6">
-			<i class="fas fa-chart-line mr-2"></i>
-			Transaction Analysis
 		</h1>
 
 		{#if summaryStats}

@@ -1,24 +1,11 @@
 <script>
-	import { fade, fly } from 'svelte/transition';
-
-	let {
-		visible = false,
-		itemName = '',
-		position = { x: 0, y: 0 },
-		onConfirm,
-		onCancel
-	} = $props();
+	let { visible = false, itemName = '', position = { x: 0, y: 0 }, onConfirm, onCancel } = $props();
 </script>
 
 {#if visible}
-	<div class="modal-backdrop" onclick={onCancel} in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}></div>
-	<div
-		class="modal-overlay"
-		style="left: 50%; top: {position.y}px;"
-		in:fade={{ duration: 200 }}
-		out:fade={{ duration: 200 }}
-	>
-		<div class="delete-modal" onclick={(e) => e.stopPropagation()} in:fly={{ y: 50, duration: 300 }} out:fly={{ y: 50, duration: 300 }}>
+	<div class="modal-backdrop" onclick={onCancel}></div>
+	<div class="modal-overlay" style="left: 50%; top: {position.y}px;">
+		<div class="delete-modal" onclick={(e) => e.stopPropagation()}>
 			<h3>Delete Item</h3>
 			<p>Are you sure you want to delete <strong>"{itemName}"</strong>?</p>
 			<p class="warning">This action cannot be undone.</p>

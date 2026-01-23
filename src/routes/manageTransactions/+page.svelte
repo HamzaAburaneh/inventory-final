@@ -1,6 +1,4 @@
 <script>
-	import { fade, fly } from 'svelte/transition';
-	import { elasticOut } from 'svelte/easing';
 	import Swal from 'sweetalert2';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Pagination from '../../components/Pagination.svelte';
@@ -253,10 +251,7 @@
 							<td class="px-6 py-4 text-center" data-label="Count">
 								<div class="relative inline-block w-full h-6">
 									{#key item.count}
-										<span
-											class="absolute inset-0 flex items-center justify-end"
-											transition:fly={{ y: -20, duration: 300, easing: elasticOut }}
-										>
+										<span class="absolute inset-0 flex items-center justify-end">
 											{item.count}
 										</span>
 									{/key}
@@ -324,7 +319,7 @@
 {/if}
 
 {#if notificationValue}
-	<div class="notification {notificationValue.type}" in:fade out:fade>
+	<div class="notification {notificationValue.type}">
 		{notificationValue.message}
 	</div>
 {/if}

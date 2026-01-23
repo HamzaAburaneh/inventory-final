@@ -1,6 +1,4 @@
 <script>
-	import { fade, fly } from 'svelte/transition';
-
 	let { searchValue = $bindable(''), onSearch, onClear } = $props();
 
 	function handleInput(event) {
@@ -15,7 +13,7 @@
 	}
 </script>
 
-<div class="search-container" in:fly={{ y: -20, duration: 300 }} out:fade={{ duration: 200 }}>
+<div class="search-container">
 	<div class="search-wrapper">
 		<input
 			id="search"
@@ -39,7 +37,7 @@
 			</svg>
 		</label>
 		{#if searchValue}
-			<button class="clear-button" onclick={clearSearch} transition:fade={{ duration: 200 }} aria-label="Clear search">
+			<button class="clear-button" onclick={clearSearch} aria-label="Clear search">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					viewBox="0 0 24 24"

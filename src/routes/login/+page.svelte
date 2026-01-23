@@ -1,7 +1,6 @@
 <script>
 	import { authStore } from '../../stores/authStore';
 	import { goto } from '$app/navigation';
-	import { fade } from 'svelte/transition';
 	import { createUserWithEmailAndPassword } from 'firebase/auth';
 	import { auth } from '../../firebase';
 	import { get } from 'svelte/store';
@@ -110,7 +109,7 @@
 </div>
 
 {#if error}
-	<div class="notification" in:fade out:fade>
+	<div class="notification">
 		{error}
 	</div>
 {/if}

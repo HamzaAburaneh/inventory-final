@@ -1,21 +1,20 @@
 <script>
-	import { fade, fly } from 'svelte/transition';
 	import { authStore } from '../stores/authStore.js';
 
 	let showFeatures = $state(false);
 	let activeTestimonial = $state(0);
 	let showBackToTop = $state(false);
 	let hoveredCard = $state(-1);
-	
+
 	// Store values as reactive state
 	let authUser = $state(null);
-	
+
 	// Subscribe to stores
 	$effect(() => {
-		const unsubscribeAuth = authStore.subscribe(value => {
+		const unsubscribeAuth = authStore.subscribe((value) => {
 			authUser = value;
 		});
-		
+
 		return () => {
 			unsubscribeAuth();
 		};
@@ -91,9 +90,7 @@
 
 <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
 	<section id="hero" class="hero mb-16 md:mb-24">
-		<h1
-			class="text-4xl md:text-6xl font-bold mb-6 md:mb-8 text-center logo-text"
-		>
+		<h1 class="text-4xl md:text-6xl font-bold mb-6 md:mb-8 text-center logo-text">
 			Welcome to StockSense
 		</h1>
 		<p class="text-lg md:text-2xl mb-10 md:mb-12 text-center text-secondary">
@@ -183,12 +180,7 @@
 </main>
 
 {#if showBackToTop}
-	<button
-		onclick={scrollToTop}
-		class="back-to-top"
-		transition:fade
-		aria-label="Scroll to top of page"
-	>
+	<button onclick={scrollToTop} class="back-to-top" aria-label="Scroll to top of page">
 		<i class="fas fa-arrow-up" aria-hidden="true"></i>
 	</button>
 {/if}
@@ -216,7 +208,9 @@
 		background-color: var(--container-bg);
 		padding: 1.5rem;
 		border-radius: var(--border-radius);
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+		box-shadow:
+			0 4px 6px rgba(0, 0, 0, 0.1),
+			0 1px 3px rgba(0, 0, 0, 0.08);
 	}
 
 	.btn-primary {
@@ -232,7 +226,9 @@
 
 	.btn-primary:hover {
 		background-color: var(--nav-logo-hover-color);
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+		box-shadow:
+			0 4px 6px rgba(0, 0, 0, 0.1),
+			0 1px 3px rgba(0, 0, 0, 0.08);
 		transform: translateY(-2px);
 	}
 
@@ -240,7 +236,9 @@
 		background-color: var(--container-bg);
 		padding: 1.5rem;
 		border-radius: var(--border-radius);
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+		box-shadow:
+			0 4px 6px rgba(0, 0, 0, 0.1),
+			0 1px 3px rgba(0, 0, 0, 0.08);
 		position: relative;
 	}
 
@@ -275,7 +273,9 @@
 		background-color: var(--container-bg);
 		padding: 2rem;
 		border-radius: var(--border-radius);
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+		box-shadow:
+			0 4px 6px rgba(0, 0, 0, 0.1),
+			0 1px 3px rgba(0, 0, 0, 0.08);
 		text-align: center;
 	}
 
@@ -287,7 +287,9 @@
 		color: var(--text-color);
 		border-radius: 9999px;
 		padding: 0.75rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+		box-shadow:
+			0 4px 6px rgba(0, 0, 0, 0.1),
+			0 1px 3px rgba(0, 0, 0, 0.08);
 		transition: all 0.3s ease;
 		opacity: 0.8;
 	}

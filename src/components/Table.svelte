@@ -1,5 +1,4 @@
 <script>
-	import { fade, fly } from 'svelte/transition';
 	import TableHeader from './TableHeader.svelte';
 	import TableCell from './TableCell.svelte';
 	import DeleteModal from './DeleteModal.svelte';
@@ -32,7 +31,7 @@
 		const rect = button.getBoundingClientRect();
 		const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
 		const scrollY = window.pageYOffset || document.documentElement.scrollTop;
-		
+
 		tooltipX = rect.left + scrollX + rect.width / 2;
 		tooltipY = rect.top + scrollY - 8;
 		tooltipText = button.dataset.tooltip;
@@ -58,7 +57,7 @@
 	async function confirmDelete() {
 		// Preserve scroll position during delete
 		const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
-		
+
 		if (itemToDelete) {
 			deletingItemId = itemToDelete.id;
 			await onDelete(itemToDelete.id);
@@ -66,7 +65,7 @@
 		}
 		showDeleteConfirm = false;
 		itemToDelete = null;
-		
+
 		// Restore scroll position after delete
 		setTimeout(() => {
 			window.scrollTo(0, scrollPos);
@@ -86,7 +85,7 @@
 			<tbody>
 				{#each paginatedItems as item (item.id)}
 					{#if item.id !== deletingItemId}
-						<tr class="table-row" in:fly={{ y: 20, duration: 300 }} out:fade={{ duration: 300 }}>
+						<tr class="table-row">
 							<TableCell
 								type="name"
 								value={item.name}
@@ -167,12 +166,7 @@
 	</div>
 </div>
 
-<Tooltip
-	text={tooltipText}
-	x={tooltipX}
-	y={tooltipY}
-	visible={showTooltip}
-/>
+<Tooltip text={tooltipText} x={tooltipX} y={tooltipY} visible={showTooltip} />
 
 <DeleteModal
 	visible={showDeleteConfirm}

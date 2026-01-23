@@ -1,9 +1,14 @@
 <script>
+	import { fade } from 'svelte/transition';
+	import { page } from '$app/stores';
 	import Navbar from '../components/Navbar.svelte';
 	import '../styles/global.css';
 	import { authStore } from '../stores/authStore.js';
 
 	let { children } = $props();
+
+	// Get the current pathname from page store using $derived
+	const pathname = $derived($page.url.pathname);
 
 	// Initialize auth listener on mount
 	// Using $effect for initialization that needs cleanup
@@ -19,7 +24,11 @@
 <Navbar {user} />
 
 <main class="main-container">
-	{@render children()}
+	{#key pathname}
+		<div class="page-transition-wrapper" in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}>
+			{@render children()}
+		</div>
+	{/key}
 </main>
 
 <style>
@@ -32,6 +41,18 @@
 		min-height: calc(100vh - 80px);
 		overflow-x: hidden;
 		overflow-y: visible;
+		position: relative;
+	}
+
+	.page-transition-wrapper {
+		width: 100%;
+		position: absolute;
+		top: 0;
+		left: 0;
+		padding: inherit;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
 	}
 
 	/* Ensure page content takes full width and prevents side-by-side rendering */

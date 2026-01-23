@@ -190,7 +190,6 @@
 </svelte:head>
 
 <div class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4">
-	<h1 class="text-3xl font-bold mb-6">Transaction History</h1>
 
 	<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClear} />
 

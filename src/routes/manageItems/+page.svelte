@@ -7,8 +7,7 @@
 	import { itemStore } from '../../stores/itemStore';
 	import { searchTerm, setSearchTerm, clearSearch } from '../../stores/searchStore';
 	import { notificationStore } from '../../stores/notificationStore';
-	import { fadeAndSlide } from '$lib/transitions';
-	import { fade } from 'svelte/transition';
+
 	import { applySorting } from '../../lib/items';
 
 	// UI state
@@ -268,7 +267,7 @@
 	</div>
 {/if}
 {#if latestNotification}
-	<div class="notification {latestNotification.type}" in:fade out:fade>
+	<div class="notification {latestNotification.type}">
 		{latestNotification.message}
 	</div>
 {/if}

@@ -1,6 +1,5 @@
 <script>
 	import { itemStore } from '../stores/itemStore.js';
-	import { fade, slide, scale } from 'svelte/transition';
 	import { notificationStore } from '../stores/notificationStore.js';
 	import { searchTerm as searchStore, setSearchTerm, clearSearch } from '../stores/searchStore.js';
 	import SearchBar from './SearchBar.svelte';
@@ -11,20 +10,20 @@
 	let timeframeValue = $state(14);
 	let useAI = $state(false);
 	const ANALYSIS_WINDOW = 7; // 7 days moving average
-	
+
 	// Store values as reactive state
 	let items = $state([]);
 	let searchTermValue = $state('');
-	
+
 	// Subscribe to stores using $effect
 	$effect(() => {
-		const unsubscribeItems = itemStore.subscribe(value => {
+		const unsubscribeItems = itemStore.subscribe((value) => {
 			items = value;
 		});
-		const unsubscribeSearch = searchStore.subscribe(value => {
+		const unsubscribeSearch = searchStore.subscribe((value) => {
 			searchTermValue = value;
 		});
-		
+
 		return () => {
 			unsubscribeItems();
 			unsubscribeSearch();
@@ -67,18 +66,18 @@
 	}
 
 	let debounceTimer;
-	
+
 	// Effect to watch for timeframe and AI method changes
 	$effect(() => {
 		// Dependencies: timeframeValue and useAI
 		const currentTimeframe = timeframeValue;
 		const currentUseAI = useAI;
-		
+
 		clearTimeout(debounceTimer);
 		debounceTimer = setTimeout(() => {
 			fetchPredictions();
 		}, 300);
-		
+
 		return () => clearTimeout(debounceTimer);
 	});
 
@@ -91,13 +90,17 @@
 					return null; // Skip items that don't exist in the current items collection
 				}
 				const currentCount = item.count !== undefined ? item.count : 0;
-				
+
 				// Handle both old format (array) and new format (object with prediction array)
-				const prediction = Array.isArray(predictionData) ? predictionData : predictionData.prediction;
+				const prediction = Array.isArray(predictionData)
+					? predictionData
+					: predictionData.prediction;
 				// Ensure prediction is an array before calling reduce
-				const totalPrediction = Array.isArray(prediction) ? prediction.reduce((sum, daily) => sum + daily, 0) : 0;
+				const totalPrediction = Array.isArray(prediction)
+					? prediction.reduce((sum, daily) => sum + daily, 0)
+					: 0;
 				const recommendedOrder = Math.max(0, totalPrediction - currentCount);
-				
+
 				return {
 					id: itemId,
 					name: item.name,
@@ -112,7 +115,9 @@
 					method: predictionData.method || 'ARIMA'
 				};
 			})
-			.filter((item) => item !== null && item.name.toLowerCase().includes(searchTermValue.toLowerCase()))
+			.filter(
+				(item) => item !== null && item.name.toLowerCase().includes(searchTermValue.toLowerCase())
+			)
 	);
 
 	function getStatusIcon(currentCount, totalPrediction) {
@@ -132,67 +137,63 @@
 	// Derived statistics
 	const totalItems = $derived(itemsWithPredictions.length);
 	const itemsNeedingRestock = $derived(
-		itemsWithPredictions.filter(item => item.currentCount < item.totalPrediction).length
+		itemsWithPredictions.filter((item) => item.currentCount < item.totalPrediction).length
 	);
 	const potentialOverstock = $derived(
-		itemsWithPredictions.filter(item => item.currentCount > item.totalPrediction * 1.5).length
+		itemsWithPredictions.filter((item) => item.currentCount > item.totalPrediction * 1.5).length
 	);
 </script>
 
 <div class="stock-predictions">
-	<h2 class="text-2xl font-bold mb-4" in:slide={{ duration: 300, delay: 150 }}>
+	<h2 class="text-2xl font-bold mb-4">
 		<i class="fas fa-chart-bar inline-block mr-2"></i>
 		Inventory Predictions
 	</h2>
-	<div
-		class="summary-section mb-6 p-4 bg-gray-100 rounded-lg shadow-md"
-		in:fade={{ duration: 300 }}
-	>
+	<div class="summary-section mb-6 p-4 bg-gray-100 rounded-lg shadow-md">
 		<div class="controls-section">
 			<div class="control-group">
 				<label class="control-label" for="timeframe-selector">Prediction Timeframe</label>
-				<div class="timeframe-selector" id="timeframe-selector" role="group" aria-labelledby="timeframe-label">
+				<div
+					class="timeframe-selector"
+					id="timeframe-selector"
+					role="group"
+					aria-labelledby="timeframe-label"
+				>
 					<button
 						class="timeframe-btn {timeframeValue === 1 ? 'active' : ''}"
-						onclick={() => timeframeValue = 1}
+						onclick={() => (timeframeValue = 1)}
 					>
 						1 Day
 					</button>
 					<button
 						class="timeframe-btn {timeframeValue === 3 ? 'active' : ''}"
-						onclick={() => timeframeValue = 3}
+						onclick={() => (timeframeValue = 3)}
 					>
 						3 Days
 					</button>
 					<button
 						class="timeframe-btn {timeframeValue === 7 ? 'active' : ''}"
-						onclick={() => timeframeValue = 7}
+						onclick={() => (timeframeValue = 7)}
 					>
 						1 Week
 					</button>
 					<button
 						class="timeframe-btn {timeframeValue === 14 ? 'active' : ''}"
-						onclick={() => timeframeValue = 14}
+						onclick={() => (timeframeValue = 14)}
 					>
 						2 Weeks
 					</button>
 				</div>
 			</div>
-			
+
 			<div class="control-group">
 				<label class="control-label" id="method-label">Analysis Method</label>
 				<div class="method-toggle" role="group" aria-labelledby="method-label">
-					<button
-						class="method-btn {!useAI ? 'active' : ''}"
-						onclick={() => useAI = false}
-					>
+					<button class="method-btn {!useAI ? 'active' : ''}" onclick={() => (useAI = false)}>
 						<i class="fas fa-chart-line mr-2"></i>
 						ARIMA Model
 					</button>
-					<button
-						class="method-btn {useAI ? 'active' : ''}"
-						onclick={() => useAI = true}
-					>
+					<button class="method-btn {useAI ? 'active' : ''}" onclick={() => (useAI = true)}>
 						<i class="fas fa-brain mr-2"></i>
 						GPT-4o Enhanced
 					</button>
@@ -245,22 +246,31 @@
 			{#each itemsWithPredictions as { id, name, currentCount, prediction, totalPrediction, recommendedOrder, reasoning, confidence, factors, method } (id)}
 				<div
 					class="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
-					in:scale={{ duration: 300, delay: 150 }}
 				>
 					<div class="flex justify-between items-start mb-2">
 						<h3 class="text-lg font-semibold">{name}</h3>
 						<div class="flex items-center space-x-2">
-							<span class="px-2 py-1 text-xs rounded-full {method.includes('GPT-4o') ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}">
+							<span
+								class="px-2 py-1 text-xs rounded-full {method.includes('GPT-4o')
+									? 'bg-blue-100 text-blue-800'
+									: 'bg-gray-100 text-gray-800'}"
+							>
 								{method}
 							</span>
 							{#if confidence}
-								<span class="px-2 py-1 text-xs rounded-full {confidence > 0.8 ? 'bg-green-100 text-green-800' : confidence > 0.6 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}">
+								<span
+									class="px-2 py-1 text-xs rounded-full {confidence > 0.8
+										? 'bg-green-100 text-green-800'
+										: confidence > 0.6
+											? 'bg-yellow-100 text-yellow-800'
+											: 'bg-red-100 text-red-800'}"
+								>
 									{Math.round(confidence * 100)}% confidence
 								</span>
 							{/if}
 						</div>
 					</div>
-					
+
 					<p class="mb-1">
 						<i class="fas fa-box inline-block mr-1"></i>
 						Current Stock: <strong>{currentCount}</strong>
@@ -268,14 +278,21 @@
 					<p class="mb-1">
 						<i class="fas fa-chart-line inline-block mr-1"></i>
 						Predicted Need ({timeframeValue} days):
-						<strong>{typeof totalPrediction === 'number' ? totalPrediction.toFixed(2) : '0.00'}</strong>
+						<strong
+							>{typeof totalPrediction === 'number' ? totalPrediction.toFixed(2) : '0.00'}</strong
+						>
 					</p>
 					<p class="mb-2">
 						<i class="fas fa-cart-plus inline-block mr-1"></i>
-						Recommended Order: <strong>{typeof recommendedOrder === 'number' ? recommendedOrder.toFixed(2) : '0.00'}</strong>
+						Recommended Order:
+						<strong
+							>{typeof recommendedOrder === 'number' ? recommendedOrder.toFixed(2) : '0.00'}</strong
+						>
 					</p>
-					
-					<p class={`text-lg ${getStatusColor(currentCount, totalPrediction)} flex items-center mb-2`}>
+
+					<p
+						class={`text-lg ${getStatusColor(currentCount, totalPrediction)} flex items-center mb-2`}
+					>
 						<i class="fas {getStatusIcon(currentCount, totalPrediction)} inline-block mr-2"></i>
 						Status:
 						{#if currentCount < totalPrediction * 0.5}
@@ -314,7 +331,11 @@
 						>
 						<ul class="mt-2 text-sm">
 							{#each Array.isArray(prediction) ? prediction : [] as dailyPrediction, index}
-								<li>Day {index + 1}: {typeof dailyPrediction === 'number' ? dailyPrediction.toFixed(2) : '0.00'}</li>
+								<li>
+									Day {index + 1}: {typeof dailyPrediction === 'number'
+										? dailyPrediction.toFixed(2)
+										: '0.00'}
+								</li>
 							{/each}
 						</ul>
 					</details>
