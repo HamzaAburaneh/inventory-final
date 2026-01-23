@@ -1,4 +1,5 @@
 <script>
+	import { get } from 'svelte/store';
 	import { db } from '../../firebase';
 	import {
 		collection,
@@ -15,6 +16,7 @@
 	import TransactionTable from '../../components/TransactionTable.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import { searchTerm, setSearchTerm, clearSearch } from '../../stores/searchStore';
+	import { onMount } from 'svelte';
 
 	let transactions = $state([]);
 	let loading = $state(false);
@@ -32,15 +34,19 @@
 	let totalItems = $state(0);
 	let currentPage = $state(1);
 
-	// Store values as reactive state
+	// Track the current search term locally for display
 	let searchTermValue = $state('');
 
-	// Subscribe to search store
+	// Derived values for pagination display
+	let totalPages = $derived(Math.ceil(totalItems / itemsPerPage) || 1);
+
+	// Subscribe to search store changes and fetch when it changes
 	$effect(() => {
 		const unsubscribe = searchTerm.subscribe((value) => {
 			if (value !== searchTermValue) {
 				searchTermValue = value;
-				fetchTransactions('first');
+				// Use queueMicrotask to avoid synchronous state mutation in $effect
+				queueMicrotask(() => fetchTransactions('first'));
 			}
 		});
 		return unsubscribe;
@@ -48,33 +54,31 @@
 
 	async function fetchTransactions(direction = 'first') {
 		loading = true;
-		// Don't clear transactions here to prevent flashing
+		const currentSearchTerm = get(searchTerm);
 
 		try {
 			const transactionsRef = collection(db, 'transactions');
-			let constraints = [];
-			let countConstraints = []; // For counting total results
+			const constraints = [];
+			const countConstraints = [];
 
-			// 1. Search & Sort Strategy
-			if (searchTermValue) {
-				// Search by itemName
-				const searchOrderBy = orderBy('itemName', sortAscending ? 'asc' : 'desc');
-				const searchStart = where('itemName', '>=', searchTermValue);
-				const searchEnd = where('itemName', '<=', searchTermValue + '\uf8ff');
-
-				constraints.push(searchOrderBy, searchStart, searchEnd);
-				countConstraints.push(searchStart, searchEnd);
+			// Build query constraints based on search/sort
+			if (currentSearchTerm) {
+				constraints.push(
+					orderBy('itemName', sortAscending ? 'asc' : 'desc'),
+					where('itemName', '>=', currentSearchTerm),
+					where('itemName', '<=', currentSearchTerm + '\uf8ff')
+				);
+				countConstraints.push(
+					where('itemName', '>=', currentSearchTerm),
+					where('itemName', '<=', currentSearchTerm + '\uf8ff')
+				);
+			} else if (currentSortColumn === 'changedAmount') {
+				constraints.push(orderBy('timestamp', 'desc'));
 			} else {
-				// Default sort
-				if (currentSortColumn === 'changedAmount') {
-					constraints.push(orderBy('timestamp', 'desc'));
-					// No filtering constraints for count, so it counts all
-				} else {
-					constraints.push(orderBy(currentSortColumn, sortAscending ? 'asc' : 'desc'));
-				}
+				constraints.push(orderBy(currentSortColumn, sortAscending ? 'asc' : 'desc'));
 			}
 
-			// 2. Fetch Total Count (Only on first load or search change)
+			// Fetch total count on first load or search change
 			if (direction === 'first') {
 				const countQuery = query(transactionsRef, ...countConstraints);
 				const countSnapshot = await getCountFromServer(countQuery);
@@ -82,26 +86,22 @@
 				currentPage = 1;
 			} else if (direction === 'next') {
 				currentPage++;
-			} else if (direction === 'prev') {
-				if (currentPage > 1) currentPage--;
+			} else if (direction === 'prev' && currentPage > 1) {
+				currentPage--;
 			}
 
-			// 3. Pagination Cursors
+			// Add pagination cursors
 			if (direction === 'next' && lastVisible) {
-				constraints.push(startAfter(lastVisible));
-				constraints.push(limit(itemsPerPage));
+				constraints.push(startAfter(lastVisible), limit(itemsPerPage));
 			} else if (direction === 'prev' && firstVisible) {
-				constraints.push(endBefore(firstVisible));
-				constraints.push(limitToLast(itemsPerPage));
+				constraints.push(endBefore(firstVisible), limitToLast(itemsPerPage));
 			} else {
-				// First page or reset
 				constraints.push(limit(itemsPerPage));
 			}
 
 			const q = query(transactionsRef, ...constraints);
 			const snapshot = await getDocs(q);
 
-			// 3. Process Results
 			if (!snapshot.empty) {
 				firstVisible = snapshot.docs[0];
 				lastVisible = snapshot.docs[snapshot.docs.length - 1];
@@ -120,8 +120,8 @@
 					};
 				});
 
-				// Handle client-side sort for calculated fields if necessary
-				if (!searchTermValue && currentSortColumn === 'changedAmount') {
+				// Client-side sort for calculated fields
+				if (!currentSearchTerm && currentSortColumn === 'changedAmount') {
 					fetchedData.sort((a, b) => {
 						const aVal = a.newCount - a.previousCount;
 						const bVal = b.newCount - b.previousCount;
@@ -130,56 +130,26 @@
 				}
 
 				transactions = fetchedData;
-
-				// Update page state
-				if (direction === 'first') {
-					isFirstPage = true;
-				} else if (direction === 'next') {
-					isFirstPage = false;
-				} else if (direction === 'prev') {
-					// If we go back, we can't easily know if we are at start without checking size
-					// Heuristic: If we fetched fewer than limit, or if we were at start
-					// Safe bet: Check if we are at the very beginning of time/sort?
-					// Simplified: If 'prev' was clicked, we assume we aren't at first page unless logic says so.
-					// Ideally we track page numbers, but for cursor pagination:
-					// If the list is full size, assume there might be more previous.
-					// Actually, accurate "isFirstPage" with cursors is hard.
-					// Fix: Just toggle isFirstPage based on known state or button clicks.
-					// Better: If we used 'endBefore', and we got results, check if we overlap with start?
-					// Simplest UI: If user clicks Prev, and we get full page, enable Prev.
-					// If we hit 'first' action, disable Prev.
-				}
-
-				// Check for last page
 				isLastPage = snapshot.docs.length < itemsPerPage;
-
-				// Fix for 'Prev' button state logic:
-				// If we just loaded the first page, disable Prev.
-				// If we navigated, enable Prev.
-				if (direction === 'first') isFirstPage = true;
-				else isFirstPage = false;
+				isFirstPage = direction === 'first';
 			} else {
-				// No results found
 				transactions = [];
 				isLastPage = true;
-				if (direction === 'first') isFirstPage = true;
+				isFirstPage = direction === 'first';
 			}
-
-			loading = false;
 		} catch (error) {
 			console.error('Error fetching transactions:', error);
+		} finally {
 			loading = false;
 		}
 	}
 
 	function handleSearch(value) {
 		setSearchTerm(value);
-		// Effect will trigger fetch
 	}
 
 	function handleClear() {
 		clearSearch();
-		// Effect will trigger fetch
 	}
 
 	function handleSort(column) {
@@ -193,23 +163,24 @@
 	}
 
 	function handleNext() {
-		if (loading || isLastPage) return;
-		fetchTransactions('next');
+		if (!loading && !isLastPage) {
+			fetchTransactions('next');
+		}
 	}
 
 	function handlePrev() {
-		if (loading || currentPage <= 1) return;
-		fetchTransactions('prev');
+		if (!loading && currentPage > 1) {
+			fetchTransactions('prev');
+		}
 	}
 
-	function handleItemsPerPage(e) {
-		itemsPerPage = parseInt(e.target.value);
+	function handleItemsPerPageChange(event) {
+		itemsPerPage = parseInt(event.target.value);
 		fetchTransactions('first');
 	}
 
-	// Initial Load
-	$effect(() => {
-		// Only fetch once on mount (or when itemsPerPage/Sort changes if we added those as deps)
+	// Initial load on mount
+	onMount(() => {
 		fetchTransactions('first');
 	});
 </script>
@@ -223,15 +194,13 @@
 
 	<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClear} />
 
-	<div class="filter-legend text-white mb-4">
+	<p class="filter-legend text-white mb-4">
 		{#if searchTermValue}
 			Showing results for "{searchTermValue}"
 		{:else}
-			Showing transactions sorted by {currentSortColumn} ({sortAscending
-				? 'Ascending'
-				: 'Descending'})
+			Showing transactions sorted by {currentSortColumn} ({sortAscending ? 'Ascending' : 'Descending'})
 		{/if}
-	</div>
+	</p>
 
 	<div class="table-container relative">
 		{#if loading && transactions.length === 0}
@@ -269,7 +238,7 @@
 			</button>
 
 			<span class="pagination-info">
-				Page {currentPage} of {Math.ceil(totalItems / itemsPerPage) || 1} ({totalItems} items)
+				Page {currentPage} of {totalPages} ({totalItems} items)
 			</span>
 
 			<button
@@ -286,8 +255,8 @@
 			<label for="itemsPerPage">Items per page:</label>
 			<select
 				id="itemsPerPage"
-				bind:value={itemsPerPage}
-				onchange={handleItemsPerPage}
+				value={itemsPerPage}
+				onchange={handleItemsPerPageChange}
 				class="pagination-select"
 			>
 				<option value={10}>10</option>
