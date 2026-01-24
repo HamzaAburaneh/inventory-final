@@ -77,6 +77,10 @@
 		}).format(value);
 	};
 
+	const capitalizeColumn = (column) => {
+		return column.replace(/([A-Z])/g, ' $1').trim().toUpperCase();
+	};
+
 	// Update pagination total when filtered list changes
 	$effect(() => {
 		setTotalItems(filteredItemsList.length);
@@ -274,7 +278,7 @@
 					<span class="ribbon-label">ITEMS:</span>
 					<div class="ribbon-value">
 						{#key items.length}
-							<div class="count-context text-update" in:blur={{ duration: 400, amount: 2 }}>
+							<div class="count-context text-update">
 								<span class="digital-font">{filteredItemsList.length}</span>
 								<span class="count-separator">/</span>
 								<span class="count-total">{items.length}</span>
@@ -285,9 +289,26 @@
 				<div class="ribbon-item">
 					<span class="ribbon-label">TOTAL VALUE:</span>
 					<div class="ribbon-value">
-						<span class="digital-font text-update" in:blur={{ duration: 400, amount: 2 }}>
-							{formatCurrency(totalInventoryValue)}
-						</span>
+						{#key totalInventoryValue}
+							<span class="digital-font text-update">
+								{formatCurrency(totalInventoryValue)}
+							</span>
+						{/key}
+					</div>
+				</div>
+				<div class="ribbon-item">
+					<span class="ribbon-label">SORTING:</span>
+					<div class="ribbon-value">
+						{#key currentSortColumn}
+							<span class="text-update">
+								{capitalizeColumn(currentSortColumn)}
+							</span>
+						{/key}
+						{#key sortAscending}
+							<span class="order-tag text-update">
+								{sortAscending ? 'ASC' : 'DESC'}
+							</span>
+						{/key}
 					</div>
 				</div>
 			</div>
@@ -547,9 +568,14 @@
 		font-family: 'JetBrains Mono', monospace;
 		font-weight: 700;
 		font-size: 0.85rem;
+		transition: color 0.3s ease;
 		display: flex;
 		align-items: baseline;
 		gap: 0.4rem;
+	}
+
+	.ribbon-item:hover .ribbon-value {
+		color: var(--tech-accent);
 	}
 
 	.digital-font {
@@ -578,6 +604,11 @@
 	.text-update {
 		animation: subtle-glow 0.6s cubic-bezier(0.23, 1, 0.32, 1);
 		display: inline-block;
+	}
+
+	.order-tag {
+		color: var(--tech-label);
+		font-size: 0.7rem;
 	}
 
 	@keyframes subtle-glow {

@@ -245,7 +245,7 @@
 					<span class="ribbon-label">ITEMS:</span>
 					<div class="ribbon-value">
 						{#key items.length}
-							<div class="count-context text-update" in:blur={{ duration: 400, amount: 2 }}>
+							<div class="count-context text-update">
 								<span class="digital-font">{filteredItemsList.length}</span>
 								{#if searchTermValue}
 									<span class="count-separator">/</span>
@@ -259,12 +259,12 @@
 					<span class="ribbon-label">SORTING:</span>
 					<div class="ribbon-value">
 						{#key currentSortColumn}
-							<span class="text-update" in:blur={{ duration: 400, amount: 2 }}>
+							<span class="text-update">
 								{capitalizeColumn(currentSortColumn)}
 							</span>
 						{/key}
 						{#key sortAscending}
-							<span class="order-tag text-update" in:blur={{ duration: 400, amount: 2 }}>
+							<span class="order-tag text-update">
 								{sortAscending ? 'ASC' : 'DESC'}
 							</span>
 						{/key}
