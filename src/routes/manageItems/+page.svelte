@@ -398,11 +398,24 @@
 
 			<div class="modal-body">
 				{#if editData.field === 'storageType'}
-					<select bind:value={editData.value} class="tech-input" required>
-						<option value="Dry Storage">Dry Storage</option>
-						<option value="Refrigerator">Refrigerator</option>
-						<option value="Freezer">Freezer</option>
-					</select>
+					<div class="storage-type-grid vertical">
+						{#each ['Freezer', 'Refrigerator', 'Dry Storage'] as type}
+							<label class="storage-node">
+								<input
+									type="radio"
+									name="storageTypeEdit"
+									value={type}
+									bind:group={editData.value}
+									class="hidden-radio"
+								/>
+								<div class="node-card">
+									<div class="node-indicator" style="--type-color: {type === 'Freezer' ? '#3B82F6' : type === 'Refrigerator' ? '#10B981' : '#F59E0B'}"></div>
+									<span class="node-label">{type}</span>
+									<i class="fas fa-check node-check"></i>
+								</div>
+							</label>
+						{/each}
+					</div>
 				{:else if editData.field === 'booths'}
 					<div class="booths-edit-container">
 						<div class="booths-container">
@@ -863,6 +876,73 @@
 		border-color: var(--tech-accent);
 		background: var(--tech-header-bg);
 		box-shadow: 0 0 10px var(--tech-accent-muted);
+	}
+
+	.storage-type-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.75rem;
+		width: 100%;
+	}
+
+	.storage-type-grid.vertical {
+		grid-template-columns: 1fr;
+	}
+
+	.storage-node {
+		cursor: pointer;
+	}
+
+	.hidden-radio {
+		position: absolute;
+		opacity: 0;
+	}
+
+	.storage-node .node-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.6rem 0.8rem;
+		background: var(--tech-badge-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 4px;
+		transition: all 0.2s;
+	}
+
+	.storage-node .node-indicator {
+		width: 3px;
+		height: 14px;
+		background: var(--type-color);
+		border-radius: 2px;
+	}
+
+	.storage-node .node-label {
+		font-size: 0.7rem;
+		font-weight: 800;
+		color: var(--tech-label);
+		text-transform: uppercase;
+		margin-left: 0.5rem;
+		flex: 1;
+	}
+
+	.storage-node .node-check {
+		font-size: 0.7rem;
+		color: var(--tech-accent);
+		opacity: 0;
+		transition: all 0.2s;
+	}
+
+	.hidden-radio:checked + .node-card {
+		border-color: var(--tech-accent);
+		background: var(--tech-accent-muted);
+	}
+
+	.hidden-radio:checked + .node-card .node-label {
+		color: var(--tech-value);
+	}
+
+	.hidden-radio:checked + .node-card .node-check {
+		opacity: 1;
 	}
 
 	.modal-footer {

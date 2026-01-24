@@ -101,19 +101,24 @@
 					</div>
 
 					<div class="input-group storage-group">
-						<label for="storageType" class="tech-label">Storage Type</label>
-						<div class="tech-input-wrapper">
-							<select
-								id="storageType"
-								class="tech-input"
-								bind:value={formData.storageType}
-								class:placeholder-selected={!formData.storageType}
-							>
-								<option value="" disabled>Select Storage Type...</option>
-								<option value="Freezer">Freezer</option>
-								<option value="Refrigerator">Refrigerator</option>
-								<option value="Dry Storage">Dry Storage</option>
-							</select>
+						<label class="tech-label">Storage Type</label>
+						<div class="storage-type-grid">
+							{#each ['Freezer', 'Refrigerator', 'Dry Storage'] as type}
+								<label class="storage-node">
+									<input
+										type="radio"
+										name="storageType"
+										value={type}
+										bind:group={formData.storageType}
+										class="hidden-radio"
+									/>
+									<div class="node-card">
+										<div class="node-indicator" style="--type-color: {type === 'Freezer' ? '#3B82F6' : type === 'Refrigerator' ? '#10B981' : '#F59E0B'}"></div>
+										<span class="node-label">{type}</span>
+										<i class="fas fa-check node-check"></i>
+									</div>
+								</label>
+							{/each}
 						</div>
 					</div>
 
@@ -329,11 +334,11 @@
 		margin-bottom: 2rem;
 	}
 
-	.name-group { grid-column: span 2; }
-	.storage-group { grid-column: span 1; }
-	.count-group { grid-column: span 1; }
-	.alert-group { grid-column: span 1; }
-	.cost-group { grid-column: span 1; }
+	.name-group { grid-column: span 6; }
+	.storage-group { grid-column: span 6; }
+	.count-group { grid-column: span 2; }
+	.alert-group { grid-column: span 2; }
+	.cost-group { grid-column: span 2; }
 	.booths-group { grid-column: span 6; }
 
 	.full-width {
@@ -377,6 +382,68 @@
 		border-color: var(--tech-accent);
 		background: var(--tech-header-bg);
 		box-shadow: 0 0 10px var(--tech-accent-muted);
+	}
+
+	.storage-type-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.75rem;
+	}
+
+	.storage-node {
+		cursor: pointer;
+	}
+
+	.hidden-radio {
+		position: absolute;
+		opacity: 0;
+	}
+
+	.storage-node .node-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.6rem 0.8rem;
+		background: var(--tech-badge-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 4px;
+		transition: all 0.2s;
+	}
+
+	.storage-node .node-indicator {
+		width: 3px;
+		height: 14px;
+		background: var(--type-color);
+		border-radius: 2px;
+	}
+
+	.storage-node .node-label {
+		font-size: 0.7rem;
+		font-weight: 800;
+		color: var(--tech-label);
+		text-transform: uppercase;
+		margin-left: 0.5rem;
+		flex: 1;
+	}
+
+	.storage-node .node-check {
+		font-size: 0.7rem;
+		color: var(--tech-accent);
+		opacity: 0;
+		transition: all 0.2s;
+	}
+
+	.hidden-radio:checked + .node-card {
+		border-color: var(--tech-accent);
+		background: var(--tech-accent-muted);
+	}
+
+	.hidden-radio:checked + .node-card .node-label {
+		color: var(--tech-value);
+	}
+
+	.hidden-radio:checked + .node-card .node-check {
+		opacity: 1;
 	}
 
 	.tech-input.error {
