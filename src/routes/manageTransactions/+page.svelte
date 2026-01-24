@@ -4,7 +4,7 @@
 	import Pagination from '../../components/Pagination.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { itemStore } from '../../stores/itemStore';
-	import { searchTerm, clearSearch, setSearchTerm } from '../../stores/searchStore';
+	import { getSearchStore } from '../../stores/searchStore';
 	import { notificationStore } from '../../stores/notificationStore';
 	import { applySorting } from '../../lib/items';
 	import { themeStore } from '../../stores/themes.js';
@@ -20,6 +20,9 @@
 	const paginationStore = getPaginationStore('manageTransactions');
 	const { currentPage, itemsPerPage, setTotalItems } = paginationStore;
 
+	const searchStore = getSearchStore('manageTransactions');
+	const { setSearchTerm, clearSearch } = searchStore;
+
 	// Store values as reactive state
 	let items = $state([]);
 	let searchTermValue = $state('');
@@ -32,7 +35,7 @@
 		const unsubscribeItems = itemStore.subscribe((value) => {
 			items = value;
 		});
-		const unsubscribeSearch = searchTerm.subscribe((value) => {
+		const unsubscribeSearch = searchStore.subscribe((value) => {
 			searchTermValue = value;
 		});
 		const unsubscribeNotification = notificationStore.subscribe((value) => {
@@ -306,14 +309,18 @@
 										</th>
 									</tr>
 								</thead>
-								<tbody class="table-body-transition">
+								<tbody class="table-body-transition" class:loading-fade={!itemsLoaded}>
 									{#each paginatedItemsList as item (item.id)}
 										<tr class="table-row">
 											<td class="name-col" data-label="Item Name">
 												<span class="name-text">{item.name}</span>
 											</td>
 											<td class="count-col" data-label="Count">
-												<span class="count-badge result">{item.count}</span>
+												{#key item.count}
+													<span class="count-badge result text-update" in:blur={{ duration: 400, amount: 2 }}>
+														{item.count}
+													</span>
+												{/key}
 											</td>
 											<td class="change-col" data-label="Change Amount">
 												<div class="flex justify-center">

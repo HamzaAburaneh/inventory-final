@@ -4,11 +4,12 @@
 	import Table from '../../components/Table.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
+	import { getSearchStore } from '../../stores/searchStore';
 	import { itemStore } from '../../stores/itemStore';
-	import { searchTerm, setSearchTerm, clearSearch } from '../../stores/searchStore';
 	import { notificationStore } from '../../stores/notificationStore';
-
 	import { applySorting } from '../../lib/items';
+	import { onMount } from 'svelte';
+	import { blur } from 'svelte/transition';
 
 	// UI state
 	let currentSortColumn = $state('name');
@@ -17,33 +18,54 @@
 	let isEditingInProgress = $state(false);
 	let showEditModal = $state(false);
 	let editData = $state({ id: null, field: '', value: '', title: '' });
-	let editButtonPosition = $state({ x: 0, y: 300 });
+	let editButtonPosition = $state(null);
 
-	// Pagination store (keeping store-based for now as it's shared)
+	// Pagination store
 	const paginationStore = getPaginationStore('manageItems');
 	const { currentPage, itemsPerPage, setTotalItems } = paginationStore;
 
-	// Use Svelte's $ prefix for auto-subscription - cleaner than manual subscribe/unsubscribe
-	// This automatically subscribes and unsubscribes when the component mounts/unmounts
-	const items = $derived($itemStore);
-	const searchTermValue = $derived($searchTerm);
-	const notifications = $derived($notificationStore);
+	// Search store
+	const searchStore = getSearchStore('manageItems');
+	const { setSearchTerm, clearSearch } = searchStore;
 
-	// Get the latest notification for display
-	const latestNotification = $derived(notifications?.[notifications.length - 1] || null);
+	// Store values as reactive state
+	let items = $state([]);
+	let searchTermValue = $state('');
+	let latestNotification = $state(null);
 
-	// Derived computations for filtering, sorting, pagination
-	const filteredItemsList = $derived(
-		items.filter((item) => item.name.toLowerCase().includes(searchTermValue.toLowerCase()))
-	);
+	// Subscribe to stores
+	$effect(() => {
+		const unsubscribeItems = itemStore.subscribe((value) => {
+			items = value;
+		});
+		const unsubscribeSearch = searchStore.subscribe((value) => {
+			searchTermValue = value;
+		});
+		const unsubscribeNotification = notificationStore.subscribe((value) => {
+			latestNotification = value?.[value.length - 1] || null;
+		});
 
-	const totalInventoryValue = $derived(
-		filteredItemsList.reduce((total, item) => {
+		return () => {
+			unsubscribeItems();
+			unsubscribeSearch();
+			unsubscribeNotification();
+		};
+	});
+
+	// Derived computations
+	const filteredItemsList = $derived.by(() => {
+		if (!searchTermValue) return items;
+		const lowerTerm = searchTermValue.toLowerCase();
+		return items.filter(item => item.name.toLowerCase().includes(lowerTerm));
+	});
+
+	const totalInventoryValue = $derived.by(() => {
+		return filteredItemsList.reduce((total, item) => {
 			const count = parseFloat(item.count) || 0;
 			const cost = parseFloat(item.cost) || 0;
-			return total + count * cost;
-		}, 0)
-	);
+			return total + (count * cost);
+		}, 0);
+	});
 
 	const formatCurrency = (value) => {
 		return new Intl.NumberFormat('en-CA', {
@@ -61,30 +83,25 @@
 
 	const sortedItems = $derived.by(() => {
 		if (currentSortColumn === 'totalValue') {
-			// Custom sorting for total value (count * cost)
 			return [...filteredItemsList].sort((a, b) => {
-				const aTotal = (a.count || 0) * (a.cost || 0);
-				const bTotal = (b.count || 0) * (b.cost || 0);
-				return sortAscending ? aTotal - bTotal : bTotal - aTotal;
+				const aValue = (a.count || 0) * (a.cost || 0);
+				const bValue = (b.count || 0) * (b.cost || 0);
+				return sortAscending ? aValue - bValue : bValue - aValue;
 			});
 		}
 		return applySorting(filteredItemsList, currentSortColumn, sortAscending);
 	});
 
 	const paginatedItemsList = $derived.by(() => {
-		if ($itemsPerPage === 'all') {
-			return sortedItems;
-		}
+		if ($itemsPerPage === 'all') return sortedItems;
 		const startIndex = ($currentPage - 1) * $itemsPerPage;
-		const endIndex = startIndex + $itemsPerPage;
-		return sortedItems.slice(startIndex, endIndex);
+		return sortedItems.slice(startIndex, startIndex + $itemsPerPage);
 	});
 
 	// Load items on mount
-	$effect(() => {
-		itemStore.loadItems().then(() => {
-			itemsLoaded = true;
-		});
+	onMount(async () => {
+		await itemStore.loadItems();
+		itemsLoaded = true;
 	});
 
 	const handleItemAdd = async ({ formData }) => {
@@ -292,6 +309,7 @@
 					{sortBy}
 					{currentSortColumn}
 					{sortAscending}
+					loading={!itemsLoaded}
 				/>
 			{/if}
 		</div>

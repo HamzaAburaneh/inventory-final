@@ -1,21 +1,22 @@
 <script>
-	import { 
-		formatCost, 
-		formatTotalValue, 
-		formatBooths, 
+	import { blur } from 'svelte/transition';
+	import {
 		capitalizeWords,
-		getStorageTypeStyle, 
-		getBoothStyle 
+		formatCost,
+		formatTotalValue,
+		formatBooths,
+		getStorageTypeStyle,
+		getBoothStyle
 	} from '../lib/tableUtils.js';
 
-	let { 
-		type, 
-		value, 
-		item, 
-		onEdit, 
+	let {
+		type,
+		value,
+		item,
+		onEdit,
 		onDelete,
 		onTooltipShow,
-		onTooltipHide 
+		onTooltipHide
 	} = $props();
 
 	function handleEdit(event, field, currentValue) {
@@ -50,7 +51,9 @@
 {#if type === 'name'}
 	<td class="name-col" data-label="Name">
 		<div class="cell-content">
-			<span class="name-text no-wrap">{value}</span>
+			{#key value}
+				<span class="name-text no-wrap" in:blur={{ duration: 400, amount: 2 }}>{value}</span>
+			{/key}
 			<button
 				class="action-btn edit-tiny"
 				onclick={(e) => {
@@ -69,13 +72,17 @@
 {:else if type === 'count'}
 	<td class="count-col" data-label="Count">
 		<div class="cell-content justify-center">
-			<span class="count-badge result">{value}</span>
+			{#key value}
+				<span class="count-badge result" in:blur={{ duration: 400, amount: 2 }}>{value}</span>
+			{/key}
 		</div>
 	</td>
 {:else if type === 'lowCount'}
 	<td class="lowcount-col" data-label="Low Count">
 		<div class="cell-content justify-center">
-			<span class="count-badge low-count-text">{value != null ? value : ''}</span>
+			{#key value}
+				<span class="count-badge low-count-text" in:blur={{ duration: 400, amount: 2 }}>{value != null ? value : ''}</span>
+			{/key}
 			<button
 				class="action-btn edit-tiny"
 				onclick={(e) => {
@@ -94,7 +101,9 @@
 {:else if type === 'cost'}
 	<td class="cost-col" data-label="Cost">
 		<div class="cell-content justify-center">
-			<span class="value-text no-wrap">{formatCost(value)}</span>
+			{#key value}
+				<span class="value-text no-wrap" in:blur={{ duration: 400, amount: 2 }}>{formatCost(value)}</span>
+			{/key}
 			<button
 				class="action-btn edit-tiny"
 				onclick={(e) => {
@@ -113,7 +122,11 @@
 {:else if type === 'totalValue'}
 	<td class="totalvalue-col" data-label="Total Value">
 		<div class="cell-content justify-center">
-			<span class="value-text accent no-wrap">{formatTotalValue(item.count, item.cost)}</span>
+			{#key formatTotalValue(item.count, item.cost)}
+				<span class="value-text accent no-wrap" in:blur={{ duration: 400, amount: 2 }}>
+					{formatTotalValue(item.count, item.cost)}
+				</span>
+			{/key}
 		</div>
 	</td>
 {:else if type === 'storageType'}

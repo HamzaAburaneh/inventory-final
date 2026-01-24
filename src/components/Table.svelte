@@ -10,7 +10,8 @@
 		onDelete,
 		sortBy,
 		currentSortColumn,
-		sortAscending
+		sortAscending,
+		loading = false
 	} = $props();
 
 	let hoveredButton = $state(null);
@@ -82,7 +83,7 @@
 	<div class="table-scroll">
 		<table class="tech-table">
 			<TableHeader {sortBy} {currentSortColumn} {sortAscending} />
-			<tbody class="table-body-transition">
+			<tbody class="table-body-transition" class:loading-fade={loading}>
 				{#each paginatedItems as item (item.id)}
 					{#if item.id !== deletingItemId}
 						<tr class="table-row">

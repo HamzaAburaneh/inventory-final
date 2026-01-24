@@ -15,7 +15,7 @@
 	} from 'firebase/firestore';
 	import TransactionTable from '../../components/TransactionTable.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
-	import { searchTerm, setSearchTerm, clearSearch } from '../../stores/searchStore';
+	import { getSearchStore } from '../../stores/searchStore';
 
 	// Get pre-loaded data from +page.js
 	let { data } = $props();
@@ -38,6 +38,10 @@
 	let globalTotalItems = $state(data.totalItems || 0);
 	let currentPage = $state(1);
 
+	// Search store
+	const searchStore = getSearchStore('transactionHistory');
+	const { setSearchTerm, clearSearch } = searchStore;
+
 	// Track the current search term locally for display
 	let searchTermValue = $state('');
 
@@ -48,7 +52,7 @@
 
 	// Subscribe to search store changes and fetch when it changes
 	$effect(() => {
-		const unsubscribe = searchTerm.subscribe((value) => {
+		const unsubscribe = searchStore.subscribe((value) => {
 			if (value !== searchTermValue) {
 				searchTermValue = value;
 				// Use queueMicrotask to avoid synchronous state mutation in $effect
@@ -60,7 +64,7 @@
 
 	async function fetchTransactions(direction = 'first') {
 		loading = true;
-		const currentSearchTerm = get(searchTerm);
+		const currentSearchTerm = searchTermValue;
 
 		try {
 			const transactionsRef = collection(db, 'transactions');
