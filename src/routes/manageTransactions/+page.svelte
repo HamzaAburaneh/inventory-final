@@ -709,12 +709,11 @@
 	}
 
 	.sort-icon {
-		position: absolute;
-		right: 0.5rem;
 		font-size: 0.75rem;
 		color: var(--tech-accent);
 		opacity: 0.4;
 		transition: all 0.2s;
+		margin-left: 0.5rem;
 	}
 
 	.tech-table th:hover .sort-icon {
@@ -724,6 +723,27 @@
 	/* Force center alignment for these columns */
 	.count-col, .change-col, .actions-col {
 		text-align: center;
+	}
+
+	/* Fixed column widths to prevent layout shift */
+	.name-col {
+		width: 40%;
+		min-width: 200px;
+	}
+
+	.count-col {
+		width: 15%;
+		min-width: 120px;
+	}
+
+	.change-col {
+		width: 20%;
+		min-width: 150px;
+	}
+
+	.actions-col {
+		width: 25%;
+		min-width: 180px;
 	}
 
 	.table-row {

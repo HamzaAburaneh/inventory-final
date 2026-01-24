@@ -86,6 +86,7 @@
 		color: var(--tech-accent);
 		opacity: 0.4;
 		transition: all 0.2s;
+		margin-left: 0.5rem;
 	}
 
 	.table-header th:hover .sort-icon {

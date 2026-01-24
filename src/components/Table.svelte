@@ -219,6 +219,47 @@
 		background: var(--tech-row-hover);
 	}
 
+	/* Fixed column widths to prevent layout shift */
+	:global(.tech-table .name-col) {
+		width: 18%;
+		min-width: 150px;
+	}
+
+	:global(.tech-table .count-col) {
+		width: 10%;
+		min-width: 100px;
+	}
+
+	:global(.tech-table .lowCount-col) {
+		width: 10%;
+		min-width: 100px;
+	}
+
+	:global(.tech-table .cost-col) {
+		width: 10%;
+		min-width: 100px;
+	}
+
+	:global(.tech-table .totalValue-col) {
+		width: 12%;
+		min-width: 120px;
+	}
+
+	:global(.tech-table .storageType-col) {
+		width: 14%;
+		min-width: 130px;
+	}
+
+	:global(.tech-table .booths-col) {
+		width: 16%;
+		min-width: 140px;
+	}
+
+	:global(.tech-table .action-col) {
+		width: 10%;
+		min-width: 100px;
+	}
+
 	@media (max-width: 768px) {
 		.tech-table thead {
 			display: none;
