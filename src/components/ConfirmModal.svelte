@@ -92,12 +92,12 @@
 
 	.confirm-modal {
 		position: relative;
-		background: #0d0d0d;
-		border: 1px solid #1a1a1a;
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
 		border-radius: 4px;
 		width: 90%;
 		max-width: 400px;
-		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+		box-shadow: var(--tech-glass-shadow);
 		pointer-events: auto;
 		overflow: hidden;
 	}
@@ -107,14 +107,14 @@
 		align-items: center;
 		gap: 12px;
 		padding: 16px 20px;
-		border-bottom: 1px solid #1a1a1a;
+		border-bottom: 1px solid var(--tech-glass-border);
 	}
 
 	.header-icon {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: #eab308;
+		color: var(--tech-accent);
 		font-size: 1.1rem;
 		flex-shrink: 0;
 	}
@@ -125,7 +125,7 @@
 
 	.modal-title {
 		margin: 0;
-		color: #e5e7eb;
+		color: var(--tech-title);
 		font-size: 1.1rem;
 		font-weight: 700;
 		text-transform: uppercase;
@@ -138,13 +138,13 @@
 
 	.modal-message {
 		margin: 0;
-		color: #9ca3af;
+		color: var(--tech-cell-text);
 		font-size: 0.95rem;
 		line-height: 1.5;
 	}
 
 	.modal-message :global(strong) {
-		color: #eab308;
+		color: var(--tech-accent);
 		font-weight: 700;
 	}
 
@@ -153,8 +153,8 @@
 		justify-content: flex-end;
 		gap: 8px;
 		padding: 12px 20px;
-		background: #080808;
-		border-top: 1px solid #1a1a1a;
+		background: var(--tech-header-bg);
+		border-top: 1px solid var(--tech-glass-border);
 	}
 
 	.modal-footer.centered {
@@ -175,34 +175,34 @@
 	}
 
 	.modal-btn:focus-visible {
-		box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.4);
+		box-shadow: 0 0 0 2px var(--tech-accent-muted);
 	}
 
 	.cancel-btn {
 		background: transparent;
-		border: 1px solid #262626;
-		color: #737373;
+		border: 1px solid var(--tech-badge-border);
+		color: var(--tech-label);
 	}
 
 	.cancel-btn:hover {
-		border-color: #404040;
-		color: #a3a3a3;
+		border-color: var(--tech-label);
+		color: var(--tech-value);
 	}
 
 	.cancel-btn:focus-visible {
-		border-color: #404040;
-		box-shadow: 0 0 0 2px rgba(115, 115, 115, 0.3);
+		border-color: var(--tech-label);
+		box-shadow: 0 0 0 2px var(--tech-accent-muted);
 	}
 
 	.confirm-btn {
-		background: #171717;
-		border: 1px solid #eab308;
-		color: #eab308;
+		background: var(--tech-badge-bg);
+		border: 1px solid var(--tech-accent);
+		color: var(--tech-accent);
 	}
 
 	.confirm-btn:hover {
-		background: #eab308;
-		color: #000000;
+		background: var(--tech-accent);
+		color: #ffffff;
 	}
 
 	.confirm-btn.danger {

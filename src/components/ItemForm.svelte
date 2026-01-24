@@ -203,7 +203,7 @@
 					<div style="color: #ef4444; margin-top: 0.1rem;"><i class="fas fa-tag"></i></div>
 					<div style="display: flex; flex-direction: column; gap: 0.25rem;">
 						<span style="color: #ef4444; font-weight: 800; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;">Item Name</span>
-						<span style="color: #9ca3af; font-size: 0.85rem;">This field is required to identify the item.</span>
+						<span style="color: var(--tech-label); font-size: 0.85rem;">This field is required to identify the item.</span>
 					</div>
 				</div>
 			` : ''}
@@ -212,12 +212,12 @@
 					<div style="color: #ef4444; margin-top: 0.1rem;"><i class="fas fa-warehouse"></i></div>
 					<div style="display: flex; flex-direction: column; gap: 0.25rem;">
 						<span style="color: #ef4444; font-weight: 800; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;">Storage Type</span>
-						<span style="color: #9ca3af; font-size: 0.85rem;">Please select where this item will be stored.</span>
+						<span style="color: var(--tech-label); font-size: 0.85rem;">Please select where this item will be stored.</span>
 					</div>
 				</div>
 			` : ''}
 		</div>
-		<p style="margin: 0; color: #6b7280; font-size: 0.75rem; font-style: italic; text-align: center;">All highlighted fields must be completed before proceeding.</p>
+		<p style="margin: 0; color: var(--tech-label); font-size: 0.75rem; font-style: italic; text-align: center;">All highlighted fields must be completed before proceeding.</p>
 	</div>`}
 	type="warning"
 	confirmText="Understood"
