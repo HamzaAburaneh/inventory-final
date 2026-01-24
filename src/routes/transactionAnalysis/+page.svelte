@@ -22,12 +22,12 @@
 		getSummaryStats
 	} from '../../lib/transactionAnalysis';
 	import { notificationStore } from '../../stores/notificationStore';
+	import { onMount } from 'svelte';
 
 	// Get pre-loaded data from +page.js
 	let { data } = $props();
 
-	// Register Chart.js components at module level (not in $effect)
-	// Only register what we actually use for better tree-shaking
+	// Register Chart.js components
 	Chart.register(
 		LineController,
 		BarController,
@@ -45,21 +45,22 @@
 
 	// Constants
 	const CHART_COLORS = {
-		stockIn: '#4CAF50',
-		stockOut: '#F44336',
-		netChange: '#2196F3',
-		activity: '#9C27B0',
-		cne: '#FF6B35'
+		stockIn: '#22c55e',
+		stockOut: '#ef4444',
+		netChange: '#3b82f6',
+		activity: '#a855f7',
+		cne: '#f59e0b'
 	};
 
 	const CNE_DATES = {
 		2022: { start: new Date(2022, 7, 19), end: new Date(2022, 8, 5, 23, 59, 59) },
 		2023: { start: new Date(2023, 7, 18), end: new Date(2023, 8, 4, 23, 59, 59) },
 		2024: { start: new Date(2024, 7, 16), end: new Date(2024, 8, 2, 23, 59, 59) },
-		2025: { start: new Date(2025, 7, 13), end: new Date(2025, 8, 1, 23, 59, 59) }
+		2025: { start: new Date(2025, 7, 13), end: new Date(2025, 8, 1, 23, 59, 59) },
+		2026: { start: new Date(2026, 7, 21), end: new Date(2026, 8, 7, 23, 59, 59) }
 	};
 
-	// State variables - initialize with pre-loaded data
+	// State variables
 	let loading = $state(false);
 	let dateRange = $state(
 		data.dateRange || {
@@ -73,8 +74,7 @@
 	let summaryStats = $state(data.summaryStats || null);
 	let activeFilter = $state(30);
 
-	// Chart instances - using plain 'let' instead of $state
-	// Chart.js instances are mutable objects that shouldn't trigger reactivity
+	// Chart instances
 	let dailyTrendChart = null;
 	let hourlyHeatmapChart = null;
 	let topMoversChart = null;
@@ -182,21 +182,24 @@
 						data: dailyAnalysis.map((d) => d.totalAdded),
 						borderColor: CHART_COLORS.stockIn,
 						backgroundColor: `${CHART_COLORS.stockIn}1A`,
-						tension: 0.1
+						tension: 0.3,
+						fill: true
 					},
 					{
 						label: 'Stock Out',
 						data: dailyAnalysis.map((d) => d.totalRemoved),
 						borderColor: CHART_COLORS.stockOut,
 						backgroundColor: `${CHART_COLORS.stockOut}1A`,
-						tension: 0.1
+						tension: 0.3,
+						fill: true
 					},
 					{
 						label: 'Net Change',
 						data: dailyAnalysis.map((d) => d.netChange),
 						borderColor: CHART_COLORS.netChange,
 						backgroundColor: `${CHART_COLORS.netChange}1A`,
-						tension: 0.1
+						tension: 0.3,
+						fill: true
 					}
 				]
 			},
@@ -204,21 +207,21 @@
 				responsive: true,
 				maintainAspectRatio: false,
 				plugins: {
-					title: {
-						display: true,
-						text: 'Daily Transaction Trends'
-					},
+					title: { display: false },
 					legend: {
-						position: 'top'
+						position: 'top',
+						labels: { color: '#8b949e', font: { family: 'JetBrains Mono' } }
 					}
 				},
 				scales: {
 					y: {
 						beginAtZero: true,
-						title: {
-							display: true,
-							text: 'Quantity'
-						}
+						grid: { color: 'rgba(139, 148, 158, 0.1)' },
+						ticks: { color: '#8b949e' }
+					},
+					x: {
+						grid: { display: false },
+						ticks: { color: '#8b949e' }
 					}
 				}
 			}
@@ -231,8 +234,6 @@
 
 		hourlyHeatmapChart = destroyChart(hourlyHeatmapChart);
 
-		const maxCount = Math.max(...hourlyActivity.map((h) => h.transactionCount));
-
 		hourlyHeatmapChart = new Chart(ctx.getContext('2d'), {
 			type: 'bar',
 			data: {
@@ -241,12 +242,8 @@
 					{
 						label: 'Transactions',
 						data: hourlyActivity.map((h) => h.transactionCount),
-						backgroundColor: hourlyActivity.map((h) => {
-							const intensity = h.transactionCount / maxCount;
-							return `${CHART_COLORS.netChange}${Math.round((0.2 + intensity * 0.8) * 255)
-								.toString(16)
-								.padStart(2, '0')}`;
-						})
+						backgroundColor: CHART_COLORS.netChange,
+						borderRadius: 4
 					}
 				]
 			},
@@ -254,21 +251,18 @@
 				responsive: true,
 				maintainAspectRatio: false,
 				plugins: {
-					title: {
-						display: true,
-						text: `Hourly Activity Pattern (${formatDateRange()})`
-					},
-					legend: {
-						display: false
-					}
+					title: { display: false },
+					legend: { display: false }
 				},
 				scales: {
 					y: {
 						beginAtZero: true,
-						title: {
-							display: true,
-							text: 'Number of Transactions'
-						}
+						grid: { color: 'rgba(139, 148, 158, 0.1)' },
+						ticks: { color: '#8b949e' }
+					},
+					x: {
+						grid: { display: false },
+						ticks: { color: '#8b949e' }
 					}
 				}
 			}
@@ -289,7 +283,8 @@
 					{
 						label: 'Total Transactions',
 						data: topMovers.map((m) => m.totalTransactions),
-						backgroundColor: CHART_COLORS.activity
+						backgroundColor: CHART_COLORS.activity,
+						borderRadius: 4
 					}
 				]
 			},
@@ -298,18 +293,18 @@
 				maintainAspectRatio: false,
 				indexAxis: 'y',
 				plugins: {
-					title: {
-						display: true,
-						text: `Top 10 Most Active Items (${formatDateRange()})`
-					}
+					title: { display: false },
+					legend: { display: false }
 				},
 				scales: {
 					x: {
 						beginAtZero: true,
-						title: {
-							display: true,
-							text: 'Number of Transactions'
-						}
+						grid: { color: 'rgba(139, 148, 158, 0.1)' },
+						ticks: { color: '#8b949e' }
+					},
+					y: {
+						grid: { display: false },
+						ticks: { color: '#8b949e' }
 					}
 				}
 			}
@@ -331,17 +326,20 @@
 				datasets: [
 					{
 						data: [summaryStats.totalAdded, summaryStats.totalRemoved],
-						backgroundColor: [CHART_COLORS.stockIn, CHART_COLORS.stockOut]
+						backgroundColor: [CHART_COLORS.stockIn, CHART_COLORS.stockOut],
+						borderWidth: 0
 					}
 				]
 			},
 			options: {
 				responsive: true,
 				maintainAspectRatio: false,
+				cutout: '70%',
 				plugins: {
-					title: {
-						display: true,
-						text: 'Transaction Type Distribution'
+					title: { display: false },
+					legend: {
+						position: 'bottom',
+						labels: { color: '#8b949e', font: { family: 'JetBrains Mono' } }
 					}
 				}
 			}
@@ -436,9 +434,8 @@
 		notificationStore.showNotification('Analysis exported successfully', 'success');
 	}
 
-	// Effects - Initialize charts with pre-loaded data
+	// Effects
 	$effect(() => {
-		// Charts need DOM to be ready, so use a small delay
 		const timer = setTimeout(() => {
 			if (dailyAnalysis.length > 0 || summaryStats) {
 				updateCharts();
@@ -472,194 +469,153 @@
 		}
 
 		window.addEventListener('resize', handleResize);
-		window.addEventListener('orientationchange', handleResize);
-
 		return () => {
 			window.removeEventListener('resize', handleResize);
-			window.removeEventListener('orientationchange', handleResize);
 			clearTimeout(resizeTimer);
 		};
 	});
 </script>
 
 <svelte:head>
-	<title>Transaction Analysis - StockSense</title>
+	<title>Transaction Analysis</title>
 </svelte:head>
 
-<div class="analysis-page">
-	<!-- Summary Cards -->
-	<div class="summary-section">
-		<h1 class="text-3xl font-bold mb-6"></h1>
+<div class="page-viewport-wrapper">
+	<div class="glow-layer"></div>
+	<div class="content-container">
+		<header class="page-header">
+			<div class="title-group">
+				<h1 class="main-title">Transaction Analysis</h1>
+				<div class="system-status">
+					<span class="status-dot"></span>
+					<span class="status-text">SYSTEM SECURE</span>
+				</div>
+			</div>
+			<div class="header-actions">
+				<button onclick={exportToCSV} class="export-btn">
+					<i class="fas fa-download"></i>
+					<span>EXPORT DATA</span>
+				</button>
+			</div>
+		</header>
+
+		<div class="ledger-actions">
+			<div class="filter-ribbon">
+				<div class="ribbon-group">
+					<span class="ribbon-label">QUICK RANGE:</span>
+					<div class="ribbon-options">
+						<button onclick={() => setQuickRange(0)} class="ribbon-btn" class:active={activeFilter === 0}>TODAY</button>
+						<button onclick={() => setQuickRange(1)} class="ribbon-btn" class:active={activeFilter === 1}>YESTERDAY</button>
+						<button onclick={() => setQuickRange(3)} class="ribbon-btn" class:active={activeFilter === 3}>3D</button>
+						<button onclick={() => setQuickRange(7)} class="ribbon-btn" class:active={activeFilter === 7}>7D</button>
+						<button onclick={() => setQuickRange(14)} class="ribbon-btn" class:active={activeFilter === 14}>14D</button>
+						<button onclick={() => setQuickRange(21)} class="ribbon-btn" class:active={activeFilter === 21}>21D</button>
+						<button onclick={() => setQuickRange(30)} class="ribbon-btn" class:active={activeFilter === 30}>30D</button>
+					</div>
+				</div>
+				<div class="ribbon-group">
+					<span class="ribbon-label">CNE PERIODS:</span>
+					<div class="ribbon-options">
+						<button onclick={() => setCNERange(2022)} class="ribbon-btn" class:active={activeFilter === 'cne2022'}>2022</button>
+						<button onclick={() => setCNERange(2023)} class="ribbon-btn" class:active={activeFilter === 'cne2023'}>2023</button>
+						<button onclick={() => setCNERange(2024)} class="ribbon-btn" class:active={activeFilter === 'cne2024'}>2024</button>
+						<button onclick={() => setCNERange(2025)} class="ribbon-btn" class:active={activeFilter === 'cne2025'}>2025</button>
+						<button onclick={() => setCNERange(2026)} class="ribbon-btn" class:active={activeFilter === 'cne2026'}>2026</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="date-picker-primary">
+				<div class="date-input-group">
+					<input type="date" value={startDateStr} onchange={(e) => handleDateChange('start', e.target.value)} class="tech-date-input" />
+					<span class="date-separator">TO</span>
+					<input type="date" value={endDateStr} onchange={(e) => handleDateChange('end', e.target.value)} class="tech-date-input" />
+				</div>
+			</div>
+		</div>
 
 		{#if summaryStats}
 			<div class="summary-grid">
 				<div class="summary-card">
-					<i class="fas fa-exchange-alt"></i>
-					<h3>Total Transactions</h3>
-					<p>{summaryStats.totalTransactions.toLocaleString()}</p>
+					<span class="card-label">TOTAL TRANSACTIONS</span>
+					<span class="card-value digital-font">{summaryStats.totalTransactions.toLocaleString()}</span>
+					<div class="card-footer">
+						<i class="fas fa-exchange-alt"></i>
+						<span>SYSTEM_LOGS</span>
+					</div>
 				</div>
 				<div class="summary-card positive">
-					<i class="fas fa-plus-circle"></i>
-					<h3>Stock In</h3>
-					<p>+{summaryStats.totalAdded.toLocaleString()}</p>
-					<small>Total units added</small>
+					<span class="card-label">STOCK IN</span>
+					<span class="card-value digital-font">+{summaryStats.totalAdded.toLocaleString()}</span>
+					<div class="card-footer">
+						<i class="fas fa-plus-circle"></i>
+						<span>UNITS_ADDED</span>
+					</div>
 				</div>
 				<div class="summary-card negative">
-					<i class="fas fa-minus-circle"></i>
-					<h3>Stock Out</h3>
-					<p>-{summaryStats.totalRemoved.toLocaleString()}</p>
-					<small>Total units removed</small>
+					<span class="card-label">STOCK OUT</span>
+					<span class="card-value digital-font">-{summaryStats.totalRemoved.toLocaleString()}</span>
+					<div class="card-footer">
+						<i class="fas fa-minus-circle"></i>
+						<span>UNITS_REMOVED</span>
+					</div>
 				</div>
-				<div class="summary-card {summaryStats.netChange >= 0 ? 'positive' : 'negative'}">
-					<i class="fas fa-balance-scale"></i>
-					<h3>Net Change</h3>
-					<p>{summaryStats.netChange >= 0 ? '+' : ''}{summaryStats.netChange.toLocaleString()}</p>
-				</div>
-				<div class="summary-card">
-					<i class="fas fa-boxes"></i>
-					<h3>Active Items</h3>
-					<p>{summaryStats.uniqueItems.toLocaleString()}</p>
-					<small>Items with transactions in period</small>
-				</div>
-				<div class="summary-card inactive">
-					<i class="fas fa-archive"></i>
-					<h3>Inactive Items</h3>
-					<p>{summaryStats.inactiveItems.toLocaleString()}</p>
-					<small>Items with no transactions in period</small>
-				</div>
-				<div class="summary-card new-items">
-					<i class="fas fa-plus-square"></i>
-					<h3>New Items Created</h3>
-					<p>{summaryStats.newItemsCreated.toLocaleString()}</p>
-					<small>Items added to inventory</small>
-				</div>
-				<div class="summary-card deleted-items">
-					<i class="fas fa-trash"></i>
-					<h3>Items Deleted</h3>
-					<p>{summaryStats.itemsDeleted.toLocaleString()}</p>
-					<small>Items removed from inventory</small>
+				<div class="summary-card" class:positive={summaryStats.netChange >= 0} class:negative={summaryStats.netChange < 0}>
+					<span class="card-label">NET CHANGE</span>
+					<span class="card-value digital-font">{summaryStats.netChange >= 0 ? '+' : ''}{summaryStats.netChange.toLocaleString()}</span>
+					<div class="card-footer">
+						<i class="fas fa-balance-scale"></i>
+						<span>PERIOD_DELTA</span>
+					</div>
 				</div>
 			</div>
 		{/if}
-	</div>
 
-	<!-- Date Range Controls -->
-	<div class="controls-section">
-		<div class="date-controls">
-			<div class="date-inputs">
-				<label>
-					Start Date:
-					<input
-						type="date"
-						value={startDateStr}
-						max={endDateStr}
-						onchange={(e) => handleDateChange('start', e.target.value)}
-					/>
-				</label>
-				<label>
-					End Date:
-					<input
-						type="date"
-						value={endDateStr}
-						min={startDateStr}
-						max={new Date().toISOString().split('T')[0]}
-						onchange={(e) => handleDateChange('end', e.target.value)}
-					/>
-				</label>
-			</div>
-			<div class="quick-ranges">
-				<button onclick={() => setQuickRange(0)} class="quick-btn" class:active={activeFilter === 0}
-					>Today</button
-				>
-				<button onclick={() => setQuickRange(1)} class="quick-btn" class:active={activeFilter === 1}
-					>Yesterday</button
-				>
-				<button onclick={() => setQuickRange(3)} class="quick-btn" class:active={activeFilter === 3}
-					>Last 3 Days</button
-				>
-				<button onclick={() => setQuickRange(7)} class="quick-btn" class:active={activeFilter === 7}
-					>Last 7 Days</button
-				>
-				<button
-					onclick={() => setQuickRange(14)}
-					class="quick-btn"
-					class:active={activeFilter === 14}>Last 14 Days</button
-				>
-				<button
-					onclick={() => setQuickRange(21)}
-					class="quick-btn"
-					class:active={activeFilter === 21}>Last 21 Days</button
-				>
-				<button
-					onclick={() => setQuickRange(30)}
-					class="quick-btn"
-					class:active={activeFilter === 30}>Last 30 Days</button
-				>
-			</div>
-			<div class="cne-ranges">
-				<span class="filter-label">CNE Periods:</span>
-				<button
-					onclick={() => setCNERange(2022)}
-					class="quick-btn cne-btn"
-					class:active={activeFilter === 'cne2022'}>CNE 2022</button
-				>
-				<button
-					onclick={() => setCNERange(2023)}
-					class="quick-btn cne-btn"
-					class:active={activeFilter === 'cne2023'}>CNE 2023</button
-				>
-				<button
-					onclick={() => setCNERange(2024)}
-					class="quick-btn cne-btn"
-					class:active={activeFilter === 'cne2024'}>CNE 2024</button
-				>
-				<button
-					onclick={() => setCNERange(2025)}
-					class="quick-btn cne-btn"
-					class:active={activeFilter === 'cne2025'}>CNE 2025</button
-				>
-			</div>
-			<button onclick={exportToCSV} class="export-btn">
-				<i class="fas fa-download mr-2"></i>
-				Export CSV
-			</button>
-		</div>
-	</div>
-
-	<!-- Charts Section -->
-	{#if loading}
-		<div class="loading-container">
-			<div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
-			<p class="mt-4">Loading analysis data...</p>
-		</div>
-	{:else}
-		<div class="charts-grid">
-			<!-- Daily Trend Chart -->
-			<div class="chart-container full-width">
-				<canvas id="dailyTrendChart"></canvas>
+		<div class="charts-layout">
+			<div class="chart-frame full-width">
+				<div class="frame-header">
+					<span class="frame-title">DAILY TRANSACTION TRENDS</span>
+					<div class="frame-status"><span class="dot"></span> LIVE_FEED</div>
+				</div>
+				<div class="chart-wrapper">
+					<canvas id="dailyTrendChart"></canvas>
+				</div>
 			</div>
 
-			<!-- Hourly Activity Pattern -->
-			<div class="chart-container">
-				<canvas id="hourlyHeatmapChart"></canvas>
+			<div class="chart-frame">
+				<div class="frame-header">
+					<span class="frame-title">HOURLY ACTIVITY PATTERN</span>
+				</div>
+				<div class="chart-wrapper">
+					<canvas id="hourlyHeatmapChart"></canvas>
+				</div>
 			</div>
 
-			<!-- Transaction Type Distribution -->
-			<div class="chart-container">
-				<canvas id="transactionTypeChart"></canvas>
+			<div class="chart-frame">
+				<div class="frame-header">
+					<span class="frame-title">TYPE DISTRIBUTION</span>
+				</div>
+				<div class="chart-wrapper">
+					<canvas id="transactionTypeChart"></canvas>
+				</div>
 			</div>
 
-			<!-- Top Movers -->
-			<div class="chart-container full-width">
-				<canvas id="topMoversChart"></canvas>
+			<div class="chart-frame full-width">
+				<div class="frame-header">
+					<span class="frame-title">TOP 10 MOST ACTIVE ITEMS</span>
+				</div>
+				<div class="chart-wrapper">
+					<canvas id="topMoversChart"></canvas>
+				</div>
 			</div>
 		</div>
 
-		<!-- Top Movers Table -->
-		<div class="table-section">
-			<h2 class="text-2xl font-bold mb-4">Top Moving Items Details</h2>
-			<div class="table-wrapper">
-				<table class="data-table">
+		<div class="table-frame">
+			<div class="frame-header">
+				<span class="frame-title">TOP MOVING ITEMS DETAILS</span>
+			</div>
+			<div class="table-scroll">
+				<table class="tech-table">
 					<thead>
 						<tr>
 							<th>Item Name</th>
@@ -672,502 +628,447 @@
 					</thead>
 					<tbody>
 						{#each topMovers as mover (mover.itemName)}
-							<tr>
-								<td>{mover.itemName}</td>
-								<td>{mover.totalTransactions}</td>
-								<td class="positive">+{mover.totalAdded}</td>
-								<td class="negative">-{mover.totalRemoved}</td>
-								<td class={mover.netChange >= 0 ? 'positive' : 'negative'}>
-									{mover.netChange >= 0 ? '+' : ''}{mover.netChange}
+							<tr class="table-row">
+								<td class="name-text">{mover.itemName}</td>
+								<td class="digital-font">
+									<span class="count-badge">{mover.totalTransactions}</span>
 								</td>
-								<td>{mover.volatility}</td>
+								<td class="digital-font">
+									<span class="trend-tag positive">+{mover.totalAdded}</span>
+								</td>
+								<td class="digital-font">
+									<span class="trend-tag negative">-{mover.totalRemoved}</span>
+								</td>
+								<td class="digital-font">
+									<span class="trend-tag" class:positive={mover.netChange >= 0} class:negative={mover.netChange < 0}>
+										{mover.netChange >= 0 ? '+' : ''}{mover.netChange}
+									</span>
+								</td>
+								<td class="digital-font">
+									<span class="volatility-tag">{mover.volatility}</span>
+								</td>
 							</tr>
 						{/each}
 					</tbody>
 				</table>
 			</div>
 		</div>
-	{/if}
+	</div>
 </div>
 
 <style>
-	.analysis-page {
-		padding: 2rem;
-		max-width: 1400px;
-		margin: 0 auto;
-		width: 100%;
+	:global(body) {
+		background-color: var(--tech-bg-end) !important;
+		background-image: radial-gradient(circle at 50% -10%, var(--tech-bg-start) 0%, var(--tech-bg-end) 100%) !important;
+		background-attachment: fixed !important;
+		margin: 0;
+		padding: 0;
 		overflow-x: hidden;
 	}
 
-	.summary-section {
-		background-color: var(--container-bg);
-		border-radius: 1rem;
-		padding: 2rem;
-		margin-bottom: 2rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	.page-viewport-wrapper {
+		position: relative;
+		min-height: 100vh;
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+	}
+
+	.glow-layer {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100vh;
+		background: radial-gradient(circle at 50% 0%, var(--tech-accent-muted) 0%, transparent 50%);
+		pointer-events: none;
+		z-index: 0;
+	}
+
+	.content-container {
+		position: relative;
+		z-index: 2;
+		max-width: 1400px;
+		margin: 0 auto;
+		width: 100%;
+		padding: 3rem 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
+	}
+
+	.page-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		flex-wrap: wrap;
+		gap: 2rem;
+	}
+
+	.main-title {
+		font-size: 2.5rem;
+		font-weight: 800;
+		color: var(--tech-title);
+		margin: 0;
+		letter-spacing: -0.05em;
+		text-transform: uppercase;
+		line-height: 1;
+	}
+
+	.system-status {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		margin-top: 0.8rem;
+		opacity: 0.8;
+	}
+
+	.status-dot {
+		width: 6px;
+		height: 6px;
+		background: var(--tech-accent);
+		border-radius: 50%;
+		box-shadow: 0 0 10px var(--tech-accent-muted);
+		animation: pulse-soft 3s ease-in-out infinite;
+	}
+
+	@keyframes pulse-soft {
+		0%, 100% { opacity: 0.4; transform: scale(0.9); }
+		50% { opacity: 1; transform: scale(1.1); }
+	}
+
+	.status-text {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.6rem;
+		color: var(--tech-status-text);
+		letter-spacing: 0.2em;
+		font-weight: 800;
+	}
+
+	.export-btn {
+		background: var(--tech-badge-bg);
+		border: 1px solid var(--tech-badge-border);
+		color: var(--tech-accent);
+		padding: 0.75rem 1.5rem;
+		font-family: 'JetBrains Mono', monospace;
+		font-weight: 800;
+		font-size: 0.7rem;
+		letter-spacing: 0.1em;
+		border-radius: 4px;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		cursor: pointer;
+		transition: all 0.3s;
+	}
+
+	.export-btn:hover {
+		background: var(--tech-accent);
+		color: white;
+		transform: translateY(-2px);
+		box-shadow: 0 5px 15px var(--tech-accent-muted);
+	}
+
+	.ledger-actions {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 2rem;
+		background: var(--tech-glass-bg);
+		padding: 1.5rem;
+		border-radius: 12px;
+		border: 1px solid var(--tech-glass-border);
+	}
+
+	.filter-ribbon {
+		display: flex;
+		gap: 2.5rem;
+		flex-wrap: wrap;
+	}
+
+	.ribbon-group {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.ribbon-label {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.65rem;
+		font-weight: 800;
+		color: var(--tech-label);
+		letter-spacing: 0.05em;
+	}
+
+	.ribbon-options {
+		display: flex;
+		gap: 0.4rem;
+	}
+
+	.ribbon-btn {
+		background: var(--tech-badge-bg);
+		border: 1px solid var(--tech-badge-border);
+		color: var(--tech-label);
+		padding: 0.35rem 0.75rem;
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.65rem;
+		font-weight: 700;
+		border-radius: 4px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.ribbon-btn:hover {
+		border-color: var(--tech-accent);
+		color: var(--tech-accent);
+	}
+
+	.ribbon-btn.active {
+		background: var(--tech-accent-muted);
+		border-color: var(--tech-accent);
+		color: var(--tech-accent);
+		box-shadow: 0 0 10px var(--tech-accent-muted);
+	}
+
+	.date-input-group {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		background: var(--tech-badge-bg);
+		padding: 0.5rem 1rem;
+		border-radius: 6px;
+		border: 1px solid var(--tech-badge-border);
+	}
+
+	.tech-date-input {
+		background: transparent;
+		border: none;
+		color: var(--tech-value);
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.75rem;
+		font-weight: 700;
+		outline: none;
+		cursor: pointer;
+	}
+
+	.date-separator {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.6rem;
+		font-weight: 800;
+		color: var(--tech-label);
+		opacity: 0.5;
 	}
 
 	.summary-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(150px, 45%), 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 		gap: 1.5rem;
-		margin-top: 1.5rem;
 	}
 
 	.summary-card {
-		background-color: var(--background-color);
-		border-radius: 0.5rem;
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 12px;
 		padding: 1.5rem;
-		text-align: center;
-		transition: transform 0.3s ease;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
 	.summary-card:hover {
-		transform: translateY(-5px);
+		transform: translateY(-4px);
+		border-color: var(--tech-accent-muted);
+		box-shadow: var(--tech-glass-shadow);
 	}
 
-	.summary-card i {
+	.card-label {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.65rem;
+		font-weight: 800;
+		color: var(--tech-label);
+		letter-spacing: 0.1em;
+	}
+
+	.card-value {
 		font-size: 2rem;
-		margin-bottom: 0.5rem;
-		display: block;
+		font-weight: 800;
+		color: var(--tech-value);
 	}
 
-	.summary-card h3 {
-		font-size: 0.9rem;
-		font-weight: 500;
-		margin-bottom: 0.5rem;
-		color: var(--text-color-dimmed);
-	}
-
-	.summary-card p {
-		font-size: 1.5rem;
-		font-weight: 700;
-		margin-bottom: 0.25rem;
-	}
-
-	.summary-card small {
-		font-size: 0.75rem;
-		color: var(--text-color-dimmed);
-		font-weight: 400;
-	}
-
-	.summary-card.positive {
-		color: #4caf50;
-	}
-
-	.summary-card.negative {
-		color: #f44336;
-	}
-
-	.summary-card.inactive {
-		color: #ff9800;
-	}
-
-	.summary-card.new-items {
-		color: #2196f3;
-	}
-
-	.summary-card.deleted-items {
-		color: #9c27b0;
-	}
-
-	.controls-section {
-		background-color: var(--container-bg);
-		border-radius: 1rem;
-		padding: 1.5rem;
-		margin-bottom: 2rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-	}
-
-	.date-controls {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 1rem;
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	.date-inputs {
-		display: flex;
-		gap: 1rem;
-		flex-wrap: wrap;
-	}
-
-	.date-inputs label {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-		font-size: 0.9rem;
-	}
-
-	.date-inputs input {
-		padding: 0.5rem;
-		border: 1px solid var(--table-border-color);
-		border-radius: 0.25rem;
-		background-color: var(--background-color);
-		color: var(--text-color);
-	}
-
-	.quick-ranges {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-	}
-
-	.cne-ranges {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-		align-items: center;
-		margin-top: 0.75rem;
-		padding-top: 0.75rem;
-		border-top: 1px solid var(--table-border-color);
-	}
-
-	.filter-label {
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--text-color-dimmed);
-		margin-right: 0.5rem;
-	}
-
-	.quick-btn {
-		padding: 0.4rem 0.8rem;
-		border: 1px solid var(--table-border-color);
-		border-radius: 0.25rem;
-		background-color: var(--background-color);
-		color: var(--text-color);
-		cursor: pointer;
-		transition: all 0.3s ease;
-		font-size: 0.875rem;
-		white-space: nowrap;
-	}
-
-	.quick-btn:hover {
-		background-color: var(--primary-color);
-		color: white;
-		border-color: var(--primary-color);
-	}
-
-	.quick-btn.active {
-		background-color: var(--primary-color);
-		color: white;
-		border-color: var(--primary-color);
-		font-weight: 600;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-		transform: translateY(-1px);
-	}
-
-	.cne-btn {
-		background-color: #ff6b35;
-		border-color: #ff6b35;
-		color: white;
-	}
-
-	.cne-btn:hover {
-		background-color: #e55a2b;
-		border-color: #e55a2b;
-	}
-
-	.cne-btn.active {
-		background-color: #d14a1f;
-		border-color: #d14a1f;
-		box-shadow: 0 2px 4px rgba(255, 107, 53, 0.4);
-	}
-
-	.export-btn {
-		padding: 0.5rem 1.5rem;
-		background-color: var(--primary-color);
-		color: white;
-		border: none;
-		border-radius: 0.25rem;
-		cursor: pointer;
-		transition: all 0.3s ease;
+	.card-footer {
+		margin-top: 0.5rem;
 		display: flex;
 		align-items: center;
+		gap: 0.6rem;
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.6rem;
+		font-weight: 800;
+		color: var(--tech-label);
+		opacity: 0.6;
 	}
 
-	.export-btn:hover {
-		background-color: var(--primary-hover-color);
-		transform: translateY(-2px);
+	.summary-card.positive .card-value { color: #22c55e; }
+	.summary-card.negative .card-value { color: #ef4444; }
+
+	.digital-font {
+		font-family: 'JetBrains Mono', monospace;
 	}
 
-	.loading-container {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		min-height: 400px;
-		color: var(--text-color-dimmed);
-	}
-
-	.charts-grid {
+	.charts-layout {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(500px, 100%), 1fr));
-		gap: 2rem;
-		margin-bottom: 2rem;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1.5rem;
 	}
 
-	.chart-container {
-		background-color: var(--container-bg);
-		border-radius: 1rem;
+	.chart-frame {
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 12px;
 		padding: 1.5rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-		height: 400px;
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.chart-frame.full-width {
+		grid-column: span 2;
+	}
+
+	.frame-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1.25rem 1.5rem;
+		border-bottom: 1px solid var(--tech-cell-border);
+		background: var(--tech-header-bg);
+	}
+
+	.frame-title {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.7rem;
+		font-weight: 800;
+		color: var(--tech-header-text);
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+	}
+
+	.frame-status {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.6rem;
+		font-weight: 800;
+		color: #22c55e;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.frame-status .dot {
+		width: 6px;
+		height: 6px;
+		background: #22c55e;
+		border-radius: 50%;
+		animation: pulse-soft 2s infinite;
+	}
+
+	.chart-wrapper {
+		height: 300px;
 		position: relative;
 	}
 
-	.chart-container.full-width {
-		grid-column: 1 / -1;
+	.table-frame {
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 12px;
+		overflow: hidden;
 	}
 
-	.table-section {
-		background-color: var(--container-bg);
-		border-radius: 1rem;
-		padding: 2rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-	}
-
-	.table-wrapper {
+	.table-scroll {
 		overflow-x: auto;
 	}
 
-	.data-table {
+	.tech-table {
 		width: 100%;
 		border-collapse: collapse;
-		font-size: 0.95rem;
 	}
 
-	.data-table th,
-	.data-table td {
-		padding: 0.75rem;
+	.tech-table th {
+		background: var(--tech-header-bg);
+		padding: 1.1rem 1.5rem;
 		text-align: left;
-		border-bottom: 1px solid var(--table-border-color);
-	}
-
-	.data-table th {
-		font-weight: 600;
+		font-family: 'Inter', sans-serif;
+		font-size: 0.7rem;
+		font-weight: 700;
+		color: var(--tech-header-text);
 		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		border-bottom: 1px solid var(--tech-cell-border);
+	}
+
+	.tech-table td {
+		padding: 1rem 1.5rem;
+		border-bottom: 1px solid var(--tech-cell-border);
+		color: var(--tech-cell-text);
 		font-size: 0.85rem;
-		color: var(--text-color-dimmed);
 	}
 
-	.data-table tbody tr:hover {
-		background-color: var(--table-row-hover-bg);
+	.table-row:hover {
+		background: var(--tech-row-hover);
 	}
 
-	.positive {
-		color: #4caf50;
-		font-weight: 500;
+	.name-text {
+		font-weight: 700;
+		color: var(--tech-value);
 	}
 
-	.negative {
-		color: #f44336;
-		font-weight: 500;
+	.count-badge {
+		background: var(--tech-badge-bg);
+		border: 1px solid var(--tech-badge-border);
+		padding: 0.2rem 0.6rem;
+		border-radius: 4px;
+		color: var(--tech-value);
+	}
+
+	.trend-tag {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.25rem 0.75rem;
+		border-radius: 6px;
+		font-weight: 800;
+		font-size: 0.8rem;
+	}
+
+	.trend-tag.positive {
+		background: rgba(34, 197, 94, 0.1);
+		color: #22c55e;
+		border: 1px solid rgba(34, 197, 94, 0.2);
+	}
+
+	.trend-tag.negative {
+		background: rgba(239, 68, 68, 0.1);
+		color: #ef4444;
+		border: 1px solid rgba(239, 68, 68, 0.2);
+	}
+
+	.volatility-tag {
+		color: var(--tech-accent);
+		font-weight: 700;
+	}
+
+	.positive { color: #22c55e; }
+	.negative { color: #ef4444; }
+
+	@media (max-width: 1024px) {
+		.charts-layout { grid-template-columns: 1fr; }
+		.chart-frame.full-width { grid-column: span 1; }
 	}
 
 	@media (max-width: 768px) {
-		.analysis-page {
-			padding: 0.5rem;
-		}
-
-		.summary-section {
-			padding: 1rem;
-			margin-bottom: 1rem;
-		}
-
-		.summary-section h1 {
-			font-size: 1.5rem;
-			margin-bottom: 1rem;
-		}
-
-		.summary-grid {
-			grid-template-columns: repeat(2, 1fr);
-			gap: 0.5rem;
-			margin-top: 1rem;
-		}
-
-		.summary-card {
-			padding: 0.5rem;
-			border-radius: 0.375rem;
-			min-width: 0;
-			overflow: hidden;
-		}
-
-		.summary-card i {
-			font-size: 1rem;
-			margin-bottom: 0.25rem;
-		}
-
-		.summary-card h3 {
-			font-size: 0.65rem;
-			margin-bottom: 0.25rem;
-			line-height: 1.1;
-		}
-
-		.summary-card p {
-			font-size: 0.9rem;
-			margin-bottom: 0.125rem;
-			word-break: break-all;
-		}
-
-		.summary-card small {
-			font-size: 0.55rem;
-			line-height: 1.1;
-			display: block;
-			word-wrap: break-word;
-		}
-
-		.controls-section {
-			padding: 1rem;
-			margin-bottom: 1rem;
-		}
-
-		.charts-grid {
-			grid-template-columns: 1fr;
-			gap: 1rem;
-			margin-bottom: 1rem;
-		}
-
-		.chart-container {
-			padding: 1rem;
-			height: 300px;
-		}
-
-		.date-controls {
-			flex-direction: column;
-			align-items: stretch;
-			gap: 0.75rem;
-		}
-
-		.date-inputs {
-			flex-direction: column;
-			gap: 0.5rem;
-		}
-
-		.quick-ranges {
-			justify-content: center;
-			gap: 0.25rem;
-		}
-
-		.cne-ranges {
-			margin-top: 0.5rem;
-			padding-top: 0.5rem;
-			justify-content: center;
-			gap: 0.25rem;
-		}
-
-		.filter-label {
-			width: 100%;
-			text-align: center;
-			margin-bottom: 0.25rem;
-			margin-right: 0;
-		}
-
-		.quick-btn {
-			padding: 0.375rem 0.5rem;
-			font-size: 0.75rem;
-		}
-
-		.export-btn {
-			width: 100%;
-			justify-content: center;
-			padding: 0.75rem;
-		}
-
-		.table-section {
-			padding: 1rem;
-		}
-
-		.table-section h2 {
-			font-size: 1.25rem;
-			margin-bottom: 1rem;
-		}
-
-		/* Make table responsive */
-		.data-table {
-			font-size: 0.75rem;
-		}
-
-		.data-table th,
-		.data-table td {
-			padding: 0.5rem 0.25rem;
-		}
-
-		.data-table th {
-			font-size: 0.7rem;
-		}
-
-		/* Hide less important columns on very small screens */
-		.data-table th:nth-child(6),
-		.data-table td:nth-child(6) {
-			display: none;
-		}
-	}
-
-	@media (max-width: 480px) {
-		.analysis-page {
-			padding: 0.25rem;
-		}
-
-		.summary-section {
-			padding: 0.75rem;
-		}
-
-		.summary-grid {
-			grid-template-columns: 1fr 1fr;
-			gap: 0.25rem;
-		}
-
-		.summary-card {
-			padding: 0.375rem;
-		}
-
-		.summary-card h3 {
-			font-size: 0.6rem;
-		}
-
-		.summary-card p {
-			font-size: 0.8rem;
-		}
-
-		.summary-card small {
-			font-size: 0.5rem;
-		}
-
-		.quick-ranges {
-			flex-direction: column;
-		}
-
-		.cne-ranges {
-			flex-direction: column;
-			margin-top: 0.5rem;
-			padding-top: 0.5rem;
-		}
-
-		.quick-btn {
-			width: 100%;
-		}
-
-		/* Hide even more columns on very small screens */
-		.data-table th:nth-child(3),
-		.data-table td:nth-child(3),
-		.data-table th:nth-child(4),
-		.data-table td:nth-child(4) {
-			display: none;
-		}
-	}
-
-	.animate-spin {
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		from {
-			transform: rotate(0deg);
-		}
-		to {
-			transform: rotate(360deg);
-		}
+		.main-title { font-size: 1.8rem; }
+		.ledger-actions { flex-direction: column; align-items: stretch; }
+		.filter-ribbon { flex-direction: column; gap: 1.5rem; }
+		.summary-grid { grid-template-columns: 1fr 1fr; }
 	}
 </style>
