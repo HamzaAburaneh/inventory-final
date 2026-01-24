@@ -1,7 +1,7 @@
 <script>
 	import { itemStore } from '../stores/itemStore.js';
 	import { notificationStore } from '../stores/notificationStore.js';
-	import { searchTerm as searchStore, setSearchTerm, clearSearch } from '../stores/searchStore.js';
+	import { getSearchStore } from '../stores/searchStore.js';
 	import SearchBar from './SearchBar.svelte';
 
 	let predictions = $state({});
@@ -9,13 +9,15 @@
 	let error = $state('');
 	let timeframeValue = $state(14);
 	let useAI = $state(false);
-	const ANALYSIS_WINDOW = 7; // 7 days moving average
+	const ANALYSIS_WINDOW = 7;
 
 	// Store values as reactive state
 	let items = $state([]);
 	let searchTermValue = $state('');
 
-	// Subscribe to stores using $effect
+	const searchStore = getSearchStore('stockPredictions');
+	const { setSearchTerm, clearSearch } = searchStore;
+
 	$effect(() => {
 		const unsubscribeItems = itemStore.subscribe((value) => {
 			items = value;
@@ -48,28 +50,16 @@
 		}
 	}
 
-	// Initial data loading effect
 	$effect(() => {
 		const loadData = async () => {
-			await itemStore.fetchItems();
+			await itemStore.loadItems();
 			await fetchPredictions();
 		};
 		loadData();
 	});
 
-	function onSearch(value) {
-		setSearchTerm(value);
-	}
-
-	function onClear() {
-		clearSearch();
-	}
-
 	let debounceTimer;
-
-	// Effect to watch for timeframe and AI method changes
 	$effect(() => {
-		// Dependencies: timeframeValue and useAI
 		const currentTimeframe = timeframeValue;
 		const currentUseAI = useAI;
 
@@ -81,24 +71,14 @@
 		return () => clearTimeout(debounceTimer);
 	});
 
-	// Derived state for items with predictions
 	const itemsWithPredictions = $derived(
 		Object.entries(predictions)
 			.map(([itemId, predictionData]) => {
 				const item = items.find((item) => item.id === itemId);
-				if (!item) {
-					return null; // Skip items that don't exist in the current items collection
-				}
+				if (!item) return null;
 				const currentCount = item.count !== undefined ? item.count : 0;
-
-				// Handle both old format (array) and new format (object with prediction array)
-				const prediction = Array.isArray(predictionData)
-					? predictionData
-					: predictionData.prediction;
-				// Ensure prediction is an array before calling reduce
-				const totalPrediction = Array.isArray(prediction)
-					? prediction.reduce((sum, daily) => sum + daily, 0)
-					: 0;
+				const prediction = Array.isArray(predictionData) ? predictionData : predictionData.prediction;
+				const totalPrediction = Array.isArray(prediction) ? prediction.reduce((sum, daily) => sum + daily, 0) : 0;
 				const recommendedOrder = Math.max(0, totalPrediction - currentCount);
 
 				return {
@@ -108,236 +88,139 @@
 					prediction,
 					totalPrediction,
 					recommendedOrder,
-					// Enhanced data from AI analysis
 					reasoning: predictionData.reasoning || 'ARIMA time series analysis',
 					confidence: predictionData.confidence || 0.7,
 					factors: predictionData.factors || ['Historical sales patterns'],
 					method: predictionData.method || 'ARIMA'
 				};
 			})
-			.filter(
-				(item) => item !== null && item.name.toLowerCase().includes(searchTermValue.toLowerCase())
-			)
+			.filter((item) => item !== null && item.name.toLowerCase().includes(searchTermValue.toLowerCase()))
 	);
 
-	function getStatusIcon(currentCount, totalPrediction) {
-		if (currentCount < totalPrediction * 0.5) return 'fa-exclamation-circle';
-		if (currentCount < totalPrediction) return 'fa-exclamation-triangle';
-		if (currentCount > totalPrediction * 1.5) return 'fa-boxes';
-		return 'fa-check-circle';
+	function getStatusClass(currentCount, totalPrediction) {
+		if (currentCount < totalPrediction * 0.5) return 'urgent';
+		if (currentCount < totalPrediction) return 'warning';
+		if (currentCount > totalPrediction * 1.5) return 'overstock';
+		return 'optimal';
 	}
-
-	function getStatusColor(currentCount, totalPrediction) {
-		if (currentCount < totalPrediction * 0.5) return 'text-red-500';
-		if (currentCount < totalPrediction) return 'text-yellow-500';
-		if (currentCount > totalPrediction * 1.5) return 'text-blue-500';
-		return 'text-green-500';
-	}
-
-	// Derived statistics
-	const totalItems = $derived(itemsWithPredictions.length);
-	const itemsNeedingRestock = $derived(
-		itemsWithPredictions.filter((item) => item.currentCount < item.totalPrediction).length
-	);
-	const potentialOverstock = $derived(
-		itemsWithPredictions.filter((item) => item.currentCount > item.totalPrediction * 1.5).length
-	);
 </script>
 
-<div class="stock-predictions">
-	<h2 class="text-2xl font-bold mb-4">
-		<i class="fas fa-chart-bar inline-block mr-2"></i>
-		Inventory Predictions
-	</h2>
-	<div class="summary-section mb-6 p-4 bg-gray-100 rounded-lg shadow-md">
-		<div class="controls-section">
-			<div class="control-group">
-				<label class="control-label" for="timeframe-selector">Prediction Timeframe</label>
-				<div
-					class="timeframe-selector"
-					id="timeframe-selector"
-					role="group"
-					aria-labelledby="timeframe-label"
-				>
-					<button
-						class="timeframe-btn {timeframeValue === 1 ? 'active' : ''}"
-						onclick={() => (timeframeValue = 1)}
+<div class="stock-predictions-container">
+	<div class="predictions-toolbar">
+		<div class="toolbar-group">
+			<span class="toolbar-label">TIMEFRAME:</span>
+			<div class="ribbon-options">
+				{#each [1, 3, 7, 14] as days}
+					<button 
+						class="ribbon-btn" 
+						class:active={timeframeValue === days}
+						onclick={() => (timeframeValue = days)}
 					>
-						1 Day
+						{days}{days === 1 ? 'D' : days === 7 ? 'W' : days === 14 ? '2W' : 'D'}
 					</button>
-					<button
-						class="timeframe-btn {timeframeValue === 3 ? 'active' : ''}"
-						onclick={() => (timeframeValue = 3)}
-					>
-						3 Days
-					</button>
-					<button
-						class="timeframe-btn {timeframeValue === 7 ? 'active' : ''}"
-						onclick={() => (timeframeValue = 7)}
-					>
-						1 Week
-					</button>
-					<button
-						class="timeframe-btn {timeframeValue === 14 ? 'active' : ''}"
-						onclick={() => (timeframeValue = 14)}
-					>
-						2 Weeks
-					</button>
-				</div>
-			</div>
-
-			<div class="control-group">
-				<label class="control-label" id="method-label">Analysis Method</label>
-				<div class="method-toggle" role="group" aria-labelledby="method-label">
-					<button class="method-btn {!useAI ? 'active' : ''}" onclick={() => (useAI = false)}>
-						<i class="fas fa-chart-line mr-2"></i>
-						ARIMA Model
-					</button>
-					<button class="method-btn {useAI ? 'active' : ''}" onclick={() => (useAI = true)}>
-						<i class="fas fa-brain mr-2"></i>
-						GPT-4o Enhanced
-					</button>
-				</div>
+				{/each}
 			</div>
 		</div>
-		<p class="text-sm mb-2">
-			{#if useAI}
-				GPT-4o enhanced predictions combining AI analysis with traditional time series modeling
-			{:else}
-				Based on a {ANALYSIS_WINDOW}-day moving average of sales data using ARIMA model
-			{/if}
-		</p>
-		<div class="flex flex-wrap justify-between mt-4">
-			<div class="stat-item">
-				<i class="fas fa-box inline-block mr-1"></i>
-				Total Items: <strong>{totalItems}</strong>
+
+		<div class="toolbar-group">
+			<span class="toolbar-label">ENGINE:</span>
+			<div class="method-toggle">
+				<button class="method-btn" class:active={!useAI} onclick={() => (useAI = false)}>
+					<i class="fas fa-chart-line"></i>
+					<span>ARIMA</span>
+				</button>
+				<button class="method-btn" class:active={useAI} onclick={() => (useAI = true)}>
+					<i class="fas fa-brain"></i>
+					<span>GPT-4o</span>
+				</button>
 			</div>
-			<div class="stat-item text-yellow-500">
-				<i class="fas fa-exclamation-triangle inline-block mr-1"></i>
-				Items Needing Restock: <strong>{itemsNeedingRestock}</strong>
-			</div>
-			<div class="stat-item text-blue-500">
-				<i class="fas fa-boxes inline-block mr-1"></i>
-				Potential Overstock: <strong>{potentialOverstock}</strong>
-			</div>
+		</div>
+
+		<div class="search-wrapper">
+			<SearchBar onSearch={setSearchTerm} onClear={clearSearch} searchValue={searchTermValue} placeholder="Filter items..." />
 		</div>
 	</div>
 
-	<SearchBar {onSearch} {onClear} searchValue={searchTermValue} />
-
-	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+	<div class="predictions-grid">
 		{#if loading}
 			{#each Array(6) as _}
-				<div class="bg-white p-4 rounded-lg shadow-md animate-pulse">
-					<div class="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
-					<div class="h-4 bg-gray-200 rounded w-1/2 mb-1"></div>
-					<div class="h-4 bg-gray-200 rounded w-2/3 mb-1"></div>
-					<div class="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-					<div class="h-6 bg-gray-200 rounded w-1/3"></div>
+				<div class="prediction-card loading-skeleton">
+					<div class="skeleton-header"></div>
+					<div class="skeleton-body"></div>
+					<div class="skeleton-footer"></div>
 				</div>
 			{/each}
 		{:else if error}
-			<p class="error text-center col-span-full">{error}</p>
+			<div class="error-state">
+				<i class="fas fa-exclamation-triangle"></i>
+				<p>{error}</p>
+			</div>
 		{:else if itemsWithPredictions.length === 0}
-			<p class="text-center col-span-full">
-				No predictions available or no items match your search.
-			</p>
+			<div class="null-state">
+				<i class="fas fa-search-minus"></i>
+				<p>NO PREDICTIONS MATCHED.</p>
+			</div>
 		{:else}
-			{#each itemsWithPredictions as { id, name, currentCount, prediction, totalPrediction, recommendedOrder, reasoning, confidence, factors, method } (id)}
-				<div
-					class="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
-				>
-					<div class="flex justify-between items-start mb-2">
-						<h3 class="text-lg font-semibold">{name}</h3>
-						<div class="flex items-center space-x-2">
-							<span
-								class="px-2 py-1 text-xs rounded-full {method.includes('GPT-4o')
-									? 'bg-blue-100 text-blue-800'
-									: 'bg-gray-100 text-gray-800'}"
-							>
-								{method}
-							</span>
-							{#if confidence}
-								<span
-									class="px-2 py-1 text-xs rounded-full {confidence > 0.8
-										? 'bg-green-100 text-green-800'
-										: confidence > 0.6
-											? 'bg-yellow-100 text-yellow-800'
-											: 'bg-red-100 text-red-800'}"
-								>
-									{Math.round(confidence * 100)}% confidence
-								</span>
-							{/if}
+			{#each itemsWithPredictions as item (item.id)}
+				<div class="prediction-card" class:urgent={getStatusClass(item.currentCount, item.totalPrediction) === 'urgent'}>
+					<div class="card-header">
+						<h3 class="item-name">{item.name}</h3>
+						<div class="method-badge" class:ai={item.method.includes('GPT')}>
+							{item.method}
 						</div>
 					</div>
 
-					<p class="mb-1">
-						<i class="fas fa-box inline-block mr-1"></i>
-						Current Stock: <strong>{currentCount}</strong>
-					</p>
-					<p class="mb-1">
-						<i class="fas fa-chart-line inline-block mr-1"></i>
-						Predicted Need ({timeframeValue} days):
-						<strong
-							>{typeof totalPrediction === 'number' ? totalPrediction.toFixed(2) : '0.00'}</strong
-						>
-					</p>
-					<p class="mb-2">
-						<i class="fas fa-cart-plus inline-block mr-1"></i>
-						Recommended Order:
-						<strong
-							>{typeof recommendedOrder === 'number' ? recommendedOrder.toFixed(2) : '0.00'}</strong
-						>
-					</p>
-
-					<p
-						class={`text-lg ${getStatusColor(currentCount, totalPrediction)} flex items-center mb-2`}
-					>
-						<i class="fas {getStatusIcon(currentCount, totalPrediction)} inline-block mr-2"></i>
-						Status:
-						{#if currentCount < totalPrediction * 0.5}
-							Urgent restock needed
-						{:else if currentCount < totalPrediction}
-							Restock recommended
-						{:else if currentCount > totalPrediction * 1.5}
-							Potential overstock
-						{:else}
-							Stock level optimal
-						{/if}
-					</p>
-
-					{#if reasoning && reasoning !== 'ARIMA time series analysis'}
-						<div class="mb-2 p-3 bg-blue-50 rounded-lg text-sm border border-blue-200">
-							<i class="fas fa-lightbulb inline-block mr-2 text-blue-600"></i>
-							<strong class="text-blue-800">AI Insight:</strong>
-							<span class="text-gray-800 ml-1">{reasoning}</span>
+					<div class="card-metrics">
+						<div class="metric-row">
+							<span class="metric-label">CURRENT STOCK</span>
+							<span class="metric-value digital-font">{item.currentCount}</span>
 						</div>
-					{/if}
+						<div class="metric-row">
+							<span class="metric-label">PREDICTED NEED</span>
+							<span class="metric-value digital-font">{item.totalPrediction.toFixed(1)}</span>
+						</div>
+						<div class="metric-row highlight">
+							<span class="metric-label">RECOMMENDED ORDER</span>
+							<span class="metric-value digital-font">{item.recommendedOrder.toFixed(1)}</span>
+						</div>
+					</div>
 
-					{#if factors && factors.length > 1}
-						<div class="mb-2">
-							<p class="text-xs text-gray-600 mb-1">Key factors considered:</p>
-							<div class="flex flex-wrap gap-1">
-								{#each factors as factor}
-									<span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">{factor}</span>
-								{/each}
+					<div class="status-indicator {getStatusClass(item.currentCount, item.totalPrediction)}">
+						<div class="status-dot"></div>
+						<span class="status-text">
+							{#if item.currentCount < item.totalPrediction * 0.5}
+								URGENT_RESTOCK
+							{:else if item.currentCount < item.totalPrediction}
+								RESTOCK_RECOMMENDED
+							{:else if item.currentCount > item.totalPrediction * 1.5}
+								POTENTIAL_OVERSTOCK
+							{:else}
+								STOCK_OPTIMAL
+							{/if}
+						</span>
+					</div>
+
+					{#if item.reasoning && item.reasoning !== 'ARIMA time series analysis'}
+						<div class="ai-insight">
+							<div class="insight-header">
+								<i class="fas fa-lightbulb"></i>
+								<span>AI_INSIGHT</span>
+								<span class="confidence">{Math.round(item.confidence * 100)}% CONF</span>
 							</div>
+							<p class="insight-text">{item.reasoning}</p>
 						</div>
 					{/if}
 
-					<details class="mt-2">
-						<summary class="cursor-pointer text-sm text-gray-600 hover:text-gray-800"
-							>Daily Breakdown</summary
-						>
-						<ul class="mt-2 text-sm">
-							{#each Array.isArray(prediction) ? prediction : [] as dailyPrediction, index}
-								<li>
-									Day {index + 1}: {typeof dailyPrediction === 'number'
-										? dailyPrediction.toFixed(2)
-										: '0.00'}
-								</li>
+					<details class="breakdown-details">
+						<summary>DAILY_BREAKDOWN</summary>
+						<div class="breakdown-grid">
+							{#each item.prediction as daily, i}
+								<div class="breakdown-item">
+									<span class="day-label">D{i + 1}</span>
+									<span class="day-value">{daily.toFixed(1)}</span>
+								</div>
 							{/each}
-						</ul>
+						</div>
 					</details>
 				</div>
 			{/each}
@@ -346,196 +229,358 @@
 </div>
 
 <style>
-	.stock-predictions {
-		margin-top: 2rem;
-	}
-
-	.summary-section {
-		background-color: var(--container-bg);
-		color: var(--text-color);
-		border: 1px solid var(--border-color);
-	}
-
-	.grid > div {
-		background-color: var(--container-bg);
-		border: 1px solid var(--border-color);
-	}
-
-	.error {
-		color: var(--text-color);
-		background-color: rgba(255, 0, 0, 0.1);
-		padding: 1rem;
-		border-radius: var(--border-radius);
-	}
-
-	.controls-section {
+	.stock-predictions-container {
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
-		margin-bottom: 1rem;
+		gap: 2rem;
 	}
 
-	.control-group {
+	.predictions-toolbar {
 		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.control-label {
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--text-color);
-		opacity: 0.8;
-	}
-
-	.timeframe-selector {
-		display: flex;
-		background: rgba(0, 0, 0, 0.05);
+		align-items: center;
+		gap: 2rem;
+		background: var(--tech-glass-bg);
+		padding: 1.25rem 1.5rem;
 		border-radius: 12px;
-		padding: 4px;
-		gap: 2px;
-		border: 1px solid rgba(0, 0, 0, 0.1);
+		border: 1px solid var(--tech-glass-border);
+		flex-wrap: wrap;
 	}
 
-	:global(.dark) .timeframe-selector {
-		background: rgba(255, 255, 255, 0.05);
-		border-color: rgba(255, 255, 255, 0.1);
+	.toolbar-group {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
 	}
 
-	.timeframe-btn {
-		flex: 1;
-		padding: 0.75rem 1rem;
-		border: none;
-		border-radius: 8px;
-		font-size: 0.875rem;
-		font-weight: 500;
+	.toolbar-label {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.65rem;
+		font-weight: 800;
+		color: var(--tech-label);
+		letter-spacing: 0.1em;
+	}
+
+	.ribbon-options {
+		display: flex;
+		gap: 0.4rem;
+	}
+
+	.ribbon-btn {
+		background: var(--tech-badge-bg);
+		border: 1px solid var(--tech-badge-border);
+		color: var(--tech-label);
+		padding: 0.4rem 0.8rem;
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.65rem;
+		font-weight: 700;
+		border-radius: 4px;
 		cursor: pointer;
-		transition: all 0.2s ease;
-		background: transparent;
-		color: var(--text-color);
-		opacity: 0.7;
+		transition: all 0.2s;
 	}
 
-	.timeframe-btn:hover {
-		opacity: 1;
-		background: rgba(59, 130, 246, 0.1);
+	.ribbon-btn:hover {
+		border-color: var(--tech-accent);
+		color: var(--tech-accent);
 	}
 
-	.timeframe-btn.active {
-		background: #3b82f6;
-		color: white;
-		opacity: 1;
-		box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+	.ribbon-btn.active {
+		background: var(--tech-accent-muted);
+		border-color: var(--tech-accent);
+		color: var(--tech-accent);
 	}
 
 	.method-toggle {
 		display: flex;
-		background: rgba(0, 0, 0, 0.05);
-		border-radius: 12px;
-		padding: 4px;
-		gap: 2px;
-		border: 1px solid rgba(0, 0, 0, 0.1);
-	}
-
-	:global(.dark) .method-toggle {
-		background: rgba(255, 255, 255, 0.05);
-		border-color: rgba(255, 255, 255, 0.1);
+		background: var(--tech-badge-bg);
+		padding: 3px;
+		border-radius: 6px;
+		border: 1px solid var(--tech-badge-border);
 	}
 
 	.method-btn {
-		flex: 1;
-		padding: 0.875rem 1.25rem;
-		border: none;
-		border-radius: 8px;
-		font-size: 0.875rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.2s ease;
 		background: transparent;
-		color: var(--text-color);
-		opacity: 0.7;
+		border: none;
+		color: var(--tech-label);
+		padding: 0.4rem 0.8rem;
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.65rem;
+		font-weight: 700;
+		border-radius: 4px;
+		cursor: pointer;
 		display: flex;
 		align-items: center;
-		justify-content: center;
-	}
-
-	.method-btn:hover {
-		opacity: 1;
-		background: rgba(59, 130, 246, 0.1);
+		gap: 0.5rem;
+		transition: all 0.2s;
 	}
 
 	.method-btn.active {
-		background: #3b82f6;
-		color: white;
-		opacity: 1;
-		box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+		background: var(--tech-accent);
+		color: #fff;
 	}
 
-	@media (min-width: 768px) {
-		.controls-section {
-			flex-direction: row;
-			align-items: flex-end;
-			justify-content: space-between;
-		}
-
-		.control-group {
-			flex: 1;
-			max-width: 300px;
-		}
+	.search-wrapper {
+		flex: 1;
+		min-width: 250px;
 	}
 
-	.stat-item {
-		flex: 1 1 auto;
-		margin: 0.5rem;
-		padding: 0.5rem;
-		background-color: rgba(255, 255, 255, 0.1);
-		border-radius: 0.25rem;
+	.predictions-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+		gap: 1.5rem;
 	}
 
-	/* Dark mode adjustments for AI insights */
-	:global(.dark) .bg-blue-50 {
-		background-color: rgba(59, 130, 246, 0.1);
-		border-color: rgba(59, 130, 246, 0.2);
+	.prediction-card {
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 12px;
+		padding: 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		position: relative;
+		overflow: hidden;
 	}
 
-	:global(.dark) .text-blue-800 {
-		color: #60a5fa;
+	.prediction-card:hover {
+		transform: translateY(-4px);
+		border-color: var(--tech-accent-muted);
+		box-shadow: var(--tech-glass-shadow);
 	}
 
-	:global(.dark) .text-gray-800 {
-		color: #e5e7eb;
+	.prediction-card.urgent {
+		border-color: rgba(239, 68, 68, 0.3);
 	}
 
-	:global(.dark) .border-blue-200 {
-		border-color: rgba(59, 130, 246, 0.3);
+	.prediction-card.urgent::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 4px;
+		height: 100%;
+		background: #ef4444;
 	}
 
-	@keyframes pulse {
-		0%,
-		100% {
-			opacity: 1;
-		}
-		50% {
-			opacity: 0.5;
-		}
+	.card-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 1rem;
 	}
 
-	.animate-pulse {
-		animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+	.item-name {
+		font-size: 1.1rem;
+		font-weight: 800;
+		color: var(--tech-title);
+		text-transform: uppercase;
+		letter-spacing: -0.02em;
+		margin: 0;
 	}
+
+	.method-badge {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.6rem;
+		font-weight: 800;
+		padding: 0.2rem 0.5rem;
+		background: var(--tech-badge-bg);
+		border: 1px solid var(--tech-badge-border);
+		border-radius: 4px;
+		color: var(--tech-label);
+	}
+
+	.method-badge.ai {
+		background: var(--tech-accent-muted);
+		border-color: var(--tech-accent);
+		color: var(--tech-accent);
+	}
+
+	.card-metrics {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		background: var(--tech-badge-bg);
+		padding: 1rem;
+		border-radius: 8px;
+		border: 1px solid var(--tech-glass-border);
+	}
+
+	.metric-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+	}
+
+	.metric-label {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.6rem;
+		font-weight: 800;
+		color: var(--tech-label);
+	}
+
+	.metric-value {
+		font-size: 1.1rem;
+		font-weight: 800;
+		color: var(--tech-value);
+	}
+
+	.metric-row.highlight .metric-value {
+		color: var(--tech-accent);
+		text-shadow: 0 0 10px var(--tech-accent-muted);
+	}
+
+	.status-indicator {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.6rem 1rem;
+		border-radius: 6px;
+		background: var(--tech-badge-bg);
+		border: 1px solid var(--tech-glass-border);
+	}
+
+	.status-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+	}
+
+	.status-text {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.65rem;
+		font-weight: 800;
+		letter-spacing: 0.05em;
+	}
+
+	.status-indicator.urgent { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); }
+	.status-indicator.urgent .status-dot { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
+	.status-indicator.urgent .status-text { color: #ef4444; }
+
+	.status-indicator.warning { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.2); }
+	.status-indicator.warning .status-dot { background: #f59e0b; }
+	.status-indicator.warning .status-text { color: #f59e0b; }
+
+	.status-indicator.optimal { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.2); }
+	.status-indicator.optimal .status-dot { background: #22c55e; }
+	.status-indicator.optimal .status-text { color: #22c55e; }
+
+	.status-indicator.overstock { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); }
+	.status-indicator.overstock .status-dot { background: #3b82f6; }
+	.status-indicator.overstock .status-text { color: #3b82f6; }
+
+	.ai-insight {
+		background: var(--tech-accent-muted);
+		border: 1px solid var(--tech-accent);
+		border-radius: 8px;
+		padding: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.insight-header {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.6rem;
+		font-weight: 800;
+		color: var(--tech-accent);
+	}
+
+	.confidence {
+		margin-left: auto;
+		opacity: 0.7;
+	}
+
+	.insight-text {
+		font-size: 0.8rem;
+		line-height: 1.5;
+		color: var(--tech-value);
+		margin: 0;
+	}
+
+	.breakdown-details {
+		border-top: 1px solid var(--tech-glass-border);
+		padding-top: 1rem;
+	}
+
+	.breakdown-details summary {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.6rem;
+		font-weight: 800;
+		color: var(--tech-label);
+		cursor: pointer;
+		list-style: none;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.breakdown-details summary::before {
+		content: '▶';
+		font-size: 0.5rem;
+		transition: transform 0.2s;
+	}
+
+	.breakdown-details[open] summary::before {
+		transform: rotate(90deg);
+	}
+
+	.breakdown-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+		gap: 0.5rem;
+		margin-top: 1rem;
+	}
+
+	.breakdown-item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		background: var(--tech-badge-bg);
+		padding: 0.4rem;
+		border-radius: 4px;
+		border: 1px solid var(--tech-glass-border);
+	}
+
+	.day-label {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.5rem;
+		font-weight: 800;
+		color: var(--tech-label);
+	}
+
+	.day-value {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.7rem;
+		font-weight: 700;
+		color: var(--tech-value);
+	}
+
+	.digital-font {
+		font-family: 'JetBrains Mono', monospace;
+	}
+
+	.null-state, .error-state {
+		grid-column: 1 / -1;
+		height: 300px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 1.5rem;
+		color: var(--tech-label);
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 12px;
+	}
+
+	.null-state i, .error-state i { font-size: 3rem; opacity: 0.5; }
+	.error-state i { color: #ef4444; }
 
 	@media (max-width: 768px) {
-		.summary-section {
-			padding: 1rem;
-		}
-
-		.slider-container {
-			margin-top: 1rem;
-		}
-
-		.stat-item {
-			flex-basis: 100%;
-			margin: 0.25rem 0;
-		}
+		.predictions-toolbar { flex-direction: column; align-items: stretch; }
+		.toolbar-group { justify-content: space-between; }
 	}
 </style>
