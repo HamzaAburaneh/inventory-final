@@ -35,6 +35,7 @@
 
 	// Count state
 	let totalItems = $state(data.totalItems || 0);
+	let globalTotalItems = $state(data.totalItems || 0);
 	let currentPage = $state(1);
 
 	// Track the current search term locally for display
@@ -42,6 +43,8 @@
 
 	// Derived values for pagination display
 	let totalPages = $derived(Math.ceil(totalItems / itemsPerPage) || 1);
+	let startIndex = $derived((currentPage - 1) * itemsPerPage + 1);
+	let endIndex = $derived(Math.min(currentPage * itemsPerPage, totalItems));
 
 	// Subscribe to search store changes and fetch when it changes
 	$effect(() => {
@@ -61,55 +64,77 @@
 
 		try {
 			const transactionsRef = collection(db, 'transactions');
-			const constraints = [];
+			let constraints = [];
 			const countConstraints = [];
 
-			// Build query constraints based on search/sort
-			if (currentSearchTerm) {
-				constraints.push(
-					orderBy('itemName', sortAscending ? 'asc' : 'desc'),
-					where('itemName', '>=', currentSearchTerm),
-					where('itemName', '<=', currentSearchTerm + '\uf8ff')
-				);
-				countConstraints.push(
-					where('itemName', '>=', currentSearchTerm),
-					where('itemName', '<=', currentSearchTerm + '\uf8ff')
-				);
-			} else if (currentSortColumn === 'changedAmount') {
-				constraints.push(orderBy('timestamp', 'desc'));
-			} else {
-				constraints.push(orderBy(currentSortColumn, sortAscending ? 'asc' : 'desc'));
-			}
-
 			// Fetch total count on first load or search change
-			if (direction === 'first') {
+			if (direction === 'first' || direction === 'last') {
+				if (currentSearchTerm) {
+					countConstraints.push(
+						where('itemName', '>=', currentSearchTerm),
+						where('itemName', '<=', currentSearchTerm + '\uf8ff')
+					);
+				}
 				const countQuery = query(transactionsRef, ...countConstraints);
 				const countSnapshot = await getCountFromServer(countQuery);
 				totalItems = countSnapshot.data().count;
-				currentPage = 1;
-			} else if (direction === 'next') {
-				currentPage++;
-			} else if (direction === 'prev' && currentPage > 1) {
-				currentPage--;
 			}
 
-			// Add pagination cursors
-			if (direction === 'next' && lastVisible) {
-				constraints.push(startAfter(lastVisible), limit(itemsPerPage));
+			// Determine actual sorting to use
+			let sortField = currentSortColumn;
+			let sortDir = sortAscending ? 'asc' : 'desc';
+
+			if (currentSearchTerm) {
+				sortField = 'itemName';
+			} else if (currentSortColumn === 'changedAmount') {
+				sortField = 'timestamp';
+				sortDir = 'desc'; // Default timestamp order
+			}
+
+			// Build constraints based on direction
+			if (direction === 'first') {
+				currentPage = 1;
+				constraints.push(orderBy(sortField, sortDir), limit(itemsPerPage));
+			} else if (direction === 'last') {
+				currentPage = totalPages;
+				// To get last page items, we inverse the primary order
+				const inverseDir = sortDir === 'asc' ? 'desc' : 'asc';
+				constraints.push(orderBy(sortField, inverseDir), limit(itemsPerPage));
+			} else if (direction === 'next' && lastVisible) {
+				currentPage++;
+				constraints.push(orderBy(sortField, sortDir), startAfter(lastVisible), limit(itemsPerPage));
 			} else if (direction === 'prev' && firstVisible) {
-				constraints.push(endBefore(firstVisible), limitToLast(itemsPerPage));
-			} else {
-				constraints.push(limit(itemsPerPage));
+				currentPage--;
+				constraints.push(
+					orderBy(sortField, sortDir),
+					endBefore(firstVisible),
+					limitToLast(itemsPerPage)
+				);
+			}
+
+			// Add search filters if needed
+			if (currentSearchTerm) {
+				constraints.push(
+					where('itemName', '>=', currentSearchTerm),
+					where('itemName', '<=', currentSearchTerm + '\uf8ff')
+				);
 			}
 
 			const q = query(transactionsRef, ...constraints);
 			const snapshot = await getDocs(q);
 
 			if (!snapshot.empty) {
-				firstVisible = snapshot.docs[0];
-				lastVisible = snapshot.docs[snapshot.docs.length - 1];
+				let docs = snapshot.docs;
 
-				let fetchedData = snapshot.docs.map((doc) => {
+				// If we went to the 'last' page, the results are in reverse order
+				if (direction === 'last') {
+					docs = [...docs].reverse();
+				}
+
+				firstVisible = docs[0];
+				lastVisible = docs[docs.length - 1];
+
+				let fetchedData = docs.map((doc) => {
 					const data = doc.data();
 					return {
 						id: doc.id,
@@ -133,12 +158,12 @@
 				}
 
 				transactions = fetchedData;
-				isLastPage = snapshot.docs.length < itemsPerPage;
-				isFirstPage = direction === 'first';
+				isLastPage = currentPage === totalPages;
+				isFirstPage = currentPage === 1;
 			} else {
 				transactions = [];
 				isLastPage = true;
-				isFirstPage = direction === 'first';
+				isFirstPage = true;
 			}
 		} catch (error) {
 			console.error('Error fetching transactions:', error);
@@ -172,8 +197,20 @@
 	}
 
 	function handlePrev() {
-		if (!loading && currentPage > 1) {
+		if (!loading && !isFirstPage) {
 			fetchTransactions('prev');
+		}
+	}
+
+	function handleFirst() {
+		if (!loading && !isFirstPage) {
+			fetchTransactions('first');
+		}
+	}
+
+	function handleLast() {
+		if (!loading && !isLastPage) {
+			fetchTransactions('last');
 		}
 	}
 
@@ -181,208 +218,637 @@
 		itemsPerPage = parseInt(event.target.value);
 		fetchTransactions('first');
 	}
+
+	function capitalizeColumn(column) {
+		return column.replace(/([A-Z])/g, ' $1').trim().toUpperCase();
+	}
 </script>
 
 <svelte:head>
 	<title>Transaction History</title>
 </svelte:head>
 
-<div class="container mx-auto p-4 sm:p-6 rounded-lg shadow-md bg-container mt-4">
-	<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClear} />
-
-	<p class="filter-legend text-white mb-4">
-		{#if searchTermValue}
-			Showing results for "{searchTermValue}"
-		{:else}
-			Showing transactions sorted by {currentSortColumn} ({sortAscending
-				? 'Ascending'
-				: 'Descending'})
-		{/if}
-	</p>
-
-	<div class="table-container relative">
-		{#if loading && transactions.length === 0}
-			<div class="flex justify-center items-center h-64">
-				<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+<div class="page-viewport-wrapper">
+	<div class="glow-layer"></div>
+	<div class="content-container">
+		<header class="page-header">
+			<div class="title-group">
+				<h1 class="main-title">Transaction History</h1>
+				<div class="system-status">
+					<span class="status-dot"></span>
+					<span class="status-text">SYSTEM SECURE</span>
+				</div>
 			</div>
-		{:else if transactions.length === 0}
-			<p class="text-center my-4">No transactions found.</p>
-		{:else}
-			<div
-				class="transition-opacity duration-300"
-				class:opacity-50={loading}
-				class:opacity-100={!loading}
-			>
-				<TransactionTable
-					paginatedItems={transactions}
-					sortBy={handleSort}
-					{currentSortColumn}
-					{sortAscending}
-				/>
+		</header>
+
+		<div class="ledger-actions">
+			<div class="stats-ribbon">
+				<div class="ribbon-item">
+					<span class="ribbon-label">SOURCE:</span>
+					<span class="ribbon-value">TRANSACTIONS_DB</span>
+				</div>
+				<div class="ribbon-item">
+					<span class="ribbon-label">RECORDS:</span>
+					<div class="ribbon-value">
+						{#key totalItems}
+							<div class="count-context text-update" in:blur={{ duration: 400, amount: 2 }}>
+								<span class="digital-font">{totalItems}</span>
+								{#if searchTermValue}
+									<span class="count-separator">/</span>
+									<span class="count-total">{globalTotalItems}</span>
+								{/if}
+							</div>
+						{/key}
+					</div>
+				</div>
+				<div class="ribbon-item">
+					<span class="ribbon-label">SORTING:</span>
+					<div class="ribbon-value">
+						{#key currentSortColumn}
+							<span class="text-update" in:blur={{ duration: 400, amount: 2 }}>
+								{capitalizeColumn(currentSortColumn)}
+							</span>
+						{/key}
+						{#key sortAscending}
+							<span class="order-tag text-update" in:blur={{ duration: 400, amount: 2 }}>
+								{sortAscending ? 'ASC' : 'DESC'}
+							</span>
+						{/key}
+					</div>
+				</div>
 			</div>
-		{/if}
-	</div>
 
-	<!-- Custom Server-Side Pagination Controls -->
-	<div class="pagination-controls">
-		<div class="pagination-buttons">
-			<button
-				class="pagination-button"
-				onclick={handlePrev}
-				disabled={isFirstPage}
-				aria-label="Previous page"
-			>
-				<i class="fas fa-chevron-left"></i>
-			</button>
-
-			<span class="pagination-info">
-				Page {currentPage} of {totalPages} ({totalItems} items)
-			</span>
-
-			<button
-				class="pagination-button"
-				onclick={handleNext}
-				disabled={isLastPage}
-				aria-label="Next page"
-			>
-				<i class="fas fa-chevron-right"></i>
-			</button>
+			<div class="search-primary">
+				<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClear} />
+			</div>
 		</div>
 
-		<div class="items-per-page">
-			<label for="itemsPerPage">Items per page:</label>
-			<select
-				id="itemsPerPage"
-				value={itemsPerPage}
-				onchange={handleItemsPerPageChange}
-				class="pagination-select"
-			>
-				<option value={10}>10</option>
-				<option value={25}>25</option>
-				<option value={50}>50</option>
-			</select>
-		</div>
+			<div class="table-frame">
+				{#if loading && transactions.length === 0}
+					<div class="ledger-loading">
+						<div class="pulse-ring"></div>
+						<span class="loading-text">LOADING HISTORY...</span>
+					</div>
+				{:else if transactions.length === 0}
+					<div class="null-state">
+						<i class="fas fa-search-minus"></i>
+						<p>NO ITEMS MATCHED.</p>
+					</div>
+				{:else}
+					<div
+						class="table-render-layer"
+					>
+						<TransactionTable
+							paginatedItems={transactions}
+							sortBy={handleSort}
+							{currentSortColumn}
+							{sortAscending}
+							{loading}
+						/>
+					</div>
+				{/if}
+			</div>
+
+			<footer class="ledger-footer">
+				<div class="footer-summary">
+					<span class="summary-text">
+						SHOWING <span class="summary-highlight">{Math.min(startIndex, totalItems)}</span> 
+						TO <span class="summary-highlight">{endIndex}</span> 
+						OF <span class="summary-highlight">{totalItems}</span>
+						{#if searchTermValue}
+							<span class="summary-separator">/</span>
+							<span class="summary-total">{globalTotalItems}</span>
+						{/if}
+						ENTRIES
+					</span>
+				</div>
+
+				<div class="pagination-modern">
+					<button
+						class="pag-btn icon-only"
+						onclick={handleFirst}
+						disabled={isFirstPage}
+						aria-label="First Page"
+					>
+						<i class="fas fa-angle-double-left"></i>
+					</button>
+
+					<button
+						class="pag-btn"
+						onclick={handlePrev}
+						disabled={isFirstPage}
+						aria-label="Previous Page"
+					>
+						<i class="fas fa-chevron-left"></i>
+						<span class="btn-text">PREV</span>
+					</button>
+
+					<div class="pag-indicator">
+						<span class="indicator-current">{currentPage}</span>
+						<span class="indicator-separator">/</span>
+						<span class="indicator-total">{totalPages}</span>
+					</div>
+
+					<button
+						class="pag-btn"
+						onclick={handleNext}
+						disabled={isLastPage}
+						aria-label="Next Page"
+					>
+						<span class="btn-text">NEXT</span>
+						<i class="fas fa-chevron-right"></i>
+					</button>
+
+					<button
+						class="pag-btn icon-only"
+						onclick={handleLast}
+						disabled={isLastPage}
+						aria-label="Last Page"
+					>
+						<i class="fas fa-angle-double-right"></i>
+					</button>
+				</div>
+
+				<div class="footer-settings">
+					<span class="settings-label">ITEMS PER PAGE:</span>
+					<div class="page-size-control">
+						<select
+							id="itemsPerPage"
+							value={itemsPerPage}
+							onchange={handleItemsPerPageChange}
+							class="settings-select"
+						>
+							<option value={10}>10</option>
+							<option value={25}>25</option>
+							<option value={50}>50</option>
+						</select>
+						<i class="fas fa-chevron-down select-icon"></i>
+					</div>
+				</div>
+			</footer>
 	</div>
 </div>
 
 <style>
-	.container {
-		margin-top: 20px;
-		padding: 1rem;
-		max-width: 90%;
-		background-color: var(--container-bg);
-		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-		border-radius: 1rem;
+	:global(body) {
+		background-color: #0c0c0e !important;
+		background-image: radial-gradient(circle at 50% -10%, #16171b 0%, #0c0c0e 100%) !important;
+		background-attachment: fixed !important;
+		margin: 0;
+		padding: 0;
+		overflow-x: hidden;
 	}
 
-	.table-container {
-		height: 670px;
-		overflow: auto;
-		margin-bottom: 1rem;
+	.page-viewport-wrapper {
+		position: relative;
+		min-height: 100vh;
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
 	}
 
-	.filter-legend {
-		font-size: 0.9rem;
-		color: #949494;
+	.glow-layer {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100vh;
+		background: radial-gradient(circle at 50% 0%, rgba(255, 226, 96, 0.03) 0%, transparent 50%);
+		pointer-events: none;
+		z-index: 0;
 	}
 
-	/* Pagination Styles copied/adapted for local use */
-	.pagination-controls {
+	/* Page Layout Polish */
+	.content-container {
+		position: relative;
+		z-index: 2;
+		max-width: 1400px;
+		margin: 0 auto;
+		width: 100%;
+		padding: 3rem 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem; /* Tighter vertical spacing */
+	}
+
+	.page-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		flex-wrap: wrap;
+		gap: 2rem;
+	}
+
+	.main-title {
+		font-size: 2.5rem;
+		font-weight: 800;
+		color: #ffffff;
+		margin: 0;
+		letter-spacing: -0.05em;
+		text-transform: uppercase;
+		line-height: 1;
+	}
+
+	.system-status {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		margin-top: 0.8rem;
+		opacity: 0.8;
+	}
+
+	.status-dot {
+		width: 6px;
+		height: 6px;
+		background: #ffe260;
+		border-radius: 50%;
+		box-shadow: 0 0 10px rgba(255, 226, 96, 0.4);
+		animation: pulse-soft 3s ease-in-out infinite;
+	}
+
+	@keyframes pulse-soft {
+		0%, 100% { opacity: 0.4; transform: scale(0.9); }
+		50% { opacity: 1; transform: scale(1.1); }
+	}
+
+	.status-text {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.6rem;
+		color: #66666e;
+		letter-spacing: 0.2em;
+		font-weight: 800;
+	}
+
+	.header-controls {
+		display: flex;
+		justify-content: flex-end;
+		margin-top: -0.25rem;
+	}
+
+	/* Ledger Actions Bar */
+	.ledger-actions {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-end; /* Align stats and search on the bottom */
+		flex-wrap: wrap;
+		gap: 2rem;
+	}
+
+	/* Stats Ribbon: Cleaner & Interactive */
+	.stats-ribbon {
+		display: flex;
+		align-items: center;
+		padding: 0;
+		gap: 3rem; /* More balanced gap */
+	}
+
+	.search-primary {
+		flex: 1;
+		display: flex;
+		justify-content: flex-end;
+		max-width: 600px;
+	}
+
+	.ribbon-item {
+		display: flex;
+		align-items: baseline;
+		gap: 0.75rem;
+		opacity: 0.6; /* Softly muted by default */
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		cursor: pointer;
+	}
+
+	.ribbon-item:hover {
+		opacity: 1; /* Brightens on hover */
+		transform: translateY(-1px);
+	}
+
+	.ribbon-label {
+		color: #55555e;
+		font-family: 'JetBrains Mono', monospace;
+		font-weight: 800;
+		font-size: 0.65rem;
+		letter-spacing: 0.1em;
+	}
+
+	.ribbon-value {
+		color: #e2e2e7;
+		font-family: 'JetBrains Mono', monospace;
+		font-weight: 700;
+		font-size: 0.85rem;
+		transition: color 0.3s ease;
+		display: flex;
+		align-items: baseline;
+		gap: 0.4rem; /* Precise gap between Column and Order */
+	}
+
+	.ribbon-item:hover .ribbon-value {
+		color: #ffffff;
+	}
+
+	.digital-font {
+		color: #ffe260;
+		text-shadow: 0 0 15px rgba(255, 226, 96, 0.1);
+	}
+
+	.count-context {
+		display: flex;
+		align-items: baseline;
+		gap: 0.35rem;
+	}
+
+	.count-separator {
+		color: #333338;
+		font-size: 0.7rem;
+	}
+
+	.count-total {
+		color: #55555e;
+		font-size: 0.8rem;
+		opacity: 0.8;
+	}
+
+	/* Simplified Glow/Fade Animation on value change */
+	.text-update {
+		animation: subtle-glow 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+		display: inline-block;
+	}
+
+	@keyframes subtle-glow {
+		0% { 
+			color: #ffffff; 
+			text-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+		}
+		100% { 
+			text-shadow: 0 0 0px transparent;
+		}
+	}
+
+	.ribbon-item:hover .digital-font {
+		text-shadow: 0 0 20px rgba(255, 226, 96, 0.4);
+	}
+
+	.order-tag {
+		color: #55555e;
+		font-size: 0.7rem;
+	}
+
+	.table-frame {
+		position: relative;
+		background: #0e0f11;
+		border: 1px solid #1c1d21;
+		border-radius: 12px;
+		min-height: 500px;
+		overflow: hidden;
+		/* Softer, multi-layered depth shadow */
+		box-shadow: 
+			0 5px 5px rgba(0, 0, 0, 0.3),
+			0 0 1px rgba(255, 255, 255, 0.05);
+		transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.table-frame:hover {
+		border-color: #2a2b30;
+		box-shadow: 
+			0 10px 10px rgba(0, 0, 0, 0.5),
+			0 0 1px rgba(255, 255, 255, 0.08);
+	}
+
+	/* Loading and Empty States */
+	.ledger-loading {
+		height: 500px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 2rem;
+	}
+
+	.pulse-ring {
+		width: 44px;
+		height: 44px;
+		border: 3px solid #1c1c1f;
+		border-top-color: #ffe260;
+		border-radius: 50%;
+		animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
+
+	.loading-text {
+		color: #ffe260;
+		font-family: 'JetBrains Mono', monospace;
+		font-weight: 700;
+		letter-spacing: 0.3em;
+		font-size: 0.7rem;
+		opacity: 0.8;
+	}
+
+	.null-state {
+		height: 500px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		color: #333338;
+		gap: 1.5rem;
+	}
+
+	.null-state i { font-size: 3.5rem; opacity: 0.5; }
+	.null-state p { 
+		font-family: 'JetBrains Mono', monospace; 
+		font-size: 0.8rem; 
+		letter-spacing: 0.15em;
+		font-weight: 700;
+	}
+
+	.table-render-layer {
+		transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), filter 0.4s ease;
+	}
+
+	.loading-fade { 
+		opacity: 0.15; 
+		filter: blur(4px);
+		pointer-events: none;
+	}
+
+	/* Footer & Pagination Modern SaaS Style */
+	.ledger-footer {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 1rem 0;
+		padding: 1.5rem 0;
+		border-top: 1px solid #1c1c1f;
+		margin-top: 1rem;
 		flex-wrap: wrap;
-		gap: 1rem;
+		gap: 2rem;
 	}
 
-	.pagination-buttons {
+	.footer-summary {
+		flex: 1;
+	}
+
+	.summary-text {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.75rem;
+		color: #55555a;
+		letter-spacing: 0.05em;
+		font-weight: 700;
+	}
+
+	.summary-highlight {
+		color: #a1a1aa;
+		font-weight: 800;
+	}
+
+	.summary-separator {
+		color: #1c1c1f;
+		margin: 0 0.2rem;
+		font-size: 0.7rem;
+	}
+
+	.summary-total {
+		color: #55555a;
+		font-size: 0.75rem;
+		font-weight: 800;
+	}
+
+	.pagination-modern {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 1rem;
+		flex: 1;
+		justify-content: center;
 	}
 
-	.pagination-button {
-		background-color: var(--table-cell-bg);
-		color: var(--text-color);
-		border: 1px solid var(--table-border-color);
-		border-radius: var(--border-radius);
+	.pag-btn {
+		background: #141518;
+		border: 1px solid #222328;
+		color: #71717a;
 		padding: 0.5rem 1rem;
-		font-size: 1rem;
+		font-size: 0.7rem;
+		font-weight: 800;
+		font-family: 'JetBrains Mono', monospace;
+		letter-spacing: 0.05em;
+		border-radius: 4px;
 		cursor: pointer;
-		transition:
-			background-color 0.3s ease,
-			color 0.3s ease,
-			transform 0.1s ease-out;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s;
+		min-width: 38px;
 	}
 
-	.pagination-button:hover:not(:disabled) {
-		background-color: var(--hover-bg-color);
+	.pag-btn:hover:not(:disabled) {
+		background: #1c1d21;
+		border-color: #ffe260;
+		color: #ffffff;
 	}
 
-	.pagination-button:active:not(:disabled) {
-		transform: scale(1.1);
+	.pag-btn.icon-only {
+		padding: 0.5rem;
 	}
 
-	.pagination-button:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.pagination-info {
-		font-size: 1rem;
-		color: var(--text-color);
+	.pag-indicator {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		font-family: 'JetBrains Mono', monospace;
+		font-weight: 800;
+		font-size: 0.8rem;
 		padding: 0 1rem;
 	}
 
-	.items-per-page {
+	.indicator-current {
+		color: #ffe260;
+	}
+
+	.indicator-separator {
+		color: #222328;
+	}
+
+	.indicator-total {
+		color: #55555a;
+	}
+
+	.footer-settings {
+		flex: 1;
+		display: flex;
+		justify-content: flex-end;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.settings-label {
+		color: #55555a;
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.65rem;
+		font-weight: 800;
+		letter-spacing: 0.05em;
+	}
+
+	.page-size-control {
+		position: relative;
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		background: #141518;
+		border: 1px solid #222328;
+		border-radius: 4px;
+		transition: all 0.2s;
 	}
 
-	.items-per-page label {
-		font-size: 1rem;
-		color: var(--text-color);
+	.page-size-control:hover {
+		border-color: #ffe260;
+		background: #1c1d21;
 	}
 
-	.pagination-select {
-		background-color: var(--table-cell-bg);
-		color: var(--text-color);
-		border: 1px solid var(--table-border-color);
-		border-radius: var(--border-radius);
-		padding: 0.5rem 2rem 0.5rem 0.5rem;
-		font-size: 1rem;
-		appearance: none;
-		background-image: var(--pagination-arrow-icon); /* Ensure this var exists or fallback */
-		background-repeat: no-repeat;
-		background-position: right 0.5rem center;
-		background-size: 1.5em;
+	.settings-select {
+		background: transparent;
+		color: #ffffff;
+		border: none;
+		padding: 0.5rem 2rem 0.5rem 0.85rem;
+		font-family: 'JetBrains Mono', monospace;
+		font-weight: 800;
+		font-size: 0.75rem;
 		cursor: pointer;
+		appearance: none;
+		outline: none;
+		z-index: 2;
 	}
 
-	@media (max-width: 640px) {
-		.pagination-controls {
+	/* Force dark background for standard dropdown options */
+	.settings-select option {
+		background-color: #141518;
+		color: #ffffff;
+	}
+
+	.select-icon {
+		position: absolute;
+		right: 0.75rem;
+		font-size: 0.7rem;
+		color: #55555a;
+		pointer-events: none;
+		z-index: 1;
+	}
+
+	@media (max-width: 1000px) {
+		.ledger-footer {
 			flex-direction: column;
-			align-items: stretch;
+			align-items: center;
+			text-align: center;
 		}
-		.pagination-buttons,
-		.items-per-page {
+		.footer-summary, .pagination-modern, .footer-settings {
+			width: 100%;
 			justify-content: center;
 		}
+		.footer-settings { order: -1; margin-bottom: 0.5rem; }
 	}
 
-	@media (min-width: 640px) {
-		.container {
-			padding: 1.5rem;
-			max-width: 95%;
-		}
-	}
-
-	@media (min-width: 1024px) {
-		.container {
-			padding: 2.5rem;
-			max-width: 90%;
-		}
+	@media (max-width: 480px) {
+		.btn-text { display: none; }
+		.pag-btn { min-width: 44px; }
 	}
 </style>

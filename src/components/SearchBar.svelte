@@ -13,133 +13,102 @@
 	}
 </script>
 
-<div class="search-container">
-	<div class="search-wrapper">
+<div class="tech-search-container">
+	<div class="tech-search-wrapper">
+		<i class="fas fa-search tech-search-icon"></i>
 		<input
 			id="search"
-			class="search-input"
+			class="tech-search-input"
 			bind:value={searchValue}
-			placeholder="Search Items"
+			placeholder="Search transactions..."
 			oninput={handleInput}
 		/>
-		<label for="search" class="search-icon">
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<circle cx="11" cy="11" r="8"></circle>
-				<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-			</svg>
-		</label>
 		{#if searchValue}
-			<button class="clear-button" onclick={clearSearch} aria-label="Clear search">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
-					<line x1="18" y1="6" x2="6" y2="18"></line>
-					<line x1="6" y1="6" x2="18" y2="18"></line>
-				</svg>
+			<button class="tech-clear-button" onclick={clearSearch} aria-label="Clear search">
+				<i class="fas fa-times"></i>
 			</button>
 		{/if}
 	</div>
 </div>
 
 <style>
-	.search-container {
+	.tech-search-container {
 		width: 100%;
-		max-width: 600px;
-		margin: 0 auto;
-		padding: 1rem 0;
+		display: flex;
+		justify-content: flex-end;
 	}
 
-	.search-wrapper {
+	.tech-search-wrapper {
 		position: relative;
 		width: 100%;
+		max-width: 600px;
+		display: flex;
+		align-items: center;
 	}
 
-	.search-input {
+	.tech-search-input {
 		width: 100%;
-		padding: 0.75rem 2.5rem 0.75rem 2.5rem;
-		border: 2px solid var(--table-border-color);
-		border-radius: var(--border-radius);
-		background-color: var(--table-cell-bg);
-		color: var(--text-color);
-		font-size: 1rem;
-		transition: all 0.3s ease;
+		padding: 0.7rem 1rem 0.7rem 2.8rem;
+		background: #000000;
+		border: 1px solid #222222;
+		border-radius: 4px;
+		color: #ffffff;
+		font-size: 0.85rem;
+		font-family: 'JetBrains Mono', monospace;
+		letter-spacing: 0.1em;
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
 	}
 
-	.search-input:hover {
-		border-color: var(--icon-color);
-	}
-
-	.search-input:focus {
+	.tech-search-input:focus {
 		outline: none;
-		border-color: var(--icon-hover-color);
-		box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+		border-color: #ffe260;
+		background: #050505;
+		box-shadow: 0 0 20px rgba(255, 226, 96, 0.05), inset 0 2px 10px rgba(0, 0, 0, 0.5);
 	}
 
-	.search-input::placeholder {
-		color: var(--placeholder-text);
+	.tech-search-input::placeholder {
+		color: #444444;
 	}
 
-	.search-icon {
+	.tech-search-icon {
 		position: absolute;
-		left: 0.75rem;
-		top: 50%;
-		transform: translateY(-50%);
-		color: var(--icon-color);
+		left: 1.1rem;
+		color: #444444;
+		font-size: 0.9rem;
 		pointer-events: none;
-		transition: color 0.3s ease;
+		transition: color 0.2s;
 	}
 
-	.search-icon svg {
-		width: 1.25rem;
-		height: 1.25rem;
+	.tech-search-input:focus ~ .tech-search-icon,
+	.tech-search-input:not(:placeholder-shown) ~ .tech-search-icon {
+		color: #ffe260;
 	}
 
-	.search-input:focus + .search-icon {
-		color: var(--icon-hover-color);
-	}
-
-	.clear-button {
+	/* Fix: use the input:focus class to color the icon if it's after the input or just use a sibling selector if possible */
+	/* Re-ordering for better CSS control */
+	
+	.tech-clear-button {
 		position: absolute;
-		right: 0.75rem;
-		top: 50%;
-		transform: translateY(-50%);
+		right: 0.8rem;
 		background: none;
 		border: none;
+		color: #444444;
 		cursor: pointer;
-		color: var(--icon-color);
-		transition: color 0.3s ease;
+		font-size: 0.9rem;
+		transition: all 0.2s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
-	.clear-button:hover {
-		color: var(--icon-hover-color);
+	.tech-clear-button:hover {
+		color: #ff4757;
 	}
 
-	.clear-button svg {
-		width: 1.25rem;
-		height: 1.25rem;
-	}
-
-	@media (max-width: 640px) {
-		.search-container {
-			padding: 0.5rem 0;
-		}
-
-		.search-input {
-			font-size: 0.875rem;
+	@media (max-width: 768px) {
+		.tech-search-wrapper {
+			max-width: 100%;
 		}
 	}
 </style>
