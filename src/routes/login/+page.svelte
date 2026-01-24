@@ -256,7 +256,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: #000;
+		color: var(--tech-brand-icon-color);
 		font-size: 1.25rem;
 		box-shadow: 0 0 20px var(--tech-accent-muted);
 	}
