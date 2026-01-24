@@ -16,6 +16,7 @@
 	let currentSortColumn = $state('name');
 	let sortAscending = $state(true);
 	let itemsLoaded = $state(false);
+	let tableLoading = $state(false);
 
 	const paginationStore = getPaginationStore('manageTransactions');
 	const { currentPage, itemsPerPage, setTotalItems } = paginationStore;
@@ -93,17 +94,21 @@
 	});
 
 	const sortBy = (column) => {
+		tableLoading = true;
 		if (currentSortColumn === column) {
 			sortAscending = !sortAscending;
 		} else {
 			currentSortColumn = column;
 			sortAscending = true;
 		}
+		setTimeout(() => tableLoading = false, 300);
 	};
 
 	const handleSearch = (value) => {
+		tableLoading = true;
 		setSearchTerm(value);
 		paginationStore.setCurrentPage(1);
+		setTimeout(() => tableLoading = false, 300);
 	};
 
 	const getCurrentUser = () => {
@@ -205,6 +210,11 @@
 
 	const capitalizeColumn = (column) => {
 		return column.replace(/([A-Z])/g, ' $1').trim().toUpperCase();
+	};
+
+	const handlePageChange = () => {
+		tableLoading = true;
+		setTimeout(() => tableLoading = false, 300);
 	};
 </script>
 
@@ -309,7 +319,7 @@
 										</th>
 									</tr>
 								</thead>
-								<tbody class="table-body-transition" class:loading-fade={!itemsLoaded}>
+								<tbody class="table-body-transition" class:loading-fade={!itemsLoaded || tableLoading}>
 									{#each paginatedItemsList as item (item.id)}
 										<tr class="table-row">
 											<td class="name-col" data-label="Item Name">
@@ -374,7 +384,7 @@
 		</div>
 
 		<div class="footer-extension">
-			<Pagination store={paginationStore} globalTotal={items.length} />
+			<Pagination store={paginationStore} globalTotal={items.length} onPageChange={handlePageChange} />
 			
 			{#if items.some(item => item.count !== 0)}
 				<div class="danger-zone">
@@ -688,6 +698,16 @@
 
 	.table-row:hover {
 		background: var(--tech-row-hover);
+	}
+
+	.table-body-transition {
+		transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), filter 0.4s ease;
+	}
+
+	.loading-fade {
+		opacity: 0.2;
+		filter: blur(2px);
+		pointer-events: none;
 	}
 
 	.tech-table td {

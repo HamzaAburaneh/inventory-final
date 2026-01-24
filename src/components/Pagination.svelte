@@ -1,14 +1,14 @@
 <script>
-	let { store, globalTotal = null } = $props();
+	let { store, globalTotal = null, onPageChange = null } = $props();
 
-	const { 
-		currentPage, 
-		totalPages, 
-		itemsPerPage, 
+	const {
+		currentPage,
+		totalPages,
+		itemsPerPage,
 		totalItems,
 		startIndex,
 		endIndex,
-		setCurrentPage, 
+		setCurrentPage,
 		setItemsPerPage,
 		nextPage,
 		previousPage,
@@ -16,8 +16,14 @@
 		goToLastPage
 	} = store;
 
+	function handlePageChange(action) {
+		onPageChange?.();
+		action();
+	}
+
 	function handleItemsPerPageChange(event) {
 		const newItemsPerPage = event.target.value === 'all' ? 'all' : parseInt(event.target.value);
+		onPageChange?.();
 		setItemsPerPage(newItemsPerPage);
 	}
 </script>
@@ -39,7 +45,7 @@
 	<div class="pagination-modern">
 		<button
 			class="pag-btn icon-only"
-			onclick={goToFirstPage}
+			onclick={() => handlePageChange(goToFirstPage)}
 			disabled={$currentPage === 1}
 			aria-label="First Page"
 		>
@@ -48,7 +54,7 @@
 
 		<button
 			class="pag-btn"
-			onclick={previousPage}
+			onclick={() => handlePageChange(previousPage)}
 			disabled={$currentPage === 1}
 			aria-label="Previous Page"
 		>
@@ -64,7 +70,7 @@
 
 		<button
 			class="pag-btn"
-			onclick={nextPage}
+			onclick={() => handlePageChange(nextPage)}
 			disabled={$currentPage === $totalPages || $totalPages === 0}
 			aria-label="Next Page"
 		>
@@ -74,7 +80,7 @@
 
 		<button
 			class="pag-btn icon-only"
-			onclick={goToLastPage}
+			onclick={() => handlePageChange(goToLastPage)}
 			disabled={$currentPage === $totalPages || $totalPages === 0}
 			aria-label="Last Page"
 		>

@@ -15,6 +15,7 @@
 	let currentSortColumn = $state('name');
 	let sortAscending = $state(true);
 	let itemsLoaded = $state(false);
+	let tableLoading = $state(false);
 	let isEditingInProgress = $state(false);
 	let showEditModal = $state(false);
 	let editData = $state({ id: null, field: '', value: '', title: '' });
@@ -217,21 +218,32 @@
 	};
 
 	const handleSearch = (value) => {
+		tableLoading = true;
 		setSearchTerm(value);
 		paginationStore.setCurrentPage(1);
+		setTimeout(() => tableLoading = false, 300);
 	};
 
 	const handleClearSearch = () => {
+		tableLoading = true;
 		clearSearch();
+		setTimeout(() => tableLoading = false, 300);
 	};
 
 	const sortBy = (column) => {
+		tableLoading = true;
 		if (currentSortColumn === column) {
 			sortAscending = !sortAscending;
 		} else {
 			currentSortColumn = column;
 			sortAscending = true;
 		}
+		setTimeout(() => tableLoading = false, 300);
+	};
+
+	const handlePageChange = () => {
+		tableLoading = true;
+		setTimeout(() => tableLoading = false, 300);
 	};
 </script>
 
@@ -309,13 +321,13 @@
 					{sortBy}
 					{currentSortColumn}
 					{sortAscending}
-					loading={!itemsLoaded}
+					loading={!itemsLoaded || tableLoading}
 				/>
 			{/if}
 		</div>
 
 		<div class="footer-extension">
-			<Pagination store={paginationStore} globalTotal={items.length} />
+			<Pagination store={paginationStore} globalTotal={items.length} onPageChange={handlePageChange} />
 		</div>
 	</div>
 </div>

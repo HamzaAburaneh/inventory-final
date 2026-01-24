@@ -65,6 +65,7 @@
 	async function fetchTransactions(direction = 'first') {
 		loading = true;
 		const currentSearchTerm = searchTermValue;
+		const minLoadingTime = new Promise(resolve => setTimeout(resolve, 300));
 
 		try {
 			const transactionsRef = collection(db, 'transactions');
@@ -172,6 +173,7 @@
 		} catch (error) {
 			console.error('Error fetching transactions:', error);
 		} finally {
+			await minLoadingTime;
 			loading = false;
 		}
 	}

@@ -207,7 +207,13 @@
 	}
 
 	.table-body-transition {
-		transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), filter 0.4s ease;
+	}
+
+	.loading-fade {
+		opacity: 0.2;
+		filter: blur(2px);
+		pointer-events: none;
 	}
 
 	.table-row {
