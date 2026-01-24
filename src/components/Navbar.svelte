@@ -342,15 +342,15 @@
 	.brand-icon {
 		width: 36px;
 		height: 36px;
-		background: var(--tech-accent-muted);
+		background: var(--tech-accent);
 		border: 1px solid var(--tech-accent);
 		border-radius: 8px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: var(--tech-accent);
+		color: var(--tech-brand-icon-color);
 		font-size: 1.1rem;
-		box-shadow: 0 0 10px var(--tech-accent-muted);
+		box-shadow: 0 0 15px var(--tech-accent-muted);
 		transition: all 0.3s ease;
 	}
 
