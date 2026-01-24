@@ -389,21 +389,19 @@
 			<Pagination store={paginationStore} globalTotal={items.length} onPageChange={handlePageChange} />
 			
 			{#if items.some(item => item.count !== 0)}
-				<div class="danger-zone">
-					<button
-						class="reset-all-btn"
-						onclick={resetAll}
-					>
-						<i class="fas fa-exclamation-triangle"></i>
-						RESET ALL COUNTS
-					</button>
-				</div>
+				<button
+					class="reset-all-btn"
+					onclick={resetAll}
+				>
+					<i class="fas fa-exclamation-triangle"></i>
+					RESET ALL COUNTS
+				</button>
 			{/if}
 		</div>
 	</div>
 </div>
 
-{#if notificationValue}
+{#if notificationValue && notificationValue.message}
 	<div class="notification {notificationValue.type}">
 		<div class="notification-content">
 			<i class="fas {notificationValue.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
