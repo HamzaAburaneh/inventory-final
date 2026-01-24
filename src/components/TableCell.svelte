@@ -303,7 +303,7 @@
 
 	/* Compact Buttons */
 	.action-btn {
-		display: flex;
+		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		border-radius: 4px;
@@ -313,6 +313,15 @@
 		background: transparent;
 		color: var(--tech-label);
 		opacity: 0;
+		padding: 0;
+		flex-shrink: 0;
+		min-width: 0;
+		min-height: 0;
+	}
+	
+	.action-btn i {
+		line-height: 1;
+		display: block;
 	}
 
 	.edit-tiny {
