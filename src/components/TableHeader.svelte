@@ -24,18 +24,17 @@
 		{#each TABLE_COLUMNS as column, i}
 			<th
 				class="{column.name}-col"
-				style="width: {column.width}; min-width: {column.minWidth}; max-width: {column.name === '' ? '2.2rem' : 'none'};"
 				onclick={() => handleSort(column.name)}
 			>
-				<div class="header">
+				<div class="header-content {column.name === '' ? 'justify-center' : ''}">
 					{#if column.name}
-						{getColumnDisplayName(column.name)}
+						<span class="header-text">{getColumnDisplayName(column.name)}</span>
 						<i
 							class="fas fa-sort{currentSortColumn === column.name
 								? sortAscending
 									? '-up'
 									: '-down'
-								: ''}"
+								: ''} sort-icon"
 						></i>
 					{/if}
 				</div>
@@ -48,45 +47,64 @@
 	.table-header th {
 		position: sticky;
 		top: 0;
-		background-color: var(--table-header-bg);
-		z-index: 10;
-		box-shadow: 0 0.063rem 0.188rem rgba(0, 0, 0, 0.2);
-		color: var(--nav-logo-color);
-		font-weight: 600;
-		will-change: transform;
-		transform: translateZ(0);
-		overflow: visible !important;
-		text-overflow: unset !important;
-		white-space: nowrap !important;
-		padding: 0.5rem;
+		background: var(--tech-header-bg);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		z-index: 20;
+		padding: 1.1rem 1.25rem;
 		text-align: left;
-		border-bottom: 0.063rem solid var(--table-border-color);
+		font-family: 'Inter', sans-serif;
+		font-weight: 700;
+		color: var(--tech-header-text);
+		text-transform: uppercase;
+		font-size: 0.7rem;
+		letter-spacing: 0.1em;
+		cursor: pointer;
+		border-bottom: 1px solid var(--tech-cell-border);
+		transition: color 0.2s;
 	}
 
-	.header {
+	.table-header th:hover {
+		color: var(--tech-accent);
+	}
+
+	.header-content {
 		display: flex;
 		align-items: center;
-		cursor: pointer;
-		transition: all 0.3s ease;
-		overflow: visible !important;
-		white-space: nowrap !important;
-		min-width: max-content;
+		gap: 0.6rem;
+		white-space: nowrap;
+		position: relative;
 	}
 
-	.header i {
-		margin-left: 0.5rem;
-		font-size: 0.8em;
-		transition: transform 0.3s ease;
-		flex-shrink: 0;
-		min-width: 1rem;
+	.header-text {
+		position: relative;
+		z-index: 1;
 	}
 
-	.header:hover {
-		color: var(--icon-hover-color);
-		transform: scale(1.05);
+	.sort-icon {
+		font-size: 0.75rem;
+		color: var(--tech-accent);
+		opacity: 0.4;
+		transition: all 0.2s;
 	}
 
-	.header:hover i {
-		transform: scale(1.2);
+	.table-header th:hover .sort-icon {
+		opacity: 1;
+	}
+
+	.justify-center {
+		justify-content: center;
+	}
+
+	/* Specific column styles */
+	.count-col, .lowCount-col, .cost-col, .totalValue-col {
+		text-align: center;
+	}
+
+	.count-col .header-content,
+	.lowCount-col .header-content,
+	.cost-col .header-content,
+	.totalValue-col .header-content {
+		justify-content: center;
 	}
 </style>

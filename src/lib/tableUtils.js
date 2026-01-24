@@ -12,7 +12,7 @@ export function capitalizeWords(str) {
 export function formatCost(cost) {
 	if (cost == null || cost === '') return '';
 	const numericCost = parseFloat(cost);
-	return !isNaN(numericCost) ? `$ ${numericCost.toFixed(2)}` : '';
+	return !isNaN(numericCost) ? `$${numericCost.toFixed(2)}` : '';
 }
 
 export function formatTotalValue(count, cost) {
@@ -21,25 +21,33 @@ export function formatTotalValue(count, cost) {
 	const numericCost = parseFloat(cost);
 	if (isNaN(numericCount) || isNaN(numericCost)) return '';
 	const totalValue = numericCount * numericCost;
-	return `$ ${totalValue.toFixed(2)}`;
+	return `$${totalValue.toFixed(2)}`;
 }
 
 export function formatBooths(booths) {
 	if (!booths || booths.length === 0) return [];
 	const boothArray = Array.isArray(booths) ? booths : [booths];
-	return boothArray.map(booth => booth.charAt(0).toUpperCase() + booth.slice(1).toLowerCase());
+	const displayNames = {
+		'freshly': 'Freshly',
+		'b1': 'B1',
+		'b2': 'B2',
+		'jakes': 'Jakes',
+		'epic': 'Epic',
+		'pulled': 'Pulled'
+	};
+	return boothArray.map(booth => displayNames[booth.toLowerCase()] || booth.charAt(0).toUpperCase() + booth.slice(1).toLowerCase());
 }
 
 export function getStorageTypeStyle(storageType) {
 	switch (storageType.toLowerCase()) {
 		case 'freezer':
-			return { backgroundColor: '#1E3A8A', color: '#BFDBFE' };
+			return { backgroundColor: '#3b82f6', color: '#BFDBFE' }; // True Blue
 		case 'dry storage':
-			return { backgroundColor: '#92400E', color: '#FDE68A' };
+			return { backgroundColor: '#f59e0b', color: '#FDE68A' }; // True Orange
 		case 'refrigerator':
-			return { backgroundColor: '#065F46', color: '#A7F3D0' };
+			return { backgroundColor: '#10b981', color: '#A7F3D0' }; // True Green
 		default:
-			return { backgroundColor: '#374151', color: '#E5E7EB' };
+			return { backgroundColor: '#6B7280', color: '#E5E7EB' };
 	}
 }
 
@@ -56,26 +64,32 @@ export function getBoothStyle(booth) {
 }
 
 export const TABLE_COLUMNS = [
-	{name: 'name', width: '18%', minWidth: '9rem'},
-	{name: 'count', width: '7%', minWidth: '5rem'},
-	{name: 'lowCount', width: '8%', minWidth: '7rem'},
-	{name: 'cost', width: '8%', minWidth: '5.5rem'},
-	{name: 'totalValue', width: '10%', minWidth: '8rem'},
+	{name: 'name', width: '22%', minWidth: '10rem'},
+	{name: 'count', width: '7%', minWidth: '4.5rem'},
+	{name: 'lowCount', width: '9%', minWidth: '6.5rem'},
+	{name: 'cost', width: '9%', minWidth: '5.5rem'},
+	{name: 'totalValue', width: '13%', minWidth: '7.5rem'},
 	{name: 'storageType', width: '15%', minWidth: '9rem'},
-	{name: 'booths', width: '20%', minWidth: '9.4rem'},
-	{name: '', width: '3%', minWidth: '1.2rem'}
+	{name: 'booths', width: '20%', minWidth: '11rem'},
+	{name: '', width: '5%', minWidth: '3.5rem'}
 ];
 
 export function getColumnDisplayName(columnName) {
 	switch (columnName) {
-		case 'totalValue':
-			return 'Total Value';
-		case 'booths':
-			return 'Booths';
+		case 'name':
+			return 'Item Name';
+		case 'count':
+			return 'Count';
 		case 'lowCount':
 			return 'Low Count';
+		case 'cost':
+			return 'Unit Cost';
+		case 'totalValue':
+			return 'Total Value';
 		case 'storageType':
 			return 'Storage Type';
+		case 'booths':
+			return 'Booths';
 		default:
 			return columnName.charAt(0).toUpperCase() + columnName.slice(1);
 	}

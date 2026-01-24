@@ -68,534 +68,341 @@
 	};
 </script>
 
-<div class="form-card">
+<div class="tech-form-frame">
 	<div class="form-header">
 		<h3 class="form-title">Add New Item</h3>
-		<p class="form-subtitle">Enter item details to add to your inventory</p>
+		<div class="form-separator"></div>
 	</div>
 
-	<div class="form-content">
-		<div class="form-row primary-row">
-			<div class="form-group">
-				<label for="name" class="form-label">Item Name</label>
-				<div class="input-wrapper">
-					<input
-						id="name"
-						class="form-input {errors.name ? 'error' : ''}"
-						bind:value={formData.name}
-						placeholder="Enter item name"
-						oninput={() => validateField('name', formData.name)}
-					/>
-					{#if errors.name}
-						<div class="error-message">
-							{errors.name}
-						</div>
-					{/if}
-				</div>
-			</div>
-
-			<div class="form-group">
-				<label for="storageType" class="form-label">Storage Type</label>
-				<div class="input-wrapper">
-					<select
-						id="storageType"
-						class="form-input {errors.storageType ? 'error' : ''}"
-						bind:value={formData.storageType}
-						class:placeholder-selected={!formData.storageType}
-					>
-						<option value="" disabled>Select storage type...</option>
-						<option value="Freezer">Freezer</option>
-						<option value="Refrigerator">Refrigerator</option>
-						<option value="Dry Storage">Dry Storage</option>
-					</select>
-				</div>
-			</div>
-
-			<div class="form-group booths-group">
-				<label class="form-label">Booths</label>
-				<div class="input-wrapper">
-					<div class="booths-container">
-						{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth}
-							<label class="booth-option">
-								<input
-									type="checkbox"
-									value={booth.value}
-									bind:group={formData.booths}
-									class="booth-checkbox"
-								/>
-								<div class="booth-card" style="--booth-color: {booth.color}">
-									<div class="booth-indicator"></div>
-									<span class="booth-name">{booth.label}</span>
-									<div class="checkmark">
-										<svg
-											width="16"
-											height="16"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="3"
-										>
-											<polyline points="20,6 9,17 4,12"></polyline>
-										</svg>
-									</div>
-								</div>
-							</label>
-						{/each}
+	<div class="form-grid">
+		<div class="input-group name-group">
+			<label for="name" class="tech-label">Item Name</label>
+			<div class="tech-input-wrapper">
+				<input
+					id="name"
+					class="tech-input {errors.name ? 'error' : ''}"
+					bind:value={formData.name}
+					placeholder="Enter item name..."
+					oninput={() => validateField('name', formData.name)}
+				/>
+				{#if errors.name}
+					<div class="tech-error-message">
+						<i class="fas fa-exclamation-triangle"></i>
+						{errors.name}
 					</div>
-					{#if errors.booths}
-						<div class="error-message">
-							{errors.booths}
-						</div>
-					{/if}
-				</div>
+				{/if}
 			</div>
 		</div>
 
-		<div class="form-row secondary-row">
-			<div class="form-group">
-				<label for="count" class="form-label">Current Stock</label>
-				<div class="input-wrapper">
-					<input
-						id="count"
-						class="form-input {errors.count ? 'error' : ''}"
-						type="text"
-						bind:value={formData.count}
-						pattern="^[0-9]*$"
-						placeholder="0"
-						oninput={(event) => handleInput(event, 'count')}
-					/>
-					{#if errors.count}
-						<div class="error-message">
-							{errors.count}
-						</div>
-					{/if}
-				</div>
-			</div>
-
-			<div class="form-group">
-				<label for="lowCount" class="form-label">Low Stock Alert</label>
-				<div class="input-wrapper">
-					<input
-						id="lowCount"
-						class="form-input {errors.lowCount ? 'error' : ''}"
-						type="text"
-						bind:value={formData.lowCount}
-						pattern="^[0-9]*$"
-						placeholder="0"
-						oninput={(event) => handleInput(event, 'lowCount')}
-					/>
-					{#if errors.lowCount}
-						<div class="error-message">
-							{errors.lowCount}
-						</div>
-					{/if}
-				</div>
-			</div>
-
-			<div class="form-group">
-				<label for="cost" class="form-label">Unit Cost ($)</label>
-				<div class="input-wrapper">
-					<input
-						id="cost"
-						class="form-input {errors.cost ? 'error' : ''}"
-						type="text"
-						bind:value={formData.cost}
-						placeholder="0.00"
-						oninput={(event) => handleInput(event, 'cost', true)}
-					/>
-					{#if errors.cost}
-						<div class="error-message">
-							{errors.cost}
-						</div>
-					{/if}
-				</div>
-			</div>
-		</div>
-
-		<div class="form-actions">
-			<button class="add-button" onclick={handleAdd}>
-				<svg
-					width="20"
-					height="20"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
+		<div class="input-group storage-group">
+			<label for="storageType" class="tech-label">Storage Type</label>
+			<div class="tech-input-wrapper">
+				<select
+					id="storageType"
+					class="tech-input {errors.storageType ? 'error' : ''}"
+					bind:value={formData.storageType}
+					class:placeholder-selected={!formData.storageType}
 				>
-					<line x1="12" y1="5" x2="12" y2="19"></line>
-					<line x1="5" y1="12" x2="19" y2="12"></line>
-				</svg>
-				Add Item
-			</button>
+					<option value="" disabled>Select Storage Type...</option>
+					<option value="Freezer">Freezer</option>
+					<option value="Refrigerator">Refrigerator</option>
+					<option value="Dry Storage">Dry Storage</option>
+				</select>
+			</div>
 		</div>
+
+		<div class="input-group count-group">
+			<label for="count" class="tech-label">Current Count</label>
+			<div class="tech-input-wrapper">
+				<input
+					id="count"
+					class="tech-input {errors.count ? 'error' : ''}"
+					type="text"
+					bind:value={formData.count}
+					placeholder="0"
+					oninput={(event) => handleInput(event, 'count')}
+				/>
+			</div>
+		</div>
+
+		<div class="input-group full-width">
+			<label class="tech-label">Booths</label>
+			<div class="booth-selection-grid">
+				{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth}
+					<label class="booth-node">
+						<input
+							type="checkbox"
+							value={booth.value}
+							bind:group={formData.booths}
+							class="hidden-check"
+						/>
+						<div class="node-card" style="--node-color: {booth.color}">
+							<div class="node-indicator"></div>
+							<span class="node-label">{booth.label}</span>
+							<i class="fas fa-check node-check"></i>
+						</div>
+					</label>
+				{/each}
+			</div>
+		</div>
+
+		<div class="input-group alert-group">
+			<label for="lowCount" class="tech-label">Low Count Alert</label>
+			<div class="tech-input-wrapper">
+				<input
+					id="lowCount"
+					class="tech-input {errors.lowCount ? 'error' : ''}"
+					type="text"
+					bind:value={formData.lowCount}
+					placeholder="0"
+					oninput={(event) => handleInput(event, 'lowCount')}
+				/>
+			</div>
+		</div>
+
+		<div class="input-group cost-group">
+			<label for="cost" class="tech-label">Unit Cost ($)</label>
+			<div class="tech-input-wrapper">
+				<input
+					id="cost"
+					class="tech-input {errors.cost ? 'error' : ''}"
+					type="text"
+					bind:value={formData.cost}
+					placeholder="0.00"
+					oninput={(event) => handleInput(event, 'cost', true)}
+				/>
+			</div>
+		</div>
+	</div>
+
+	<div class="form-footer centered">
+		<button class="tech-add-btn primary-action" onclick={handleAdd}>
+			<i class="fas fa-plus-circle"></i>
+			<span>Add New Item</span>
+		</button>
 	</div>
 </div>
 
 <style>
-	.form-card {
-		background: var(--container-bg);
-		border-radius: var(--border-radius);
-		padding: 0;
-		margin-bottom: 0;
-		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-		border: 1px solid var(--table-border-color);
-		overflow: hidden;
+	.tech-form-frame {
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 12px;
+		padding: 2rem;
+		box-shadow: var(--tech-glass-shadow);
 	}
 
 	.form-header {
-		background: var(--table-header-bg);
-		padding: 1.5rem 2rem;
-		border-bottom: 1px solid var(--table-border-color);
+		margin-bottom: 2rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
 	}
 
 	.form-title {
-		margin: 0 0 0.25rem 0;
-		font-size: 1.25rem;
-		font-weight: 700;
-		color: var(--text-color);
-		letter-spacing: -0.025em;
-	}
-
-	.form-subtitle {
 		margin: 0;
-		font-size: 0.875rem;
-		color: var(--text-color-dimmed);
-		font-weight: 400;
-	}
-
-	.form-content {
-		padding: 2rem;
-	}
-
-	.form-row {
-		display: grid;
-		gap: 1.5rem;
-		margin-bottom: 1.5rem;
-	}
-
-	.primary-row {
-		grid-template-columns: 1fr;
-	}
-
-	.secondary-row {
-		grid-template-columns: 1fr;
-	}
-
-	.form-group {
-		position: relative;
-	}
-
-	.form-label {
-		display: block;
-		margin-bottom: 0.5rem;
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--text-color);
-		letter-spacing: 0.025em;
-	}
-
-	.input-wrapper {
-		position: relative;
-	}
-
-	.form-input {
-		width: 100%;
-		padding: 0.875rem 1rem;
-		border: 2px solid var(--input-border-color);
-		border-radius: var(--border-radius);
-		background-color: var(--input-bg);
-		color: var(--input-text);
-		font-size: 0.95rem;
-		font-weight: 500;
-		transition: all 0.2s ease;
-	}
-
-	.form-input::placeholder {
-		color: var(--placeholder-text);
-		font-weight: 400;
-	}
-
-	.form-input:focus {
-		outline: none;
-		border-color: var(--focus-border-color);
-		box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
-	}
-
-	.form-input:hover:not(:focus) {
-		border-color: var(--input-hover-border-color);
-		background-color: var(--input-hover-bg);
-	}
-
-	.form-input.error {
-		border-color: #dc3545;
-		box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
-	}
-
-	.placeholder-selected {
-		color: var(--placeholder-text) !important;
-	}
-
-	.error-message {
-		position: absolute;
-		top: 100%;
-		left: 0;
-		right: 0;
-		margin-top: 0.5rem;
-		padding: 0.75rem 1rem;
-		background: #dc3545;
-		color: white;
-		border-radius: var(--border-radius);
-		font-size: 0.8rem;
-		font-weight: 500;
-		box-shadow: 0 4px 6px -1px rgba(220, 53, 69, 0.3);
-		z-index: 10;
-	}
-
-	.form-actions {
-		margin-top: 2rem;
-		display: flex;
-		justify-content: center;
-	}
-
-	.add-button {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.75rem;
-		padding: 1rem 2.5rem;
-		background: var(--add-item-color);
-		color: black;
-		border: none;
-		border-radius: var(--border-radius);
-		font-size: 1rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-		box-shadow:
-			0 4px 15px rgba(0, 0, 0, 0.12),
-			0 2px 6px rgba(0, 0, 0, 0.08);
-		letter-spacing: 0.025em;
+		font-size: 1.1rem;
+		font-weight: 800;
+		color: var(--tech-title);
 		text-transform: uppercase;
-		position: relative;
-		overflow: hidden;
-		user-select: none;
-		-webkit-tap-highlight-color: transparent;
+		letter-spacing: 0.1em;
 	}
 
-	.add-button::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: -100%;
-		width: 100%;
-		height: 100%;
-		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-		transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+	.form-separator {
+		height: 2px;
+		width: 40px;
+		background: var(--tech-accent);
+		box-shadow: 0 0 10px var(--tech-accent-muted);
 	}
 
-	.add-button:hover {
-		transform: translateY(-2px);
-		box-shadow:
-			0 8px 25px rgba(0, 0, 0, 0.15),
-			0 4px 12px rgba(0, 0, 0, 0.1);
-		filter: brightness(1.25);
+	.form-grid {
+		display: grid;
+		grid-template-columns: repeat(6, 1fr);
+		gap: 1.25rem;
+		margin-bottom: 2rem;
 	}
 
-	.add-button:hover::before {
-		left: 100%;
-	}
+	.name-group { grid-column: span 2; }
+	.storage-group { grid-column: span 1; }
+	.count-group { grid-column: span 1; }
+	.alert-group { grid-column: span 1; }
+	.cost-group { grid-column: span 1; }
+	.booths-group { grid-column: span 6; }
 
-	.add-button:active {
-		transform: translateY(0);
-		transition-duration: 0.1s;
-		box-shadow:
-			0 2px 8px rgba(0, 0, 0, 0.15),
-			0 1px 4px rgba(0, 0, 0, 0.1);
-	}
-
-	.add-button:focus-visible {
-		outline: 2px solid var(--add-item-color);
-		outline-offset: 3px;
-	}
-
-	.add-button:active {
-		transform: translateY(0);
-		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-	}
-
-	.add-button svg {
-		width: 18px;
-		height: 18px;
-	}
-
-	/* Responsive Design */
-	@media (min-width: 640px) {
-		.primary-row {
-			grid-template-columns: 1fr 1fr;
-		}
-
-		.secondary-row {
-			grid-template-columns: repeat(3, 1fr);
-		}
-	}
-
-	@media (min-width: 768px) {
-		.form-header {
-			padding: 2rem 2.5rem;
-		}
-
-		.form-content {
-			padding: 2.5rem;
-		}
-
-		.form-title {
-			font-size: 1.375rem;
-		}
-	}
-
-	@media (min-width: 1024px) {
-		.form-row {
-			gap: 2rem;
-		}
-
-		.form-input {
-			padding: 1rem 1.25rem;
-			font-size: 1rem;
-		}
-
-		.add-button {
-			padding: 1rem 2.5rem;
-			font-size: 1rem;
-		}
-	}
-
-	.booths-group {
+	.full-width {
 		grid-column: 1 / -1;
 	}
 
-	.booths-container {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-		gap: 0.75rem;
-		margin-top: 0.75rem;
+	.input-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
 	}
 
-	/* Mobile responsiveness */
-	@media (max-width: 640px) {
-		.booths-container {
-			grid-template-columns: repeat(2, 1fr);
-			gap: 0.5rem;
-		}
+	.tech-label {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.65rem;
+		font-weight: 800;
+		color: var(--tech-label);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
 
-	@media (max-width: 480px) {
-		.booths-container {
-			grid-template-columns: 1fr;
-			gap: 0.5rem;
-		}
-	}
-
-	.booth-option {
+	.tech-input-wrapper {
 		position: relative;
+	}
+
+	.tech-input {
+		width: 100%;
+		background: var(--tech-badge-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 4px;
+		padding: 0.75rem 1rem;
+		color: var(--tech-value);
+		font-family: 'Inter', sans-serif;
+		font-size: 0.9rem;
+		font-weight: 500;
+		transition: all 0.2s;
+	}
+
+	.tech-input:focus {
+		outline: none;
+		border-color: var(--tech-accent);
+		background: var(--tech-header-bg);
+		box-shadow: 0 0 10px var(--tech-accent-muted);
+	}
+
+	.tech-input::placeholder {
+		color: var(--tech-label);
+		opacity: 0.4;
+	}
+
+	.tech-error-message {
+		position: absolute;
+		top: calc(100% + 5px);
+		left: 0;
+		color: #ef4444;
+		font-size: 0.65rem;
+		font-weight: 700;
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		z-index: 5;
+	}
+
+	.booth-selection-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+		gap: 0.75rem;
+	}
+
+	.booth-node {
 		cursor: pointer;
 	}
 
-	.booth-checkbox {
+	.hidden-check {
 		position: absolute;
 		opacity: 0;
-		pointer-events: none;
 	}
 
-	.booth-card {
-		position: relative;
+	.node-card {
 		display: flex;
 		align-items: center;
-		padding: 0.75rem;
-		background: var(--input-bg);
-		border: 2px solid var(--input-border-color);
-		border-radius: var(--border-radius);
-		transition: all 0.2s ease;
-		min-height: 50px;
-		overflow: hidden;
-		width: 100%;
-		box-sizing: border-box;
+		justify-content: space-between;
+		padding: 0.6rem 0.8rem;
+		background: var(--tech-badge-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 4px;
+		transition: all 0.2s;
 	}
 
-	/* Mobile adjustments */
-	@media (max-width: 640px) {
-		.booth-card {
-			padding: 0.5rem;
-			min-height: 45px;
-		}
+	.node-indicator {
+		width: 3px;
+		height: 14px;
+		background: var(--node-color);
+		border-radius: 2px;
 	}
 
-	.booth-card:hover {
-		border-color: var(--input-hover-border-color);
-		background: var(--input-hover-bg);
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	.node-label {
+		font-size: 0.7rem;
+		font-weight: 800;
+		color: var(--tech-label);
+		text-transform: uppercase;
+		margin-left: -0.5rem;
 	}
 
-	.booth-indicator {
-		position: absolute;
-		left: 0;
-		top: 0;
-		bottom: 0;
-		width: 4px;
-		background: var(--booth-color);
-		opacity: 0.7;
-		transition: all 0.2s ease;
-	}
-
-	.booth-name {
-		flex: 1;
-		font-size: 0.9rem;
-		font-weight: 600;
-		color: var(--text-color);
-		margin-left: 0.75rem;
-	}
-
-	.checkmark {
+	.node-check {
+		font-size: 0.7rem;
+		color: var(--node-color);
 		opacity: 0;
-		color: var(--booth-color);
-		transition: all 0.2s ease;
-		transform: scale(0.8);
+		transition: all 0.2s;
 	}
 
-	.booth-checkbox:checked + .booth-card {
-		border-color: var(--booth-color);
-		background: color-mix(in srgb, var(--booth-color) 10%, var(--input-bg));
+	.hidden-check:checked + .node-card {
+		border-color: var(--node-color);
+		background: rgba(255, 255, 255, 0.05);
 	}
 
-	.booth-checkbox:checked + .booth-card .booth-indicator {
+	.hidden-check:checked + .node-card .node-label {
+		color: var(--tech-value);
+	}
+
+	.hidden-check:checked + .node-card .node-check {
 		opacity: 1;
-		width: 6px;
 	}
 
-	.booth-checkbox:checked + .booth-card .checkmark {
-		opacity: 1;
-		transform: scale(1);
+	.form-footer {
+		display: flex;
+		justify-content: center;
+		padding-top: 1rem;
+		border-top: 1px solid var(--tech-glass-border);
+		margin-top: 1rem;
 	}
 
-	.booth-checkbox:checked + .booth-card .booth-name {
-		color: var(--booth-color);
+	.tech-add-btn.primary-action {
+		padding: 1.25rem 5rem;
+		min-width: 350px;
+		font-size: 1rem;
+		border-radius: 8px;
+		background: var(--tech-accent);
+		color: var(--tech-bg-start);
 	}
 
-	/* Dark mode improvements */
-	@media (prefers-color-scheme: dark) {
-		.booth-card {
-			background: var(--container-bg);
-			border-color: var(--table-border-color);
-		}
+	.tech-add-btn.primary-action i {
+		font-size: 1.2rem;
+	}
 
-		.booth-card:hover {
-			background: var(--hover-bg-color);
-			border-color: var(--input-hover-border-color);
-		}
+	.tech-add-btn {
+		background: var(--tech-accent-muted);
+		color: var(--tech-accent);
+		border: 1px solid var(--tech-accent-muted);
+		padding: 0.85rem 2.5rem;
+		border-radius: 4px;
+		font-family: 'JetBrains Mono', monospace;
+		font-weight: 800;
+		font-size: 0.75rem;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		transition: all 0.3s;
+		cursor: pointer;
+	}
 
-		.booth-checkbox:checked + .booth-card {
-			background: color-mix(in srgb, var(--booth-color) 15%, var(--container-bg));
-			border-color: var(--booth-color);
-		}
+	.tech-add-btn:hover {
+		background: var(--tech-accent);
+		color: var(--tech-bg-start);
+		box-shadow: 0 0 20px var(--tech-accent-muted);
+		transform: translateY(-2px);
+	}
+
+	.tech-add-btn i {
+		font-size: 1rem;
+	}
+
+	@media (max-width: 768px) {
+		.form-grid { grid-template-columns: 1fr; }
+		.booth-selection-grid { grid-template-columns: repeat(2, 1fr); }
 	}
 </style>

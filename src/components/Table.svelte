@@ -80,9 +80,9 @@
 
 <div class="table-wrapper">
 	<div class="table-scroll">
-		<table class="custom-table">
+		<table class="tech-table">
 			<TableHeader {sortBy} {currentSortColumn} {sortAscending} />
-			<tbody>
+			<tbody class="table-body-transition">
 				{#each paginatedItems as item (item.id)}
 					{#if item.id !== deletingItemId}
 						<tr class="table-row">
@@ -178,75 +178,53 @@
 
 <style>
 	.table-wrapper {
-		position: relative;
 		width: 100%;
-		overflow: hidden;
 	}
 
 	.table-scroll {
 		width: 100%;
 		overflow-x: auto;
-		overflow-y: scroll;
-		max-height: 41.9rem;
-		min-height: 18.8rem;
-		will-change: scroll-position;
-		transform: translateZ(0);
-		-webkit-overflow-scrolling: touch;
-		padding-right: 0;
+		overflow-y: auto;
+		max-height: 70vh;
+		min-height: 400px;
+		scrollbar-width: thin;
+		scrollbar-color: var(--tech-scrollbar-thumb) transparent;
 	}
 
-	.custom-table {
-		border-collapse: separate;
-		border-spacing: 0;
+	.table-scroll::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+
+	.table-scroll::-webkit-scrollbar-thumb {
+		background: var(--tech-scrollbar-thumb);
+	}
+
+	.tech-table {
 		width: 100%;
-		table-layout: auto;
-		min-width: 60rem;
+		border-collapse: collapse;
 	}
 
-	.custom-table tbody tr {
-		background-color: var(--container-bg);
-		transition: background-color 0.3s ease;
+	.table-body-transition {
+		transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
-	.custom-table tbody tr:hover {
-		background-color: var(--table-row-hover-bg);
+	.table-row {
+		background: transparent;
+		transition: background-color 0.2s ease;
 	}
 
-	/* Responsive adjustments for smaller screens */
-	@media (max-width: 48rem) {
-		.table-scroll {
-			padding-right: 0;
-		}
+	.table-row:nth-child(even) {
+		background: var(--tech-row-stripe);
+	}
 
-		.custom-table {
-			min-width: auto;
-		}
+	.table-row:hover {
+		background: var(--tech-row-hover);
+	}
 
-		.custom-table :global(thead) {
+	@media (max-width: 768px) {
+		.tech-table thead {
 			display: none;
-		}
-
-		.custom-table,
-		.custom-table :global(tbody),
-		.custom-table :global(tr),
-		.custom-table :global(td) {
-			width: 100%;
-		}
-
-		.custom-table :global(tr) {
-			display: flex;
-			flex-direction: column;
-			margin-bottom: 1rem;
-			border: 0.063rem solid var(--table-border-color);
-			border-radius: 0.5rem;
-			overflow: hidden;
-			padding: 0.75rem;
-			gap: 0.5rem;
-			background-color: var(--container-bg);
-		}
-
-		.custom-table :global(td:last-child) {
-			border-bottom: none;
 		}
 	}
 </style>

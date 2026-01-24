@@ -366,20 +366,21 @@
 			{/if}
 		</div>
 
-		<footer class="ledger-footer">
-			<Pagination store={paginationStore} />
+		<div class="footer-extension">
+			<Pagination store={paginationStore} globalTotal={items.length} />
 			
-			<div class="footer-actions">
-				<button
-					class="reset-all-btn"
-					onclick={resetAll}
-					disabled={items.every(item => item.count === 0)}
-				>
-					<i class="fas fa-exclamation-triangle"></i>
-					RESET ALL COUNTS
-				</button>
-			</div>
-		</footer>
+			{#if items.some(item => item.count !== 0)}
+				<div class="danger-zone">
+					<button
+						class="reset-all-btn"
+						onclick={resetAll}
+					>
+						<i class="fas fa-exclamation-triangle"></i>
+						RESET ALL COUNTS
+					</button>
+				</div>
+			{/if}
+		</div>
 	</div>
 </div>
 

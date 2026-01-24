@@ -1,5 +1,9 @@
-<script>
-	let { searchValue = $bindable(''), onSearch, onClear } = $props();
+	let { 
+		searchValue = $bindable(''), 
+		onSearch, 
+		onClear,
+		placeholder = "Search..."
+	} = $props();
 
 	function handleInput(event) {
 		const value = event.target.value;
@@ -20,7 +24,7 @@
 			id="search"
 			class="tech-search-input"
 			bind:value={searchValue}
-			placeholder="Search transactions..."
+			{placeholder}
 			oninput={handleInput}
 		/>
 		{#if searchValue}
