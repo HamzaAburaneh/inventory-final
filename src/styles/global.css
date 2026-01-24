@@ -181,8 +181,6 @@
 }
 
 html {
-	/* Prevent horizontal scrolling */
-	overflow-x: hidden;
 	/* Improve text rendering */
 	-webkit-text-size-adjust: 100%;
 	-webkit-font-smoothing: antialiased;
@@ -201,7 +199,6 @@ body {
 	color: var(--text-color);
 	margin: 0;
 	padding: 0;
-	overflow-x: hidden;
 	font-size: 16px;
 	line-height: 1.6;
 	font-family:
@@ -224,13 +221,7 @@ body {
 	position: relative;
 }
 
-/* Fix for viewport changes */
-@media screen {
-	body {
-		/* Force recalculation on viewport change */
-		contain: layout style;
-	}
-}
+/* Note: Removed contain: layout style as it breaks position: sticky for navbar */
 
 @media (max-width: 480px) {
 	body {
