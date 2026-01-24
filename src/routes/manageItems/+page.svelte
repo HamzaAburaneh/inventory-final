@@ -642,7 +642,20 @@
 		border-radius: 12px;
 		min-height: 500px;
 		overflow: hidden;
-		box-shadow: var(--tech-glass-shadow);
+		/* Professional multi-layered base shadow */
+		box-shadow: 
+			0 4px 6px -1px rgba(0, 0, 0, 0.1),
+			0 2px 4px -1px rgba(0, 0, 0, 0.06),
+			inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+		transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	.table-frame:hover {
+		/* Deeper, more atmospheric shadow on hover */
+		box-shadow: 
+			0 30px 60px -12px rgba(0, 0, 0, 0.5),
+			0 18px 36px -18px rgba(0, 0, 0, 0.5);
+		border-color: rgba(255, 255, 255, 0.1); 
 	}
 
 	.ledger-loading, .null-state {
