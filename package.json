@@ -37,8 +37,7 @@
 		"arima": "^0.2.5",
 		"chart.js": "^4.4.5",
 		"firebase": "^10.14.1",
-		"postcss-load-config": "^5.1.0",
-		"sweetalert2": "^11.11.1"
+		"postcss-load-config": "^5.1.0"
 	},
 	"optionalDependencies": {
 		"csv-parse": "^6.1.0",

@@ -1,7 +1,7 @@
 <script>
-	import Swal from 'sweetalert2';
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
+	import { notificationStore } from '../stores/notificationStore';
 
 	let { onAdd } = $props();
 	let isCollapsed = $state(true);
@@ -45,23 +45,7 @@
 
 	const handleAdd = async () => {
 		if (formData.name.trim() === '') {
-			// Preserve scroll position before showing alert
-			const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
-
-			await Swal.fire({
-				icon: 'error',
-				title: 'Empty Item Name',
-				text: 'Item name cannot be empty.',
-				background: 'var(--container-bg)',
-				color: 'var(--text-color)',
-				scrollbarPadding: false,
-				heightAuto: false
-			});
-
-			// Restore scroll position after alert
-			setTimeout(() => {
-				window.scrollTo(0, scrollPos);
-			}, 50);
+			notificationStore.showNotification('Item name cannot be empty.', 'error');
 			return;
 		}
 

@@ -1,7 +1,7 @@
 <script>
-	import Swal from 'sweetalert2';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Pagination from '../../components/Pagination.svelte';
+	import ConfirmModal from '../../components/ConfirmModal.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { itemStore } from '../../stores/itemStore';
 	import { getSearchStore } from '../../stores/searchStore';
@@ -17,6 +17,16 @@
 	let sortAscending = $state(true);
 	let itemsLoaded = $state(false);
 	let tableLoading = $state(false);
+
+	// Modal state
+	let confirmModal = $state({
+		visible: false,
+		title: '',
+		message: '',
+		htmlMessage: '',
+		isDanger: false,
+		onConfirm: () => {}
+	});
 
 	const paginationStore = getPaginationStore('manageTransactions');
 	const { currentPage, itemsPerPage, setTotalItems } = paginationStore;
@@ -135,63 +145,55 @@
 	};
 
 	const resetCount = async (item) => {
-		const result = await Swal.fire({
+		confirmModal = {
+			visible: true,
 			title: 'Are you sure?',
-			text: `This will reset the count for "${item.name}" to 0.`,
-			icon: 'warning',
-			showCancelButton: true,
-			confirmButtonColor: 'var(--tech-accent)',
-			cancelButtonColor: 'var(--tech-label)',
-			confirmButtonText: 'Yes, reset it!',
-			background: 'var(--tech-glass-bg)',
-			color: 'var(--tech-title)'
-		});
-
-		if (result.isConfirmed) {
-			const previousCount = item.count;
-			await itemStore.resetItemCount(item.id);
-			await addTransaction({
-				itemId: item.id,
-				itemName: item.name,
-				type: 'remove',
-				previousCount: previousCount,
-				newCount: 0,
-				user: getCurrentUser()
-			});
-			// Reset the input field after operation
-			itemStore.setChangeAmount(item.id, 0);
-			notificationStore.showNotification(`Count for "${item.name}" reset successfully!`, 'success');
-		}
-	};
-
-	const resetAll = async () => {
-		const result = await Swal.fire({
-			title: 'Are you sure?',
-			html: `This will reset the count for <strong style="color: #ef4444;">ALL</strong> items to 0.`,
-			icon: 'warning',
-			showCancelButton: true,
-			confirmButtonColor: '#ef4444',
-			cancelButtonColor: 'var(--tech-label)',
-			confirmButtonText: 'Yes, reset all!',
-			background: 'var(--tech-glass-bg)',
-			color: 'var(--tech-title)'
-		});
-
-		if (result.isConfirmed) {
-			const itemsToReset = items.filter((item) => item.count !== 0);
-			await itemStore.resetAllCounts();
-			for (const item of itemsToReset) {
+			message: `This will reset the count for "${item.name}" to 0.`,
+			htmlMessage: '',
+			isDanger: false,
+			onConfirm: async () => {
+				confirmModal.visible = false;
+				const previousCount = item.count;
+				await itemStore.resetItemCount(item.id);
 				await addTransaction({
 					itemId: item.id,
 					itemName: item.name,
 					type: 'remove',
-					previousCount: item.count,
+					previousCount: previousCount,
 					newCount: 0,
 					user: getCurrentUser()
 				});
+				// Reset the input field after operation
+				itemStore.setChangeAmount(item.id, 0);
+				notificationStore.showNotification(`Count for "${item.name}" reset successfully!`, 'success');
 			}
-			notificationStore.showNotification('All counts have been reset successfully!', 'success');
-		}
+		};
+	};
+
+	const resetAll = async () => {
+		confirmModal = {
+			visible: true,
+			title: 'Are you sure?',
+			message: '',
+			htmlMessage: `This will reset the count for <strong style="color: #ef4444;">ALL</strong> items to 0.`,
+			isDanger: true,
+			onConfirm: async () => {
+				confirmModal.visible = false;
+				const itemsToReset = items.filter((item) => item.count !== 0);
+				await itemStore.resetAllCounts();
+				for (const item of itemsToReset) {
+					await addTransaction({
+						itemId: item.id,
+						itemName: item.name,
+						type: 'remove',
+						previousCount: item.count,
+						newCount: 0,
+						user: getCurrentUser()
+					});
+				}
+				notificationStore.showNotification('All counts have been reset successfully!', 'success');
+			}
+		};
 	};
 
 	const handleChangeAmountInput = (item, event) => {
@@ -409,6 +411,17 @@
 		</div>
 	</div>
 {/if}
+
+<ConfirmModal
+	bind:show={confirmModal.visible}
+	title={confirmModal.title}
+	message={confirmModal.message || confirmModal.htmlMessage}
+	type={confirmModal.isDanger ? 'danger' : 'warning'}
+	confirmText="Yes, reset it!"
+	cancelText="Cancel"
+	onConfirm={confirmModal.onConfirm}
+	onCancel={() => confirmModal.visible = false}
+/>
 
 <style>
 	:global(body) {
