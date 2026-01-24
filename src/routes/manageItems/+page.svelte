@@ -370,7 +370,7 @@
 		onkeydown={(e) => e.key === 'Escape' && closeEditModal()}
 		aria-label="Close modal"
 	></button>
-	<div class="modal-overlay" style="left: 50%; top: {editButtonPosition?.y || 300}px;">
+	<div class="modal-overlay" style="left: 50%; top: 50%;">
 		<form class="edit-modal" onsubmit={confirmEdit}>
 			<h3>{editData.title}</h3>
 			{#if editData.field === 'storageType'}

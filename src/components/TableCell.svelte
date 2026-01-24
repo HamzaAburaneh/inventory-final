@@ -22,12 +22,11 @@
 	function handleEdit(event, field, currentValue) {
 		const button = event.currentTarget;
 		const rect = button.getBoundingClientRect();
-		const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
-		const scrollY = window.pageYOffset || document.documentElement.scrollTop;
 		
+		// Use viewport coordinates for fixed positioning
 		const position = {
-			x: rect.left + scrollX + rect.width / 2,
-			y: rect.top + scrollY + rect.height / 2
+			x: rect.left + rect.width / 2,
+			y: rect.top + rect.height / 2
 		};
 		
 		onEdit(item.id, field, currentValue, position);
@@ -36,12 +35,11 @@
 	function handleDelete(event) {
 		const button = event.currentTarget;
 		const rect = button.getBoundingClientRect();
-		const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
-		const scrollY = window.pageYOffset || document.documentElement.scrollTop;
 		
+		// Use viewport coordinates for fixed positioning
 		const position = {
-			x: rect.left + scrollX + rect.width / 2,
-			y: rect.top + scrollY + rect.height / 2
+			x: rect.left + rect.width / 2,
+			y: rect.top + rect.height / 2
 		};
 		
 		onDelete(item.id, item.name, position);

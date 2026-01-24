@@ -10,7 +10,7 @@
 
 <style>
 	.tooltip {
-		position: absolute;
+		position: fixed;
 		background-color: #333;
 		color: white;
 		padding: 0.5rem 0.75rem;
