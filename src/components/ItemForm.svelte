@@ -482,6 +482,17 @@
 		color: var(--tech-bg-start);
 		box-shadow: 0 0 20px var(--tech-accent-muted);
 		transform: translateY(-2px);
+		outline: none;
+	}
+
+	.tech-add-btn:focus {
+		outline: none;
+		box-shadow: 0 0 20px var(--tech-accent-muted);
+	}
+
+	.tech-add-btn:active {
+		outline: none;
+		transform: translateY(0);
 	}
 
 	.tech-add-btn i {
