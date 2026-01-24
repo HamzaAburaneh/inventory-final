@@ -11,6 +11,7 @@
 	import { addTransaction } from '../../lib/transactions';
 	import { authStore } from '../../stores/authStore';
 	import { onMount } from 'svelte';
+	import { blur } from 'svelte/transition';
 
 	let currentSortColumn = $state('name');
 	let sortAscending = $state(true);
@@ -131,11 +132,11 @@
 			text: `This will reset the count for "${item.name}" to 0.`,
 			icon: 'warning',
 			showCancelButton: true,
-			confirmButtonColor: '#D97706',
-			cancelButtonColor: '#6B7280',
+			confirmButtonColor: 'var(--tech-accent)',
+			cancelButtonColor: 'var(--tech-label)',
 			confirmButtonText: 'Yes, reset it!',
-			background: currentTheme === 'dark' ? '#1F2937' : '#FFFFFF',
-			color: currentTheme === 'dark' ? '#FFFFFF' : '#000000'
+			background: 'var(--tech-glass-bg)',
+			color: 'var(--tech-title)'
 		});
 
 		if (result.isConfirmed) {
@@ -158,14 +159,14 @@
 	const resetAll = async () => {
 		const result = await Swal.fire({
 			title: 'Are you sure?',
-			html: `This will reset the count for <strong style="color: #DC2626;">ALL</strong> items to 0.`,
+			html: `This will reset the count for <strong style="color: #ef4444;">ALL</strong> items to 0.`,
 			icon: 'warning',
 			showCancelButton: true,
-			confirmButtonColor: '#D97706',
-			cancelButtonColor: '#6B7280',
+			confirmButtonColor: '#ef4444',
+			cancelButtonColor: 'var(--tech-label)',
 			confirmButtonText: 'Yes, reset all!',
-			background: currentTheme === 'dark' ? '#1F2937' : '#FFFFFF',
-			color: currentTheme === 'dark' ? '#FFFFFF' : '#000000'
+			background: 'var(--tech-glass-bg)',
+			color: 'var(--tech-title)'
 		});
 
 		if (result.isConfirmed) {
@@ -198,254 +199,526 @@
 			input.value = numValue.toString();
 		}
 	};
+
+	const capitalizeColumn = (column) => {
+		return column.replace(/([A-Z])/g, ' $1').trim().toUpperCase();
+	};
 </script>
 
-<div class="container mx-auto p-4 sm:p-6 rounded-lg shadow-md bg-container mt-4">
-	<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={clearSearch} />
+<svelte:head>
+	<title>Manage Transactions</title>
+</svelte:head>
 
-	<div class="filter-legend text-white mb-4">
-		{filterLegend}
-	</div>
-
-	<div class="table-container overflow-x-auto">
-		{#if !itemsLoaded}
-			<div class="flex justify-center items-center h-64">
-				<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+<div class="page-viewport-wrapper">
+	<div class="glow-layer"></div>
+	<div class="content-container">
+		<header class="page-header">
+			<div class="title-group">
+				<h1 class="main-title">Manage Transactions</h1>
+				<div class="system-status">
+					<span class="status-dot"></span>
+					<span class="status-text">SYSTEM SECURE</span>
+				</div>
 			</div>
-		{:else if paginatedItemsList.length === 0}
-			<p class="text-center my-4">No items found.</p>
-		{:else}
-			<table class="custom-table w-full">
-				<thead>
-					<tr>
-						<th class="w-1/3 px-6 py-3" onclick={() => sortBy('name')} data-label="Item Name">
-							<div class="header flex items-center cursor-pointer">
-								Item Name
-								<i
-									class="fas fa-sort ml-2 {currentSortColumn === 'name'
-										? sortAscending
-											? 'fa-sort-up'
-											: 'fa-sort-down'
-										: ''}"
-								></i>
-							</div>
-						</th>
-						<th class="w-1/6 px-6 py-3" onclick={() => sortBy('count')} data-label="Count">
-							<div class="header flex items-center justify-center cursor-pointer">
-								Count
-								<i
-									class="fas fa-sort ml-2 {currentSortColumn === 'count'
-										? sortAscending
-											? 'fa-sort-up'
-											: 'fa-sort-down'
-										: ''}"
-								></i>
-							</div>
-						</th>
-						<th class="w-1/6 px-6 py-3" data-label="Change Amount">
-							<div class="flex items-center justify-center">Change Amount</div>
-						</th>
-						<th class="w-1/3 px-6 py-3" data-label="Actions">
-							<div class="flex items-center justify-center">Actions</div>
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each paginatedItemsList as item (item.id)}
-						<tr class="border-b border-zinc-800">
-							<td class="px-6 py-4 whitespace-nowrap" data-label="Item Name">{item.name}</td>
-							<td class="px-6 py-4 text-center" data-label="Count">
-								<div class="relative inline-block w-full h-6">
-									{#key item.count}
-										<span class="absolute inset-0 flex items-center justify-end">
-											{item.count}
-										</span>
-									{/key}
-								</div>
-							</td>
-							<td class="px-6 py-4" data-label="Change Amount">
-								<div class="flex justify-end">
-									<input
-										type="number"
-										inputmode="numeric"
-										pattern="[0-9]*"
-										placeholder="0"
-										value={item.changeAmount === 0 ? '' : item.changeAmount}
-										oninput={(e) => handleChangeAmountInput(item, e)}
-										class="change-amount-input w-16 h-8 rounded-md shadow-sm sm:text-sm text-center"
-									/>
-								</div>
-							</td>
-							<td class="px-6 py-4" data-label="Actions">
-								<div class="grid grid-cols-3 gap-2 w-full max-w-xs mx-auto">
-									<button
-										class="flex justify-center items-center h-8 bg-emerald-700 text-white text-xs font-medium rounded-md shadow-sm hover:bg-emerald-600 active:bg-emerald-800 transition-colors"
-										onclick={() => changeCount(item, +item.changeAmount)}
-										disabled={item.changeAmount === 0}
-									>
-										+
-									</button>
-									<button
-										class="flex justify-center items-center h-8 bg-red-700 text-white text-xs font-medium rounded-md shadow-sm hover:bg-red-600 active:bg-red-800 transition-colors"
-										onclick={() => changeCount(item, -item.changeAmount)}
-										disabled={item.changeAmount === 0}
-									>
-										−
-									</button>
-									<button
-										class="flex justify-center items-center h-8 bg-amber-600 text-white text-xs font-medium rounded-md shadow-sm hover:bg-amber-500 active:bg-amber-700 transition-colors text-center"
-										onclick={() => resetCount(item)}
-										disabled={item.count === 0}
-									>
-										Reset
-									</button>
-								</div>
-							</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		{/if}
-	</div>
+		</header>
 
-	<Pagination store={paginationStore} />
+		<div class="ledger-actions">
+			<div class="stats-ribbon">
+				<div class="ribbon-item">
+					<span class="ribbon-label">SOURCE:</span>
+					<span class="ribbon-value">ITEMS_DB</span>
+				</div>
+				<div class="ribbon-item">
+					<span class="ribbon-label">ITEMS:</span>
+					<div class="ribbon-value">
+						{#key items.length}
+							<div class="count-context text-update" in:blur={{ duration: 400, amount: 2 }}>
+								<span class="digital-font">{filteredItemsList.length}</span>
+								{#if searchTermValue}
+									<span class="count-separator">/</span>
+									<span class="count-total">{items.length}</span>
+								{/if}
+							</div>
+						{/key}
+					</div>
+				</div>
+				<div class="ribbon-item">
+					<span class="ribbon-label">SORTING:</span>
+					<div class="ribbon-value">
+						{#key currentSortColumn}
+							<span class="text-update" in:blur={{ duration: 400, amount: 2 }}>
+								{capitalizeColumn(currentSortColumn)}
+							</span>
+						{/key}
+						{#key sortAscending}
+							<span class="order-tag text-update" in:blur={{ duration: 400, amount: 2 }}>
+								{sortAscending ? 'ASC' : 'DESC'}
+							</span>
+						{/key}
+					</div>
+				</div>
+			</div>
 
-	<div class="flex justify-center mt-6">
-		<button
-			class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-500 transition-transform active:scale-95"
-			onclick={resetAll}
-		>
-			Reset All Counts
-		</button>
+			<div class="search-primary">
+				<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={clearSearch} />
+			</div>
+		</div>
+
+		<div class="table-frame">
+			{#if !itemsLoaded}
+				<div class="ledger-loading">
+					<div class="pulse-ring"></div>
+					<span class="loading-text">LOADING ITEMS...</span>
+				</div>
+			{:else if paginatedItemsList.length === 0}
+				<div class="null-state">
+					<i class="fas fa-search-minus"></i>
+					<p>NO ITEMS MATCHED.</p>
+				</div>
+			{:else}
+				<div class="table-render-layer">
+					<div class="table-wrapper">
+						<div class="table-scroll">
+							<table class="tech-table">
+								<thead>
+									<tr>
+										<th class="name-col" onclick={() => sortBy('name')}>
+											<div class="header-content">
+												<span>Item Name</span>
+												<i class="fas fa-sort{currentSortColumn === 'name' ? (sortAscending ? '-up' : '-down') : ''} sort-icon"></i>
+											</div>
+										</th>
+										<th class="count-col" onclick={() => sortBy('count')}>
+											<div class="header-content justify-center">
+												<span class="header-text">Count</span>
+												<i class="fas fa-sort{currentSortColumn === 'count' ? (sortAscending ? '-up' : '-down') : ''} sort-icon"></i>
+											</div>
+										</th>
+										<th class="change-col">
+											<div class="header-content justify-center">
+												<span class="header-text">Change Amount</span>
+											</div>
+										</th>
+										<th class="actions-col">
+											<div class="header-content justify-center">
+												<span class="header-text">Actions</span>
+											</div>
+										</th>
+									</tr>
+								</thead>
+								<tbody class="table-body-transition">
+									{#each paginatedItemsList as item (item.id)}
+										<tr class="table-row">
+											<td class="name-col" data-label="Item Name">
+												<span class="name-text">{item.name}</span>
+											</td>
+											<td class="count-col" data-label="Count">
+												<span class="count-badge result">{item.count}</span>
+											</td>
+											<td class="change-col" data-label="Change Amount">
+												<div class="flex justify-center">
+													<input
+														type="number"
+														inputmode="numeric"
+														pattern="[0-9]*"
+														placeholder="0"
+														value={item.changeAmount === 0 ? '' : item.changeAmount}
+														oninput={(e) => handleChangeAmountInput(item, e)}
+														class="change-amount-input"
+													/>
+												</div>
+											</td>
+											<td class="actions-col" data-label="Actions">
+												<div class="actions-grid">
+													<button
+														class="action-btn add"
+														onclick={() => changeCount(item, +item.changeAmount)}
+														disabled={item.changeAmount === 0}
+														title="Add Amount"
+													>
+														<i class="fas fa-plus"></i>
+													</button>
+													<button
+														class="action-btn subtract"
+														onclick={() => changeCount(item, -item.changeAmount)}
+														disabled={item.changeAmount === 0}
+														title="Subtract Amount"
+													>
+														<i class="fas fa-minus"></i>
+													</button>
+													<button
+														class="action-btn reset"
+														onclick={() => resetCount(item)}
+														disabled={item.count === 0}
+														title="Reset to Zero"
+													>
+														<i class="fas fa-undo"></i>
+													</button>
+												</div>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			{/if}
+		</div>
+
+		<footer class="ledger-footer">
+			<Pagination store={paginationStore} />
+			
+			<div class="footer-actions">
+				<button
+					class="reset-all-btn"
+					onclick={resetAll}
+					disabled={items.every(item => item.count === 0)}
+				>
+					<i class="fas fa-exclamation-triangle"></i>
+					RESET ALL COUNTS
+				</button>
+			</div>
+		</footer>
 	</div>
 </div>
 
 {#if notificationValue}
 	<div class="notification {notificationValue.type}">
-		{notificationValue.message}
+		<div class="notification-content">
+			<i class="fas {notificationValue.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+			<span>{notificationValue.message}</span>
+		</div>
 	</div>
 {/if}
 
 <style>
-	.filter-legend {
-		font-size: 0.9rem;
-		color: #949494;
+	:global(body) {
+		background-color: var(--tech-bg-end) !important;
+		background-image: radial-gradient(circle at 50% -10%, var(--tech-bg-start) 0%, var(--tech-bg-end) 100%) !important;
+		background-attachment: fixed !important;
+		margin: 0;
+		padding: 0;
+		overflow-x: hidden;
 	}
 
-	.container {
-		margin-top: 20px;
-		padding: 1rem;
-		max-width: 90%;
-		background-color: var(--container-bg);
-		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-		border-radius: 1rem;
+	.page-viewport-wrapper {
+		position: relative;
+		min-height: 100vh;
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
 	}
 
-	.table-container {
-		min-height: 400px;
-		max-height: 70vh;
-		overflow-y: auto;
-		margin-bottom: 1rem;
-	}
-
-	.custom-table {
-		border-collapse: separate;
-		border-spacing: 0;
-	}
-
-	.custom-table th {
-		position: sticky;
+	.glow-layer {
+		position: fixed;
 		top: 0;
-		background-color: var(--container-bg);
-		z-index: 10;
-		box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+		left: 0;
+		width: 100%;
+		height: 100vh;
+		background: radial-gradient(circle at 50% 0%, var(--tech-accent-muted) 0%, transparent 50%);
+		pointer-events: none;
+		z-index: 0;
 	}
 
-	.custom-table th,
-	.custom-table td {
-		padding: 0.75rem;
-		text-align: left;
-		border-bottom: 1px solid var(--table-border-color);
+	.content-container {
+		position: relative;
+		z-index: 2;
+		max-width: 1400px;
+		margin: 0 auto;
+		width: 100%;
+		padding: 3rem 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
 	}
 
-	.custom-table tbody tr {
-		background-color: var(--container-bg);
-		transition: background-color 0.3s ease;
+	.page-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		flex-wrap: wrap;
+		gap: 2rem;
 	}
 
-	.custom-table tbody tr:hover {
-		background-color: var(--table-row-hover-bg);
+	.main-title {
+		font-size: 2.5rem;
+		font-weight: 800;
+		color: var(--tech-title);
+		margin: 0;
+		letter-spacing: -0.05em;
+		text-transform: uppercase;
+		line-height: 1;
 	}
 
-	.header {
+	.system-status {
 		display: flex;
 		align-items: center;
-		cursor: pointer;
+		gap: 0.6rem;
+		margin-top: 0.8rem;
+		opacity: 0.8;
 	}
 
-	.header i {
-		margin-left: 0.5rem;
-		font-size: 0.8em;
+	.status-dot {
+		width: 6px;
+		height: 6px;
+		background: var(--tech-accent);
+		border-radius: 50%;
+		box-shadow: 0 0 10px var(--tech-accent-muted);
+		animation: pulse-soft 3s ease-in-out infinite;
 	}
 
-	.header:hover {
-		color: var(--icon-hover-color);
-		transition: color 0.3s ease;
+	@keyframes pulse-soft {
+		0%, 100% { opacity: 0.4; transform: scale(0.9); }
+		50% { opacity: 1; transform: scale(1.1); }
 	}
 
-	.notification {
-		position: fixed;
-		bottom: 20px;
-		right: 20px;
-		color: white;
-		padding: 1rem 2rem;
-		border-radius: 0.5rem;
-		z-index: 1000;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	.status-text {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.6rem;
+		color: var(--tech-status-text);
+		letter-spacing: 0.2em;
+		font-weight: 800;
 	}
 
-	.notification.success {
-		background-color: var(--add-item-color); /* Green */
+	.ledger-actions {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-end;
+		flex-wrap: wrap;
+		gap: 2rem;
 	}
 
-	.notification.error {
-		background-color: #dc3545; /* Red */
+	.stats-ribbon {
+		display: flex;
+		align-items: center;
+		gap: 3rem;
 	}
 
-	.notification.warning {
-		background-color: #ffc107; /* Yellow */
-		color: #333; /* Dark text for contrast */
+	.search-primary {
+		flex: 1;
+		display: flex;
+		justify-content: flex-end;
+		max-width: 600px;
 	}
 
-	.notification.info {
-		background-color: #17a2b8; /* Blue */
+	.ribbon-item {
+		display: flex;
+		align-items: baseline;
+		gap: 0.75rem;
+		opacity: 0.6;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		cursor: default;
 	}
 
-	button {
-		transition:
-			background-color 0.3s ease,
-			transform 0.1s ease;
+	.ribbon-item:hover {
+		opacity: 1;
+		transform: translateY(-1px);
 	}
 
-	button[disabled] {
+	.ribbon-label {
+		color: var(--tech-label);
+		font-family: 'JetBrains Mono', monospace;
+		font-weight: 800;
+		font-size: 0.65rem;
+		letter-spacing: 0.1em;
+	}
+
+	.ribbon-value {
+		color: var(--tech-value);
+		font-family: 'JetBrains Mono', monospace;
+		font-weight: 700;
+		font-size: 0.85rem;
+		display: flex;
+		align-items: baseline;
+		gap: 0.4rem;
+	}
+
+	.digital-font {
+		color: var(--tech-accent);
+		text-shadow: 0 0 15px var(--tech-accent-muted);
+	}
+
+	.count-context {
+		display: flex;
+		align-items: baseline;
+		gap: 0.35rem;
+	}
+
+	.count-separator {
+		color: var(--tech-label);
+		font-size: 0.7rem;
 		opacity: 0.5;
-		cursor: not-allowed;
 	}
 
-	.relative {
-		height: 1.5em;
+	.count-total {
+		color: var(--tech-label);
+		font-size: 0.8rem;
+		opacity: 0.8;
+	}
+
+	.text-update {
+		animation: subtle-glow 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+		display: inline-block;
+	}
+
+	@keyframes subtle-glow {
+		0% { 
+			color: var(--tech-accent); 
+			text-shadow: 0 0 12px var(--tech-accent-muted);
+		}
+		100% { 
+			text-shadow: 0 0 0px transparent;
+		}
+	}
+
+	.order-tag {
+		color: var(--tech-label);
+		font-size: 0.7rem;
+	}
+
+	.table-frame {
+		position: relative;
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 12px;
+		min-height: 500px;
+		overflow: hidden;
+		box-shadow: var(--tech-glass-shadow);
+	}
+
+	.table-wrapper {
 		width: 100%;
 	}
 
-	.change-amount-input {
-		background-color: var(--input-bg);
-		color: var(--input-text);
-		border: 1px solid var(--input-border);
-		transition: all 0.3s ease;
+	.table-scroll {
+		width: 100%;
+		overflow-x: auto;
+		overflow-y: auto;
+		max-height: 70vh;
+		min-height: 400px;
+		scrollbar-width: thin;
+		scrollbar-color: var(--tech-scrollbar-thumb) transparent;
+	}
+
+	.table-scroll::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+
+	.table-scroll::-webkit-scrollbar-thumb {
+		background: var(--tech-scrollbar-thumb);
+	}
+
+	.tech-table {
+		width: 100%;
+		border-collapse: collapse;
+	}
+
+	.tech-table th {
+		position: sticky;
+		top: 0;
+		background: var(--tech-header-bg);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		z-index: 20;
+		padding: 1.1rem 1.25rem;
+		text-align: left;
+		font-family: 'Inter', sans-serif;
+		font-weight: 700;
+		color: var(--tech-header-text);
+		text-transform: uppercase;
+		font-size: 0.7rem;
+		letter-spacing: 0.1em;
+		cursor: pointer;
+	}
+
+	.header-content {
 		display: flex;
 		align-items: center;
+		justify-content: flex-start;
+		position: relative;
+		width: 100%;
+	}
+
+	.justify-center { 
 		justify-content: center;
-		/* Hide number input spinner arrows */
+		padding: 0 1.5rem;
+	}
+
+	.header-text {
+		position: relative;
+	}
+
+	.sort-icon {
+		position: absolute;
+		right: 0.5rem;
+		font-size: 0.75rem;
+		color: var(--tech-accent);
+		opacity: 0.4;
+		transition: all 0.2s;
+	}
+
+	.tech-table th:hover .sort-icon {
+		opacity: 1;
+	}
+
+	/* Force center alignment for these columns */
+	.count-col, .change-col, .actions-col {
+		text-align: center;
+	}
+
+	.table-row {
+		background: transparent;
+		transition: background-color 0.2s ease;
+	}
+
+	.table-row:nth-child(even) {
+		background: var(--tech-row-stripe);
+	}
+
+	.table-row:hover {
+		background: var(--tech-row-hover);
+	}
+
+	.tech-table td {
+		padding: 1rem 1.25rem;
+		vertical-align: middle;
+		border-bottom: 1px solid var(--tech-cell-border);
+		color: var(--tech-cell-text);
+		font-size: 0.9rem;
+	}
+
+	.name-text {
+		font-weight: 700;
+		color: var(--tech-value);
+	}
+
+	.count-badge.result {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 1rem;
+		color: var(--tech-accent);
+		display: inline-block;
+		min-width: 45px;
+		text-align: center;
+		font-weight: 800;
+		text-shadow: 0 0 10px var(--tech-accent-muted);
+		padding: 0.25rem;
+	}
+
+	.change-amount-input {
+		width: 70px;
+		height: 36px;
+		background: var(--tech-badge-bg);
+		border: 1px solid var(--tech-badge-border);
+		color: var(--tech-value);
+		text-align: center;
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.9rem;
+		font-weight: 700;
+		border-radius: 4px;
+		transition: all 0.2s;
 		-moz-appearance: textfield;
 	}
 
@@ -455,98 +728,229 @@
 		margin: 0;
 	}
 
-	.change-amount-input::placeholder {
-		text-align: center;
-		color: var(--input-text);
-		opacity: 0.6;
-	}
-
-	.change-amount-input:hover {
-		background-color: var(--input-hover-bg);
-	}
-
 	.change-amount-input:focus {
-		border-color: var(--input-focus-border);
 		outline: none;
+		border-color: var(--tech-accent);
+		background: var(--tech-header-bg);
+		box-shadow: 0 0 0 2px var(--tech-accent-muted);
 	}
 
+	.actions-grid {
+		display: flex;
+		gap: 0.75rem;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.action-btn {
+		width: 38px;
+		height: 38px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 8px;
+		border: 1px solid transparent;
+		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+		cursor: pointer;
+		position: relative;
+		overflow: hidden;
+		background: var(--tech-glass-bg);
+		padding: 0; /* Reset padding for perfect centering */
+	}
+
+	.action-btn i {
+		font-size: 0.9rem;
+		line-height: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: 100%;
+	}
+
+	.action-btn:disabled {
+		opacity: 0.15;
+		cursor: not-allowed;
+		filter: grayscale(1);
+		border-color: transparent !important;
+	}
+
+	.action-btn.add {
+		color: #22c55e;
+		border-color: rgba(34, 197, 94, 0.2);
+		background: rgba(34, 197, 94, 0.05);
+	}
+
+	.action-btn.add:not(:disabled):hover {
+		background: #22c55e;
+		color: white;
+		box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+		transform: translateY(-2px);
+	}
+
+	.action-btn.subtract {
+		color: #ef4444;
+		border-color: rgba(239, 68, 68, 0.2);
+		background: rgba(239, 68, 68, 0.05);
+	}
+
+	.action-btn.subtract:not(:disabled):hover {
+		background: #ef4444;
+		color: white;
+		box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+		transform: translateY(-2px);
+	}
+
+	.action-btn.reset {
+		color: #f59e0b;
+		border-color: rgba(245, 158, 11, 0.2);
+		background: rgba(245, 158, 11, 0.05);
+	}
+
+	.action-btn.reset:not(:disabled):hover {
+		background: #f59e0b;
+		color: white;
+		box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+		transform: translateY(-2px);
+	}
+
+	.action-btn:not(:disabled):active {
+		transform: translateY(0) scale(0.95);
+	}
+
+	/* Ledger Footer */
+	.ledger-footer {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1.5rem 0;
+		border-top: 1px solid var(--tech-cell-border);
+		margin-top: 1rem;
+		flex-wrap: wrap;
+		gap: 2rem;
+	}
+
+	.reset-all-btn {
+		background: rgba(239, 68, 68, 0.1);
+		border: 1px solid rgba(239, 68, 68, 0.2);
+		color: #ef4444;
+		padding: 0.75rem 1.5rem;
+		font-family: 'JetBrains Mono', monospace;
+		font-weight: 800;
+		font-size: 0.75rem;
+		letter-spacing: 0.1em;
+		border-radius: 4px;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		cursor: pointer;
+		transition: all 0.3s;
+	}
+
+	.reset-all-btn:disabled {
+		opacity: 0.3;
+		cursor: not-allowed;
+		filter: grayscale(1);
+	}
+
+	.reset-all-btn:not(:disabled):hover {
+		background: #ef4444;
+		color: white;
+		transform: translateY(-2px);
+		box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+	}
+
+	.reset-all-btn i { font-size: 0.85rem; }
+
+	/* Notifications */
+	.notification {
+		position: fixed;
+		bottom: 2rem;
+		right: 2rem;
+		z-index: 1000;
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 8px;
+		padding: 1rem 1.5rem;
+		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+		animation: slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	@keyframes slide-in {
+		from { transform: translateX(100%); opacity: 0; }
+		to { transform: translateX(0); opacity: 1; }
+	}
+
+	.notification-content {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		color: var(--tech-value);
+		font-weight: 700;
+		font-size: 0.9rem;
+	}
+
+	.notification.success i { color: #22c55e; }
+	.notification.error i { color: #ef4444; }
+
+	/* States */
+	.ledger-loading, .null-state {
+		height: 500px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 2rem;
+	}
+
+	.pulse-ring {
+		width: 44px;
+		height: 44px;
+		border: 3px solid var(--tech-cell-border);
+		border-top-color: var(--tech-accent);
+		border-radius: 50%;
+		animation: spin 1s infinite linear;
+	}
+
+	@keyframes spin { to { transform: rotate(360deg); } }
+
+	.loading-text {
+		color: var(--tech-accent);
+		font-family: 'JetBrains Mono', monospace;
+		font-weight: 700;
+		letter-spacing: 0.3em;
+		font-size: 0.7rem;
+	}
+
+	.null-state { color: var(--tech-label); }
+	.null-state i { font-size: 3rem; opacity: 0.5; }
+	.null-state p { 
+		font-family: 'JetBrains Mono', monospace; 
+		font-size: 0.8rem; 
+		letter-spacing: 0.15em;
+		font-weight: 700;
+	}
+
+	/* Mobile */
 	@media (max-width: 768px) {
-		.custom-table thead {
-			display: none;
-		}
-
-		.custom-table,
-		.custom-table tbody,
-		.custom-table tr,
-		.custom-table td {
-			display: block;
-			width: 100%;
-		}
-
-		.custom-table tr {
-			display: flex;
-			flex-direction: column;
-			margin-bottom: 1rem;
-			border: 1px solid var(--table-border-color);
-			border-radius: 8px;
-			overflow: hidden;
-			background-color: var(--container-bg);
-		}
-
-		.custom-table td {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			padding: 0.75rem 1rem;
+		.tech-table thead { display: none; }
+		.tech-table td {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
 			text-align: right;
-			position: relative;
-			border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+			border-bottom: 1px solid var(--tech-cell-border);
 		}
-
-		.custom-table td:last-child {
-			border-bottom: none;
-		}
-
-		.custom-table tr:hover td {
-			border-bottom-color: rgba(255, 255, 255, 0.2);
-		}
-
-		.custom-table td::before {
+		.tech-table td::before {
 			content: attr(data-label);
-			font-weight: bold;
 			text-align: left;
-			white-space: nowrap;
+			font-weight: 800;
+			font-size: 0.7rem;
+			color: var(--tech-label);
+			text-transform: uppercase;
 		}
-
-		.custom-table td[data-label='Actions'] {
-			justify-content: center;
-			padding: 1rem;
-		}
-
-		.custom-table td[data-label='Actions']::before {
-			display: none;
-		}
-
-		.custom-table td[data-label='Change Amount'] {
-			justify-content: space-between;
-		}
-
-		.custom-table td[data-label='Change Amount'] .flex {
-			justify-content: flex-end;
-		}
-	}
-
-	@media (min-width: 640px) {
-		.container {
-			padding: 1.5rem;
-			max-width: 95%;
-		}
-	}
-
-	@media (min-width: 1024px) {
-		.container {
-			padding: 2.5rem;
-			max-width: 90%;
-		}
+		.actions-grid { justify-content: flex-end; }
+		.stats-ribbon { gap: 1rem; flex-wrap: wrap; }
+		.main-title { font-size: 1.8rem; }
 	}
 </style>
+

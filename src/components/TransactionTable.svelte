@@ -218,23 +218,21 @@
 
 	/* Count Badges */
 	.count-badge {
-		padding: 0.35rem 0.75rem;
-		border-radius: 4px;
 		font-family: 'JetBrains Mono', monospace;
-		font-size: 0.85rem;
-		background: var(--tech-badge-bg);
-		border: 1px solid var(--tech-badge-border);
+		font-size: 0.9rem;
+		color: var(--tech-label);
 		display: inline-block;
 		min-width: 45px;
 		text-align: center;
-		color: var(--tech-badge-text);
+		font-weight: 700;
+		padding: 0.25rem;
 	}
 
 	.count-badge.result {
-		background: var(--tech-accent-muted);
 		color: var(--tech-accent);
-		border: 1px solid var(--tech-accent-muted);
 		font-weight: 800;
+		font-size: 1rem;
+		text-shadow: 0 0 10px var(--tech-accent-muted);
 	}
 
 	/* Change Tags */
