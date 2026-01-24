@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(svelte:svelte-code-writer)",
+      "Bash(npx @sveltejs/mcp svelte-autofixer:*)",
+      "Bash(npx @sveltejs/mcp:*)",
+      "Bash(npm run build:*)",
+      "Bash(for:*)",
+      "Bash(do)",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "Skill(frontend-design:frontend-design)"
+    ]
+  }
+}

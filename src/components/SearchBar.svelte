@@ -49,32 +49,33 @@
 	.tech-search-input {
 		width: 100%;
 		padding: 0.7rem 1rem 0.7rem 2.8rem;
-		background: #000000;
-		border: 1px solid #222222;
+		background: var(--tech-badge-bg);
+		border: 1px solid var(--tech-badge-border);
 		border-radius: 4px;
-		color: #ffffff;
+		color: var(--tech-value);
 		font-size: 0.85rem;
 		font-family: 'JetBrains Mono', monospace;
 		letter-spacing: 0.1em;
 		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-		box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+		box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
 	}
 
 	.tech-search-input:focus {
 		outline: none;
-		border-color: #ffe260;
-		background: #050505;
-		box-shadow: 0 0 20px rgba(255, 226, 96, 0.05), inset 0 2px 10px rgba(0, 0, 0, 0.5);
+		border-color: var(--tech-accent);
+		background: var(--tech-glass-bg);
+		box-shadow: 0 0 20px var(--tech-accent-muted), inset 0 2px 4px rgba(0, 0, 0, 0.05);
 	}
 
 	.tech-search-input::placeholder {
-		color: #444444;
+		color: var(--tech-label);
+		opacity: 0.6;
 	}
 
 	.tech-search-icon {
 		position: absolute;
 		left: 1.1rem;
-		color: #444444;
+		color: var(--tech-label);
 		font-size: 0.9rem;
 		pointer-events: none;
 		transition: color 0.2s;
@@ -82,7 +83,7 @@
 
 	.tech-search-input:focus ~ .tech-search-icon,
 	.tech-search-input:not(:placeholder-shown) ~ .tech-search-icon {
-		color: #ffe260;
+		color: var(--tech-accent);
 	}
 
 	/* Fix: use the input:focus class to color the icon if it's after the input or just use a sibling selector if possible */
@@ -93,7 +94,7 @@
 		right: 0.8rem;
 		background: none;
 		border: none;
-		color: #444444;
+		color: var(--tech-label);
 		cursor: pointer;
 		font-size: 0.9rem;
 		transition: all 0.2s;

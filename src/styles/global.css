@@ -81,6 +81,29 @@
 	--nav-hover-bg: #f8f9fa;
 	--nav-drop-down-text-hover-color: #00aaff;
 	--pagination-arrow-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%231a1a1a' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+
+	/* Industrial Tech System Tokens (Light) */
+	--tech-bg-start: #f8f9fc;
+	--tech-bg-end: #ffffff;
+	--tech-glass-bg: #ffffff;
+	--tech-glass-border: #e2e4e8;
+	--tech-glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+	--tech-accent: #0066ff;
+	--tech-accent-muted: rgba(0, 102, 255, 0.1);
+	--tech-label: #8b949e;
+	--tech-value: #1f2328;
+	--tech-title: #000000;
+	--tech-status-text: #656d76;
+	--tech-header-bg: #f6f8fa;
+	--tech-header-text: #656d76;
+	--tech-cell-text: #484f58;
+	--tech-cell-border: #ebeff2;
+	--tech-badge-bg: #f3f5f8;
+	--tech-badge-text: #8b949e;
+	--tech-badge-border: #e1e4e8;
+	--tech-row-hover: #f1f3f5;
+	--tech-row-stripe: #f8f9fa;
+	--tech-scrollbar-thumb: #0066ff;
 }
 
 [data-theme='dark'] {
@@ -125,6 +148,29 @@
 	--nav-drop-down-text-hover-color: #ffd000;
 	--text-color-dimmed: #727272;
 	--pagination-arrow-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+
+	/* Industrial Tech System Tokens (Dark) */
+	--tech-bg-start: #16171b;
+	--tech-bg-end: #0c0c0e;
+	--tech-glass-bg: #0e0f11;
+	--tech-glass-border: #1c1d21;
+	--tech-glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+	--tech-accent: #ffe260;
+	--tech-accent-muted: rgba(255, 226, 96, 0.1);
+	--tech-label: #55555e;
+	--tech-value: #e2e2e7;
+	--tech-title: #ffffff;
+	--tech-status-text: #66666e;
+	--tech-header-bg: rgba(14, 15, 17, 0.98);
+	--tech-header-text: #94949b;
+	--tech-cell-text: #b1b1b6;
+	--tech-cell-border: #18191c;
+	--tech-badge-bg: #141518;
+	--tech-badge-text: #66666e;
+	--tech-badge-border: #222328;
+	--tech-row-hover: rgba(255, 226, 96, 0.04);
+	--tech-row-stripe: rgba(255, 255, 255, 0.015);
+	--tech-scrollbar-thumb: #ffe260;
 }
 
 /* Base styles with mobile-first approach */

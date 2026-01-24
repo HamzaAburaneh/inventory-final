@@ -106,10 +106,10 @@
 		position: relative;
 		width: 100%;
 		border-radius: 8px;
-		background: #0e0f11;
-		border: 1px solid #1c1d21;
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
 		overflow: hidden;
-		box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+		box-shadow: var(--tech-glass-shadow);
 	}
 
 	.table-scroll {
@@ -119,17 +119,17 @@
 		max-height: 700px;
 		min-height: 400px;
 		scrollbar-width: thin;
-		scrollbar-color: #ffe260 transparent;
+		scrollbar-color: var(--tech-scrollbar-thumb) transparent;
 	}
 
 	.table-scroll::-webkit-scrollbar {
-		width: 4px;
-		height: 4px;
+		width: 6px;
+		height: 6px;
 	}
 
 	.table-scroll::-webkit-scrollbar-thumb {
-		background: #333338; /* More subtle scrollbar */
-		border-radius: 0;
+		background: var(--tech-scrollbar-thumb);
+		border-radius: 0; /* Sharp industrial look */
 	}
 
 	.tech-table {
@@ -141,25 +141,22 @@
 	.tech-table th {
 		position: sticky;
 		top: 0;
-		background: rgba(14, 15, 17, 0.98); /* Almost opaque for clean scrolling */
-		backdrop-filter: blur(10px);
-		-webkit-backdrop-filter: blur(10px);
+		background: var(--tech-header-bg);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
 		z-index: 20;
-		padding: 1rem 1.25rem;
+		padding: 1.1rem 1.25rem;
 		text-align: left;
 		font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 		font-weight: 700;
-		color: #94949b; /* Refined steel gray */
+		color: var(--tech-header-text);
 		text-transform: uppercase;
 		font-size: 0.7rem;
 		letter-spacing: 0.1em;
-		box-shadow: inset 0 -1px 0 rgba(255, 226, 96, 0.2); 
-		transition: all 0.2s ease;
 	}
 
 	.tech-table th:hover {
-		color: #ffffff;
-		background: rgba(26, 27, 30, 1);
+		color: var(--tech-accent);
 		cursor: pointer;
 	}
 
@@ -172,7 +169,7 @@
 
 	.sort-icon {
 		font-size: 0.75rem;
-		color: #ffe260;
+		color: var(--tech-accent);
 		opacity: 0.4;
 	}
 
@@ -193,18 +190,18 @@
 	}
 
 	.table-row:nth-child(even) {
-		background: rgba(255, 255, 255, 0.01); /* Subtle zebra striping */
+		background: var(--tech-row-stripe);
 	}
 
 	.table-row:hover {
-		background: rgba(255, 226, 96, 0.03);
+		background: var(--tech-row-hover);
 	}
 
 	.tech-table td {
-		padding: 0.85rem 1.25rem; /* Significantly reduced vertical padding */
+		padding: 0.85rem 1.25rem;
 		vertical-align: middle;
-		border-bottom: 1px solid #18191c;
-		color: #b1b1b6; /* Softer text color */
+		border-bottom: 1px solid var(--tech-cell-border);
+		color: var(--tech-cell-text);
 		font-size: 0.9rem;
 	}
 
@@ -215,7 +212,7 @@
 	/* Item Name Cell */
 	.name-text {
 		font-weight: 700;
-		color: #e2e2e7; /* Not pure white */
+		color: var(--tech-value);
 		font-size: 0.95rem;
 	}
 
@@ -225,18 +222,18 @@
 		border-radius: 4px;
 		font-family: 'JetBrains Mono', monospace;
 		font-size: 0.85rem;
-		background: #141518;
-		border: 1px solid #222328;
+		background: var(--tech-badge-bg);
+		border: 1px solid var(--tech-badge-border);
 		display: inline-block;
 		min-width: 45px;
 		text-align: center;
-		color: #66666e; /* Muted counts */
+		color: var(--tech-badge-text);
 	}
 
 	.count-badge.result {
-		background: rgba(255, 226, 96, 0.05);
-		color: #ffe260;
-		border: 1px solid rgba(255, 226, 96, 0.2);
+		background: var(--tech-accent-muted);
+		color: var(--tech-accent);
+		border: 1px solid var(--tech-accent-muted);
 		font-weight: 800;
 	}
 
@@ -254,21 +251,21 @@
 	}
 
 	.positive-tag {
-		background: rgba(34, 197, 94, 0.08); /* More subtle green */
-		color: #4ade80;
+		background: rgba(34, 197, 94, 0.1);
+		color: #22c55e;
 		border: 1px solid rgba(34, 197, 94, 0.2);
 	}
 
 	.negative-tag {
-		background: rgba(239, 68, 68, 0.08); /* More subtle red */
-		color: #f87171;
+		background: rgba(239, 68, 68, 0.1);
+		color: #ef4444;
 		border: 1px solid rgba(239, 68, 68, 0.2);
 	}
 
 	.neutral-tag {
-		background: rgba(255, 255, 255, 0.03);
-		color: #55555e;
-		border: 1px solid #1c1d21;
+		background: var(--tech-badge-bg);
+		color: var(--tech-label);
+		border: 1px solid var(--tech-cell-border);
 	}
 
 	/* Timestamp Cell */
@@ -279,14 +276,14 @@
 	}
 
 	.time {
-		color: #a1a1aa;
+		color: var(--tech-cell-text);
 		font-weight: 700;
 		font-size: 0.85rem;
 	}
 
 	.date {
 		font-size: 0.75rem;
-		color: #55555a;
+		color: var(--tech-label);
 		font-weight: 600;
 	}
 
@@ -295,12 +292,12 @@
 		display: flex;
 		align-items: center;
 		gap: 0.6rem;
-		color: #71717a;
+		color: var(--tech-label);
 	}
 
 	.user-cell i {
 		font-size: 1.1rem;
-		color: #ffe260;
+		color: var(--tech-accent);
 		opacity: 0.6;
 	}
 
@@ -334,13 +331,13 @@
 
 		.tech-table td {
 			padding: 0.75rem 1rem;
-			border-bottom: 1px solid #18191c;
+			border-bottom: 1px solid var(--tech-cell-border);
 		}
 
 		.tech-table td::before {
 			font-weight: 800;
 			font-size: 0.65rem;
-			color: #55555e;
+			color: var(--tech-label);
 			letter-spacing: 0.1em;
 		}
 	}
