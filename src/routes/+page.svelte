@@ -1,5 +1,6 @@
 <script>
 	import { authStore } from '../stores/authStore.js';
+	import { fly } from 'svelte/transition';
 
 	let showFeatures = $state(false);
 	let activeTestimonial = $state(0);
@@ -21,10 +22,26 @@
 	});
 
 	const features = [
-		{ name: 'Real-time Tracking', icon: 'fa-chart-line' },
-		{ name: 'Smart Analytics', icon: 'fa-brain' },
-		{ name: 'Easy Management', icon: 'fa-tasks' },
-		{ name: 'Secure Data', icon: 'fa-shield-alt' }
+		{ 
+			name: 'Real-time Tracking', 
+			icon: 'fa-chart-line',
+			description: 'Monitor your inventory in real-time with advanced tracking capabilities and instant updates.'
+		},
+		{ 
+			name: 'Smart Analytics', 
+			icon: 'fa-brain',
+			description: 'Leverage AI-powered insights to optimize stock levels and predict future demand patterns.'
+		},
+		{ 
+			name: 'Easy Management', 
+			icon: 'fa-tasks',
+			description: 'Streamline operations with intuitive interfaces and automated workflow management.'
+		},
+		{ 
+			name: 'Secure Data', 
+			icon: 'fa-shield-alt',
+			description: 'Enterprise-grade security ensures your inventory data is protected at all times.'
+		}
 	];
 
 	const testimonials = [
@@ -88,236 +105,650 @@
 	});
 </script>
 
-<main class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-	<section id="hero" class="hero mb-16 md:mb-24">
-		<h1 class="text-4xl md:text-6xl font-bold mb-6 md:mb-8 text-center logo-text">
-			Welcome to StockSense
-		</h1>
-		<p class="text-lg md:text-2xl mb-10 md:mb-12 text-center text-secondary">
-			Your intelligent inventory management solution
-		</p>
-		{#if !authUser}
-			<div class="text-center">
-				<a href="#cta" class="btn-primary" aria-label="Get started with StockSense">
-					Get Started
-				</a>
-			</div>
-		{/if}
-	</section>
+<svelte:head>
+	<title>StockSense | Intelligent Inventory Management</title>
+</svelte:head>
 
-	<section id="features" class="features mb-24" aria-labelledby="features-heading">
-		<h2 id="features-heading" class="text-4xl font-semibold mb-12 text-center logo-text">
-			Key Features
-		</h2>
-		<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-			{#each features as feature, i (feature.name)}
-				<div
-					class="feature-card"
-					role="article"
-					aria-labelledby="feature-heading-{i}"
-					onmouseenter={() => (hoveredCard = i)}
-					onmouseleave={() => (hoveredCard = -1)}
-					style="transform: {hoveredCard === i
-						? 'scale(1.05) translateY(-5px)'
-						: 'scale(1) translateY(0)'}; transition: transform 0.3s ease;"
-				>
-					<div class="flex items-center mb-4">
-						<i class="fas {feature.icon} text-4xl text-logo mr-6" aria-hidden="true"></i>
-						<h3 id="feature-heading-{i}" class="text-2xl font-semibold">{feature.name}</h3>
-					</div>
-					<p class="text-secondary text-lg">
-						Streamline your inventory processes with our advanced {feature.name.toLowerCase()} capabilities.
-					</p>
+<div class="page-viewport">
+	<div class="glow-layer"></div>
+	<div class="grid-overlay"></div>
+
+	<main class="content-container">
+		<!-- Hero Section -->
+		<section id="hero" class="hero-section">
+			<div class="hero-content">
+				<div class="status-badge">
+					<span class="status-dot"></span>
+					<span class="status-text">SYSTEM ONLINE</span>
 				</div>
-			{/each}
-		</div>
-	</section>
-
-	<section id="testimonials" class="testimonials mb-24" aria-labelledby="testimonials-heading">
-		<h2 id="testimonials-heading" class="text-4xl font-semibold mb-12 text-center logo-text">
-			What Our Users Say
-		</h2>
-		<div class="relative testimonial-container">
-			{#each [testimonials[activeTestimonial]] as testimonial (testimonial.name)}
-				<div role="region" aria-live="polite" class="p-8">
-					<p class="text-xl mb-6 italic">"{testimonial.text}"</p>
-					<p class="font-semibold text-lg">{testimonial.name}</p>
-					<p class="text-secondary">{testimonial.role}</p>
-				</div>
-			{/each}
-			<button
-				class="testimonial-nav testimonial-prev"
-				onclick={prevTestimonial}
-				aria-label="Previous testimonial"
-			>
-				<i class="fas fa-chevron-left" aria-hidden="true"></i>
-			</button>
-			<button
-				class="testimonial-nav testimonial-next"
-				onclick={nextTestimonial}
-				aria-label="Next testimonial"
-			>
-				<i class="fas fa-chevron-right" aria-hidden="true"></i>
-			</button>
-		</div>
-	</section>
-
-	{#if !authUser}
-		<section id="cta" class="cta mb-24" aria-labelledby="cta-heading">
-			<div class="cta-container">
-				<h2 id="cta-heading" class="text-4xl font-semibold mb-6 logo-text">
-					Ready to optimize your inventory?
-				</h2>
-				<p class="text-xl mb-8 text-secondary">
-					Join thousands of businesses already using StockSense to streamline their operations.
+				
+				<h1 class="hero-title">
+					Welcome to <span class="highlight">StockSense</span>
+				</h1>
+				
+				<p class="hero-subtitle">
+					Your intelligent inventory management solution
 				</p>
-				<a href="/login" class="btn-primary" aria-label="Start your free trial of StockSense">
-					Start Your Free Trial
-				</a>
+				
+				{#if !authUser}
+					<div class="hero-cta">
+						<a href="/login" class="cta-button primary">
+							<i class="fas fa-rocket"></i>
+							<span>Get Started</span>
+						</a>
+						<a href="#features" class="cta-button secondary">
+							<i class="fas fa-info-circle"></i>
+							<span>Learn More</span>
+						</a>
+					</div>
+				{/if}
 			</div>
 		</section>
-	{/if}
-</main>
+
+		<!-- Features Section -->
+		<section id="features" class="features-section">
+			<div class="section-header">
+				<h2 class="section-title">Key Features</h2>
+				<div class="title-underline"></div>
+			</div>
+			
+			<div class="features-grid">
+				{#each features as feature, i (feature.name)}
+					<div
+						class="feature-card"
+						onmouseenter={() => (hoveredCard = i)}
+						onmouseleave={() => (hoveredCard = -1)}
+						style="transform: {hoveredCard === i ? 'translateY(-8px)' : 'translateY(0)'};"
+					>
+						<div class="feature-icon">
+							<i class="fas {feature.icon}"></i>
+						</div>
+						<h3 class="feature-title">{feature.name}</h3>
+						<p class="feature-description">{feature.description}</p>
+						<div class="feature-glow"></div>
+					</div>
+				{/each}
+			</div>
+		</section>
+
+		<!-- Testimonials Section -->
+		<section id="testimonials" class="testimonials-section">
+			<div class="section-header">
+				<h2 class="section-title">What Our Users Say</h2>
+				<div class="title-underline"></div>
+			</div>
+			
+			<div class="testimonials-grid">
+				{#each testimonials as testimonial, i}
+					<div class="testimonial-card-new">
+						<div class="card-top">
+							<div class="stars">
+								{#each Array(5) as _}
+									<i class="fas fa-star"></i>
+								{/each}
+							</div>
+							<div class="quote-mark">
+								<i class="fas fa-quote-right"></i>
+							</div>
+						</div>
+						<p class="testimonial-text-new">{testimonial.text}</p>
+						<div class="testimonial-footer">
+							<div class="author-avatar-new">
+								<i class="fas fa-user"></i>
+							</div>
+							<div class="author-details">
+								<p class="author-name-new">{testimonial.name}</p>
+								<p class="author-role-new">{testimonial.role}</p>
+							</div>
+						</div>
+					</div>
+				{/each}
+			</div>
+		</section>
+
+		<!-- CTA Section -->
+		{#if !authUser}
+			<section id="cta" class="cta-section">
+				<div class="cta-card">
+					<div class="cta-content">
+						<h2 class="cta-title">Ready to optimize your inventory?</h2>
+						<p class="cta-text">
+							Join thousands of businesses already using StockSense to streamline their operations.
+						</p>
+						<a href="/login" class="cta-button large primary">
+							<i class="fas fa-rocket"></i>
+							<span>Start Your Free Trial</span>
+						</a>
+					</div>
+					<div class="cta-glow"></div>
+				</div>
+			</section>
+		{/if}
+	</main>
+</div>
 
 {#if showBackToTop}
-	<button onclick={scrollToTop} class="back-to-top" aria-label="Scroll to top of page">
-		<i class="fas fa-arrow-up" aria-hidden="true"></i>
+	<button onclick={scrollToTop} class="back-to-top" transition:fly={{ y: 20, duration: 300 }}>
+		<i class="fas fa-arrow-up"></i>
 	</button>
 {/if}
 
 <style>
-	main {
-		max-width: 1200px;
+	:global(body) {
+		background-color: var(--tech-bg-end) !important;
+		background-image: radial-gradient(circle at 50% -10%, var(--tech-bg-start) 0%, var(--tech-bg-end) 100%) !important;
+		background-attachment: fixed !important;
+		margin: 0;
+		padding: 0;
+		overflow-x: hidden;
 	}
 
-	.logo-text {
-		color: var(--nav-logo-color);
-		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+	.page-viewport {
+		position: relative;
+		min-height: 100vh;
+		width: 100%;
 	}
 
-	.text-secondary {
-		color: var(--input-text);
-		opacity: 0.8;
+	.glow-layer {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100vh;
+		background: radial-gradient(circle at 50% 0%, var(--tech-accent-muted) 0%, transparent 50%);
+		pointer-events: none;
+		z-index: 0;
 	}
 
-	.text-logo {
-		color: var(--nav-logo-color);
+	.grid-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100vh;
+		background-image: 
+			linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+		background-size: 50px 50px;
+		pointer-events: none;
+		z-index: 0;
+		opacity: 0.3;
+	}
+
+	.content-container {
+		position: relative;
+		z-index: 2;
+		max-width: 1400px;
+		margin: 0 auto;
+		padding: 2rem 1.5rem;
+	}
+
+	/* Hero Section */
+	.hero-section {
+		min-height: 50vh;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		margin-bottom: 4rem;
+	}
+
+	.hero-content {
+		max-width: 900px;
+	}
+
+	.status-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 20px;
+		margin-bottom: 2rem;
+	}
+
+	.status-dot {
+		width: 6px;
+		height: 6px;
+		background: var(--tech-accent);
+		border-radius: 50%;
+		box-shadow: 0 0 10px var(--tech-accent-muted);
+		animation: pulse-soft 3s ease-in-out infinite;
+	}
+
+	@keyframes pulse-soft {
+		0%, 100% { opacity: 0.4; transform: scale(0.9); }
+		50% { opacity: 1; transform: scale(1.1); }
+	}
+
+
+	.status-text {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.65rem;
+		color: var(--tech-status-text);
+		letter-spacing: 0.2em;
+		font-weight: 800;
+	}
+
+	.hero-title {
+		font-size: clamp(2rem, 5vw, 3.5rem);
+		font-weight: 800;
+		color: var(--tech-title);
+		margin: 0 0 1rem 0;
+		letter-spacing: -0.02em;
+		line-height: 1.1;
+	}
+
+	.highlight {
+		color: var(--tech-accent);
+		text-shadow: 0 0 30px var(--tech-accent-muted);
+	}
+
+	.hero-subtitle {
+		font-size: clamp(1rem, 2vw, 1.25rem);
+		color: var(--tech-label);
+		margin: 0 0 2rem 0;
+		opacity: 0.9;
+	}
+
+	.hero-cta {
+		display: flex;
+		gap: 1rem;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+
+	.cta-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.625rem;
+		padding: 0.875rem 1.75rem;
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.85rem;
+		font-weight: 800;
+		letter-spacing: 0.05em;
+		border-radius: 8px;
+		cursor: pointer;
+		transition: all 0.3s;
+		text-decoration: none;
+		border: 1px solid transparent;
+	}
+
+	.cta-button i {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		line-height: 1;
+		transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
+
+	.cta-button.primary {
+		background: var(--tech-accent);
+		color: #000;
+		box-shadow: 0 0 20px var(--tech-accent-muted);
+	}
+
+	.cta-button.primary:hover {
+		transform: translateY(-3px);
+		box-shadow: 0 5px 30px var(--tech-accent-muted);
+	}
+
+	.cta-button.primary:hover i {
+		transform: translate(4px, -4px) scale(1.1);
+	}
+
+	.cta-button.secondary {
+		background: transparent;
+		color: var(--tech-accent);
+		border-color: var(--tech-accent);
+	}
+
+	.cta-button.secondary:hover {
+		background: var(--tech-accent-muted);
+		transform: translateY(-3px);
+	}
+
+	.cta-button.large {
+		padding: 1rem 2rem;
+		font-size: 0.9rem;
+	}
+
+	/* Section Headers */
+	.section-header {
+		text-align: center;
+		margin-bottom: 2.5rem;
+	}
+
+	.section-title {
+		font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+		font-weight: 800;
+		color: var(--tech-title);
+		margin: 0 0 0.75rem 0;
+		letter-spacing: 0.02em;
+	}
+
+	.title-underline {
+		width: 80px;
+		height: 3px;
+		background: var(--tech-accent);
+		margin: 0 auto;
+		box-shadow: 0 0 15px var(--tech-accent-muted);
+	}
+
+	/* Features Section */
+	.features-section {
+		margin-bottom: 5rem;
+	}
+
+	.features-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+		gap: 1.5rem;
 	}
 
 	.feature-card {
-		background-color: var(--container-bg);
-		padding: 1.5rem;
-		border-radius: var(--border-radius);
-		box-shadow:
-			0 4px 6px rgba(0, 0, 0, 0.1),
-			0 1px 3px rgba(0, 0, 0, 0.08);
-	}
-
-	.btn-primary {
-		background-color: var(--nav-logo-color);
-		color: var(--text-color);
-		font-weight: bold;
-		padding: 0.75rem 1.5rem;
-		border-radius: 9999px;
-		font-size: 1.125rem;
-		transition: all 0.3s ease;
-		display: inline-block;
-	}
-
-	.btn-primary:hover {
-		background-color: var(--nav-logo-hover-color);
-		box-shadow:
-			0 4px 6px rgba(0, 0, 0, 0.1),
-			0 1px 3px rgba(0, 0, 0, 0.08);
-		transform: translateY(-2px);
-	}
-
-	.testimonial-container {
-		background-color: var(--container-bg);
-		padding: 1.5rem;
-		border-radius: var(--border-radius);
-		box-shadow:
-			0 4px 6px rgba(0, 0, 0, 0.1),
-			0 1px 3px rgba(0, 0, 0, 0.08);
 		position: relative;
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 12px;
+		padding: 2rem 1.5rem;
+		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		overflow: hidden;
 	}
 
-	.testimonial-nav {
+	.feature-card:hover {
+		border-color: var(--tech-accent);
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+	}
+
+	.feature-icon {
+		width: 60px;
+		height: 60px;
+		background: var(--tech-accent-muted);
+		border: 2px solid var(--tech-accent);
+		border-radius: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 1.25rem;
+		font-size: 1.75rem;
+		color: var(--tech-accent);
+		transition: all 0.3s;
+	}
+
+	.feature-card:hover .feature-icon {
+		transform: scale(1.1) rotate(5deg);
+		box-shadow: 0 0 25px var(--tech-accent-muted);
+	}
+
+	.feature-title {
+		font-size: 1.2rem;
+		font-weight: 700;
+		color: var(--tech-title);
+		margin: 0 0 0.75rem 0;
+		letter-spacing: 0.02em;
+	}
+
+	.feature-description {
+		font-size: 0.9rem;
+		color: var(--tech-label);
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	.feature-glow {
 		position: absolute;
-		top: 50%;
-		transform: translateY(-50%);
-		background-color: var(--nav-logo-color);
-		color: var(--text-color);
-		border: none;
-		border-radius: 9999px;
-		padding: 0.5rem;
+		bottom: -50%;
+		left: -50%;
+		width: 200%;
+		height: 200%;
+		background: radial-gradient(circle, var(--tech-accent-muted) 0%, transparent 70%);
+		opacity: 0;
+		transition: opacity 0.4s;
+		pointer-events: none;
+	}
+
+	.feature-card:hover .feature-glow {
+		opacity: 0.15;
+	}
+
+	/* Testimonials Section */
+	.testimonials-section {
+		margin-bottom: 5rem;
+	}
+
+	.testimonials-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 1.5rem;
+		max-width: 1200px;
+		margin: 0 auto;
+	}
+
+	.testimonial-card-new {
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 12px;
+		padding: 1.75rem;
+		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		position: relative;
+		overflow: hidden;
+	}
+
+	.testimonial-card-new:hover {
+		transform: translateY(-5px);
+		border-color: var(--tech-accent);
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+	}
+
+	.card-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: 1rem;
+	}
+
+	.stars {
+		display: flex;
+		gap: 0.2rem;
+	}
+
+	.stars i {
+		color: var(--tech-accent);
+		font-size: 0.75rem;
+	}
+
+	.quote-mark {
+		font-size: 1.5rem;
+		color: var(--tech-accent);
+		opacity: 0.2;
+		line-height: 1;
+	}
+
+	.testimonial-text-new {
+		font-size: 0.95rem;
+		color: var(--tech-value);
+		line-height: 1.6;
+		margin: 0 0 1.5rem 0;
+		min-height: 80px;
+	}
+
+	.testimonial-footer {
+		display: flex;
+		align-items: center;
+		gap: 0.875rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--tech-cell-border);
+	}
+
+	.author-avatar-new {
+		width: 40px;
+		height: 40px;
+		background: var(--tech-accent-muted);
+		border: 2px solid var(--tech-accent);
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--tech-accent);
 		font-size: 1rem;
-		transition: all 0.3s ease;
-		opacity: 0.8;
+		flex-shrink: 0;
 	}
 
-	.testimonial-nav:hover {
-		background-color: var(--nav-logo-hover-color);
-		opacity: 1;
+	.author-details {
+		flex: 1;
 	}
 
-	.testimonial-prev {
-		left: 1rem;
+	.author-name-new {
+		font-size: 0.95rem;
+		font-weight: 700;
+		color: var(--tech-title);
+		margin: 0 0 0.2rem 0;
 	}
 
-	.testimonial-next {
-		right: 1rem;
+	.author-role-new {
+		font-size: 0.75rem;
+		color: var(--tech-label);
+		margin: 0;
+		font-family: 'JetBrains Mono', monospace;
+		letter-spacing: 0.02em;
 	}
 
-	.cta-container {
-		background-color: var(--container-bg);
-		padding: 2rem;
-		border-radius: var(--border-radius);
-		box-shadow:
-			0 4px 6px rgba(0, 0, 0, 0.1),
-			0 1px 3px rgba(0, 0, 0, 0.08);
+	/* CTA Section */
+	.cta-section {
+		margin-bottom: 3rem;
+	}
+
+	.cta-card {
+		position: relative;
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 12px;
+		padding: 3rem 2.5rem;
 		text-align: center;
+		overflow: hidden;
+		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
+	.cta-card:hover {
+		transform: translateY(-5px);
+		border-color: var(--tech-accent);
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+	}
+
+	.cta-content {
+		position: relative;
+		z-index: 2;
+	}
+
+	.cta-title {
+		font-size: clamp(1.5rem, 3.5vw, 2rem);
+		font-weight: 800;
+		color: var(--tech-title);
+		margin: 0 0 0.75rem 0;
+	}
+
+	.cta-text {
+		font-size: 1rem;
+		color: var(--tech-label);
+		margin: 0 0 2rem 0;
+		max-width: 600px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	.cta-glow {
+		position: absolute;
+		top: -50%;
+		left: -50%;
+		width: 200%;
+		height: 200%;
+		background: radial-gradient(circle, var(--tech-accent-muted) 0%, transparent 70%);
+		opacity: 0.1;
+		pointer-events: none;
+		transition: all 0.6s ease;
+	}
+
+	.cta-card:hover .cta-glow {
+		opacity: 0.2;
+		transform: scale(1.1);
+	}
+
+	/* Back to Top */
 	.back-to-top {
 		position: fixed;
 		bottom: 2rem;
 		right: 2rem;
-		background-color: var(--nav-logo-color);
-		color: var(--text-color);
-		border-radius: 9999px;
-		padding: 0.75rem;
-		box-shadow:
-			0 4px 6px rgba(0, 0, 0, 0.1),
-			0 1px 3px rgba(0, 0, 0, 0.08);
-		transition: all 0.3s ease;
-		opacity: 0.8;
+		width: 50px;
+		height: 50px;
+		background: var(--tech-accent);
+		color: #000;
+		border: none;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: all 0.3s;
+		box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+		z-index: 100;
+		padding: 0;
+	}
+
+	.back-to-top i {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		line-height: 1;
+		font-size: 1.1rem;
 	}
 
 	.back-to-top:hover {
-		background-color: var(--nav-logo-hover-color);
-		opacity: 1;
-		transform: translateY(-2px);
+		transform: translateY(-5px);
+		box-shadow: 0 8px 25px var(--tech-accent-muted);
 	}
-	@media (min-width: 768px) {
-		.feature-card {
-			padding: 2rem;
+
+	/* Responsive */
+	@media (max-width: 768px) {
+		.content-container {
+			padding: 2rem 1rem;
 		}
-		.btn-primary {
-			padding: 1rem 2rem;
-			font-size: 1.125rem;
+
+		.hero-section {
+			min-height: 60vh;
+			margin-bottom: 4rem;
 		}
-		.testimonial-container {
-			padding: 2rem;
+
+		.features-section,
+		.testimonials-section {
+			margin-bottom: 5rem;
 		}
-		.testimonial-nav {
-			padding: 0.75rem;
+
+		.features-grid,
+		.testimonials-grid {
+			grid-template-columns: 1fr;
+			gap: 1.5rem;
 		}
-		.cta-container {
-			padding: 3rem;
+
+		.testimonial-text-new {
+			min-height: auto;
 		}
+
+		.cta-card {
+			padding: 3rem 2rem;
+		}
+
 		.back-to-top {
-			padding: 1rem;
+			bottom: 1.5rem;
+			right: 1.5rem;
+			width: 45px;
+			height: 45px;
+		}
+
+		.back-to-top i {
+			font-size: 1rem;
 		}
 	}
 </style>
