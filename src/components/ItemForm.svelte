@@ -1,7 +1,10 @@
 <script>
 	import Swal from 'sweetalert2';
+	import { slide } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
 
 	let { onAdd } = $props();
+	let isCollapsed = $state(true);
 
 	let formData = $state({
 		name: '',
@@ -68,119 +71,137 @@
 	};
 </script>
 
-<div class="tech-form-frame">
-	<div class="form-header">
-		<h3 class="form-title">Add New Item</h3>
-		<div class="form-separator"></div>
-	</div>
-
-	<div class="form-grid">
-		<div class="input-group name-group">
-			<label for="name" class="tech-label">Item Name</label>
-			<div class="tech-input-wrapper">
-				<input
-					id="name"
-					class="tech-input {errors.name ? 'error' : ''}"
-					bind:value={formData.name}
-					placeholder="Enter item name..."
-					oninput={() => validateField('name', formData.name)}
-				/>
-				{#if errors.name}
-					<div class="tech-error-message">
-						<i class="fas fa-exclamation-triangle"></i>
-						{errors.name}
-					</div>
-				{/if}
-			</div>
+<div class="tech-form-frame" class:is-collapsed={isCollapsed}>
+	<button 
+		type="button" 
+		class="form-toggle-header" 
+		onclick={() => (isCollapsed = !isCollapsed)}
+		aria-expanded={!isCollapsed}
+	>
+		<div class="header-main">
+			<i class="fas fa-plus-square toggle-icon"></i>
+			<h3 class="form-title">Add New Item</h3>
+			<div class="form-separator"></div>
 		</div>
-
-		<div class="input-group storage-group">
-			<label for="storageType" class="tech-label">Storage Type</label>
-			<div class="tech-input-wrapper">
-				<select
-					id="storageType"
-					class="tech-input {errors.storageType ? 'error' : ''}"
-					bind:value={formData.storageType}
-					class:placeholder-selected={!formData.storageType}
-				>
-					<option value="" disabled>Select Storage Type...</option>
-					<option value="Freezer">Freezer</option>
-					<option value="Refrigerator">Refrigerator</option>
-					<option value="Dry Storage">Dry Storage</option>
-				</select>
-			</div>
+		<div class="header-action">
+			<span class="action-hint">{isCollapsed ? 'EXPAND FORM' : 'COLLAPSE'}</span>
+			<i class="fas fa-chevron-down chevron" class:rotated={!isCollapsed}></i>
 		</div>
+	</button>
 
-		<div class="input-group count-group">
-			<label for="count" class="tech-label">Current Count</label>
-			<div class="tech-input-wrapper">
-				<input
-					id="count"
-					class="tech-input {errors.count ? 'error' : ''}"
-					type="text"
-					bind:value={formData.count}
-					placeholder="0"
-					oninput={(event) => handleInput(event, 'count')}
-				/>
-			</div>
-		</div>
-
-		<div class="input-group full-width">
-			<label class="tech-label">Booths</label>
-			<div class="booth-selection-grid">
-				{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth}
-					<label class="booth-node">
-						<input
-							type="checkbox"
-							value={booth.value}
-							bind:group={formData.booths}
-							class="hidden-check"
-						/>
-						<div class="node-card" style="--node-color: {booth.color}">
-							<div class="node-indicator"></div>
-							<span class="node-label">{booth.label}</span>
-							<i class="fas fa-check node-check"></i>
+	{#if !isCollapsed}
+		<div transition:slide={{ duration: 400, easing: cubicOut }}>
+			<div class="form-content-inner">
+				<div class="form-grid">
+					<div class="input-group name-group">
+						<label for="name" class="tech-label">Item Name</label>
+						<div class="tech-input-wrapper">
+							<input
+								id="name"
+								class="tech-input {errors.name ? 'error' : ''}"
+								bind:value={formData.name}
+								placeholder="Enter item name..."
+								oninput={() => validateField('name', formData.name)}
+							/>
+							{#if errors.name}
+								<div class="tech-error-message">
+									<i class="fas fa-exclamation-triangle"></i>
+									{errors.name}
+								</div>
+							{/if}
 						</div>
-					</label>
-				{/each}
+					</div>
+
+					<div class="input-group storage-group">
+						<label for="storageType" class="tech-label">Storage Type</label>
+						<div class="tech-input-wrapper">
+							<select
+								id="storageType"
+								class="tech-input {errors.storageType ? 'error' : ''}"
+								bind:value={formData.storageType}
+								class:placeholder-selected={!formData.storageType}
+							>
+								<option value="" disabled>Select Storage Type...</option>
+								<option value="Freezer">Freezer</option>
+								<option value="Refrigerator">Refrigerator</option>
+								<option value="Dry Storage">Dry Storage</option>
+							</select>
+						</div>
+					</div>
+
+					<div class="input-group count-group">
+						<label for="count" class="tech-label">Current Count</label>
+						<div class="tech-input-wrapper">
+							<input
+								id="count"
+								class="tech-input {errors.count ? 'error' : ''}"
+								type="text"
+								bind:value={formData.count}
+								placeholder="0"
+								oninput={(event) => handleInput(event, 'count')}
+							/>
+						</div>
+					</div>
+
+					<div class="input-group full-width">
+						<label class="tech-label">Booths</label>
+						<div class="booth-selection-grid">
+							{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth}
+								<label class="booth-node">
+									<input
+										type="checkbox"
+										value={booth.value}
+										bind:group={formData.booths}
+										class="hidden-check"
+									/>
+									<div class="node-card" style="--node-color: {booth.color}">
+										<div class="node-indicator"></div>
+										<span class="node-label">{booth.label}</span>
+										<i class="fas fa-check node-check"></i>
+									</div>
+								</label>
+							{/each}
+						</div>
+					</div>
+
+					<div class="input-group alert-group">
+						<label for="lowCount" class="tech-label">Low Count Alert</label>
+						<div class="tech-input-wrapper">
+							<input
+								id="lowCount"
+								class="tech-input {errors.lowCount ? 'error' : ''}"
+								type="text"
+								bind:value={formData.lowCount}
+								placeholder="0"
+								oninput={(event) => handleInput(event, 'lowCount')}
+							/>
+						</div>
+					</div>
+
+					<div class="input-group cost-group">
+						<label for="cost" class="tech-label">Unit Cost ($)</label>
+						<div class="tech-input-wrapper">
+							<input
+								id="cost"
+								class="tech-input {errors.cost ? 'error' : ''}"
+								type="text"
+								bind:value={formData.cost}
+								placeholder="0.00"
+								oninput={(event) => handleInput(event, 'cost', true)}
+							/>
+						</div>
+					</div>
+				</div>
+
+				<div class="form-footer centered">
+					<button class="tech-add-btn primary-action" onclick={handleAdd}>
+						<i class="fas fa-plus-circle"></i>
+						<span>Add New Item</span>
+					</button>
+				</div>
 			</div>
 		</div>
-
-		<div class="input-group alert-group">
-			<label for="lowCount" class="tech-label">Low Count Alert</label>
-			<div class="tech-input-wrapper">
-				<input
-					id="lowCount"
-					class="tech-input {errors.lowCount ? 'error' : ''}"
-					type="text"
-					bind:value={formData.lowCount}
-					placeholder="0"
-					oninput={(event) => handleInput(event, 'lowCount')}
-				/>
-			</div>
-		</div>
-
-		<div class="input-group cost-group">
-			<label for="cost" class="tech-label">Unit Cost ($)</label>
-			<div class="tech-input-wrapper">
-				<input
-					id="cost"
-					class="tech-input {errors.cost ? 'error' : ''}"
-					type="text"
-					bind:value={formData.cost}
-					placeholder="0.00"
-					oninput={(event) => handleInput(event, 'cost', true)}
-				/>
-			</div>
-		</div>
-	</div>
-
-	<div class="form-footer centered">
-		<button class="tech-add-btn primary-action" onclick={handleAdd}>
-			<i class="fas fa-plus-circle"></i>
-			<span>Add New Item</span>
-		</button>
-	</div>
+	{/if}
 </div>
 
 <style>
@@ -188,31 +209,96 @@
 		background: var(--tech-glass-bg);
 		border: 1px solid var(--tech-glass-border);
 		border-radius: 12px;
-		padding: 2rem;
+		padding: 0;
+		overflow: hidden;
 		box-shadow: var(--tech-glass-shadow);
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
-	.form-header {
-		margin-bottom: 2rem;
+	.tech-form-frame.is-collapsed {
+		border-color: var(--tech-glass-border);
+		opacity: 0.9;
+	}
+
+	.tech-form-frame.is-collapsed:hover {
+		opacity: 1;
+		border-color: var(--tech-accent-muted);
+	}
+
+	.form-toggle-header {
+		width: 100%;
 		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1.25rem 2rem;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		outline: none;
+		transition: background-color 0.2s;
+	}
+
+	.form-toggle-header:hover {
+		background: rgba(255, 255, 255, 0.02);
+	}
+
+	.header-main {
+		display: flex;
+		align-items: center;
+		gap: 1.25rem;
+	}
+
+	.toggle-icon {
+		color: var(--tech-accent);
+		font-size: 1.2rem;
+		opacity: 0.8;
 	}
 
 	.form-title {
 		margin: 0;
-		font-size: 1.1rem;
+		font-size: 1rem;
 		font-weight: 800;
 		color: var(--tech-title);
 		text-transform: uppercase;
-		letter-spacing: 0.1em;
+		letter-spacing: 0.15em;
 	}
 
 	.form-separator {
 		height: 2px;
-		width: 40px;
+		width: 30px;
 		background: var(--tech-accent);
 		box-shadow: 0 0 10px var(--tech-accent-muted);
+		opacity: 0.5;
+	}
+
+	.header-action {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.action-hint {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.65rem;
+		font-weight: 800;
+		color: var(--tech-label);
+		letter-spacing: 0.1em;
+		opacity: 0.6;
+	}
+
+	.chevron {
+		color: var(--tech-label);
+		font-size: 0.9rem;
+		transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		opacity: 0.5;
+	}
+
+	.chevron.rotated {
+		transform: rotate(-180deg);
+	}
+
+	.form-content-inner {
+		padding: 0 2rem 2rem 2rem;
 	}
 
 	.form-grid {
@@ -364,8 +450,9 @@
 		min-width: 350px;
 		font-size: 1rem;
 		border-radius: 8px;
-		background: var(--tech-accent);
-		color: var(--tech-bg-start);
+		background: var(--tech-accent-muted);
+		color: var(--tech-accent);
+		border-color: var(--tech-accent-muted);
 	}
 
 	.tech-add-btn.primary-action i {
