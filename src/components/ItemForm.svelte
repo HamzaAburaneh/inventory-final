@@ -2,9 +2,11 @@
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import { notificationStore } from '../stores/notificationStore';
+	import ConfirmModal from './ConfirmModal.svelte';
 
 	let { onAdd } = $props();
 	let isCollapsed = $state(true);
+	let showValidationModal = $state(false);
 
 	let formData = $state({
 		name: '',
@@ -33,9 +35,18 @@
 	const handleInput = (event, field, allowDecimal = false) => {
 		let value = event.target.value;
 		if (allowDecimal) {
-			value = value.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1');
-			const [integer, decimal] = value.split('.');
-			value = decimal ? `${integer}.${decimal.slice(0, 2)}` : value;
+			// Remove all non-digits
+			let digits = value.replace(/\D/g, '');
+			if (digits === '') {
+				value = '';
+			} else {
+				// Convert to number and format as currency
+				let amount = parseInt(digits, 10) / 100;
+				value = amount.toLocaleString('en-CA', {
+					minimumFractionDigits: 2,
+					maximumFractionDigits: 2
+				});
+			}
 		} else {
 			value = value.replace(/\D/g, '');
 		}
@@ -44,8 +55,8 @@
 	};
 
 	const handleAdd = async () => {
-		if (formData.name.trim() === '') {
-			notificationStore.showNotification('Item name cannot be empty.', 'error');
+		if (formData.name.trim() === '' || !formData.storageType) {
+			showValidationModal = true;
 			return;
 		}
 
@@ -82,17 +93,10 @@
 						<div class="tech-input-wrapper">
 							<input
 								id="name"
-								class="tech-input {errors.name ? 'error' : ''}"
+								class="tech-input"
 								bind:value={formData.name}
 								placeholder="Enter item name..."
-								oninput={() => validateField('name', formData.name)}
 							/>
-							{#if errors.name}
-								<div class="tech-error-message">
-									<i class="fas fa-exclamation-triangle"></i>
-									{errors.name}
-								</div>
-							{/if}
 						</div>
 					</div>
 
@@ -101,7 +105,7 @@
 						<div class="tech-input-wrapper">
 							<select
 								id="storageType"
-								class="tech-input {errors.storageType ? 'error' : ''}"
+								class="tech-input"
 								bind:value={formData.storageType}
 								class:placeholder-selected={!formData.storageType}
 							>
@@ -118,7 +122,7 @@
 						<div class="tech-input-wrapper">
 							<input
 								id="count"
-								class="tech-input {errors.count ? 'error' : ''}"
+								class="tech-input"
 								type="text"
 								bind:value={formData.count}
 								placeholder="0"
@@ -153,7 +157,7 @@
 						<div class="tech-input-wrapper">
 							<input
 								id="lowCount"
-								class="tech-input {errors.lowCount ? 'error' : ''}"
+								class="tech-input"
 								type="text"
 								bind:value={formData.lowCount}
 								placeholder="0"
@@ -167,11 +171,12 @@
 						<div class="tech-input-wrapper">
 							<input
 								id="cost"
-								class="tech-input {errors.cost ? 'error' : ''}"
+								class="tech-input"
 								type="text"
 								bind:value={formData.cost}
 								placeholder="0.00"
 								oninput={(event) => handleInput(event, 'cost', true)}
+								style="text-align: right; padding-right: 1.5rem;"
 							/>
 						</div>
 					</div>
@@ -187,6 +192,38 @@
 		</div>
 	{/if}
 </div>
+
+<ConfirmModal
+	bind:show={showValidationModal}
+	title="Required Fields"
+	message={`<div style="display: flex; flex-direction: column; gap: 1.5rem; padding: 0.5rem 0;">
+		<div style="display: flex; flex-direction: column; gap: 1rem;">
+			${formData.name.trim() === '' ? `
+				<div style="display: flex; align-items: flex-start; gap: 1rem; background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; padding: 1rem; border-radius: 0 8px 8px 0;">
+					<div style="color: #ef4444; margin-top: 0.1rem;"><i class="fas fa-tag"></i></div>
+					<div style="display: flex; flex-direction: column; gap: 0.25rem;">
+						<span style="color: #ef4444; font-weight: 800; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;">Item Name</span>
+						<span style="color: #9ca3af; font-size: 0.85rem;">This field is required to identify the item.</span>
+					</div>
+				</div>
+			` : ''}
+			${!formData.storageType ? `
+				<div style="display: flex; align-items: flex-start; gap: 1rem; background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; padding: 1rem; border-radius: 0 8px 8px 0;">
+					<div style="color: #ef4444; margin-top: 0.1rem;"><i class="fas fa-warehouse"></i></div>
+					<div style="display: flex; flex-direction: column; gap: 0.25rem;">
+						<span style="color: #ef4444; font-weight: 800; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;">Storage Type</span>
+						<span style="color: #9ca3af; font-size: 0.85rem;">Please select where this item will be stored.</span>
+					</div>
+				</div>
+			` : ''}
+		</div>
+		<p style="margin: 0; color: #6b7280; font-size: 0.75rem; font-style: italic; text-align: center;">All highlighted fields must be completed before proceeding.</p>
+	</div>`}
+	type="warning"
+	confirmText="Understood"
+	cancelText=""
+	onConfirm={() => showValidationModal = false}
+/>
 
 <style>
 	.tech-form-frame {
@@ -340,6 +377,11 @@
 		border-color: var(--tech-accent);
 		background: var(--tech-header-bg);
 		box-shadow: 0 0 10px var(--tech-accent-muted);
+	}
+
+	.tech-input.error {
+		border-color: #ef4444;
+		box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
 	}
 
 	.tech-input::placeholder {

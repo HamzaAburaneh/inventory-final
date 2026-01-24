@@ -1,7 +1,6 @@
 <script>
 	import TableHeader from './TableHeader.svelte';
 	import TableCell from './TableCell.svelte';
-	import DeleteModal from './DeleteModal.svelte';
 	import Tooltip from './Tooltip.svelte';
 
 	let {
@@ -45,9 +44,7 @@
 	}
 
 	function handleDelete(id, itemName, position) {
-		itemToDelete = { id, name: itemName };
-		deleteButtonPosition = position;
-		showDeleteConfirm = true;
+		onDelete(id);
 	}
 
 	function handleEdit(id, field, oldValue, position) {
@@ -169,13 +166,6 @@
 
 <Tooltip text={tooltipText} x={tooltipX} y={tooltipY} visible={showTooltip} />
 
-<DeleteModal
-	visible={showDeleteConfirm}
-	itemName={itemToDelete?.name || ''}
-	position={deleteButtonPosition}
-	onConfirm={confirmDelete}
-	onCancel={cancelDelete}
-/>
 
 <style>
 	.table-wrapper {

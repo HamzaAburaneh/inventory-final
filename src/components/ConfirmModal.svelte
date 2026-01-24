@@ -50,10 +50,12 @@
 				<p class="modal-message">{@html message}</p>
 			</div>
 
-			<div class="modal-footer">
-				<button class="modal-btn cancel-btn" on:click={handleCancel}>
-					{cancelText}
-				</button>
+			<div class="modal-footer" class:centered={!cancelText}>
+				{#if cancelText}
+					<button class="modal-btn cancel-btn" on:click={handleCancel}>
+						{cancelText}
+					</button>
+				{/if}
 				<button class="modal-btn confirm-btn" class:danger={type === 'danger'} on:click={handleConfirm}>
 					{confirmText}
 				</button>
@@ -153,6 +155,10 @@
 		padding: 12px 20px;
 		background: #080808;
 		border-top: 1px solid #1a1a1a;
+	}
+
+	.modal-footer.centered {
+		justify-content: center;
 	}
 
 	.modal-btn {

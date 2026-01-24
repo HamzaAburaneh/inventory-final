@@ -12,7 +12,12 @@ export function capitalizeWords(str) {
 export function formatCost(cost) {
 	if (cost == null || cost === '') return '';
 	const numericCost = parseFloat(cost);
-	return !isNaN(numericCost) ? `$${numericCost.toFixed(2)}` : '';
+	if (isNaN(numericCost)) return '';
+	return new Intl.NumberFormat('en-CA', {
+		style: 'currency',
+		currency: 'CAD',
+		minimumFractionDigits: 2
+	}).format(numericCost);
 }
 
 export function formatTotalValue(count, cost) {
@@ -21,7 +26,11 @@ export function formatTotalValue(count, cost) {
 	const numericCost = parseFloat(cost);
 	if (isNaN(numericCount) || isNaN(numericCost)) return '';
 	const totalValue = numericCount * numericCost;
-	return `$${totalValue.toFixed(2)}`;
+	return new Intl.NumberFormat('en-CA', {
+		style: 'currency',
+		currency: 'CAD',
+		minimumFractionDigits: 2
+	}).format(totalValue);
 }
 
 export function formatBooths(booths) {

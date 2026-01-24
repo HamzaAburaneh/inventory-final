@@ -3,6 +3,7 @@
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Table from '../../components/Table.svelte';
 	import Pagination from '../../components/Pagination.svelte';
+	import ConfirmModal from '../../components/ConfirmModal.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { getSearchStore } from '../../stores/searchStore';
 	import { itemStore } from '../../stores/itemStore';
@@ -20,6 +21,14 @@
 	let showEditModal = $state(false);
 	let editData = $state({ id: null, field: '', value: '', title: '' });
 	let editButtonPosition = $state(null);
+
+	// Delete modal state
+	let deleteModal = $state({
+		visible: false,
+		itemId: null,
+		itemName: '',
+		onConfirm: () => {}
+	});
 
 	// Pagination store
 	const paginationStore = getPaginationStore('manageItems');
@@ -115,11 +124,14 @@
 			return;
 		}
 		try {
+			// Clean cost string (remove commas) before parsing
+			const cleanCost = typeof formData.cost === 'string' ? formData.cost.replace(/,/g, '') : formData.cost;
+			
 			const newItem = {
 				...formData,
 				count: formData.count ? parseInt(formData.count, 10) : 0,
 				lowCount: formData.lowCount ? parseInt(formData.lowCount, 10) : 0,
-				cost: formData.cost ? parseFloat(parseFloat(formData.cost).toFixed(2)) : 0,
+				cost: cleanCost ? parseFloat(parseFloat(cleanCost).toFixed(2)) : 0,
 				booths: formData.booths || []
 			};
 			await itemStore.addItem(newItem);
@@ -132,8 +144,19 @@
 	};
 
 	const handleDelete = async (id) => {
-		await itemStore.deleteItem(id);
-		notificationStore.showNotification('Item deleted successfully!', 'success');
+		const item = items.find(i => i.id === id);
+		if (!item) return;
+
+		deleteModal = {
+			visible: true,
+			itemId: id,
+			itemName: item.name,
+			onConfirm: async () => {
+				await itemStore.deleteItem(id);
+				notificationStore.showNotification('Item deleted successfully!', 'success');
+				deleteModal.visible = false;
+			}
+		};
 	};
 
 	const handleEdit = async (id, field, oldValue, position) => {
@@ -363,69 +386,87 @@
 {/if}
 
 {#if showEditModal}
-	<button
-		type="button"
-		class="modal-backdrop"
-		onclick={closeEditModal}
-		onkeydown={(e) => e.key === 'Escape' && closeEditModal()}
-		aria-label="Close modal"
-	></button>
-	<div class="modal-overlay" style="left: 50%; top: 50%;">
-		<form class="edit-modal" onsubmit={confirmEdit}>
-			<h3>{editData.title}</h3>
-			{#if editData.field === 'storageType'}
-				<select bind:value={editData.value} class="edit-input" required>
-					<option value="Dry Storage">Dry Storage</option>
-					<option value="Refrigerator">Refrigerator</option>
-					<option value="Freezer">Freezer</option>
-				</select>
-			{:else if editData.field === 'booths'}
-				<div class="booths-edit-container">
-					<div class="booths-container">
-						{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth}
-							<label class="booth-option">
-								<input
-									type="checkbox"
-									value={booth.value}
-									bind:group={editData.value}
-									class="booth-checkbox"
-								/>
-								<div class="booth-card" style="--booth-color: {booth.color}">
-									<div class="booth-indicator"></div>
-									<span class="booth-name">{booth.label}</span>
-									<div class="checkmark">
-										<svg
-											width="16"
-											height="16"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="3"
-										>
-											<polyline points="20,6 9,17 4,12"></polyline>
-										</svg>
-									</div>
-								</div>
-							</label>
-						{/each}
-					</div>
+	<div class="modal-backdrop" onclick={closeEditModal} transition:blur={{ duration: 200 }}></div>
+	<div class="modal-container">
+		<form class="tech-modal" onsubmit={confirmEdit} transition:blur={{ duration: 300 }}>
+			<div class="modal-header">
+				<div class="header-icon">
+					<i class="fas fa-edit"></i>
 				</div>
-			{:else}
-				<input
-					type="text"
-					bind:value={editData.value}
-					class="edit-input"
-					placeholder="Enter value..."
-					required
-				/>
-			{/if}
-			<div class="modal-buttons">
-				<button type="button" class="cancel-btn" onclick={closeEditModal}> Cancel </button>
-				<button type="submit" class="confirm-btn"> Confirm </button>
+				<h2 class="modal-title">{editData.title}</h2>
+			</div>
+
+			<div class="modal-body">
+				{#if editData.field === 'storageType'}
+					<select bind:value={editData.value} class="tech-input" required>
+						<option value="Dry Storage">Dry Storage</option>
+						<option value="Refrigerator">Refrigerator</option>
+						<option value="Freezer">Freezer</option>
+					</select>
+				{:else if editData.field === 'booths'}
+					<div class="booths-edit-container">
+						<div class="booths-container">
+							{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth}
+								<label class="booth-option">
+									<input
+										type="checkbox"
+										value={booth.value}
+										bind:group={editData.value}
+										class="booth-checkbox"
+									/>
+									<div class="booth-card" style="--booth-color: {booth.color}">
+										<div class="booth-indicator"></div>
+										<span class="booth-name">{booth.label}</span>
+										<div class="checkmark">
+											<svg
+												width="16"
+												height="16"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="3"
+											>
+												<polyline points="20,6 9,17 4,12"></polyline>
+											</svg>
+										</div>
+									</div>
+								</label>
+							{/each}
+						</div>
+					</div>
+				{:else}
+					<input
+						type="text"
+						bind:value={editData.value}
+						class="tech-input"
+						placeholder="Enter value..."
+						required
+					/>
+				{/if}
+			</div>
+
+			<div class="modal-footer">
+				<button type="button" class="modal-btn cancel-btn" onclick={closeEditModal}>
+					Cancel
+				</button>
+				<button type="submit" class="modal-btn confirm-btn">
+					Confirm
+				</button>
 			</div>
 		</form>
 	</div>
 {/if}
+
+<ConfirmModal
+	bind:show={deleteModal.visible}
+	title="Delete Item"
+	message={`Are you sure you want to delete <strong>"${deleteModal.itemName}"</strong>?<br><span style="color: #ef4444; font-size: 0.8rem; font-weight: 800;">THIS ACTION CANNOT BE UNDONE.</span>`}
+	type="danger"
+	confirmText="Delete"
+	cancelText="Cancel"
+	onConfirm={deleteModal.onConfirm}
+	onCancel={() => deleteModal.visible = false}
+/>
 
 <style>
 	:global(body) {
@@ -736,103 +777,137 @@
 	.notification.success i { color: #22c55e; }
 	.notification.error i { color: #ef4444; }
 
-	/* Custom edit modal */
+	/* Tech Modals */
 	.modal-backdrop {
 		position: fixed;
 		top: 0;
 		left: 0;
-		width: 100%;
-		height: 100%;
-		background-color: rgba(0, 0, 0, 0.6);
-		backdrop-filter: blur(4px);
-		z-index: 9999;
-		border: none;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.5);
+		backdrop-filter: blur(2px);
+		-webkit-backdrop-filter: blur(2px);
+		z-index: 10000;
 	}
 
-	.modal-overlay {
+	.modal-container {
 		position: fixed;
-		transform: translate(-50%, -50%);
-		z-index: 10000;
-		width: 100%;
-		max-width: 400px;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 10001;
 		pointer-events: none;
 	}
 
-	.edit-modal {
-		background: var(--tech-bg-start);
-		border-radius: 12px;
-		padding: 2rem;
-		box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-		border: 1px solid var(--tech-accent-muted);
+	.tech-modal {
+		position: relative;
+		background: #0d0d0d;
+		border: 1px solid #1a1a1a;
+		border-radius: 4px;
+		width: 90%;
+		max-width: 400px;
+		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
 		pointer-events: auto;
+		overflow: hidden;
 	}
 
-	.edit-modal h3 {
-		margin: 0 0 1.5rem 0;
-		color: var(--tech-title);
-		font-size: 1.25rem;
-		font-weight: 800;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	.edit-input {
-		width: 100%;
-		padding: 0.875rem 1rem;
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 6px;
-		background: var(--tech-badge-bg);
-		color: var(--tech-value);
-		font-size: 1rem;
-		margin-bottom: 1.5rem;
-		font-family: 'JetBrains Mono', monospace;
-	}
-
-	.edit-input:focus {
-		outline: none;
-		border-color: var(--tech-accent);
-		box-shadow: 0 0 10px var(--tech-accent-muted);
-	}
-
-	.modal-buttons {
+	.modal-header {
 		display: flex;
-		gap: 1rem;
+		align-items: center;
+		gap: 12px;
+		padding: 16px 20px;
+		border-bottom: 1px solid #1a1a1a;
 	}
 
-	.modal-buttons button {
-		flex: 1;
-		padding: 0.875rem 1rem;
-		border: 1px solid transparent;
-		border-radius: 6px;
-		font-size: 0.8rem;
-		font-weight: 800;
-		cursor: pointer;
+	.header-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--tech-accent);
+		font-size: 1.1rem;
+		flex-shrink: 0;
+	}
+
+	.modal-title {
+		margin: 0;
+		color: #e5e7eb;
+		font-size: 1.1rem;
+		font-weight: 700;
 		text-transform: uppercase;
-		letter-spacing: 0.1em;
-		font-family: 'JetBrains Mono', monospace;
+		letter-spacing: 0.025em;
+	}
+
+	.modal-body {
+		padding: 20px;
+	}
+
+	.tech-input {
+		width: 100%;
+		background: var(--tech-badge-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 4px;
+		padding: 0.75rem 1rem;
+		color: var(--tech-value);
+		font-family: 'Inter', sans-serif;
+		font-size: 0.9rem;
+		font-weight: 500;
 		transition: all 0.2s;
 	}
 
+	.tech-input:focus {
+		outline: none;
+		border-color: var(--tech-accent);
+		background: var(--tech-header-bg);
+		box-shadow: 0 0 10px var(--tech-accent-muted);
+	}
+
+	.modal-footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: 8px;
+		padding: 12px 20px;
+		background: #080808;
+		border-top: 1px solid #1a1a1a;
+	}
+
+	.modal-btn {
+		padding: 8px 16px;
+		border-radius: 2px;
+		font-family: inherit;
+		font-size: 0.75rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		outline: none;
+		border: 1px solid transparent;
+	}
+
 	.cancel-btn {
-		background: var(--tech-badge-bg);
-		color: var(--tech-label);
-		border-color: var(--tech-glass-border);
+		background: transparent;
+		border: 1px solid #262626;
+		color: #737373;
 	}
 
 	.cancel-btn:hover {
-		background: var(--tech-header-bg);
-		color: var(--tech-value);
+		border-color: #404040;
+		color: #a3a3a3;
 	}
 
 	.confirm-btn {
-		background: var(--tech-accent-muted);
+		background: #171717;
+		border: 1px solid var(--tech-accent);
 		color: var(--tech-accent);
-		border-color: var(--tech-accent-muted);
 	}
 
 	.confirm-btn:hover {
 		background: var(--tech-accent);
-		color: var(--tech-bg-start);
+		color: #000000;
 	}
 
 	.booths-container {
