@@ -548,9 +548,14 @@
 		font-family: 'JetBrains Mono', monospace;
 		font-weight: 700;
 		font-size: 0.85rem;
+		transition: color 0.3s ease;
 		display: flex;
 		align-items: baseline;
 		gap: 0.4rem;
+	}
+
+	.ribbon-item:hover .ribbon-value {
+		color: var(--tech-accent);
 	}
 
 	.digital-font {
