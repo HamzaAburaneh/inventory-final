@@ -544,9 +544,19 @@
 		font-weight: 700;
 		font-size: 0.85rem;
 		transition: color 0.3s ease;
-		display: flex;
+		display: inline-flex;
 		align-items: baseline;
 		gap: 0.4rem; /* Precise gap between Column and Order */
+		min-width: fit-content;
+	}
+	
+	/* Prevent layout shift by reserving space for dynamic content */
+	.ribbon-item:nth-child(2) .ribbon-value {
+		min-width: 80px; /* Reserve space for record counts */
+	}
+	
+	.ribbon-item:nth-child(3) .ribbon-value {
+		min-width: 160px; /* Reserve space for sorting column + order */
 	}
 
 	.ribbon-item:hover .ribbon-value {

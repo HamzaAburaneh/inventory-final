@@ -569,9 +569,23 @@
 		font-weight: 700;
 		font-size: 0.85rem;
 		transition: color 0.3s ease;
-		display: flex;
+		display: inline-flex;
 		align-items: baseline;
 		gap: 0.4rem;
+		min-width: fit-content;
+	}
+	
+	/* Prevent layout shift by reserving space for dynamic content */
+	.ribbon-item:nth-child(1) .ribbon-value {
+		min-width: 80px; /* Reserve space for item counts */
+	}
+	
+	.ribbon-item:nth-child(2) .ribbon-value {
+		min-width: 120px; /* Reserve space for currency values */
+	}
+	
+	.ribbon-item:nth-child(3) .ribbon-value {
+		min-width: 160px; /* Reserve space for sorting column + order */
 	}
 
 	.ribbon-item:hover .ribbon-value {
