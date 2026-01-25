@@ -9,7 +9,8 @@
       "Bash(do)",
       "Bash(echo:*)",
       "Bash(done)",
-      "Skill(frontend-design:frontend-design)"
+      "Skill(frontend-design:frontend-design)",
+      "mcp__plugin_svelte_svelte__svelte-autofixer"
     ]
   }
 }

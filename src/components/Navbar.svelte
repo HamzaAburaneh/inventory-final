@@ -1,6 +1,7 @@
 <script>
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
+	import { fly, fade } from 'svelte/transition';
 	import ThemeToggle from './ThemeToggle.svelte';
 	import { authStore } from '../stores/authStore.js';
 	import { goto } from '$app/navigation';
@@ -130,6 +131,21 @@
 			document.removeEventListener('click', handleClickOutside, true);
 		};
 	});
+
+	// Prevent body scroll when mobile menu is open
+	$effect(() => {
+		if (!browser) return;
+		
+		if (isOpen) {
+			document.body.style.overflow = 'hidden';
+		} else {
+			document.body.style.overflow = '';
+		}
+
+		return () => {
+			document.body.style.overflow = '';
+		};
+	});
 </script>
 
 <nav class="navbar">
@@ -148,12 +164,20 @@
 			type="button"
 			aria-expanded={isOpen}
 			aria-controls="mobile-menu"
+			aria-label="Toggle navigation menu"
 		>
-			<div class="hamburger" class:open={isOpen}>
-				<span></span>
-				<span></span>
-				<span></span>
-			</div>
+			{#if isOpen}
+				<svg class="menu-icon-svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+					<line x1="18" y1="6" x2="6" y2="18"></line>
+					<line x1="6" y1="6" x2="18" y2="18"></line>
+				</svg>
+			{:else}
+				<svg class="menu-icon-svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+					<line x1="3" y1="6" x2="21" y2="6"></line>
+					<line x1="3" y1="12" x2="21" y2="12"></line>
+					<line x1="3" y1="18" x2="21" y2="18"></line>
+				</svg>
+			{/if}
 		</button>
 
 		<div class="nav-content desktop">
@@ -236,71 +260,63 @@
 			</div>
 		</div>
 
-		{#if isOpen}
-			<div class="mobile-overlay" onclick={closeMenu}></div>
-			<div class="nav-list mobile" id="mobile-menu" bind:this={mobileMenuRef}>
-				<div class="mobile-header">
-					<span class="mobile-title">Navigation</span>
-					<button class="close-btn" onclick={closeMenu}>
-						<i class="fas fa-times"></i>
-					</button>
-				</div>
-				{#if user}
-					<div class="mobile-user-info">
-						<div class="avatar-circle large">
-							<i class="fas fa-user"></i>
-						</div>
-						<div class="user-details">
-							<span class="user-name-large">{user.displayName || user.email}</span>
-							<span class="user-status">System Authorized</span>
-						</div>
-					</div>
-					<div class="mobile-links">
-						<a href="/manageItems" class="mobile-link" class:active={currentPath === '/manageItems'} onclick={closeMenu}>
-							<i class="fas fa-boxes"></i>
-							<span>Item Manager</span>
-						</a>
-						<a href="/manageTransactions" class="mobile-link" class:active={currentPath === '/manageTransactions'} onclick={closeMenu}>
-							<i class="fas fa-exchange-alt"></i>
-							<span>Manage Transactions</span>
-						</a>
-						<a href="/transactionHistory" class="mobile-link" class:active={currentPath === '/transactionHistory'} onclick={closeMenu}>
-							<i class="fas fa-history"></i>
-							<span>Transaction History</span>
-						</a>
-						<a href="/transactionAnalysis" class="mobile-link" class:active={currentPath === '/transactionAnalysis'} onclick={closeMenu}>
-							<i class="fas fa-chart-line"></i>
-							<span>Transaction Analysis</span>
-						</a>
-						<a href="/inventoryPredictions" class="mobile-link" class:active={currentPath === '/inventoryPredictions'} onclick={closeMenu}>
-							<i class="fas fa-magic"></i>
-							<span>Inventory Predictions</span>
-						</a>
-						<div class="divider"></div>
-						<a href="/profile" class="mobile-link" onclick={handleProfileClick}>
-							<i class="fas fa-user-cog"></i>
-							<span>Profile Settings</span>
-						</a>
-						<button onclick={handleLogout} class="mobile-link logout">
-							<i class="fas fa-power-off"></i>
-							<span>Logout System</span>
-						</button>
-					</div>
-				{:else}
-					<div class="mobile-links">
-						<a href="/login" class="mobile-link" class:active={currentPath === '/login'} onclick={closeMenu}>
-							<i class="fas fa-sign-in-alt"></i>
-							<span>Login</span>
-						</a>
-					</div>
-				{/if}
-				<div class="mobile-footer">
-					<ThemeToggle />
-				</div>
-			</div>
-		{/if}
 	</div>
 </nav>
+
+<!-- Mobile dropdown menu - slides down from under navbar -->
+{#if isOpen}
+	<div 
+		class="mobile-menu-overlay" 
+		onclick={closeMenu}
+		transition:fade={{ duration: 200 }}
+	></div>
+	<div 
+		class="mobile-dropdown"
+		class:full-height={user}
+		id="mobile-menu" 
+		bind:this={mobileMenuRef}
+		transition:fly={{ y: -300, duration: 300, easing: t => 1 - Math.pow(1 - t, 3) }}
+	>
+		<div class="mobile-nav-links">
+			{#if user}
+				<a href="/manageItems" class="mobile-link" class:active={currentPath === '/manageItems'} onclick={closeMenu}>
+					Item Manager
+				</a>
+				<a href="/manageTransactions" class="mobile-link" class:active={currentPath === '/manageTransactions'} onclick={closeMenu}>
+					Transactions
+				</a>
+				<a href="/transactionHistory" class="mobile-link" class:active={currentPath === '/transactionHistory'} onclick={closeMenu}>
+					History
+				</a>
+				<a href="/transactionAnalysis" class="mobile-link" class:active={currentPath === '/transactionAnalysis'} onclick={closeMenu}>
+					Analysis
+				</a>
+				<a href="/inventoryPredictions" class="mobile-link" class:active={currentPath === '/inventoryPredictions'} onclick={closeMenu}>
+					Predictions
+				</a>
+				<a href="/profile" class="mobile-link" onclick={handleProfileClick}>
+					Profile
+				</a>
+			{:else}
+				<a href="/login" class="mobile-link" onclick={closeMenu}>
+					Login
+				</a>
+			{/if}
+		</div>
+		
+		<div class="mobile-footer">
+			<div class="footer-row">
+				<span class="footer-label">Theme</span>
+				<ThemeToggle />
+			</div>
+			{#if user}
+				<button class="mobile-logout" onclick={handleLogout}>
+					Sign Out
+				</button>
+			{/if}
+		</div>
+	</div>
+{/if}
 
 <style>
 	.navbar {
@@ -584,185 +600,170 @@
 		box-shadow: 0 0 15px var(--tech-accent-muted);
 	}
 
-	/* Mobile Styles */
+	/* Mobile Styles - Clean minimal design */
 	.menu-toggle {
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		width: 44px;
 		height: 44px;
-		background: var(--tech-badge-bg);
-		border: 1px solid var(--tech-badge-border);
-		border-radius: 8px;
+		background: transparent;
+		border: none;
 		cursor: pointer;
-		z-index: 1001;
+		z-index: 10000;
+		transition: all 0.2s ease;
+		-webkit-tap-highlight-color: transparent;
+		padding: 0;
 	}
 
-	.hamburger {
-		width: 20px;
-		height: 14px;
-		display: flex;
-		flex-direction: column;
-		justify-content: space-between;
+	.menu-toggle:hover {
+		opacity: 0.7;
 	}
 
-	.hamburger span {
-		display: block;
-		height: 2px;
-		width: 100%;
-		background: var(--tech-label);
-		border-radius: 2px;
-		transition: all 0.3s ease;
+	.menu-toggle:active {
+		transform: scale(0.95);
 	}
 
-	.hamburger.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
-	.hamburger.open span:nth-child(2) { opacity: 0; }
-	.hamburger.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+	.menu-icon-svg {
+		color: var(--tech-title);
+		stroke-linecap: round;
+	}
 
-	.mobile-overlay {
+	/* Mobile dropdown menu - slides down from navbar */
+	.mobile-menu-overlay {
 		position: fixed;
-		top: 0;
+		top: 70px;
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background: rgba(0, 0, 0, 0.4);
-		backdrop-filter: blur(4px);
+		background: rgba(0, 0, 0, 0.3);
 		z-index: 998;
 	}
 
-	.nav-list.mobile {
+	.mobile-dropdown {
 		position: fixed;
-		top: 0;
+		top: 70px;
+		left: 0;
 		right: 0;
-		bottom: 0;
-		width: 300px;
-		background: var(--tech-glass-bg);
-		border-left: 1px solid var(--tech-glass-border);
-		display: flex;
-		flex-direction: column;
+		background: var(--tech-glass-bg, #ffffff);
+		border-bottom: 1px solid var(--tech-glass-border);
+		box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 		z-index: 999;
-		padding: 1.5rem;
-		box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
-		animation: slide-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+		overflow-y: auto;
 	}
 
-	@keyframes slide-left {
-		from { transform: translateX(100%); }
-		to { transform: translateX(0); }
-	}
-
-	.mobile-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 2rem;
-	}
-
-	.mobile-title {
-		font-size: 0.7rem;
-		font-weight: 800;
-		color: var(--tech-label);
-		text-transform: uppercase;
-		letter-spacing: 0.2em;
-	}
-
-	.close-btn {
-		background: transparent;
-		border: none;
-		color: var(--tech-label);
-		font-size: 1.2rem;
-		cursor: pointer;
-	}
-
-	.mobile-user-info {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		padding: 1rem;
-		background: var(--tech-badge-bg);
-		border-radius: 12px;
-		margin-bottom: 2rem;
-	}
-
-	.avatar-circle.large {
-		width: 48px;
-		height: 48px;
-		font-size: 1.2rem;
-	}
-
-	.user-details {
+	.mobile-dropdown.full-height {
+		bottom: 0;
 		display: flex;
 		flex-direction: column;
+		border-bottom: none;
+		box-shadow: none;
 	}
 
-	.user-name-large {
-		font-weight: 800;
-		color: var(--tech-value);
-		font-size: 0.9rem;
-	}
-
-	.user-status {
-		font-size: 0.6rem;
-		color: var(--tech-accent);
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	.mobile-links {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		flex: 1;
+	/* Navigation links */
+	.mobile-nav-links {
+		padding: 1rem 0;
 	}
 
 	.mobile-link {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		padding: 1rem;
+		display: block;
+		padding: 1rem 1.5rem;
 		text-decoration: none;
-		color: var(--tech-value);
-		font-weight: 700;
-		font-size: 0.9rem;
-		border-radius: 8px;
-		transition: all 0.2s;
-	}
-
-	.mobile-link i {
-		width: 20px;
-		color: var(--tech-label);
+		color: var(--tech-title);
 		font-size: 1rem;
+		font-weight: 500;
+		transition: all 0.15s ease;
+		-webkit-tap-highlight-color: transparent;
 	}
 
-	.mobile-link:hover, .mobile-link.active {
+	.mobile-link:hover {
+		background: var(--tech-badge-bg);
+	}
+
+	.mobile-link:active {
 		background: var(--tech-accent-muted);
+	}
+
+	.mobile-link.active {
 		color: var(--tech-accent);
+		font-weight: 600;
 	}
 
-	.mobile-link:hover i, .mobile-link.active i {
-		color: var(--tech-accent);
-	}
-
-	.mobile-link.logout {
-		margin-top: auto;
-		color: #ef4444;
-	}
-
-	.mobile-link.logout i {
-		color: #ef4444;
-	}
-
+	/* Mobile footer */
 	.mobile-footer {
-		margin-top: 2rem;
-		padding-top: 1.5rem;
+		margin-top: auto;
+		padding: 1.5rem;
 		border-top: 1px solid var(--tech-glass-border);
 		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		background: var(--tech-glass-bg);
+	}
+
+	.footer-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.footer-label {
+		font-size: 0.85rem;
+		font-weight: 500;
+		color: var(--tech-label);
+	}
+
+	.mobile-logout {
+		width: 100%;
+		padding: 0.875rem 1rem;
+		background: transparent;
+		color: var(--tech-label);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 50px;
+		font-size: 0.9rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.mobile-logout:hover {
+		border-color: #ef4444;
+		color: #ef4444;
+	}
+
+	.mobile-logout:active {
+		transform: scale(0.98);
+	}
+
+	.mobile-login-btn {
+		display: flex;
+		align-items: center;
 		justify-content: center;
+		width: 100%;
+		padding: 0.875rem 1rem;
+		background: var(--tech-accent);
+		color: white;
+		border: none;
+		border-radius: 50px;
+		font-size: 0.9rem;
+		font-weight: 600;
+		text-decoration: none;
+		transition: all 0.15s ease;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.mobile-login-btn:hover {
+		opacity: 0.9;
+	}
+
+	.mobile-login-btn:active {
+		transform: scale(0.98);
 	}
 
 	@media (min-width: 768px) {
 		.menu-toggle { display: none; }
 		.nav-content.desktop { display: flex; }
+		.mobile-dropdown { display: none; }
+		.mobile-menu-overlay { display: none; }
 	}
 </style>
