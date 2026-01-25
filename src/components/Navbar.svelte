@@ -304,7 +304,7 @@
 
 <style>
 	.navbar {
-		background: var(--tech-header-bg);
+		background: rgba(255, 255, 255, 0.7);
 		backdrop-filter: blur(12px);
 		-webkit-backdrop-filter: blur(12px);
 		border-bottom: 1px solid var(--tech-glass-border);
@@ -315,6 +315,10 @@
 		display: flex;
 		align-items: center;
 		view-transition-name: navbar;
+	}
+
+	:global([data-theme="dark"]) .navbar {
+		background: rgba(0, 0, 0, 0.7);
 	}
 
 	.nav-container {
