@@ -509,9 +509,145 @@
 		font-size: 1.1rem;
 	}
 
-	@media (max-width: 640px) {
+	/* ===== MOBILE RESPONSIVENESS ===== */
+
+	/* Extra small devices (320px - 374px) - iPhone SE, older phones */
+	@media (max-width: 374px) {
+		.login-viewport {
+			padding: 0.75rem;
+			padding-top: env(safe-area-inset-top, 0.75rem);
+			padding-bottom: env(safe-area-inset-bottom, 0.75rem);
+		}
+
+		.login-card {
+			padding: 1.5rem 1rem;
+			border-radius: 10px;
+		}
+
+		.logo-icon {
+			width: 36px;
+			height: 36px;
+			font-size: 1rem;
+		}
+
+		.logo-text {
+			font-size: 1.1rem;
+			letter-spacing: 0.05em;
+		}
+
+		.status-text {
+			font-size: 0.65rem;
+		}
+
+		.main-title {
+			font-size: 0.95rem;
+		}
+
+		.form-label {
+			font-size: 0.75rem;
+		}
+
+		.tech-input {
+			padding: 0.75rem;
+			font-size: 16px; /* Prevents iOS zoom on focus */
+		}
+
+		.submit-btn {
+			padding: 0.875rem;
+			font-size: 0.8rem;
+			min-height: 48px; /* Touch target minimum */
+		}
+
+		.toggle-btn {
+			font-size: 0.85rem;
+			padding: 0.75rem;
+			min-height: 44px; /* Touch target minimum */
+		}
+
+		.info-badge {
+			flex-direction: column;
+			gap: 0.5rem;
+			padding: 0.75rem;
+			font-size: 0.7rem;
+			text-align: center;
+		}
+
+		.error-notification {
+			top: env(safe-area-inset-top, 0.5rem);
+			right: 0.5rem;
+			left: 0.5rem;
+			padding: 0.75rem 1rem;
+		}
+
+		.error-content {
+			font-size: 0.85rem;
+			gap: 0.75rem;
+		}
+	}
+
+	/* Small devices (375px - 479px) - iPhone 12/13/14, standard phones */
+	@media (min-width: 375px) and (max-width: 479px) {
 		.login-viewport {
 			padding: 1rem;
+			padding-top: max(1rem, env(safe-area-inset-top));
+			padding-bottom: max(1rem, env(safe-area-inset-bottom));
+		}
+
+		.login-card {
+			padding: 1.75rem 1.25rem;
+		}
+
+		.logo-text {
+			font-size: 1.2rem;
+		}
+
+		.main-title {
+			font-size: 1rem;
+		}
+
+		.status-text {
+			font-size: 0.65rem;
+		}
+
+		.form-label {
+			font-size: 0.75rem;
+		}
+
+		.tech-input {
+			padding: 0.875rem 1rem;
+			font-size: 16px; /* Prevents iOS zoom on focus */
+		}
+
+		.submit-btn {
+			padding: 1rem;
+			font-size: 0.8rem;
+			min-height: 50px;
+		}
+
+		.toggle-btn {
+			padding: 0.75rem;
+			min-height: 44px;
+		}
+
+		.info-badge {
+			font-size: 0.7rem;
+			padding: 0.75rem;
+		}
+
+		.error-notification {
+			top: max(1rem, env(safe-area-inset-top));
+			right: 1rem;
+			left: 1rem;
+			max-width: none;
+		}
+	}
+
+	/* Medium devices (480px - 639px) - Large phones, small tablets */
+	@media (min-width: 480px) and (max-width: 639px) {
+		.login-viewport {
+			padding: 1.25rem;
+			padding-top: max(1.25rem, env(safe-area-inset-top));
+			padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
 		}
 
 		.login-card {
@@ -522,15 +658,173 @@
 			font-size: 1.1rem;
 		}
 
-		.logo-text {
-			font-size: 1.25rem;
+		.tech-input {
+			font-size: 16px; /* Prevents iOS zoom on focus */
+		}
+
+		.submit-btn {
+			min-height: 52px;
+		}
+
+		.toggle-btn {
+			min-height: 44px;
 		}
 
 		.error-notification {
-			top: 1rem;
+			top: max(1rem, env(safe-area-inset-top));
 			right: 1rem;
 			left: 1rem;
 			max-width: none;
+		}
+	}
+
+	/* Tablets (640px - 767px) */
+	@media (min-width: 640px) and (max-width: 767px) {
+		.login-viewport {
+			padding: 1.5rem;
+		}
+
+		.login-card {
+			padding: 2rem;
+		}
+
+		.tech-input {
+			font-size: 16px;
+		}
+
+		.error-notification {
+			top: 1.5rem;
+			right: 1.5rem;
+			left: auto;
+			max-width: 380px;
+		}
+	}
+
+	/* Larger tablets (768px - 1023px) */
+	@media (min-width: 768px) and (max-width: 1023px) {
+		.login-container {
+			max-width: 440px;
+		}
+
+		.login-card {
+			padding: 2.25rem;
+		}
+	}
+
+	/* Landscape mode adjustments for phones */
+	@media (max-height: 500px) and (orientation: landscape) {
+		.login-viewport {
+			padding: 0.75rem 2rem;
+			align-items: flex-start;
+			overflow-y: auto;
+		}
+
+		.login-card {
+			padding: 1.25rem 1.5rem;
+			margin: 0.5rem 0;
+		}
+
+		.card-header {
+			margin-bottom: 1rem;
+		}
+
+		.title-section {
+			margin-bottom: 1rem;
+		}
+
+		.auth-form {
+			gap: 1rem;
+		}
+
+		.toggle-section {
+			margin-top: 1rem;
+			padding-top: 1rem;
+		}
+
+		.test-info {
+			margin-top: 1rem;
+			padding-top: 1rem;
+		}
+
+		.error-notification {
+			top: 0.5rem;
+			right: 0.5rem;
+		}
+	}
+
+	/* Touch interaction improvements */
+	@media (hover: none) and (pointer: coarse) {
+		.submit-btn {
+			-webkit-tap-highlight-color: transparent;
+		}
+
+		.submit-btn:active:not(:disabled) {
+			transform: scale(0.98);
+			transition: transform 0.1s;
+		}
+
+		.toggle-btn {
+			-webkit-tap-highlight-color: transparent;
+		}
+
+		.toggle-btn:active:not(:disabled) {
+			opacity: 0.7;
+		}
+
+		.tech-input {
+			-webkit-tap-highlight-color: transparent;
+		}
+
+		/* Larger touch targets for touch devices */
+		.tech-input {
+			min-height: 48px;
+		}
+
+		.submit-btn {
+			min-height: 52px;
+		}
+
+		.toggle-btn {
+			min-height: 48px;
+			padding: 0.75rem 1rem;
+		}
+	}
+
+	/* Reduced motion for accessibility */
+	@media (prefers-reduced-motion: reduce) {
+		.status-dot {
+			animation: none;
+		}
+
+		.spinner {
+			animation: spin 1.5s linear infinite;
+		}
+
+		.submit-btn,
+		.toggle-btn,
+		.tech-input {
+			transition: none;
+		}
+	}
+
+	/* High contrast mode support */
+	@media (prefers-contrast: high) {
+		.login-card {
+			border-width: 2px;
+		}
+
+		.tech-input {
+			border-width: 2px;
+		}
+
+		.tech-input:focus {
+			outline: 3px solid var(--tech-accent);
+			outline-offset: 2px;
+		}
+
+		.submit-btn:focus-visible {
+			outline: 3px solid var(--tech-accent);
+			outline-offset: 2px;
 		}
 	}
 </style>

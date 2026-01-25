@@ -156,6 +156,7 @@
 				{#each features as feature, i (feature.name)}
 					<div
 						class="feature-card"
+						role="article"
 						onmouseenter={() => (hoveredCard = i)}
 						onmouseleave={() => (hoveredCard = -1)}
 						style="transform: {hoveredCard === i ? 'translateY(-8px)' : 'translateY(0)'};"
@@ -179,12 +180,12 @@
 			</div>
 			
 			<div class="testimonials-grid">
-				{#each testimonials as testimonial, i}
+				{#each testimonials as testimonial, i (testimonial.name)}
 					<div class="testimonial-card-new">
 						<div class="card-top">
-							<div class="stars">
-								{#each Array(5) as _}
-									<i class="fas fa-star"></i>
+							<div class="stars" aria-label="5 star rating">
+								{#each Array(5) as _, starIdx (starIdx)}
+									<i class="fas fa-star" aria-hidden="true"></i>
 								{/each}
 							</div>
 							<div class="quote-mark">
@@ -228,8 +229,8 @@
 </div>
 
 {#if showBackToTop}
-	<button onclick={scrollToTop} class="back-to-top" transition:fly={{ y: 20, duration: 300 }}>
-		<i class="fas fa-arrow-up"></i>
+	<button onclick={scrollToTop} class="back-to-top" aria-label="Back to top" transition:fly={{ y: 20, duration: 300 }}>
+		<i class="fas fa-arrow-up" aria-hidden="true"></i>
 	</button>
 {/if}
 
@@ -710,26 +711,222 @@
 		box-shadow: 0 8px 25px var(--tech-accent-muted);
 	}
 
-	/* Responsive */
-	@media (max-width: 768px) {
+	/* ===== MOBILE RESPONSIVENESS ===== */
+
+	/* Extra small devices (320px - 374px) - iPhone SE, older phones */
+	@media (max-width: 374px) {
 		.content-container {
-			padding: 2rem 1rem;
+			padding: 1rem 0.75rem;
+			padding-top: max(1rem, env(safe-area-inset-top));
+			padding-bottom: max(1rem, env(safe-area-inset-bottom));
 		}
 
 		.hero-section {
-			min-height: 60vh;
-			margin-bottom: 4rem;
+			min-height: 45vh;
+			margin-bottom: 2.5rem;
+		}
+
+		.status-badge {
+			padding: 0.4rem 0.75rem;
+			margin-bottom: 1.5rem;
+		}
+
+		.status-text {
+			font-size: 0.6rem;
+		}
+
+		.hero-title {
+			font-size: 1.75rem;
+			margin-bottom: 0.75rem;
+		}
+
+		.hero-subtitle {
+			font-size: 0.9rem;
+			margin-bottom: 1.5rem;
+		}
+
+		.hero-cta {
+			flex-direction: column;
+			gap: 0.75rem;
+		}
+
+		.cta-button {
+			width: 100%;
+			padding: 0.875rem 1.25rem;
+			font-size: 0.8rem;
+			min-height: 48px;
+		}
+
+		.cta-button.large {
+			padding: 1rem 1.5rem;
+			font-size: 0.85rem;
+		}
+
+		.section-header {
+			margin-bottom: 1.75rem;
+		}
+
+		.section-title {
+			font-size: 1.5rem;
+		}
+
+		.title-underline {
+			width: 60px;
+			height: 2px;
 		}
 
 		.features-section,
 		.testimonials-section {
-			margin-bottom: 5rem;
+			margin-bottom: 3rem;
 		}
 
-		.features-grid,
+		.features-grid {
+			grid-template-columns: 1fr;
+			gap: 1rem;
+		}
+
+		.feature-card {
+			padding: 1.5rem 1.25rem;
+		}
+
+		.feature-icon {
+			width: 50px;
+			height: 50px;
+			font-size: 1.5rem;
+			margin-bottom: 1rem;
+		}
+
+		.feature-title {
+			font-size: 1.1rem;
+		}
+
+		.feature-description {
+			font-size: 0.85rem;
+		}
+
 		.testimonials-grid {
 			grid-template-columns: 1fr;
-			gap: 1.5rem;
+			gap: 1rem;
+		}
+
+		.testimonial-card-new {
+			padding: 1.25rem;
+		}
+
+		.testimonial-text-new {
+			font-size: 0.9rem;
+			min-height: auto;
+			margin-bottom: 1.25rem;
+		}
+
+		.testimonial-footer {
+			padding-top: 1rem;
+		}
+
+		.author-avatar-new {
+			width: 36px;
+			height: 36px;
+			font-size: 0.9rem;
+		}
+
+		.author-name-new {
+			font-size: 0.9rem;
+		}
+
+		.author-role-new {
+			font-size: 0.7rem;
+		}
+
+		.cta-section {
+			margin-bottom: 2rem;
+		}
+
+		.cta-card {
+			padding: 2rem 1.25rem;
+		}
+
+		.cta-title {
+			font-size: 1.25rem;
+		}
+
+		.cta-text {
+			font-size: 0.9rem;
+			margin-bottom: 1.5rem;
+		}
+
+		.back-to-top {
+			bottom: max(1rem, env(safe-area-inset-bottom));
+			right: 1rem;
+			width: 44px;
+			height: 44px;
+		}
+
+		.back-to-top i {
+			font-size: 0.95rem;
+		}
+	}
+
+	/* Small devices (375px - 479px) - iPhone 12/13/14, standard phones */
+	@media (min-width: 375px) and (max-width: 479px) {
+		.content-container {
+			padding: 1.25rem 1rem;
+			padding-top: max(1.25rem, env(safe-area-inset-top));
+			padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+		}
+
+		.hero-section {
+			min-height: 50vh;
+			margin-bottom: 3rem;
+		}
+
+		.status-badge {
+			margin-bottom: 1.75rem;
+		}
+
+		.hero-title {
+			font-size: 2rem;
+		}
+
+		.hero-subtitle {
+			font-size: 1rem;
+		}
+
+		.hero-cta {
+			flex-direction: column;
+			gap: 0.875rem;
+		}
+
+		.cta-button {
+			width: 100%;
+			padding: 0.875rem 1.5rem;
+			min-height: 50px;
+		}
+
+		.section-title {
+			font-size: 1.6rem;
+		}
+
+		.features-section,
+		.testimonials-section {
+			margin-bottom: 3.5rem;
+		}
+
+		.features-grid {
+			grid-template-columns: 1fr;
+			gap: 1.25rem;
+		}
+
+		.feature-card {
+			padding: 1.75rem 1.5rem;
+		}
+
+		.testimonials-grid {
+			grid-template-columns: 1fr;
+			gap: 1.25rem;
+		}
+
+		.testimonial-card-new {
+			padding: 1.5rem;
 		}
 
 		.testimonial-text-new {
@@ -737,18 +934,406 @@
 		}
 
 		.cta-card {
-			padding: 3rem 2rem;
+			padding: 2.5rem 1.5rem;
+		}
+
+		.cta-title {
+			font-size: 1.4rem;
+		}
+
+		.back-to-top {
+			bottom: max(1.25rem, env(safe-area-inset-bottom));
+			right: 1.25rem;
+			width: 46px;
+			height: 46px;
+		}
+	}
+
+	/* Medium devices (480px - 639px) - Large phones, phablets */
+	@media (min-width: 480px) and (max-width: 639px) {
+		.content-container {
+			padding: 1.5rem 1.25rem;
+			padding-top: max(1.5rem, env(safe-area-inset-top));
+			padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+		}
+
+		.hero-section {
+			min-height: 55vh;
+			margin-bottom: 3.5rem;
+		}
+
+		.hero-cta {
+			flex-direction: row;
+			justify-content: center;
+		}
+
+		.cta-button {
+			width: auto;
+			min-width: 160px;
+			min-height: 50px;
+		}
+
+		.features-section,
+		.testimonials-section {
+			margin-bottom: 4rem;
+		}
+
+		.features-grid {
+			grid-template-columns: 1fr;
+			gap: 1.25rem;
+		}
+
+		.testimonials-grid {
+			grid-template-columns: 1fr;
+			gap: 1.25rem;
+		}
+
+		.testimonial-text-new {
+			min-height: auto;
+		}
+
+		.cta-card {
+			padding: 2.5rem 2rem;
+		}
+
+		.back-to-top {
+			bottom: max(1.5rem, env(safe-area-inset-bottom));
+			right: 1.5rem;
+			width: 48px;
+			height: 48px;
+		}
+	}
+
+	/* Small tablets (640px - 767px) */
+	@media (min-width: 640px) and (max-width: 767px) {
+		.content-container {
+			padding: 1.75rem 1.5rem;
+		}
+
+		.hero-section {
+			min-height: 50vh;
+			margin-bottom: 4rem;
+		}
+
+		.features-section,
+		.testimonials-section {
+			margin-bottom: 4.5rem;
+		}
+
+		.features-grid {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 1.25rem;
+		}
+
+		.feature-card {
+			padding: 1.75rem 1.5rem;
+		}
+
+		.testimonials-grid {
+			grid-template-columns: 1fr;
+			gap: 1.25rem;
+		}
+
+		.testimonial-text-new {
+			min-height: auto;
+		}
+
+		.cta-card {
+			padding: 2.75rem 2rem;
 		}
 
 		.back-to-top {
 			bottom: 1.5rem;
 			right: 1.5rem;
+			width: 48px;
+			height: 48px;
+		}
+	}
+
+	/* Tablets (768px - 1023px) */
+	@media (min-width: 768px) and (max-width: 1023px) {
+		.content-container {
+			padding: 2rem 1.5rem;
+		}
+
+		.hero-section {
+			margin-bottom: 4rem;
+		}
+
+		.features-section,
+		.testimonials-section {
+			margin-bottom: 4.5rem;
+		}
+
+		.features-grid {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 1.5rem;
+		}
+
+		.testimonials-grid {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 1.5rem;
+		}
+
+		.testimonial-text-new {
+			min-height: 90px;
+		}
+
+		.cta-card {
+			padding: 3rem 2rem;
+		}
+	}
+
+	/* Large tablets / small desktops (1024px - 1279px) */
+	@media (min-width: 1024px) and (max-width: 1279px) {
+		.features-grid {
+			grid-template-columns: repeat(4, 1fr);
+			gap: 1.25rem;
+		}
+
+		.feature-card {
+			padding: 1.75rem 1.25rem;
+		}
+
+		.testimonials-grid {
+			grid-template-columns: repeat(3, 1fr);
+			gap: 1.5rem;
+		}
+	}
+
+	/* Landscape mode for phones */
+	@media (max-height: 500px) and (orientation: landscape) {
+		.content-container {
+			padding: 1rem 2rem;
+			padding-left: max(2rem, env(safe-area-inset-left));
+			padding-right: max(2rem, env(safe-area-inset-right));
+		}
+
+		.hero-section {
+			min-height: auto;
+			padding: 2rem 0;
+			margin-bottom: 2rem;
+		}
+
+		.status-badge {
+			margin-bottom: 1rem;
+		}
+
+		.hero-title {
+			font-size: 1.75rem;
+			margin-bottom: 0.5rem;
+		}
+
+		.hero-subtitle {
+			margin-bottom: 1rem;
+		}
+
+		.hero-cta {
+			flex-direction: row;
+		}
+
+		.cta-button {
+			padding: 0.75rem 1.25rem;
+		}
+
+		.section-header {
+			margin-bottom: 1.5rem;
+		}
+
+		.features-section,
+		.testimonials-section {
+			margin-bottom: 2.5rem;
+		}
+
+		.features-grid {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 1rem;
+		}
+
+		.feature-card {
+			padding: 1.25rem 1rem;
+		}
+
+		.feature-icon {
 			width: 45px;
 			height: 45px;
+			font-size: 1.25rem;
+			margin-bottom: 0.75rem;
+		}
+
+		.testimonials-grid {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 1rem;
+		}
+
+		.testimonial-card-new {
+			padding: 1.25rem;
+		}
+
+		.testimonial-text-new {
+			min-height: auto;
+			margin-bottom: 1rem;
+		}
+
+		.cta-section {
+			margin-bottom: 1.5rem;
+		}
+
+		.cta-card {
+			padding: 1.5rem;
+		}
+
+		.cta-text {
+			margin-bottom: 1rem;
+		}
+
+		.back-to-top {
+			bottom: 0.75rem;
+			right: max(0.75rem, env(safe-area-inset-right));
+			width: 40px;
+			height: 40px;
 		}
 
 		.back-to-top i {
-			font-size: 1rem;
+			font-size: 0.9rem;
+		}
+	}
+
+	/* Touch interaction improvements */
+	@media (hover: none) and (pointer: coarse) {
+		.cta-button {
+			-webkit-tap-highlight-color: transparent;
+			min-height: 48px;
+		}
+
+		.cta-button:active {
+			transform: scale(0.98);
+			transition: transform 0.1s;
+		}
+
+		.cta-button.primary:active {
+			box-shadow: 0 2px 15px var(--tech-accent-muted);
+		}
+
+		.feature-card {
+			-webkit-tap-highlight-color: transparent;
+		}
+
+		.feature-card:active {
+			transform: scale(0.99);
+			transition: transform 0.15s;
+		}
+
+		.testimonial-card-new {
+			-webkit-tap-highlight-color: transparent;
+		}
+
+		.testimonial-card-new:active {
+			transform: scale(0.99);
+		}
+
+		.back-to-top {
+			-webkit-tap-highlight-color: transparent;
+			min-width: 48px;
+			min-height: 48px;
+		}
+
+		.back-to-top:active {
+			transform: scale(0.95);
+			transition: transform 0.1s;
+		}
+
+		/* Disable hover effects on touch devices */
+		.feature-card:hover {
+			transform: none;
+		}
+
+		.feature-card:hover .feature-icon {
+			transform: none;
+		}
+
+		.testimonial-card-new:hover {
+			transform: none;
+		}
+
+		.cta-card:hover {
+			transform: none;
+		}
+
+		.back-to-top:hover {
+			transform: none;
+		}
+	}
+
+	/* Reduced motion for accessibility */
+	@media (prefers-reduced-motion: reduce) {
+		.status-dot {
+			animation: none;
+		}
+
+		.cta-button,
+		.feature-card,
+		.feature-icon,
+		.testimonial-card-new,
+		.cta-card,
+		.cta-glow,
+		.feature-glow,
+		.back-to-top {
+			transition: none;
+		}
+
+		.cta-button:hover,
+		.feature-card:hover,
+		.testimonial-card-new:hover,
+		.cta-card:hover,
+		.back-to-top:hover {
+			transform: none;
+		}
+
+		.feature-card:hover .feature-icon {
+			transform: none;
+		}
+
+		.cta-button.primary:hover i,
+		.cta-button.secondary:hover i {
+			transform: none;
+		}
+	}
+
+	/* High contrast mode support */
+	@media (prefers-contrast: high) {
+		.feature-card,
+		.testimonial-card-new,
+		.cta-card,
+		.status-badge {
+			border-width: 2px;
+		}
+
+		.cta-button {
+			border-width: 2px;
+		}
+
+		.cta-button:focus-visible {
+			outline: 3px solid var(--tech-accent);
+			outline-offset: 2px;
+		}
+
+		.back-to-top:focus-visible {
+			outline: 3px solid var(--tech-accent);
+			outline-offset: 2px;
+		}
+
+		.title-underline {
+			height: 4px;
+		}
+	}
+
+	/* Dark mode enhancements for OLED screens */
+	@media (prefers-color-scheme: dark) {
+		.feature-card,
+		.testimonial-card-new,
+		.cta-card {
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 		}
 	}
 </style>
