@@ -111,14 +111,14 @@
 			currentSortColumn = column;
 			sortAscending = true;
 		}
-		setTimeout(() => tableLoading = false, 300);
+		setTimeout(() => (tableLoading = false), 300);
 	};
 
 	const handleSearch = (value) => {
 		tableLoading = true;
 		setSearchTerm(value);
 		paginationStore.setCurrentPage(1);
-		setTimeout(() => tableLoading = false, 300);
+		setTimeout(() => (tableLoading = false), 300);
 	};
 
 	const getCurrentUser = () => {
@@ -165,7 +165,10 @@
 				});
 				// Reset the input field after operation
 				itemStore.setChangeAmount(item.id, 0);
-				notificationStore.showNotification(`Count for "${item.name}" reset successfully!`, 'success');
+				notificationStore.showNotification(
+					`Count for "${item.name}" reset successfully!`,
+					'success'
+				);
 			}
 		};
 	};
@@ -211,12 +214,15 @@
 	};
 
 	const capitalizeColumn = (column) => {
-		return column.replace(/([A-Z])/g, ' $1').trim().toUpperCase();
+		return column
+			.replace(/([A-Z])/g, ' $1')
+			.trim()
+			.toUpperCase();
 	};
 
 	const handlePageChange = () => {
 		tableLoading = true;
-		setTimeout(() => tableLoading = false, 300);
+		setTimeout(() => (tableLoading = false), 300);
 	};
 </script>
 
@@ -300,13 +306,25 @@
 										<th class="name-col" onclick={() => sortBy('name')}>
 											<div class="header-content">
 												<span>Item Name</span>
-												<i class="fas fa-sort{currentSortColumn === 'name' ? (sortAscending ? '-up' : '-down') : ''} sort-icon"></i>
+												<i
+													class="fas fa-sort{currentSortColumn === 'name'
+														? sortAscending
+															? '-up'
+															: '-down'
+														: ''} sort-icon"
+												></i>
 											</div>
 										</th>
 										<th class="count-col" onclick={() => sortBy('count')}>
 											<div class="header-content justify-center">
 												<span class="header-text">Count</span>
-												<i class="fas fa-sort{currentSortColumn === 'count' ? (sortAscending ? '-up' : '-down') : ''} sort-icon"></i>
+												<i
+													class="fas fa-sort{currentSortColumn === 'count'
+														? sortAscending
+															? '-up'
+															: '-down'
+														: ''} sort-icon"
+												></i>
 											</div>
 										</th>
 										<th class="change-col">
@@ -321,7 +339,10 @@
 										</th>
 									</tr>
 								</thead>
-								<tbody class="table-body-transition" class:loading-fade={!itemsLoaded || tableLoading}>
+								<tbody
+									class="table-body-transition"
+									class:loading-fade={!itemsLoaded || tableLoading}
+								>
 									{#each paginatedItemsList as item (item.id)}
 										<tr class="table-row">
 											<td class="name-col" data-label="Item Name">
@@ -329,7 +350,10 @@
 											</td>
 											<td class="count-col" data-label="Count">
 												{#key item.count}
-													<span class="count-badge result text-update" in:blur={{ duration: 400, amount: 2 }}>
+													<span
+														class="count-badge result text-update"
+														in:blur={{ duration: 400, amount: 2 }}
+													>
 														{item.count}
 													</span>
 												{/key}
@@ -386,13 +410,14 @@
 		</div>
 
 		<div class="footer-extension">
-			<Pagination store={paginationStore} globalTotal={items.length} onPageChange={handlePageChange} />
-			
-			{#if items.some(item => item.count !== 0)}
-				<button
-					class="reset-all-btn"
-					onclick={resetAll}
-				>
+			<Pagination
+				store={paginationStore}
+				globalTotal={items.length}
+				onPageChange={handlePageChange}
+			/>
+
+			{#if items.some((item) => item.count !== 0)}
+				<button class="reset-all-btn" onclick={resetAll}>
 					<i class="fas fa-exclamation-triangle"></i>
 					RESET ALL COUNTS
 				</button>
@@ -404,7 +429,11 @@
 {#if notificationValue && notificationValue.message}
 	<div class="notification {notificationValue.type}">
 		<div class="notification-content">
-			<i class="fas {notificationValue.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+			<i
+				class="fas {notificationValue.type === 'success'
+					? 'fa-check-circle'
+					: 'fa-exclamation-circle'}"
+			></i>
 			<span>{notificationValue.message}</span>
 		</div>
 	</div>
@@ -418,13 +447,17 @@
 	confirmText="Yes, reset it!"
 	cancelText="Cancel"
 	onConfirm={confirmModal.onConfirm}
-	onCancel={() => confirmModal.visible = false}
+	onCancel={() => (confirmModal.visible = false)}
 />
 
 <style>
 	:global(body) {
 		background-color: var(--tech-bg-end) !important;
-		background-image: radial-gradient(circle at 50% -10%, var(--tech-bg-start) 0%, var(--tech-bg-end) 100%) !important;
+		background-image: radial-gradient(
+			circle at 50% -10%,
+			var(--tech-bg-start) 0%,
+			var(--tech-bg-end) 100%
+		) !important;
 		background-attachment: fixed !important;
 		margin: 0;
 		padding: 0;
@@ -499,8 +532,15 @@
 	}
 
 	@keyframes pulse-soft {
-		0%, 100% { opacity: 0.4; transform: scale(0.9); }
-		50% { opacity: 1; transform: scale(1.1); }
+		0%,
+		100% {
+			opacity: 0.4;
+			transform: scale(0.9);
+		}
+		50% {
+			opacity: 1;
+			transform: scale(1.1);
+		}
 	}
 
 	.status-text {
@@ -565,12 +605,12 @@
 		gap: 0.4rem;
 		min-width: fit-content;
 	}
-	
+
 	/* Prevent layout shift by reserving space for dynamic content */
 	.ribbon-item:nth-child(2) .ribbon-value {
 		min-width: 80px; /* Reserve space for item counts */
 	}
-	
+
 	.ribbon-item:nth-child(3) .ribbon-value {
 		min-width: 160px; /* Reserve space for sorting column + order */
 	}
@@ -608,11 +648,11 @@
 	}
 
 	@keyframes subtle-glow {
-		0% { 
-			color: var(--tech-accent); 
+		0% {
+			color: var(--tech-accent);
 			text-shadow: 0 0 12px var(--tech-accent-muted);
 		}
-		100% { 
+		100% {
 			text-shadow: 0 0 0px transparent;
 		}
 	}
@@ -630,7 +670,7 @@
 		min-height: 500px;
 		overflow: hidden;
 		/* Professional multi-layered base shadow */
-		box-shadow: 
+		box-shadow:
 			0 4px 6px -1px rgba(0, 0, 0, 0.1),
 			0 2px 4px -1px rgba(0, 0, 0, 0.06),
 			inset 0 0 0 1px rgba(255, 255, 255, 0.02);
@@ -639,10 +679,10 @@
 
 	.table-frame:hover {
 		/* Deeper, more atmospheric shadow on hover */
-		box-shadow: 
+		box-shadow:
 			0 30px 60px -12px rgba(0, 0, 0, 0.5),
 			0 18px 36px -18px rgba(0, 0, 0, 0.5);
-		border-color: rgba(255, 255, 255, 0.1); 
+		border-color: rgba(255, 255, 255, 0.1);
 	}
 
 	.table-wrapper {
@@ -699,7 +739,7 @@
 		width: 100%;
 	}
 
-	.justify-center { 
+	.justify-center {
 		justify-content: center;
 		padding: 0 1.5rem;
 	}
@@ -721,7 +761,9 @@
 	}
 
 	/* Force center alignment for these columns */
-	.count-col, .change-col, .actions-col {
+	.count-col,
+	.change-col,
+	.actions-col {
 		text-align: center;
 	}
 
@@ -760,7 +802,9 @@
 	}
 
 	.table-body-transition {
-		transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), filter 0.4s ease;
+		transition:
+			opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+			filter 0.4s ease;
 	}
 
 	.loading-fade {
@@ -947,7 +991,9 @@
 		box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
 	}
 
-	.reset-all-btn i { font-size: 0.85rem; }
+	.reset-all-btn i {
+		font-size: 0.85rem;
+	}
 
 	/* Notifications */
 	.notification {
@@ -964,8 +1010,14 @@
 	}
 
 	@keyframes slide-in {
-		from { transform: translateX(100%); opacity: 0; }
-		to { transform: translateX(0); opacity: 1; }
+		from {
+			transform: translateX(100%);
+			opacity: 0;
+		}
+		to {
+			transform: translateX(0);
+			opacity: 1;
+		}
 	}
 
 	.notification-content {
@@ -977,11 +1029,16 @@
 		font-size: 0.9rem;
 	}
 
-	.notification.success i { color: #22c55e; }
-	.notification.error i { color: #ef4444; }
+	.notification.success i {
+		color: #22c55e;
+	}
+	.notification.error i {
+		color: #ef4444;
+	}
 
 	/* States */
-	.ledger-loading, .null-state {
+	.ledger-loading,
+	.null-state {
 		height: 500px;
 		display: flex;
 		flex-direction: column;
@@ -999,7 +1056,11 @@
 		animation: spin 1s infinite linear;
 	}
 
-	@keyframes spin { to { transform: rotate(360deg); } }
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
 
 	.loading-text {
 		color: var(--tech-accent);
@@ -1009,35 +1070,126 @@
 		font-size: 0.7rem;
 	}
 
-	.null-state { color: var(--tech-label); }
-	.null-state i { font-size: 3rem; opacity: 0.5; }
-	.null-state p { 
-		font-family: 'JetBrains Mono', monospace; 
-		font-size: 0.8rem; 
+	.null-state {
+		color: var(--tech-label);
+	}
+	.null-state i {
+		font-size: 3rem;
+		opacity: 0.5;
+	}
+	.null-state p {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.8rem;
 		letter-spacing: 0.15em;
 		font-weight: 700;
 	}
 
 	/* Mobile */
 	@media (max-width: 768px) {
-		.tech-table thead { display: none; }
+		.tech-table,
+		.tech-table tbody,
+		.tech-table tr,
 		.tech-table td {
-			display: grid;
-			grid-template-columns: 1fr 1fr;
-			text-align: right;
-			border-bottom: 1px solid var(--tech-cell-border);
+			display: block;
+			width: 100%;
 		}
+
+		.tech-table thead {
+			display: none;
+		}
+
+		.tech-table tr {
+			margin-bottom: 1.5rem;
+			background: var(--tech-glass-bg);
+			border: 1px solid var(--tech-cell-border);
+			border-radius: 12px;
+			padding: 1.25rem;
+			position: relative;
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+			border-left: 4px solid var(--tech-accent);
+		}
+
+		.tech-table td {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			text-align: right;
+			padding: 0.8rem 0;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			min-height: auto;
+		}
+
+		/* Item Name - Card Header style */
+		.tech-table td:first-child {
+			padding-top: 0;
+			padding-bottom: 1rem;
+			border-bottom: 1px solid var(--tech-cell-border);
+			margin-bottom: 0.5rem;
+		}
+
+		/* Actions - Card Footer style */
+		.tech-table td:last-child {
+			border-bottom: none;
+			padding-bottom: 0;
+			padding-top: 1.2rem;
+			margin-top: 0.5rem;
+			border-top: 1px solid rgba(255, 255, 255, 0.05);
+		}
+
 		.tech-table td::before {
 			content: attr(data-label);
 			text-align: left;
 			font-weight: 800;
-			font-size: 0.7rem;
+			font-size: 0.75rem;
 			color: var(--tech-label);
 			text-transform: uppercase;
+			letter-spacing: 0.05em;
+			opacity: 0.8;
 		}
-		.actions-grid { justify-content: flex-end; }
-		.stats-ribbon { gap: 1rem; flex-wrap: wrap; }
-		.main-title { font-size: 1.8rem; }
+
+		/* Override inner alignment for mobile */
+		.tech-table td .flex {
+			display: flex;
+			justify-content: flex-end;
+			width: auto;
+		}
+
+		.tech-table td .justify-center {
+			padding: 0;
+		}
+
+		.name-text {
+			font-size: 1.2rem;
+			color: var(--tech-accent);
+		}
+
+		.actions-grid {
+			justify-content: flex-end;
+			gap: 0.75rem;
+			width: 100%;
+		}
+
+		.action-btn {
+			width: 48px;
+			height: 48px;
+		}
+
+		.action-btn i {
+			font-size: 1.1rem;
+		}
+
+		.change-amount-input {
+			height: 44px;
+			width: 100px;
+			font-size: 1.1rem;
+		}
+
+		.stats-ribbon {
+			gap: 1rem;
+			flex-wrap: wrap;
+		}
+		.main-title {
+			font-size: 1.8rem;
+		}
 	}
 </style>
-
