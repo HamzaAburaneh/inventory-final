@@ -1,5 +1,11 @@
 <script>
-	const { paginatedItems = [], sortBy, currentSortColumn, sortAscending, loading = false } = $props();
+	const {
+		paginatedItems = [],
+		sortBy,
+		currentSortColumn,
+		sortAscending,
+		loading = false
+	} = $props();
 
 	function capitalizeWords(str) {
 		return str
@@ -8,14 +14,7 @@
 			.join(' ');
 	}
 
-	const columns = [
-		'itemName',
-		'previousCount',
-		'changedAmount',
-		'newCount',
-		'timestamp',
-		'user'
-	];
+	const columns = ['itemName', 'previousCount', 'changedAmount', 'newCount', 'timestamp', 'user'];
 
 	function getChangedAmountStyle(changedAmount) {
 		if (changedAmount > 0) {
@@ -75,7 +74,7 @@
 						</td>
 						<td class="changedamount-col" data-label="Changed Amount">
 							<div class="change-tag {style.color}">
-								<i class="{style.icon}"></i>
+								<i class={style.icon}></i>
 								<span>{Math.abs(changedAmount)}</span>
 							</div>
 						</td>
@@ -89,9 +88,12 @@
 							</div>
 						</td>
 						<td class="user-col" data-label="User">
-							<div class="user-cell">
+							<div class="user-cell" data-timestamp="{timeData.time} {timeData.date}">
 								<i class="fas fa-user-circle"></i>
-								<span class="user-email" title={transaction.user}>{transaction.user.split('@')[0]}</span>
+								<span class="user-email" title={transaction.user}
+									>{transaction.user.split('@')[0]}</span
+								>
+								<span class="timestamp-inline">{timeData.time} {timeData.date}</span>
 							</div>
 						</td>
 					</tr>
@@ -147,7 +149,13 @@
 		z-index: 20;
 		padding: 1.1rem 1.25rem;
 		text-align: left;
-		font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		font-family:
+			'Inter',
+			-apple-system,
+			BlinkMacSystemFont,
+			'Segoe UI',
+			Roboto,
+			sans-serif;
 		font-weight: 700;
 		color: var(--tech-header-text);
 		text-transform: uppercase;
@@ -180,11 +188,13 @@
 	}
 
 	.table-body-transition {
-		transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), filter 0.4s ease;
+		transition:
+			opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+			filter 0.4s ease;
 	}
 
-	.loading-fade { 
-		opacity: 0.2; 
+	.loading-fade {
+		opacity: 0.2;
 		filter: blur(2px);
 		pointer-events: none;
 	}
@@ -309,11 +319,27 @@
 	}
 
 	/* Column Widths & Alignment */
-	.itemname-col { width: 30%; text-align: left; }
-	.previouscount-col, .newcount-col { width: 12%; text-align: center; }
-	.changedamount-col { width: 14%; text-align: center; }
-	.timestamp-col { width: 17%; text-align: left; }
-	.user-col { width: 15%; text-align: left; }
+	.itemname-col {
+		width: 30%;
+		text-align: left;
+	}
+	.previouscount-col,
+	.newcount-col {
+		width: 12%;
+		text-align: center;
+	}
+	.changedamount-col {
+		width: 14%;
+		text-align: center;
+	}
+	.timestamp-col {
+		width: 17%;
+		text-align: left;
+	}
+	.user-col {
+		width: 15%;
+		text-align: left;
+	}
 
 	.tech-table th.previouscount-col .header-content,
 	.tech-table th.newcount-col .header-content,
@@ -321,23 +347,233 @@
 		justify-content: center;
 	}
 
-	/* Mobile Responsive Styles */
+	/* Mobile Responsive Styles - Redesigned Card Layout */
 	@media (max-width: 768px) {
+		.table-scroll {
+			max-height: none;
+			min-height: auto;
+			padding: 1rem 0.75rem;
+		}
+
+		.tech-table,
+		.tech-table tbody,
+		.tech-table thead,
+		.tech-table th {
+			display: block;
+		}
+
 		.tech-table thead {
 			display: none;
 		}
 
-		.tech-table td {
-			padding: 0.75rem 1rem;
-			border-bottom: 1px solid var(--tech-cell-border);
+		.table-row {
+			display: flex;
+			flex-wrap: wrap;
+			background: var(--tech-header-bg);
+			border: 1px solid var(--tech-glass-border);
+			border-radius: 12px;
+			margin-bottom: 1rem;
+			padding: 1.25rem 1rem;
+			box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+			transition: all 0.2s ease;
+			justify-content: center;
+			gap: 0;
 		}
 
-		.tech-table td::before {
+		.tech-table td {
+			display: block;
+		}
+
+		.table-row:hover {
+			border-color: var(--tech-accent);
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+			transform: translateY(-2px);
+		}
+
+		.tech-table td {
+			padding: 0;
+			border-bottom: none;
+		}
+
+		/* Line 1: Item Name */
+		.table-row .itemname-col {
+			display: block !important;
+			width: 100%;
+			text-align: center;
+			margin-bottom: 1.25rem;
+			order: 1;
+		}
+
+		.item-name-cell {
+			display: block;
+		}
+
+		.name-text {
+			font-size: 1.2rem;
 			font-weight: 800;
+			color: var(--tech-accent);
+			display: block;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		/* Line 2: The 3 Numbers Row */
+		.table-row .previouscount-col,
+		.table-row .changedamount-col,
+		.table-row .newcount-col {
+			display: flex !important;
+			width: 33.33%;
+			flex-direction: column;
+			align-items: center;
+			justify-content: flex-start;
+			gap: 0.5rem;
+			order: 2;
+			margin-bottom: 1.25rem;
+			flex-shrink: 0;
+		}
+
+		/* Labels */
+		.previouscount-col::before {
+			content: 'PREVIOUS';
+		}
+		.changedamount-col::before {
+			content: 'CHANGE';
+		}
+		.newcount-col::before {
+			content: 'NEW TOTAL';
+		}
+
+		.previouscount-col::before,
+		.changedamount-col::before,
+		.newcount-col::before {
+			font-family: 'JetBrains Mono', monospace;
 			font-size: 0.65rem;
+			font-weight: 700;
 			color: var(--tech-label);
-			letter-spacing: 0.1em;
+			letter-spacing: 0.05em;
+			text-transform: uppercase;
+			opacity: 0.7;
+		}
+
+		.count-badge {
+			font-size: 1.1rem;
+			font-weight: 700;
+			color: var(--tech-value);
+		}
+
+		.count-badge.result {
+			font-size: 1.2rem;
+			color: var(--tech-accent);
+			text-shadow: 0 0 10px var(--tech-accent-muted);
+		}
+
+		.change-tag {
+			min-width: auto;
+			padding: 0.3rem 0.7rem;
+			font-size: 0.9rem;
+			border-radius: 6px;
+		}
+
+		/* Line 3: Combined Timestamp and User - Modern Footer */
+		.table-row .user-col {
+			display: flex !important;
+			order: 3;
+			width: calc(100% + 2rem);
+			margin-left: -1rem;
+			margin-right: -1rem;
+			margin-bottom: -1.25rem;
+			align-items: center;
+			justify-content: center;
+			padding: 0;
+			margin-top: 1rem;
+			padding-top: 0.85rem;
+			padding-bottom: 0.85rem;
+			border-top: 1px solid var(--tech-cell-border);
+			background: rgba(0, 0, 0, 0.15);
+			border-bottom-left-radius: 12px;
+			border-bottom-right-radius: 12px;
+		}
+
+		.table-row .timestamp-col {
+			display: none !important;
+		}
+
+		.user-cell {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			gap: 0.4rem;
+			flex-wrap: wrap;
+			justify-content: center;
+			width: 100%;
+			font-size: 0.85rem;
+			line-height: 1.6;
+		}
+
+		.user-cell::before {
+			content: '';
+			display: none;
+		}
+
+		.user-cell i {
+			display: inline-flex !important;
+			font-size: 1rem;
+			color: var(--tech-accent);
+			opacity: 0.6;
+			margin-left: 0.2rem;
+		}
+
+		.user-email {
+			font-size: 0.85rem;
+			font-weight: 600;
+			color: var(--tech-accent);
+			max-width: none;
+		}
+
+		.timestamp-inline {
+			display: none;
+		}
+
+		.user-email::after {
+			content: '';
+			display: none;
+		}
+
+		.user-cell .timestamp-inline {
+			display: inline;
+			font-size: 0.85rem;
+			font-weight: 500;
+			color: var(--tech-label);
+			opacity: 0.8;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.table-row {
+			padding: 1rem 0.75rem;
+		}
+
+		.name-text {
+			font-size: 1.1rem;
+		}
+
+		.count-badge {
+			font-size: 1rem;
+		}
+
+		.count-badge.result {
+			font-size: 1.1rem;
+		}
+
+		.user-cell::before,
+		.user-email,
+		.timestamp-inline {
+			font-size: 0.75rem;
+		}
+
+		.user-cell {
+			font-size: 0.75rem;
 		}
 	}
 </style>
-
