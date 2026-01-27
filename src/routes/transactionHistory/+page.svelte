@@ -533,13 +533,15 @@
 
 	@media (max-width: 768px) {
 		.stats-ribbon {
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 0.75rem;
+			gap: 1rem;
+			margin-bottom: 0;
+			flex-wrap: wrap;
+			justify-content: flex-start;
+			background: var(--tech-glass-bg);
 			padding: 1rem;
-			background: var(--tech-badge-bg);
-			border: 1px solid var(--tech-badge-border);
 			border-radius: 8px;
+			border: 1px solid var(--tech-glass-border);
+			width: 100%;
 		}
 	}
 
@@ -573,14 +575,35 @@
 
 	@media (max-width: 768px) {
 		.ribbon-item {
-			width: 100%;
-			opacity: 0.9;
-			cursor: default;
-			padding: 0.5rem 0;
+			font-size: 0.75rem;
+			gap: 0.5rem;
+			flex: 1 1 auto;
+			min-width: max-content;
+			opacity: 1 !important;
+			width: auto;
+			padding: 0;
 		}
 
 		.ribbon-item:hover {
-			transform: none;
+			transform: translateY(-1px);
+		}
+	}
+
+	@media (max-width: 768px) {
+		.ribbon-label {
+			font-size: 0.6rem;
+			opacity: 1 !important;
+			color: var(--tech-value);
+		}
+
+		.ribbon-value {
+			font-size: 0.85rem;
+			color: var(--tech-accent);
+		}
+
+		/* Hide system status on mobile */
+		.system-status {
+			display: none;
 		}
 	}
 
