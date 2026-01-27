@@ -1,6 +1,7 @@
 <script>
 	import { authStore } from '../stores/authStore.js';
 	import { fly } from 'svelte/transition';
+	import ThreeScene from '../components/ThreeScene.svelte';
 
 	let showFeatures = $state(false);
 	let activeTestimonial = $state(0);
@@ -110,8 +111,8 @@
 </svelte:head>
 
 <div class="page-viewport">
+	<ThreeScene />
 	<div class="glow-layer"></div>
-	<div class="grid-overlay"></div>
 
 	<main class="content-container">
 		<!-- Hero Section -->
@@ -261,20 +262,6 @@
 		z-index: 0;
 	}
 
-	.grid-overlay {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100vh;
-		background-image: 
-			linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-			linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-		background-size: 50px 50px;
-		pointer-events: none;
-		z-index: 0;
-		opacity: 0.3;
-	}
 
 	.content-container {
 		position: relative;
@@ -286,12 +273,14 @@
 
 	/* Hero Section */
 	.hero-section {
+		position: relative;
 		min-height: 50vh;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		text-align: center;
 		margin-bottom: 4rem;
+		overflow: hidden;
 	}
 
 	.hero-content {
