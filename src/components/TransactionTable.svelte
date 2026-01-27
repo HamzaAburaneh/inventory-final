@@ -369,15 +369,28 @@
 		.table-row {
 			display: flex;
 			flex-wrap: wrap;
-			background: var(--tech-header-bg);
-			border: 1px solid var(--tech-glass-border);
-			border-radius: 12px;
+			background: linear-gradient(145deg, rgba(20, 20, 25, 0.95), rgba(15, 15, 20, 0.98));
+			border: 1px solid rgba(255, 255, 255, 0.08);
+			border-radius: 16px;
 			margin-bottom: 1rem;
-			padding: 1.25rem 1rem;
-			box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-			transition: all 0.2s ease;
-			justify-content: center;
-			gap: 0;
+			padding: 1.5rem 1rem 1rem;
+			box-shadow: 
+				0 4px 24px rgba(0, 0, 0, 0.4),
+				0 0 0 1px rgba(255, 255, 255, 0.03);
+			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+			position: relative;
+			overflow: hidden;
+		}
+
+		.table-row::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: 3px;
+			background: linear-gradient(90deg, var(--tech-accent), transparent);
+			opacity: 0.5;
 		}
 
 		.tech-table td {
@@ -385,9 +398,11 @@
 		}
 
 		.table-row:hover {
-			border-color: var(--tech-accent);
-			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-			transform: translateY(-2px);
+			border-color: rgba(255, 165, 0, 0.3);
+			box-shadow: 
+				0 8px 32px rgba(0, 0, 0, 0.5),
+				0 0 20px rgba(255, 165, 0, 0.1);
+			transform: translateY(-3px);
 		}
 
 		.tech-table td {
@@ -400,7 +415,7 @@
 			display: block !important;
 			width: 100%;
 			text-align: center;
-			margin-bottom: 1.25rem;
+			margin-bottom: 1.5rem;
 			order: 1;
 		}
 
@@ -409,28 +424,42 @@
 		}
 
 		.name-text {
-			font-size: 1.2rem;
-			font-weight: 800;
-			color: var(--tech-accent);
+			font-size: 1.1rem;
+			font-weight: 700;
+			color: var(--tech-value);
 			display: block;
 			white-space: nowrap;
 			overflow: hidden;
 			text-overflow: ellipsis;
+			letter-spacing: -0.01em;
 		}
 
-		/* Line 2: The 3 Numbers Row */
+		/* Line 2: The 3 Numbers Row - Redesigned */
 		.table-row .previouscount-col,
 		.table-row .changedamount-col,
 		.table-row .newcount-col {
 			display: flex !important;
-			width: 33.33%;
+			width: calc(33.33% - 0.5rem);
 			flex-direction: column;
 			align-items: center;
-			justify-content: flex-start;
-			gap: 0.5rem;
+			justify-content: center;
+			gap: 0.6rem;
 			order: 2;
-			margin-bottom: 1.25rem;
-			flex-shrink: 0;
+			margin-bottom: 1.5rem;
+			padding: 1rem 0.5rem;
+			background: rgba(0, 0, 0, 0.3);
+			border-radius: 10px;
+			border: 1px solid rgba(255, 255, 255, 0.05);
+			margin-right: 0.25rem;
+			margin-left: 0.25rem;
+		}
+
+		.table-row .previouscount-col {
+			margin-left: 0;
+		}
+
+		.table-row .newcount-col {
+			margin-right: 0;
 		}
 
 		/* Labels */
@@ -448,51 +477,60 @@
 		.changedamount-col::before,
 		.newcount-col::before {
 			font-family: 'JetBrains Mono', monospace;
-			font-size: 0.65rem;
+			font-size: 0.6rem;
 			font-weight: 700;
 			color: var(--tech-label);
-			letter-spacing: 0.05em;
+			letter-spacing: 0.08em;
 			text-transform: uppercase;
-			opacity: 0.7;
+			opacity: 0.6;
 		}
 
 		.count-badge {
-			font-size: 1.1rem;
-			font-weight: 700;
+			font-size: 1.3rem;
+			font-weight: 800;
 			color: var(--tech-value);
 		}
 
 		.count-badge.result {
-			font-size: 1.2rem;
-			color: var(--tech-accent);
-			text-shadow: 0 0 10px var(--tech-accent-muted);
+			font-size: 1.4rem;
+			color: #fbbf24;
+			text-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
 		}
 
 		.change-tag {
 			min-width: auto;
-			padding: 0.3rem 0.7rem;
-			font-size: 0.9rem;
-			border-radius: 6px;
+			padding: 0.4rem 0.9rem;
+			font-size: 1rem;
+			border-radius: 8px;
+			gap: 0.5rem;
+		}
+
+		.change-tag i {
+			font-size: 0.85rem;
+		}
+
+		.positive-tag {
+			background: rgba(34, 197, 94, 0.15);
+			border: 1px solid rgba(34, 197, 94, 0.3);
+		}
+
+		.negative-tag {
+			background: rgba(239, 68, 68, 0.15);
+			border: 1px solid rgba(239, 68, 68, 0.3);
 		}
 
 		/* Line 3: Combined Timestamp and User - Modern Footer */
 		.table-row .user-col {
 			display: flex !important;
 			order: 3;
-			width: calc(100% + 2rem);
-			margin-left: -1rem;
-			margin-right: -1rem;
-			margin-bottom: -1.25rem;
+			width: 100%;
 			align-items: center;
 			justify-content: center;
-			padding: 0;
-			margin-top: 1rem;
-			padding-top: 0.85rem;
-			padding-bottom: 0.85rem;
-			border-top: 1px solid var(--tech-cell-border);
-			background: rgba(0, 0, 0, 0.15);
-			border-bottom-left-radius: 12px;
-			border-bottom-right-radius: 12px;
+			padding: 0.75rem 1rem;
+			margin-top: 0;
+			border-top: 1px solid rgba(255, 255, 255, 0.06);
+			background: rgba(0, 0, 0, 0.2);
+			border-radius: 10px;
 		}
 
 		.table-row .timestamp-col {
@@ -503,12 +541,11 @@
 			display: flex;
 			flex-direction: row;
 			align-items: center;
-			gap: 0.4rem;
-			flex-wrap: wrap;
+			gap: 0.6rem;
+			flex-wrap: nowrap;
 			justify-content: center;
 			width: 100%;
-			font-size: 0.85rem;
-			line-height: 1.6;
+			font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 		}
 
 		.user-cell::before {
@@ -518,25 +555,22 @@
 
 		.user-cell i {
 			display: inline-flex !important;
-			font-size: 1rem;
+			font-size: 1.1rem;
 			color: var(--tech-accent);
-			opacity: 0.6;
-			margin-left: 0.2rem;
+			opacity: 0.8;
+			flex-shrink: 0;
 		}
 
 		.user-email {
-			font-size: 0.85rem;
+			font-size: 0.9rem;
 			font-weight: 600;
 			color: var(--tech-accent);
 			max-width: none;
+			white-space: nowrap;
+			flex-shrink: 0;
 		}
 
 		.timestamp-inline {
-			display: none;
-		}
-
-		.user-email::after {
-			content: '';
 			display: none;
 		}
 
@@ -545,35 +579,55 @@
 			font-size: 0.85rem;
 			font-weight: 500;
 			color: var(--tech-label);
-			opacity: 0.8;
+			opacity: 0.9;
+			white-space: nowrap;
 		}
 	}
 
 	@media (max-width: 480px) {
 		.table-row {
-			padding: 1rem 0.75rem;
+			padding: 1.25rem 0.75rem 0.75rem;
+			border-radius: 14px;
 		}
 
 		.name-text {
-			font-size: 1.1rem;
-		}
-
-		.count-badge {
 			font-size: 1rem;
 		}
 
-		.count-badge.result {
+		.table-row .previouscount-col,
+		.table-row .changedamount-col,
+		.table-row .newcount-col {
+			width: calc(33.33% - 0.35rem);
+			padding: 0.75rem 0.35rem;
+			margin-right: 0.175rem;
+			margin-left: 0.175rem;
+			border-radius: 8px;
+		}
+
+		.count-badge {
 			font-size: 1.1rem;
 		}
 
-		.user-cell::before,
-		.user-email,
-		.timestamp-inline {
+		.count-badge.result {
+			font-size: 1.2rem;
+		}
+
+		.change-tag {
+			padding: 0.35rem 0.7rem;
+			font-size: 0.9rem;
+		}
+
+		.change-tag i {
 			font-size: 0.75rem;
 		}
 
-		.user-cell {
-			font-size: 0.75rem;
+		.user-email,
+		.timestamp-inline {
+			font-size: 0.8rem;
+		}
+
+		.user-cell i {
+			font-size: 1rem;
 		}
 	}
 </style>
