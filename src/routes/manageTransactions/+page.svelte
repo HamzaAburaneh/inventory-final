@@ -344,7 +344,7 @@
 									class:loading-fade={!itemsLoaded || tableLoading}
 								>
 									{#each paginatedItemsList as item (item.id)}
-										<tr class="table-row">
+										<tr class="table-row" tabindex="0">
 											<td class="name-col" data-label="Item Name">
 												<span class="name-text">{item.name}</span>
 											</td>
@@ -576,7 +576,7 @@
 		display: flex;
 		align-items: baseline;
 		gap: 0.75rem;
-		opacity: 0.6;
+		opacity: 1;
 		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 		cursor: default;
 	}
@@ -798,7 +798,13 @@
 	}
 
 	.table-row:hover {
-		background: var(--tech-row-hover);
+		background: transparent;
+	}
+
+	@media (min-width: 769px) {
+		.table-row:hover {
+			background: var(--tech-row-hover);
+		}
 	}
 
 	.table-body-transition {
@@ -1086,110 +1092,343 @@
 
 	/* Mobile */
 	@media (max-width: 768px) {
-		.tech-table,
-		.tech-table tbody,
-		.tech-table tr,
-		.tech-table td {
-			display: block;
+		.content-container {
+			padding: 1.25rem;
+			gap: 1.25rem;
+		}
+
+		.page-header {
+			gap: 1rem;
+		}
+
+		.main-title {
+			font-size: 1.75rem;
+			margin-bottom: 0.5rem;
+		}
+
+		.system-status {
+			margin-top: 0.5rem;
+		}
+
+		.ledger-actions {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 1.25rem;
+		}
+
+		.stats-ribbon {
+			gap: 1rem;
+			margin-bottom: 0;
+			flex-wrap: wrap;
+			justify-content: flex-start;
+			background: var(--tech-glass-bg);
+			padding: 1rem;
+			border-radius: 8px;
+			border: 1px solid var(--tech-glass-border);
 			width: 100%;
+		}
+
+		.ribbon-item {
+			font-size: 0.75rem;
+			gap: 0.5rem;
+			flex: 1 1 auto;
+			min-width: max-content;
+			opacity: 1 !important;
+		}
+
+		.ribbon-label {
+			font-size: 0.6rem;
+			opacity: 1 !important;
+			color: var(--tech-value); /* Brighter text */
+		}
+
+		.ribbon-value {
+			font-size: 0.85rem;
+			color: var(--tech-accent); /* Brighter value */
+		}
+
+		.search-primary {
+			max-width: 100%;
+		}
+
+		/* Hide system status on mobile */
+		.system-status {
+			display: none;
+		}
+
+		.table-frame {
+			border-radius: 8px;
+			min-height: auto;
+			border: 1px solid rgba(255, 255, 255, 0.05);
+			background: transparent;
+			box-shadow: none;
+		}
+
+		.table-scroll {
+			padding: 0;
+			min-height: auto;
+			overflow-y: auto;
+			max-height: none;
 		}
 
 		.tech-table thead {
 			display: none;
 		}
 
-		.tech-table tr {
-			margin-bottom: 1.5rem;
-			background: var(--tech-glass-bg);
-			border: 1px solid var(--tech-cell-border);
-			border-radius: 12px;
-			padding: 1.25rem;
-			position: relative;
-			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-			border-left: 4px solid var(--tech-accent);
-		}
-
-		.tech-table td {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			text-align: right;
-			padding: 0.8rem 0;
-			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-			min-height: auto;
-		}
-
-		/* Item Name - Card Header style */
-		.tech-table td:first-child {
-			padding-top: 0;
-			padding-bottom: 1rem;
-			border-bottom: 1px solid var(--tech-cell-border);
-			margin-bottom: 0.5rem;
-		}
-
-		/* Actions - Card Footer style */
-		.tech-table td:last-child {
-			border-bottom: none;
-			padding-bottom: 0;
-			padding-top: 1.2rem;
-			margin-top: 0.5rem;
-			border-top: 1px solid rgba(255, 255, 255, 0.05);
-		}
-
-		.tech-table td::before {
-			content: attr(data-label);
-			text-align: left;
-			font-weight: 800;
-			font-size: 0.75rem;
-			color: var(--tech-label);
-			text-transform: uppercase;
-			letter-spacing: 0.05em;
-			opacity: 0.8;
-		}
-
-		/* Override inner alignment for mobile */
-		.tech-table td .flex {
-			display: flex;
-			justify-content: flex-end;
-			width: auto;
-		}
-
-		.tech-table td .justify-center {
-			padding: 0;
-		}
-
-		.name-text {
-			font-size: 1.2rem;
-			color: var(--tech-accent);
-		}
-
-		.actions-grid {
-			justify-content: flex-end;
-			gap: 0.75rem;
+		.tech-table,
+		.tech-table tbody {
+			display: block;
 			width: 100%;
 		}
 
+		/* Mobile Card Design */
+		.tech-table tr {
+			display: block;
+			padding: 1.25rem;
+			margin-bottom: 1rem;
+			background: var(--tech-glass-bg) !important;
+			border-radius: 16px;
+			border: 1px solid var(--tech-glass-border);
+			box-shadow:
+				0 4px 6px -1px rgba(0, 0, 0, 0.15),
+				0 2px 4px -1px rgba(0, 0, 0, 0.1);
+			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+			outline: none; /* Remove default outline */
+		}
+
+		.tech-table tr:focus,
+		.tech-table tr:focus-within,
+		.tech-table tr:active {
+			border-color: var(--tech-accent);
+			background: var(--tech-row-hover) !important;
+			box-shadow:
+				0 0 0 1px var(--tech-accent),
+				0 4px 6px -1px rgba(0, 0, 0, 0.15),
+				0 2px 4px -1px rgba(0, 0, 0, 0.1);
+		}
+
+		.tech-table tr:hover {
+			background: var(--tech-glass-bg) !important;
+		}
+
+		.tech-table tr:active {
+			transform: scale(0.98);
+		}
+
+		/* Reset all td styles */
+		.tech-table td {
+			padding: 0;
+			border: none;
+			display: block;
+		}
+
+		/* Item name - Prominent header */
+		.tech-table td.name-col {
+			width: 100%;
+			margin-bottom: 1rem;
+			padding-bottom: 0.75rem;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+		}
+
+		.tech-table td.name-col::before {
+			content: 'Item Name';
+			display: block;
+			font-size: 0.7rem;
+			font-weight: 700;
+			color: var(--tech-label);
+			letter-spacing: 0.1em;
+			margin-bottom: 0.5rem;
+			text-transform: uppercase;
+			font-family: 'JetBrains Mono', monospace;
+			text-align: center;
+		}
+
+		.name-text {
+			font-size: 1.15rem;
+			font-weight: 800;
+			color: var(--tech-accent);
+			display: block;
+			line-height: 1.3;
+			letter-spacing: -0.02em;
+			text-align: center;
+		}
+
+		/* Current count display */
+		.tech-table td.count-col {
+			width: 100%;
+			margin-bottom: 1rem;
+		}
+
+		.tech-table td.count-col::before {
+			content: 'Current Count';
+			display: block;
+			font-size: 0.7rem;
+			font-weight: 700;
+			color: var(--tech-label);
+			letter-spacing: 0.1em;
+			margin-bottom: 0.5rem;
+			text-transform: uppercase;
+			font-family: 'JetBrains Mono', monospace;
+		}
+
+		.count-badge.result {
+			font-size: 1.1rem;
+			min-width: 100%;
+			height: 44px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 0 1rem;
+			background: rgba(255, 255, 255, 0.02);
+			border-radius: 8px;
+			border: 1px solid rgba(255, 255, 255, 0.06);
+			font-weight: 700;
+			letter-spacing: 0.03em;
+			box-shadow: none;
+			color: var(--tech-value);
+			text-shadow: none;
+		}
+
+		/* Change amount section */
+		.tech-table td.change-col {
+			width: 100%;
+			margin-bottom: 1rem;
+		}
+
+		.tech-table td.change-col::before {
+			content: 'Change Amount';
+			display: block;
+			font-size: 0.7rem;
+			font-weight: 700;
+			color: var(--tech-label);
+			letter-spacing: 0.1em;
+			margin-bottom: 0.5rem;
+			text-transform: uppercase;
+			font-family: 'JetBrains Mono', monospace;
+		}
+
+		.tech-table td.change-col .flex {
+			justify-content: stretch;
+		}
+
+		.change-amount-input {
+			height: 52px;
+			width: 100%;
+			font-size: 1.25rem;
+			border-radius: 12px;
+			border: 2px solid var(--tech-glass-border);
+			background: var(--tech-header-bg);
+			font-weight: 800;
+			letter-spacing: 0.02em;
+			transition: all 0.2s ease;
+		}
+
+		.change-amount-input:focus {
+			outline: none;
+			border-color: var(--tech-glass-border);
+			box-shadow: none;
+		}
+
+		/* Action buttons section */
+		.tech-table td.actions-col {
+			width: 100%;
+		}
+
+		.tech-table td.actions-col::before {
+			content: 'Actions';
+			display: block;
+			font-size: 0.7rem;
+			font-weight: 700;
+			color: var(--tech-label);
+			letter-spacing: 0.1em;
+			margin-bottom: 0.75rem;
+			text-transform: uppercase;
+			font-family: 'JetBrains Mono', monospace;
+		}
+
+		.actions-grid {
+			gap: 0.75rem;
+			display: grid;
+			grid-template-columns: 1fr 1fr 1fr;
+		}
+
 		.action-btn {
-			width: 48px;
-			height: 48px;
+			width: 100%;
+			height: 52px;
+			border-radius: 12px;
+			font-weight: 700;
+			border-width: 2px;
+			display: flex;
+			flex-direction: column;
+			gap: 0.25rem;
+			padding: 0.5rem;
 		}
 
 		.action-btn i {
 			font-size: 1.1rem;
 		}
 
-		.change-amount-input {
-			height: 44px;
-			width: 100px;
-			font-size: 1.1rem;
+		/* Add text labels to buttons on mobile */
+		.action-btn.add::after {
+			content: 'Add';
+			font-size: 0.65rem;
+			font-family: 'JetBrains Mono', monospace;
+			font-weight: 800;
+			letter-spacing: 0.05em;
+			text-transform: uppercase;
 		}
 
-		.stats-ribbon {
-			gap: 1rem;
-			flex-wrap: wrap;
+		.action-btn.subtract::after {
+			content: 'Remove';
+			font-size: 0.65rem;
+			font-family: 'JetBrains Mono', monospace;
+			font-weight: 800;
+			letter-spacing: 0.05em;
+			text-transform: uppercase;
 		}
-		.main-title {
-			font-size: 1.8rem;
+
+		.action-btn.reset::after {
+			content: 'Reset';
+			font-size: 0.65rem;
+			font-family: 'JetBrains Mono', monospace;
+			font-weight: 800;
+			letter-spacing: 0.05em;
+			text-transform: uppercase;
+		}
+
+		.action-btn:not(:disabled):active {
+			transform: scale(0.95);
+		}
+
+		/* Footer adjustments */
+		.footer-extension {
+			flex-direction: column;
+			gap: 1rem;
+		}
+
+		.reset-all-btn {
+			width: 100%;
+			justify-content: center;
+			padding: 1rem 1.5rem;
+			font-size: 0.8rem;
+			border-radius: 12px;
+			height: 52px;
+		}
+
+		.reset-all-btn i {
+			font-size: 1rem;
+		}
+
+		/* Notification adjustments for mobile */
+		.notification {
+			bottom: 1rem;
+			right: 1rem;
+			left: 1rem;
+			max-width: calc(100vw - 2rem);
+		}
+
+		.loading-text {
+			font-size: 0.65rem;
 		}
 	}
 </style>

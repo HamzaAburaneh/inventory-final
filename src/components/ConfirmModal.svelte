@@ -218,6 +218,34 @@
 	@media (max-width: 768px) {
 		.confirm-modal {
 			width: 95%;
+			border-radius: 12px;
+			border: 1px solid var(--tech-glass-border);
+			box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+		}
+
+		.modal-header {
+			padding: 1.25rem;
+		}
+
+		.modal-title {
+			font-size: 1rem;
+		}
+
+		.modal-body {
+			padding: 1.5rem 1.25rem;
+		}
+
+		.modal-footer {
+			padding: 1.25rem;
+			flex-direction: column-reverse;
+			gap: 0.75rem;
+		}
+
+		.modal-btn {
+			width: 100%;
+			padding: 1rem;
+			font-size: 0.85rem;
+			border-radius: 8px;
 		}
 	}
 </style>

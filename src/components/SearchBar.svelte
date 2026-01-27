@@ -116,5 +116,23 @@
 		.tech-search-wrapper {
 			max-width: 100%;
 		}
+
+		.tech-search-input {
+			padding: 1rem 1rem 1rem 3rem;
+			font-size: 1rem;
+			border-radius: 8px;
+			background: var(--tech-glass-bg);
+			border: 1px solid var(--tech-glass-border);
+		}
+
+		.tech-search-icon {
+			left: 1.2rem;
+			font-size: 1rem;
+		}
+
+		.tech-clear-button {
+			right: 1rem;
+			font-size: 1rem;
+		}
 	}
 </style>
