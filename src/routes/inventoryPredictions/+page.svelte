@@ -444,8 +444,104 @@
 	}
 
 	@media (max-width: 768px) {
-		.main-title { font-size: 1.8rem; }
-		.summary-grid { flex-direction: column; }
-		.summary-card { min-width: 0; }
+		.content-container {
+			padding: 1.25rem;
+			gap: 1rem;
+		}
+
+		.main-title { 
+			font-size: 1.75rem;
+			letter-spacing: -0.02em;
+		}
+
+		.system-status {
+			display: none;
+		}
+
+		.page-header {
+			gap: 1rem;
+			margin-bottom: 0;
+		}
+
+		.summary-grid { 
+			display: grid;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 0.75rem;
+			flex-direction: row;
+		}
+
+		.summary-card { 
+			min-width: 0;
+			padding: 0.875rem;
+			border-radius: 8px;
+			gap: 0.35rem;
+		}
+
+		.summary-card:hover {
+			transform: none;
+		}
+
+		.card-label {
+			font-size: 0.55rem;
+		}
+
+		.card-value {
+			font-size: 1.35rem;
+		}
+
+		.card-footer {
+			margin-top: 0.25rem;
+			font-size: 0.55rem;
+			gap: 0.4rem;
+		}
+
+		.chart-frame {
+			padding: 1rem;
+			border-radius: 8px;
+			gap: 1rem;
+		}
+
+		.chart-wrapper {
+			min-height: 220px;
+		}
+
+		.frame-header {
+			padding-bottom: 0.75rem;
+		}
+
+		.frame-title {
+			font-size: 0.6rem;
+		}
+
+		.predictions-section {
+			margin-top: 1rem;
+		}
+
+		.section-header {
+			margin-bottom: 1rem;
+			padding-left: 0.75rem;
+		}
+
+		.section-title {
+			font-size: 1.1rem;
+			gap: 0.75rem;
+			margin-bottom: 0.35rem;
+		}
+
+		.section-title i {
+			font-size: 1rem;
+		}
+
+		.section-description {
+			font-size: 0.8rem;
+			line-height: 1.5;
+		}
+
+		.notification {
+			bottom: 1rem;
+			right: 1rem;
+			left: 1rem;
+			max-width: calc(100vw - 2rem);
+		}
 	}
 </style>
