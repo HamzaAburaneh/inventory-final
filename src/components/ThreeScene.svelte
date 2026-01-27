@@ -1,16 +1,26 @@
 <script>
 	import { onMount, onDestroy } from 'svelte';
 	import * as THREE from 'three';
+	import { themeStore } from '../stores/themes.js';
 
 	let container;
 	let scene, camera, renderer;
 	let geometry, material, mesh; // Added declarations
 	let lines = [];
 	let animationId;
+	let unsubscribe;
 
 	onMount(() => {
 		init();
 		animate();
+
+		unsubscribe = themeStore.subscribe((value) => {
+			if (material) {
+				// Blue in light mode, Yellow in dark mode (more saturated)
+				const color = value === 'dark' ? 0xffd700 : 0x0066ff;
+				material.color.setHex(color);
+			}
+		});
 	});
 
 	onDestroy(() => {
@@ -21,6 +31,7 @@
 		if (renderer) renderer.dispose();
 		if (geometry) geometry.dispose();
 		if (material) material.dispose();
+		if (unsubscribe) unsubscribe();
 	});
 
 	function init() {
