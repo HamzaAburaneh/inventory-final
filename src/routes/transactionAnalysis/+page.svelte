@@ -657,6 +657,22 @@
 </div>
 
 <style>
+	/* Remove default mobile tap highlights */
+	* {
+		-webkit-tap-highlight-color: transparent;
+		-webkit-touch-callout: none;
+	}
+
+	button, input, select, textarea {
+		outline: none;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	button:focus-visible, input:focus-visible {
+		outline: 2px solid var(--tech-accent);
+		outline-offset: 2px;
+	}
+
 	:global(body) {
 		background-color: var(--tech-bg-end) !important;
 		background-image: radial-gradient(circle at 50% -10%, var(--tech-bg-start) 0%, var(--tech-bg-end) 100%) !important;
@@ -761,6 +777,13 @@
 		gap: 0.75rem;
 		cursor: pointer;
 		transition: all 0.3s;
+		-webkit-tap-highlight-color: transparent;
+		outline: none;
+	}
+
+	.export-btn:focus-visible {
+		outline: 2px solid var(--tech-accent);
+		outline-offset: 2px;
 	}
 
 	.export-btn:hover {
@@ -818,6 +841,13 @@
 		border-radius: 4px;
 		cursor: pointer;
 		transition: all 0.2s;
+		-webkit-tap-highlight-color: transparent;
+		outline: none;
+	}
+
+	.ribbon-btn:focus-visible {
+		outline: 2px solid var(--tech-accent);
+		outline-offset: 2px;
 	}
 
 	.ribbon-btn:hover {
@@ -851,6 +881,12 @@
 		font-weight: 700;
 		outline: none;
 		cursor: pointer;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.tech-date-input:focus-visible {
+		outline: 2px solid var(--tech-accent);
+		outline-offset: 2px;
 	}
 
 	.date-separator {
@@ -1066,9 +1102,251 @@
 	}
 
 	@media (max-width: 768px) {
-		.main-title { font-size: 1.8rem; }
-		.ledger-actions { flex-direction: column; align-items: stretch; }
-		.filter-ribbon { flex-direction: column; gap: 1.5rem; }
-		.summary-grid { grid-template-columns: 1fr 1fr; }
+		.content-container {
+			padding: 1.25rem;
+			gap: 1rem;
+		}
+
+		.main-title { 
+			font-size: 1.75rem;
+			letter-spacing: -0.02em;
+		}
+
+		.system-status {
+			display: none;
+		}
+
+		.page-header {
+			gap: 1rem;
+			margin-bottom: 0;
+		}
+
+		.header-actions {
+			width: 100%;
+		}
+
+		.export-btn {
+			width: 100%;
+			justify-content: center;
+			padding: 0.65rem 1rem;
+			font-size: 0.65rem;
+		}
+
+		.ledger-actions { 
+			flex-direction: column; 
+			align-items: stretch;
+			padding: 1rem;
+			gap: 1rem;
+			background: var(--tech-glass-bg);
+			border: 1px solid var(--tech-glass-border);
+			border-radius: 8px;
+		}
+
+		.filter-ribbon { 
+			flex-direction: column; 
+			gap: 0.75rem;
+		}
+
+		.ribbon-group {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.5rem;
+		}
+
+		.ribbon-label {
+			font-size: 0.6rem;
+			color: var(--tech-value);
+		}
+
+		.ribbon-options {
+			flex-wrap: wrap;
+			gap: 0.35rem;
+			width: 100%;
+		}
+
+		.ribbon-btn {
+			padding: 0.3rem 0.6rem;
+			font-size: 0.6rem;
+			flex: 1 1 auto;
+			min-width: max-content;
+		}
+
+		.date-input-group {
+			padding: 0.5rem 0.75rem;
+			gap: 0.75rem;
+			width: 100%;
+			justify-content: center;
+		}
+
+		.tech-date-input {
+			font-size: 0.7rem;
+			flex: 1;
+		}
+
+		.summary-grid { 
+			grid-template-columns: repeat(2, 1fr);
+			gap: 0.75rem;
+		}
+
+		.summary-card {
+			padding: 0.875rem;
+			border-radius: 8px;
+			gap: 0.35rem;
+		}
+
+		.summary-card:hover {
+			transform: none;
+		}
+
+		.card-label {
+			font-size: 0.55rem;
+		}
+
+		.card-value {
+			font-size: 1.35rem;
+		}
+
+		.card-footer {
+			margin-top: 0.25rem;
+			font-size: 0.55rem;
+			gap: 0.4rem;
+		}
+
+		.chart-frame {
+			padding: 1rem;
+			border-radius: 8px;
+			gap: 1rem;
+		}
+
+		.frame-header {
+			padding: 0.875rem 1rem;
+		}
+
+		.frame-title {
+			font-size: 0.6rem;
+		}
+
+		.chart-wrapper {
+			height: 220px;
+		}
+
+		.table-frame {
+			border-radius: 8px;
+			background: transparent;
+			border: none;
+		}
+
+		.table-scroll {
+			overflow-x: visible;
+			padding: 0;
+		}
+
+		/* Hide table header on mobile */
+		.tech-table thead {
+			display: none;
+		}
+
+		/* Convert table to card layout */
+		.tech-table,
+		.tech-table tbody {
+			display: block;
+			width: 100%;
+		}
+
+		.tech-table tr {
+			display: block;
+			padding: 0.875rem;
+			margin-bottom: 0.5rem;
+			background: var(--tech-glass-bg) !important;
+			border-radius: 12px;
+			border: 1px solid var(--tech-glass-border);
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.02);
+			position: relative;
+			overflow: hidden;
+		}
+
+		.tech-table tr::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: 2px;
+			background: linear-gradient(90deg, var(--tech-accent), transparent);
+			opacity: 0.4;
+		}
+
+		.tech-table td {
+			display: block;
+			padding: 0;
+			border: none;
+			font-size: 0.85rem;
+		}
+
+		/* Item name - prominent header */
+		.tech-table td:first-child {
+			margin-bottom: 0.75rem;
+			padding-bottom: 0.5rem;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+		}
+
+		.tech-table td:first-child::before {
+			content: 'Item Name';
+			display: block;
+			font-size: 0.55rem;
+			font-weight: 700;
+			color: var(--tech-label);
+			letter-spacing: 0.08em;
+			margin-bottom: 0.35rem;
+			text-transform: uppercase;
+			font-family: 'JetBrains Mono', monospace;
+			opacity: 0.7;
+		}
+
+		.name-text {
+			font-size: 1rem;
+			font-weight: 700;
+			color: var(--tech-accent);
+		}
+
+		/* Stats grid for the remaining columns */
+		.tech-table td:nth-child(n+2) {
+			display: inline-block;
+			width: calc(50% - 0.5rem);
+			margin-bottom: 0.5rem;
+		}
+
+		.tech-table td:nth-child(2)::before { content: 'Transactions'; }
+		.tech-table td:nth-child(3)::before { content: 'Stock In'; }
+		.tech-table td:nth-child(4)::before { content: 'Stock Out'; }
+		.tech-table td:nth-child(5)::before { content: 'Net Change'; }
+		.tech-table td:nth-child(6)::before { content: 'Volatility'; }
+
+		.tech-table td:nth-child(n+2)::before {
+			display: block;
+			font-size: 0.55rem;
+			font-weight: 700;
+			color: var(--tech-label);
+			letter-spacing: 0.08em;
+			margin-bottom: 0.25rem;
+			text-transform: uppercase;
+			font-family: 'JetBrains Mono', monospace;
+			opacity: 0.7;
+		}
+
+		.trend-tag {
+			padding: 0.2rem 0.5rem;
+			font-size: 0.75rem;
+		}
+
+		.count-badge {
+			padding: 0.2rem 0.5rem;
+			font-size: 0.8rem;
+		}
+
+		.volatility-tag {
+			font-size: 0.8rem;
+			color: var(--tech-accent);
+		}
 	}
 </style>

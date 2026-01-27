@@ -1,4 +1,6 @@
 <script>
+	import { slide, fade } from 'svelte/transition';
+	import { quintOut } from 'svelte/easing';
 	import { itemStore } from '../stores/itemStore.js';
 	import { notificationStore } from '../stores/notificationStore.js';
 	import { getSearchStore } from '../stores/searchStore.js';
@@ -9,6 +11,7 @@
 	let error = $state('');
 	let timeframeValue = $state(14);
 	let useAI = $state(false);
+	let isExpanded = $state(true);
 	const ANALYSIS_WINDOW = 7;
 
 	// Store values as reactive state
@@ -141,94 +144,120 @@
 		</div>
 	</div>
 
-	<div class="predictions-grid">
-		{#if loading}
-			{#each Array(6) as _}
-				<div class="prediction-card loading-skeleton">
-					<div class="skeleton-header"></div>
-					<div class="skeleton-body"></div>
-					<div class="skeleton-footer"></div>
+	<div class="predictions-details" class:open={isExpanded}>
+		<button class="predictions-summary" onclick={() => isExpanded = !isExpanded}>
+			<span class="summary-text">PREDICTIONS ({itemsWithPredictions.length})</span>
+			<i class="fas fa-chevron-down summary-icon" class:rotated={isExpanded}></i>
+		</button>
+		{#if isExpanded}
+		<div class="predictions-content" transition:slide={{ duration: 500, easing: quintOut }}>
+			<div class="predictions-grid" in:fade={{ duration: 300, delay: 200 }}>
+			{#if loading}
+				{#each Array(6) as _}
+					<div class="prediction-card loading-skeleton">
+						<div class="skeleton-header"></div>
+						<div class="skeleton-body"></div>
+						<div class="skeleton-footer"></div>
+					</div>
+				{/each}
+			{:else if error}
+				<div class="error-state">
+					<i class="fas fa-exclamation-triangle"></i>
+					<p>{error}</p>
 				</div>
-			{/each}
-		{:else if error}
-			<div class="error-state">
-				<i class="fas fa-exclamation-triangle"></i>
-				<p>{error}</p>
-			</div>
-		{:else if itemsWithPredictions.length === 0}
-			<div class="null-state">
-				<i class="fas fa-search-minus"></i>
-				<p>NO PREDICTIONS MATCHED.</p>
-			</div>
-		{:else}
-			{#each itemsWithPredictions as item (item.id)}
-				<div class="prediction-card" class:urgent={getStatusClass(item.currentCount, item.totalPrediction) === 'urgent'}>
-					<div class="card-header">
-						<h3 class="item-name">{item.name}</h3>
-						<div class="method-badge" class:ai={item.method.includes('GPT')}>
-							{item.method}
-						</div>
-					</div>
-
-					<div class="card-metrics">
-						<div class="metric-row">
-							<span class="metric-label">CURRENT STOCK</span>
-							<span class="metric-value digital-font">{item.currentCount}</span>
-						</div>
-						<div class="metric-row">
-							<span class="metric-label">PREDICTED NEED</span>
-							<span class="metric-value digital-font">{item.totalPrediction.toFixed(1)}</span>
-						</div>
-						<div class="metric-row highlight">
-							<span class="metric-label">RECOMMENDED ORDER</span>
-							<span class="metric-value digital-font">{item.recommendedOrder.toFixed(1)}</span>
-						</div>
-					</div>
-
-					<div class="status-indicator {getStatusClass(item.currentCount, item.totalPrediction)}">
-						<div class="status-dot"></div>
-						<span class="status-text">
-							{#if item.currentCount < item.totalPrediction * 0.5}
-								URGENT_RESTOCK
-							{:else if item.currentCount < item.totalPrediction}
-								RESTOCK_RECOMMENDED
-							{:else if item.currentCount > item.totalPrediction * 1.5}
-								POTENTIAL_OVERSTOCK
-							{:else}
-								STOCK_OPTIMAL
-							{/if}
-						</span>
-					</div>
-
-					{#if item.reasoning && item.reasoning !== 'ARIMA time series analysis'}
-						<div class="ai-insight">
-							<div class="insight-header">
-								<i class="fas fa-lightbulb"></i>
-								<span>AI_INSIGHT</span>
-								<span class="confidence">{Math.round(item.confidence * 100)}% CONF</span>
+			{:else if itemsWithPredictions.length === 0}
+				<div class="null-state">
+					<i class="fas fa-search-minus"></i>
+					<p>NO PREDICTIONS MATCHED.</p>
+				</div>
+			{:else}
+				{#each itemsWithPredictions as item (item.id)}
+					<div class="prediction-card" class:urgent={getStatusClass(item.currentCount, item.totalPrediction) === 'urgent'}>
+						<div class="card-header">
+							<h3 class="item-name">{item.name}</h3>
+							<div class="method-badge" class:ai={item.method.includes('GPT')}>
+								{item.method}
 							</div>
-							<p class="insight-text">{item.reasoning}</p>
 						</div>
-					{/if}
 
-					<details class="breakdown-details">
-						<summary>DAILY_BREAKDOWN</summary>
-						<div class="breakdown-grid">
-							{#each item.prediction as daily, i}
-								<div class="breakdown-item">
-									<span class="day-label">D{i + 1}</span>
-									<span class="day-value">{daily.toFixed(1)}</span>
-								</div>
-							{/each}
+						<div class="card-metrics">
+							<div class="metric-row">
+								<span class="metric-label">CURRENT STOCK</span>
+								<span class="metric-value digital-font">{item.currentCount}</span>
+							</div>
+							<div class="metric-row">
+								<span class="metric-label">PREDICTED NEED</span>
+								<span class="metric-value digital-font">{item.totalPrediction.toFixed(1)}</span>
+							</div>
+							<div class="metric-row highlight">
+								<span class="metric-label">RECOMMENDED ORDER</span>
+								<span class="metric-value digital-font">{item.recommendedOrder.toFixed(1)}</span>
+							</div>
 						</div>
-					</details>
-				</div>
-			{/each}
+
+						<div class="status-indicator {getStatusClass(item.currentCount, item.totalPrediction)}">
+							<div class="status-dot"></div>
+							<span class="status-text">
+								{#if item.currentCount < item.totalPrediction * 0.5}
+									URGENT_RESTOCK
+								{:else if item.currentCount < item.totalPrediction}
+									RESTOCK_RECOMMENDED
+								{:else if item.currentCount > item.totalPrediction * 1.5}
+									POTENTIAL_OVERSTOCK
+								{:else}
+									STOCK_OPTIMAL
+								{/if}
+							</span>
+						</div>
+
+						{#if item.reasoning && item.reasoning !== 'ARIMA time series analysis'}
+							<div class="ai-insight">
+								<div class="insight-header">
+									<i class="fas fa-lightbulb"></i>
+									<span>AI_INSIGHT</span>
+									<span class="confidence">{Math.round(item.confidence * 100)}% CONF</span>
+								</div>
+								<p class="insight-text">{item.reasoning}</p>
+							</div>
+						{/if}
+
+						<details class="breakdown-details">
+							<summary>DAILY_BREAKDOWN</summary>
+							<div class="breakdown-grid">
+								{#each item.prediction as daily, i}
+									<div class="breakdown-item">
+										<span class="day-label">D{i + 1}</span>
+										<span class="day-value">{daily.toFixed(1)}</span>
+									</div>
+								{/each}
+							</div>
+						</details>
+					</div>
+				{/each}
+			{/if}
+			</div>
+		</div>
 		{/if}
 	</div>
 </div>
 
 <style>
+	/* Remove default mobile tap highlights */
+	* {
+		-webkit-tap-highlight-color: transparent;
+		-webkit-touch-callout: none;
+	}
+
+	button, input, select, textarea {
+		outline: none;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	button:focus-visible, input:focus-visible {
+		outline: 2px solid var(--tech-accent);
+		outline-offset: 2px;
+	}
+
 	.stock-predictions-container {
 		display: flex;
 		flex-direction: column;
@@ -276,6 +305,13 @@
 		border-radius: 4px;
 		cursor: pointer;
 		transition: all 0.2s;
+		-webkit-tap-highlight-color: transparent;
+		outline: none;
+	}
+
+	.ribbon-btn:focus-visible {
+		outline: 2px solid var(--tech-accent);
+		outline-offset: 2px;
 	}
 
 	.ribbon-btn:hover {
@@ -311,16 +347,100 @@
 		align-items: center;
 		gap: 0.5rem;
 		transition: all 0.2s;
+		-webkit-tap-highlight-color: transparent;
+		outline: none;
+	}
+
+	.method-btn:focus-visible {
+		outline: 2px solid var(--tech-accent);
+		outline-offset: 2px;
 	}
 
 	.method-btn.active {
 		background: var(--tech-accent);
-		color: #fff;
+		color: #000;
+		font-weight: 800;
 	}
 
 	.search-wrapper {
 		flex: 1;
 		min-width: 250px;
+	}
+
+	.predictions-details {
+		background: transparent;
+		border: none;
+		padding: 0;
+	}
+
+	.predictions-summary {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1rem 1.25rem;
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 12px;
+		cursor: pointer;
+		list-style: none;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		width: 100%;
+		text-align: left;
+		-webkit-tap-highlight-color: transparent;
+		outline: none;
+	}
+
+	.predictions-summary:focus-visible {
+		outline: 2px solid var(--tech-accent);
+		outline-offset: 2px;
+	}
+
+	.predictions-summary:hover {
+		border-color: var(--tech-accent-muted);
+		background: var(--tech-badge-bg);
+	}
+
+	.predictions-summary:active {
+		transform: scale(0.98);
+	}
+
+	.predictions-details.open .predictions-summary {
+		border-radius: 12px 12px 0 0;
+		border-bottom: 1px solid var(--tech-glass-border);
+		margin-bottom: 0;
+	}
+
+	.summary-text {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.75rem;
+		font-weight: 800;
+		color: var(--tech-value);
+		letter-spacing: 0.1em;
+		transition: color 0.3s ease;
+	}
+
+	.predictions-summary:hover .summary-text {
+		color: var(--tech-accent);
+	}
+
+	.summary-icon {
+		color: var(--tech-accent);
+		font-size: 0.85rem;
+		transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+		transform-origin: center;
+	}
+
+	.summary-icon.rotated {
+		transform: rotate(180deg);
+	}
+
+	.predictions-content {
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-top: none;
+		border-radius: 0 0 12px 12px;
+		padding: 1.5rem;
+		overflow: hidden;
 	}
 
 	.predictions-grid {
@@ -580,7 +700,148 @@
 	.error-state i { color: #ef4444; }
 
 	@media (max-width: 768px) {
-		.predictions-toolbar { flex-direction: column; align-items: stretch; }
-		.toolbar-group { justify-content: space-between; }
+		.stock-predictions-container {
+			gap: 1rem;
+		}
+
+		.predictions-toolbar { 
+			flex-direction: column; 
+			align-items: stretch;
+			padding: 1rem;
+			gap: 1rem;
+			background: var(--tech-glass-bg);
+			border: 1px solid var(--tech-glass-border);
+			border-radius: 8px;
+		}
+
+		.toolbar-group { 
+			justify-content: space-between;
+			gap: 0.75rem;
+		}
+
+		.toolbar-label {
+			font-size: 0.6rem;
+			color: var(--tech-value);
+		}
+
+		.ribbon-btn {
+			padding: 0.3rem 0.6rem;
+			font-size: 0.6rem;
+			flex: 1 1 auto;
+			min-width: max-content;
+		}
+
+		.method-btn {
+			padding: 0.3rem 0.6rem;
+			font-size: 0.6rem;
+		}
+
+		.search-wrapper {
+			min-width: 100%;
+		}
+
+		.predictions-summary {
+			padding: 0.75rem 1rem;
+			border-radius: 8px;
+		}
+
+		.predictions-details.open .predictions-summary {
+			border-radius: 8px 8px 0 0;
+		}
+
+		.predictions-content {
+			border-radius: 0 0 8px 8px;
+			padding: 1rem;
+		}
+
+		.summary-text {
+			font-size: 0.65rem;
+		}
+
+		.summary-icon {
+			font-size: 0.75rem;
+		}
+
+		.predictions-grid {
+			grid-template-columns: 1fr;
+			gap: 0.75rem;
+		}
+
+		.prediction-card {
+			padding: 1rem;
+			border-radius: 8px;
+			gap: 1rem;
+		}
+
+		.prediction-card:hover {
+			transform: none;
+		}
+
+		.item-name {
+			font-size: 1rem;
+		}
+
+		.method-badge {
+			font-size: 0.55rem;
+			padding: 0.15rem 0.4rem;
+		}
+
+		.card-metrics {
+			padding: 0.75rem;
+		}
+
+		.metric-label {
+			font-size: 0.55rem;
+		}
+
+		.metric-value {
+			font-size: 1rem;
+		}
+
+		.status-indicator {
+			padding: 0.5rem 0.75rem;
+		}
+
+		.status-text {
+			font-size: 0.6rem;
+		}
+
+		.ai-insight {
+			padding: 0.75rem;
+		}
+
+		.insight-header {
+			font-size: 0.55rem;
+		}
+
+		.insight-text {
+			font-size: 0.75rem;
+		}
+
+		.breakdown-grid {
+			grid-template-columns: repeat(4, 1fr);
+			gap: 0.35rem;
+		}
+
+		.breakdown-item {
+			padding: 0.3rem;
+		}
+
+		.day-label {
+			font-size: 0.45rem;
+		}
+
+		.day-value {
+			font-size: 0.65rem;
+		}
+
+		.null-state, .error-state {
+			height: 200px;
+			border-radius: 8px;
+		}
+
+		.null-state i, .error-state i {
+			font-size: 2rem;
+		}
 	}
 </style>
