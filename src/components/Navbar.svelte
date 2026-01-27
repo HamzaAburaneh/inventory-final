@@ -48,6 +48,7 @@
 	async function handleProfileClick(event) {
 		event.preventDefault();
 		closeDropdown();
+		closeMenu();
 		await goto('/profile');
 	}
 
@@ -692,11 +693,11 @@
 	/* Mobile footer */
 	.mobile-footer {
 		margin-top: auto;
-		padding: 1.5rem;
+		padding: 1.25rem 1.5rem 1.5rem;
 		border-top: 1px solid var(--tech-glass-border);
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 1rem;
 		background: var(--tech-glass-bg);
 	}
 
@@ -704,35 +705,39 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		padding: 0.5rem 0;
 	}
 
 	.footer-label {
-		font-size: 0.85rem;
-		font-weight: 500;
-		color: var(--tech-label);
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: var(--tech-value);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
 
 	.mobile-logout {
 		width: 100%;
-		padding: 0.875rem 1rem;
-		background: transparent;
-		color: var(--tech-label);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 50px;
+		padding: 1rem;
+		background: rgba(239, 68, 68, 0.08);
+		color: #ef4444;
+		border: 1px solid rgba(239, 68, 68, 0.25);
+		border-radius: 12px;
 		font-size: 0.9rem;
-		font-weight: 600;
+		font-weight: 700;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all 0.2s ease;
 		-webkit-tap-highlight-color: transparent;
+		letter-spacing: 0.02em;
 	}
 
 	.mobile-logout:hover {
 		border-color: #ef4444;
-		color: #ef4444;
+		background: rgba(239, 68, 68, 0.12);
 	}
 
 	.mobile-logout:active {
-		transform: scale(0.98);
+		transform: scale(0.97);
 	}
 
 	.mobile-login-btn {
