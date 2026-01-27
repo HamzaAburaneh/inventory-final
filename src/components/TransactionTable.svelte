@@ -371,11 +371,11 @@
 			flex-wrap: wrap;
 			background: linear-gradient(145deg, rgba(20, 20, 25, 0.95), rgba(15, 15, 20, 0.98));
 			border: 1px solid rgba(255, 255, 255, 0.08);
-			border-radius: 16px;
-			margin-bottom: 1rem;
-			padding: 1.5rem 1rem 1rem;
+			border-radius: 12px;
+			margin-bottom: 0.5rem;
+			padding: 1rem 0.75rem 0.75rem;
 			box-shadow: 
-				0 4px 24px rgba(0, 0, 0, 0.4),
+				0 2px 12px rgba(0, 0, 0, 0.3),
 				0 0 0 1px rgba(255, 255, 255, 0.03);
 			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 			position: relative;
@@ -388,7 +388,7 @@
 			top: 0;
 			left: 0;
 			right: 0;
-			height: 3px;
+			height: 2px;
 			background: linear-gradient(90deg, var(--tech-accent), transparent);
 			opacity: 0.5;
 		}
@@ -415,7 +415,7 @@
 			display: block !important;
 			width: 100%;
 			text-align: center;
-			margin-bottom: 1.5rem;
+			margin-bottom: 0.75rem;
 			order: 1;
 		}
 
@@ -424,7 +424,7 @@
 		}
 
 		.name-text {
-			font-size: 1.1rem;
+			font-size: 1rem;
 			font-weight: 700;
 			color: var(--tech-value);
 			display: block;
@@ -439,19 +439,19 @@
 		.table-row .changedamount-col,
 		.table-row .newcount-col {
 			display: flex !important;
-			width: calc(33.33% - 0.5rem);
+			width: calc(33.33% - 0.35rem);
 			flex-direction: column;
 			align-items: center;
 			justify-content: center;
-			gap: 0.6rem;
+			gap: 0.35rem;
 			order: 2;
-			margin-bottom: 1.5rem;
-			padding: 1rem 0.5rem;
+			margin-bottom: 0.75rem;
+			padding: 0.6rem 0.35rem;
 			background: rgba(0, 0, 0, 0.3);
-			border-radius: 10px;
+			border-radius: 8px;
 			border: 1px solid rgba(255, 255, 255, 0.05);
-			margin-right: 0.25rem;
-			margin-left: 0.25rem;
+			margin-right: 0.175rem;
+			margin-left: 0.175rem;
 		}
 
 		.table-row .previouscount-col {
@@ -486,27 +486,27 @@
 		}
 
 		.count-badge {
-			font-size: 1.3rem;
+			font-size: 1.1rem;
 			font-weight: 800;
 			color: var(--tech-value);
 		}
 
 		.count-badge.result {
-			font-size: 1.4rem;
+			font-size: 1.15rem;
 			color: #fbbf24;
-			text-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
+			text-shadow: 0 0 12px rgba(251, 191, 36, 0.3);
 		}
 
 		.change-tag {
 			min-width: auto;
-			padding: 0.4rem 0.9rem;
-			font-size: 1rem;
-			border-radius: 8px;
-			gap: 0.5rem;
+			padding: 0.3rem 0.6rem;
+			font-size: 0.9rem;
+			border-radius: 6px;
+			gap: 0.4rem;
 		}
 
 		.change-tag i {
-			font-size: 0.85rem;
+			font-size: 0.75rem;
 		}
 
 		.positive-tag {
@@ -526,11 +526,11 @@
 			width: 100%;
 			align-items: center;
 			justify-content: center;
-			padding: 0.75rem 1rem;
+			padding: 0.5rem 0.75rem;
 			margin-top: 0;
 			border-top: 1px solid rgba(255, 255, 255, 0.06);
 			background: rgba(0, 0, 0, 0.2);
-			border-radius: 10px;
+			border-radius: 8px;
 		}
 
 		.table-row .timestamp-col {
