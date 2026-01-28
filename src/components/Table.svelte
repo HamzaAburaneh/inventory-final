@@ -2,6 +2,7 @@
 	import TableHeader from './TableHeader.svelte';
 	import TableCell from './TableCell.svelte';
 	import Tooltip from './Tooltip.svelte';
+	import InventoryMobileCard from './InventoryMobileCard.svelte';
 
 	let {
 		paginatedItems = [],
@@ -12,6 +13,22 @@
 		sortAscending,
 		loading = false
 	} = $props();
+
+	let isMobile = $state(false);
+
+	// Detect mobile viewport
+	$effect(() => {
+		const checkMobile = () => {
+			isMobile = window.innerWidth <= 768;
+		};
+		
+		checkMobile();
+		window.addEventListener('resize', checkMobile);
+		
+		return () => {
+			window.removeEventListener('resize', checkMobile);
+		};
+	});
 
 	let hoveredButton = $state(null);
 	let deletingItemId = $state(null);
@@ -77,91 +94,109 @@
 </script>
 
 <div class="table-wrapper">
-	<div class="table-scroll">
-		<table class="tech-table">
-			<TableHeader {sortBy} {currentSortColumn} {sortAscending} />
-			<tbody class="table-body-transition" class:loading-fade={loading}>
-				{#each paginatedItems as item (item.id)}
-					{#if item.id !== deletingItemId}
-						<tr class="table-row">
-							<TableCell
-								type="name"
-								value={item.name}
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-							<TableCell
-								type="count"
-								value={item.count}
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-							<TableCell
-								type="lowCount"
-								value={item.lowCount}
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-							<TableCell
-								type="cost"
-								value={item.cost}
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-							<TableCell
-								type="totalValue"
-								value={item.totalValue}
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-							<TableCell
-								type="storageType"
-								value={item.storageType}
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-							<TableCell
-								type="booths"
-								value={item.booths}
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-							<TableCell
-								type="action"
-								value=""
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-						</tr>
-					{/if}
-				{/each}
-			</tbody>
-		</table>
-	</div>
+	{#if isMobile}
+		<!-- Mobile Card View -->
+		<div class="mobile-cards-container">
+			{#each paginatedItems as item (item.id)}
+				{#if item.id !== deletingItemId}
+					<InventoryMobileCard
+						{item}
+						onEdit={handleEdit}
+						onDelete={handleDelete}
+						onTooltipShow={handleTooltipShow}
+						onTooltipHide={handleTooltipHide}
+					/>
+				{/if}
+			{/each}
+		</div>
+	{:else}
+		<!-- Desktop Table View -->
+		<div class="table-scroll">
+			<table class="tech-table">
+				<TableHeader {sortBy} {currentSortColumn} {sortAscending} />
+				<tbody class="table-body-transition" class:loading-fade={loading}>
+					{#each paginatedItems as item (item.id)}
+						{#if item.id !== deletingItemId}
+							<tr class="table-row">
+								<TableCell
+									type="name"
+									value={item.name}
+									{item}
+									onEdit={handleEdit}
+									onDelete={handleDelete}
+									onTooltipShow={handleTooltipShow}
+									onTooltipHide={handleTooltipHide}
+								/>
+								<TableCell
+									type="count"
+									value={item.count}
+									{item}
+									onEdit={handleEdit}
+									onDelete={handleDelete}
+									onTooltipShow={handleTooltipShow}
+									onTooltipHide={handleTooltipHide}
+								/>
+								<TableCell
+									type="lowCount"
+									value={item.lowCount}
+									{item}
+									onEdit={handleEdit}
+									onDelete={handleDelete}
+									onTooltipShow={handleTooltipShow}
+									onTooltipHide={handleTooltipHide}
+								/>
+								<TableCell
+									type="cost"
+									value={item.cost}
+									{item}
+									onEdit={handleEdit}
+									onDelete={handleDelete}
+									onTooltipShow={handleTooltipShow}
+									onTooltipHide={handleTooltipHide}
+								/>
+								<TableCell
+									type="totalValue"
+									value={item.totalValue}
+									{item}
+									onEdit={handleEdit}
+									onDelete={handleDelete}
+									onTooltipShow={handleTooltipShow}
+									onTooltipHide={handleTooltipHide}
+								/>
+								<TableCell
+									type="storageType"
+									value={item.storageType}
+									{item}
+									onEdit={handleEdit}
+									onDelete={handleDelete}
+									onTooltipShow={handleTooltipShow}
+									onTooltipHide={handleTooltipHide}
+								/>
+								<TableCell
+									type="booths"
+									value={item.booths}
+									{item}
+									onEdit={handleEdit}
+									onDelete={handleDelete}
+									onTooltipShow={handleTooltipShow}
+									onTooltipHide={handleTooltipHide}
+								/>
+								<TableCell
+									type="action"
+									value=""
+									{item}
+									onEdit={handleEdit}
+									onDelete={handleDelete}
+									onTooltipShow={handleTooltipShow}
+									onTooltipHide={handleTooltipHide}
+								/>
+							</tr>
+						{/if}
+					{/each}
+				</tbody>
+			</table>
+		</div>
+	{/if}
 </div>
 
 <Tooltip text={tooltipText} x={tooltipX} y={tooltipY} visible={showTooltip} />
@@ -170,6 +205,13 @@
 <style>
 	.table-wrapper {
 		width: 100%;
+	}
+
+	.mobile-cards-container {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 0;
 	}
 
 	.table-scroll {
@@ -260,8 +302,20 @@
 		min-width: 100px;
 	}
 
+	/* Mobile View - Hide desktop table */
 	@media (max-width: 768px) {
-		.tech-table thead {
+		.table-scroll {
+			display: none;
+		}
+
+		.mobile-cards-container {
+			display: flex;
+		}
+	}
+
+	/* Desktop View - Hide mobile cards */
+	@media (min-width: 769px) {
+		.mobile-cards-container {
 			display: none;
 		}
 	}

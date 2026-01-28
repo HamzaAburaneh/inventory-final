@@ -174,15 +174,14 @@
 					<div class="input-group cost-group">
 						<label for="cost" class="tech-label">Unit Cost ($)</label>
 						<div class="tech-input-wrapper">
-							<input
-								id="cost"
-								class="tech-input"
-								type="text"
-								bind:value={formData.cost}
-								placeholder="0.00"
-								oninput={(event) => handleInput(event, 'cost', true)}
-								style="text-align: right; padding-right: 1.5rem;"
-							/>
+					<input
+						id="cost"
+						class="tech-input"
+						type="text"
+						bind:value={formData.cost}
+						placeholder="0.00"
+						oninput={(event) => handleInput(event, 'cost', true)}
+					/>
 						</div>
 					</div>
 				</div>
@@ -593,7 +592,73 @@
 	}
 
 	@media (max-width: 768px) {
-		.form-grid { grid-template-columns: 1fr; }
-		.booth-selection-grid { grid-template-columns: repeat(2, 1fr); }
+		.form-toggle-header {
+			padding: 1rem 1.25rem;
+		}
+		
+		.form-title {
+			font-size: 0.85rem;
+		}
+		
+		.form-separator {
+			display: none;
+		}
+		
+		.action-hint {
+			display: none;
+		}
+		
+		.form-content-inner {
+			padding: 0 1rem 1.5rem 1rem;
+		}
+		
+		.form-grid { 
+			grid-template-columns: 1fr; 
+			gap: 1rem;
+			margin-bottom: 1.5rem;
+		}
+		
+		.name-group,
+		.storage-group,
+		.count-group,
+		.alert-group,
+		.cost-group,
+		.full-width {
+			grid-column: span 1;
+		}
+		
+		.storage-type-grid { 
+			grid-template-columns: 1fr; 
+			gap: 0.5rem;
+		}
+		
+		.storage-node .node-card {
+			padding: 0.75rem 1rem;
+		}
+		
+		.storage-node .node-label {
+			font-size: 0.8rem;
+		}
+		
+		.booth-selection-grid { 
+			grid-template-columns: repeat(2, 1fr); 
+			gap: 0.5rem;
+		}
+		
+		.booth-node .node-card {
+			padding: 0.6rem 0.75rem;
+		}
+		
+		.tech-input {
+			padding: 0.875rem 1rem;
+			font-size: 1rem;
+		}
+		
+		.tech-add-btn.primary-action {
+			min-width: 100%;
+			width: 100%;
+			padding: 1rem 2rem;
+			font-size: 0.9rem;
+		}
 	}
 </style>

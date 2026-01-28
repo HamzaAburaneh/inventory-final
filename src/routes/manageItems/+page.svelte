@@ -1042,8 +1042,164 @@
 	}
 
 	@media (max-width: 768px) {
-		.main-title { font-size: 1.8rem; }
-		.stats-ribbon { gap: 1rem; flex-wrap: wrap; }
-		.ledger-actions { align-items: stretch; }
+		.content-container {
+			padding: 1.25rem;
+			gap: 1rem;
+		}
+
+		.page-header {
+			gap: 1rem;
+			margin-bottom: 0;
+		}
+
+		.main-title { 
+			font-size: 1.5rem;
+			letter-spacing: -0.02em;
+		}
+
+		.system-status {
+			display: none;
+		}
+
+		.form-frame {
+			margin-bottom: 0.5rem;
+		}
+
+		.ledger-actions {
+			flex-direction: column;
+			gap: 1rem;
+			align-items: stretch;
+		}
+
+		.stats-ribbon {
+			gap: 0.75rem;
+			background: var(--tech-glass-bg);
+			padding: 0.875rem 1rem;
+			border-radius: 8px;
+			border: 1px solid var(--tech-glass-border);
+			flex-direction: row;
+			flex-wrap: wrap;
+			justify-content: space-between;
+		}
+
+		.ribbon-item {
+			opacity: 1;
+			padding: 0.25rem 0;
+			flex: 1 1 auto;
+			min-width: max-content;
+		}
+
+		.ribbon-item:not(:last-child) {
+			border-bottom: none;
+		}
+
+		.ribbon-item:hover {
+			transform: none;
+		}
+
+		.ribbon-label {
+			font-size: 0.55rem;
+			opacity: 0.8;
+		}
+
+		.ribbon-value {
+			font-size: 0.75rem;
+		}
+
+		.ribbon-item:nth-child(1) .ribbon-value,
+		.ribbon-item:nth-child(2) .ribbon-value,
+		.ribbon-item:nth-child(3) .ribbon-value {
+			min-width: auto;
+		}
+
+		.search-primary {
+			max-width: 100%;
+			width: 100%;
+		}
+
+		/* Table frame - transparent background for mobile cards */
+		.table-frame {
+			min-height: auto;
+			border-radius: 8px;
+			background: transparent;
+			border: none;
+			box-shadow: none;
+		}
+
+		.table-frame:hover {
+			box-shadow: none;
+			border-color: transparent;
+		}
+
+		.ledger-loading, .null-state {
+			height: 300px;
+			background: var(--tech-glass-bg);
+			border-radius: 12px;
+			border: 1px solid var(--tech-glass-border);
+		}
+
+		.null-state i {
+			font-size: 2rem;
+		}
+
+		.null-state p {
+			font-size: 0.7rem;
+		}
+
+		.loading-text {
+			font-size: 0.6rem;
+		}
+
+		/* Footer */
+		.footer-extension {
+			margin-top: 0.5rem;
+		}
+
+		.notification {
+			bottom: 1rem;
+			right: 1rem;
+			left: 1rem;
+			padding: 0.875rem 1.25rem;
+		}
+
+		.notification-content {
+			font-size: 0.85rem;
+		}
+
+		.tech-modal {
+			width: 95%;
+			max-width: none;
+			margin: 1rem;
+		}
+
+		.modal-header {
+			padding: 14px 16px;
+		}
+
+		.modal-title {
+			font-size: 1rem;
+		}
+
+		.modal-body {
+			padding: 16px;
+		}
+
+		.storage-type-grid {
+			grid-template-columns: 1fr;
+			gap: 0.5rem;
+		}
+
+		.booths-container {
+			grid-template-columns: 1fr;
+			gap: 0.5rem;
+		}
+
+		.booth-card {
+			padding: 0.65rem;
+		}
+
+		.booth-name {
+			font-size: 0.7rem;
+		}
 	}
 </style>

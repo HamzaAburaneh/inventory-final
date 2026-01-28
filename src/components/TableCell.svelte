@@ -69,6 +69,7 @@
 	</td>
 {:else if type === 'count'}
 	<td class="count-col" data-label="Count">
+		<span class="mobile-label">QTY</span>
 		<div class="cell-content justify-center">
 			{#key value}
 				<span class="count-badge result" in:blur={{ duration: 400, amount: 2 }}>{value}</span>
@@ -77,6 +78,7 @@
 	</td>
 {:else if type === 'lowCount'}
 	<td class="lowcount-col" data-label="Low Count">
+		<span class="mobile-label">MIN</span>
 		<div class="cell-content justify-center">
 			{#key value}
 				<span class="count-badge low-count-text" in:blur={{ duration: 400, amount: 2 }}>{value != null ? value : ''}</span>
@@ -98,6 +100,7 @@
 	</td>
 {:else if type === 'cost'}
 	<td class="cost-col" data-label="Cost">
+		<span class="mobile-label">UNIT</span>
 		<div class="cell-content justify-center">
 			{#key value}
 				<span class="value-text no-wrap" in:blur={{ duration: 400, amount: 2 }}>{formatCost(value)}</span>
@@ -119,6 +122,7 @@
 	</td>
 {:else if type === 'totalValue'}
 	<td class="totalvalue-col" data-label="Total Value">
+		<span class="mobile-label">TOTAL</span>
 		<div class="cell-content justify-center">
 			{#key formatTotalValue(item.count, item.cost)}
 				<span class="value-text accent no-wrap" in:blur={{ duration: 400, amount: 2 }}>
@@ -129,6 +133,7 @@
 	</td>
 {:else if type === 'storageType'}
 	<td class="storage-col" data-label="Type">
+		<span class="mobile-label">TYPE</span>
 		<div class="cell-content">
 			<span
 				class="storage-mini-tag"
@@ -153,6 +158,7 @@
 	</td>
 {:else if type === 'booths'}
 	<td class="booths-col" data-label="Booths">
+		<span class="mobile-label">LOCATIONS</span>
 		<div class="cell-content">
 			<div class="booth-tags-wrapper">
 				{#each formatBooths(value) as booth}
@@ -202,6 +208,10 @@
 		border-bottom: 1px solid var(--tech-cell-border);
 		color: var(--tech-cell-text);
 		font-size: 0.85rem;
+	}
+
+	.mobile-label {
+		display: none;
 	}
 
 	.cell-content {
@@ -354,23 +364,143 @@
 		border-color: rgba(239, 68, 68, 0.2);
 	}
 
-	/* Responsive */
+	/* Responsive - Mobile Grid Layout */
 	@media (max-width: 768px) {
 		td {
 			display: flex;
-			justify-content: space-between;
-			padding: 0.75rem 1rem;
+			flex-direction: column;
+			align-items: flex-start;
+			width: 100%;
+			padding: 0;
+			border: none;
+			gap: 0.1rem;
 		}
 
-		td::before {
-			content: attr(data-label);
-			font-family: 'JetBrains Mono', monospace;
+		.mobile-label {
+			display: block;
 			font-size: 0.65rem;
-			font-weight: 800;
 			color: var(--tech-label);
+			opacity: 0.5;
+			font-weight: 700;
+			letter-spacing: 0.05em;
 			text-transform: uppercase;
+			margin-bottom: 0.2rem;
 		}
 
-		.action-btn { opacity: 1; }
+		.cell-content {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: flex-start;
+			width: 100%;
+			gap: 0.5rem;
+		}
+
+		.cell-content.justify-center {
+			justify-content: flex-start;
+		}
+
+		/* Name section - prominent header */
+		td.name-col {
+			flex-direction: row;
+			justify-content: flex-start;
+			align-items: center;
+			gap: 0.5rem;
+		}
+
+		.name-text {
+			font-size: 1.2rem;
+			color: var(--tech-value);
+			font-weight: 800;
+			letter-spacing: -0.02em;
+		}
+
+		/* Count styling */
+		.count-badge.result {
+			font-size: 1.2rem;
+			color: var(--tech-accent);
+			font-weight: 800;
+		}
+
+		.low-count-text {
+			font-size: 1.1rem;
+			color: var(--tech-value);
+			font-weight: 600;
+		}
+
+		/* Value styling */
+		.value-text {
+			font-size: 1.1rem;
+			font-weight: 700;
+		}
+
+		.value-text.accent {
+			color: var(--tech-accent);
+		}
+
+		/* Storage type */
+		.storage-mini-tag {
+			font-size: 0.7rem;
+			padding: 0.25rem 0.6rem;
+			background: rgba(255, 255, 255, 0.06);
+		}
+
+		/* Booths */
+		.booth-tags-wrapper {
+			justify-content: flex-end;
+			gap: 0.3rem;
+		}
+
+		.booth-node-tag {
+			font-size: 0.65rem;
+			padding: 0.2rem 0.5rem;
+		}
+
+		/* Action column - top right delete button */
+		td.action-col {
+			align-items: flex-end;
+		}
+
+		td.action-col .cell-content {
+			justify-content: flex-end;
+			width: auto;
+		}
+
+		.action-btn {
+			opacity: 1;
+			width: 32px;
+			height: 32px;
+			font-size: 0.9rem;
+			background: transparent;
+			border: none;
+			color: var(--tech-label);
+		}
+
+		.edit-tiny {
+			opacity: 0.3;
+			width: 24px;
+			height: 24px;
+			font-size: 0.8rem;
+		}
+		
+		.edit-tiny:active {
+			opacity: 1;
+			color: var(--tech-accent);
+		}
+
+		.delete-tiny {
+			color: #ef4444;
+			border: 1px solid rgba(239, 68, 68, 0.2);
+			background: rgba(239, 68, 68, 0.1);
+			width: 32px;
+			height: 32px;
+			border-radius: 6px;
+			transition: all 0.2s ease;
+		}
+
+		.delete-tiny:active {
+			background: rgba(239, 68, 68, 0.3);
+			transform: scale(0.95);
+		}
 	}
 </style>
