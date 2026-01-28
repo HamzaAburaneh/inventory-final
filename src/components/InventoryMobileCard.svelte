@@ -8,35 +8,29 @@
 		getBoothStyle
 	} from '../lib/tableUtils.js';
 
-	let {
-		item,
-		onEdit,
-		onDelete,
-		onTooltipShow,
-		onTooltipHide
-	} = $props();
+	let { item, onEdit, onDelete, onTooltipShow, onTooltipHide } = $props();
 
 	function handleEdit(event, field, currentValue) {
 		const button = event.currentTarget;
 		const rect = button.getBoundingClientRect();
-		
+
 		const position = {
 			x: rect.left + rect.width / 2,
 			y: rect.top + rect.height / 2
 		};
-		
+
 		onEdit(item.id, field, currentValue, position);
 	}
 
 	function handleDelete(event) {
 		const button = event.currentTarget;
 		const rect = button.getBoundingClientRect();
-		
+
 		const position = {
 			x: rect.left + rect.width / 2,
 			y: rect.top + rect.height / 2
 		};
-		
+
 		onDelete(item.id, item.name, position);
 	}
 
@@ -44,10 +38,11 @@
 </script>
 
 <article class="inventory-card" transition:blur={{ duration: 300, amount: 1 }}>
-	<!-- Header: Item Name + Actions -->
+	<!-- Header: Item Label + ID + Actions -->
 	<header class="card-header">
-		<div class="item-name-container">
-			<h3 class="item-name">{item.name}</h3>
+		<div class="item-id-container">
+			<span class="item-label">ITEM</span>
+			<span class="item-id">{item.name}</span>
 		</div>
 		<div class="card-actions">
 			<button
@@ -58,7 +53,7 @@
 				data-tooltip="Edit"
 				aria-label="Edit item"
 			>
-				<i class="fas fa-edit"></i>
+				<i class="fas fa-pencil-alt"></i>
 			</button>
 			<button
 				class="action-btn action-delete"
@@ -73,428 +68,484 @@
 		</div>
 	</header>
 
-	<!-- Body: 2-Column Grid for Metrics -->
+	<!-- Body: Main Content -->
 	<div class="card-body">
 		<!-- Quantity -->
-		<div class="metric-cell">
-			<span class="metric-label">Quantity</span>
-			<div class="metric-value-row">
-				<span class="metric-value">{item.count}</span>
+		<div class="quantity-section">
+			<span class="section-label">QUANTITY</span>
+			<span class="quantity-value">{item.count.toLocaleString('en-US')}</span>
+		</div>
+
+		<!-- Low Stock Alert -->
+		<div class="low-stock-section">
+			<div class="low-stock-header">
+				<div class="low-stock-title">
+					<i class="fas fa-exclamation-triangle warning-icon"></i>
+					<span class="low-stock-text">Low Stock Alert</span>
+				</div>
+				<label class="switch">
+					<input type="checkbox" checked={item.lowCount !== null && item.lowCount !== undefined} />
+					<span class="slider"></span>
+				</label>
+			</div>
+			<div class="low-stock-threshold">
+				<span class="threshold-label">Notify when below</span>
+				<div class="threshold-input-group">
+					<input
+						type="number"
+						value={item.lowCount ?? 0}
+						onchange={(e) => handleEdit(e, 'lowCount', item.lowCount)}
+						class="threshold-input"
+					/>
+					<span class="threshold-unit">units</span>
+				</div>
 			</div>
 		</div>
 
-		<!-- Total Value -->
-		<div class="metric-cell">
-			<span class="metric-label">Total Value</span>
-			<div class="metric-value-row">
-				<span class="metric-value">{totalValue}</span>
+		<!-- Cost & Value Grid -->
+		<div class="cost-value-grid">
+			<div class="metric-item">
+				<span class="metric-label">UNIT COST</span>
+				<div class="metric-value-with-edit">
+					<span class="metric-value">{formatCost(item.cost)}</span>
+					<button
+						class="inline-edit-btn"
+						onclick={(e) => handleEdit(e, 'cost', item.cost)}
+						aria-label="Edit cost"
+					>
+						<i class="fas fa-pencil-alt"></i>
+					</button>
+				</div>
+			</div>
+			<div class="metric-item metric-item-right">
+				<span class="metric-label">TOTAL VALUE</span>
+				<span class="metric-value metric-value-success">{totalValue}</span>
 			</div>
 		</div>
 
-		<!-- Unit Cost -->
-		<div class="metric-cell">
-			<span class="metric-label">Unit Cost</span>
-			<div class="metric-value-row">
-				<span class="metric-value">{formatCost(item.cost)}</span>
-				<button
-					class="metric-edit-btn"
-					onclick={(e) => handleEdit(e, 'cost', item.cost)}
-					aria-label="Edit cost"
-				>
-					<i class="fas fa-edit"></i>
-				</button>
-			</div>
-		</div>
-
-		<!-- Low Count Threshold -->
-		<div class="metric-cell">
-			<span class="metric-label">Min Threshold</span>
-			<div class="metric-value-row">
-				<span class="metric-value">{item.lowCount ?? 0}</span>
-				<button
-					class="metric-edit-btn"
-					onclick={(e) => handleEdit(e, 'lowCount', item.lowCount)}
-					aria-label="Edit threshold"
-				>
-					<i class="fas fa-edit"></i>
-				</button>
-			</div>
-		</div>
-	</div>
-
-	<!-- Footer: Tags (Storage Type + Locations) -->
-	<footer class="card-footer">
-		<div class="footer-section">
-			<div class="storage-tag" style="--storage-color: {getStorageTypeStyle(item.storageType).backgroundColor}">
-				<span class="storage-indicator"></span>
-				<span class="storage-text">{item.storageType || 'N/A'}</span>
-			</div>
+		<!-- Location -->
+		<div class="location-section">
+			<i class="fas fa-snowflake location-icon"></i>
+			<span class="location-text">{item.storageType || 'N/A'}</span>
 			<button
-				class="footer-edit-btn"
+				class="inline-edit-btn"
 				onclick={(e) => handleEdit(e, 'storageType', item.storageType)}
 				aria-label="Edit storage type"
 			>
-				<i class="fas fa-edit"></i>
+				<i class="fas fa-pencil-alt"></i>
 			</button>
 		</div>
 
-		<div class="footer-section">
-			<div class="location-tags">
-				{#each formatBooths(item.booths) as booth}
-					<span class="location-tag" style="--location-color: {getBoothStyle(booth).backgroundColor}">
-						{booth}
-					</span>
-				{/each}
-			</div>
+		<!-- Tags -->
+		<div class="tags-section">
+			{#each formatBooths(item.booths) as booth}
+				<span class="tag" style="--tag-color: {getBoothStyle(booth).backgroundColor}">
+					<span class="tag-dot"></span>
+					{booth}
+				</span>
+			{/each}
 			<button
-				class="footer-edit-btn"
+				class="inline-edit-btn"
 				onclick={(e) => handleEdit(e, 'booths', item.booths)}
 				aria-label="Edit locations"
 			>
-				<i class="fas fa-edit"></i>
+				<i class="fas fa-pencil-alt"></i>
 			</button>
 		</div>
-	</footer>
+	</div>
 </article>
 
 <style>
-	/* CSS Variables for Consistency */
+	/* Card Container - Clean light design */
 	.inventory-card {
-		--card-spacing: 12px;
-		--card-radius: 12px;
-		--grid-gap: 8px;
-		--label-size: 0.65rem;
-		--value-size: 1.25rem;
-		--meta-size: 0.7rem;
-	}
-
-	/* Card Container */
-	.inventory-card {
-		display: flex;
-		flex-direction: column;
-		gap: var(--card-spacing);
-		padding: var(--card-spacing);
-		background: rgba(0, 0, 0, 0.3);
-		border: 1px solid rgba(255, 255, 255, 0.05);
-		border-radius: var(--card-radius);
+		width: 100%;
+		max-width: 28rem;
+		background: #ffffff;
+		border-radius: 16px;
 		box-shadow:
-			0 4px 20px rgba(0, 0, 0, 0.4),
-			inset 0 1px 0 rgba(255, 255, 255, 0.02);
-		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-		position: relative;
+			0 1px 3px 0 rgba(0, 0, 0, 0.1),
+			0 1px 2px 0 rgba(0, 0, 0, 0.06);
+		border: 1px solid #e5e7eb;
 		overflow: hidden;
+		transition: box-shadow 0.3s ease;
 	}
 
-
-	.inventory-card:active {
-		transform: scale(0.99);
+	.inventory-card:hover {
+		box-shadow:
+			0 4px 6px -1px rgba(0, 0, 0, 0.1),
+			0 2px 4px -1px rgba(0, 0, 0, 0.06);
 	}
 
-	/* Header: Item Name + Actions */
+	/* Header */
 	.card-header {
 		display: flex;
-		align-items: flex-start;
+		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
-		padding-bottom: 12px;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+		padding: 16px 24px;
+		border-bottom: 1px solid #e5e7eb;
+		background: #fafafa;
 	}
 
-	.item-name-container {
-		flex: 1;
-		min-width: 0;
+	.item-id-container {
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		padding: 10px 16px;
-		background: rgba(255, 226, 96, 0.08);
-		border: 1px solid rgba(255, 226, 96, 0.2);
-		border-radius: 8px;
-		min-height: 44px;
+		gap: 8px;
 	}
 
-	.item-name {
-		margin: 0;
-		font-family: 'JetBrains Mono', monospace;
-		font-size: 1.1rem;
+	.item-label {
+		font-size: 0.75rem;
+		font-weight: 500;
+		letter-spacing: 0.025em;
+		text-transform: uppercase;
+		color: #9ca3af;
+	}
+
+	.item-id {
+		font-size: 1.5rem;
+		line-height: 1;
 		font-weight: 700;
-		color: var(--tech-accent);
-		letter-spacing: 0.02em;
-		line-height: 1.3;
-		text-align: center;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		color: #111827;
+		font-family: 'JetBrains Mono', monospace;
 	}
 
 	.card-actions {
 		display: flex;
-		gap: 4px;
-		flex-shrink: 0;
+		align-items: center;
+		gap: 8px;
 	}
 
+	/* Action Buttons */
 	.action-btn {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 44px;
-		height: 44px;
-		border-radius: 8px;
+		width: 32px;
+		height: 32px;
+		border-radius: 6px;
 		border: none;
-		background: rgba(255, 255, 255, 0.05);
-		color: var(--tech-value);
+		background: transparent;
+		color: #6b7280;
 		cursor: pointer;
-		transition: all 0.2s ease;
+		transition: all 0.15s ease;
 		padding: 0;
 	}
 
 	.action-btn i {
-		font-size: 0.9rem;
+		font-size: 0.875rem;
 	}
 
 	.action-btn:hover {
-		background: rgba(255, 255, 255, 0.1);
-	}
-
-	.action-btn:active {
-		background: rgba(255, 255, 255, 0.15);
-		transform: scale(0.95);
-	}
-
-	.action-delete {
-		background: rgba(239, 68, 68, 0.15);
-		color: #ef4444;
+		background: #f3f4f6;
+		color: #111827;
 	}
 
 	.action-delete:hover {
-		background: rgba(239, 68, 68, 0.25);
+		color: #374151;
 	}
 
-	.action-delete:active {
-		background: rgba(239, 68, 68, 0.35);
-		transform: scale(0.95);
-	}
-
-	/* Body: 2-Column Grid */
+	/* Body */
 	.card-body {
+		padding: 24px;
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+		background: #ffffff;
+	}
+
+	/* Quantity Section */
+	.quantity-section {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+	}
+
+	.section-label {
+		font-size: 0.6875rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: #9ca3af;
+	}
+
+	.quantity-value {
+		font-size: 2.25rem;
+		line-height: 1;
+		font-weight: 700;
+		color: #111827;
+		font-family: 'JetBrains Mono', monospace;
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* Low Stock Alert */
+	.low-stock-section {
+		padding: 0;
+		background: transparent;
+		border-radius: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.low-stock-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.low-stock-title {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.warning-icon {
+		width: 14px;
+		height: 14px;
+		color: #f59e0b;
+	}
+
+	.low-stock-text {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: #111827;
+	}
+
+	/* Switch Component */
+	.switch {
+		position: relative;
+		display: inline-block;
+		width: 44px;
+		height: 24px;
+	}
+
+	.switch input {
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+
+	.slider {
+		position: absolute;
+		cursor: pointer;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: #d1d5db;
+		transition: 0.3s;
+		border-radius: 24px;
+	}
+
+	.slider:before {
+		position: absolute;
+		content: '';
+		height: 18px;
+		width: 18px;
+		left: 3px;
+		bottom: 3px;
+		background-color: white;
+		transition: 0.3s;
+		border-radius: 50%;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+	}
+
+	.switch input:checked + .slider {
+		background-color: #111827;
+	}
+
+	.switch input:checked + .slider:before {
+		transform: translateX(20px);
+	}
+
+	/* Threshold Input */
+	.low-stock-threshold {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0;
+		border: none;
+	}
+
+	.threshold-label {
+		font-size: 0.75rem;
+		font-weight: 400;
+		color: #6b7280;
+	}
+
+	.threshold-input-group {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.threshold-input {
+		width: 70px;
+		height: 32px;
+		padding: 0 12px;
+		font-size: 0.875rem;
+		font-weight: 500;
+		text-align: center;
+		background: #ffffff;
+		border: 1px solid #d1d5db;
+		border-radius: 6px;
+		color: #111827;
+		font-family: 'JetBrains Mono', monospace;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.threshold-input:focus {
+		outline: none;
+		border-color: #9ca3af;
+	}
+
+	.threshold-unit {
+		font-size: 0.75rem;
+		color: #6b7280;
+	}
+
+	/* Cost & Value Grid */
+	.cost-value-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: var(--grid-gap);
+		gap: 16px;
 	}
 
-	.metric-cell {
+	.metric-item {
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
-		padding: 12px;
-		background: rgba(0, 0, 0, 0.2);
-		border: 1px solid rgba(255, 255, 255, 0.03);
-		border-radius: 8px;
-		transition: background 0.2s ease;
 	}
 
-	.metric-cell:active {
-		background: rgba(0, 0, 0, 0.3);
+	.metric-item-right {
+		text-align: right;
+		align-items: flex-end;
 	}
 
 	.metric-label {
-		font-size: var(--label-size);
-		font-weight: 700;
+		font-size: 0.6875rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color: var(--tech-label);
-		opacity: 0.6;
+		color: #9ca3af;
 	}
 
-	.metric-value-row {
+	.metric-value-with-edit {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
+		gap: 6px;
 	}
 
 	.metric-value {
-		font-family: 'JetBrains Mono', monospace;
-		font-size: var(--value-size);
-		font-weight: 700;
-		color: var(--tech-value);
+		font-size: 1.25rem;
 		line-height: 1;
+		font-weight: 700;
+		color: #111827;
+		font-family: 'JetBrains Mono', monospace;
+		font-variant-numeric: tabular-nums;
 	}
 
+	.metric-value-success {
+		color: #10b981;
+	}
 
-	.metric-edit-btn {
+	.inline-edit-btn {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 32px;
-		height: 32px;
-		border-radius: 6px;
+		width: 20px;
+		height: 20px;
+		border-radius: 4px;
 		border: none;
 		background: transparent;
-		color: var(--tech-label);
-		opacity: 0.5;
+		color: #9ca3af;
 		cursor: pointer;
-		transition: all 0.2s ease;
+		transition: all 0.15s ease;
 		padding: 0;
 		flex-shrink: 0;
 	}
 
-	.metric-edit-btn i {
-		font-size: 0.75rem;
+	.inline-edit-btn i {
+		font-size: 0.6875rem;
 	}
 
-	.metric-edit-btn:hover {
-		opacity: 0.8;
-		background: rgba(255, 255, 255, 0.05);
-		color: var(--tech-value);
+	.inline-edit-btn:hover {
+		color: #111827;
+		background: #f3f4f6;
 	}
 
-	.metric-edit-btn:active {
-		opacity: 1;
-		background: rgba(255, 255, 255, 0.1);
-		color: var(--tech-value);
-		transform: scale(0.92);
-	}
-
-	/* Footer: Tags */
-	.card-footer {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		padding-top: 0;
-	}
-
-	.footer-section {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-	}
-
-	.storage-tag {
+	/* Location Section */
+	.location-section {
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		padding: 6px 10px;
-		background: rgba(0, 0, 0, 0.2);
-		border: 1px solid rgba(255, 255, 255, 0.04);
-		border-radius: 6px;
-		flex: 1;
-		min-width: 0;
+		padding: 10px 12px;
+		background: #f9fafb;
+		border-radius: 8px;
 	}
 
-	.storage-indicator {
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		background: var(--storage-color);
+	.location-icon {
+		width: 14px;
+		height: 14px;
+		color: #0ea5e9;
 		flex-shrink: 0;
 	}
 
-	.storage-text {
-		font-size: var(--meta-size);
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		color: var(--tech-label);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
+	.location-text {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: #111827;
+		flex: 1;
 	}
 
-	.location-tags {
+	/* Tags Section */
+	.tags-section {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 4px;
-		flex: 1;
-		min-width: 0;
-	}
-
-	.location-tag {
-		padding: 4px 8px;
-		border-radius: 4px;
-		font-size: 0.65rem;
-		font-weight: 800;
-		text-transform: uppercase;
-		letter-spacing: 0.03em;
-		background: rgba(0, 0, 0, 0.3);
-		border-left: 3px solid var(--location-color);
-		color: var(--tech-label);
-		white-space: nowrap;
-	}
-
-	.footer-edit-btn {
-		display: flex;
+		gap: 8px;
 		align-items: center;
-		justify-content: center;
-		width: 32px;
-		height: 32px;
+	}
+
+	.tag {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 10px;
+		background: #f3f4f6;
 		border-radius: 6px;
-		border: none;
-		background: transparent;
-		color: var(--tech-label);
-		opacity: 0.5;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		padding: 0;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: #374151;
+	}
+
+	.tag-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background-color: var(--tag-color);
 		flex-shrink: 0;
 	}
 
-	.footer-edit-btn i {
-		font-size: 0.7rem;
-	}
-
-	.footer-edit-btn:hover {
-		opacity: 0.8;
-		background: rgba(255, 255, 255, 0.05);
-		color: var(--tech-value);
-	}
-
-	.footer-edit-btn:active {
-		opacity: 1;
-		background: rgba(255, 255, 255, 0.1);
-		color: var(--tech-value);
-		transform: scale(0.92);
-	}
-
-	/* Responsive Adjustments */
+	/* Responsive */
 	@media (max-width: 360px) {
-		.inventory-card {
-			--value-size: 1.1rem;
-			--label-size: 0.6rem;
-		}
-
-		.item-name {
-			font-size: 1rem;
-		}
-
-		.item-name-container {
-			padding: 8px 12px;
-			min-height: 40px;
-		}
-
-		.action-btn {
-			width: 40px;
-			height: 40px;
-		}
-
-		.action-btn {
-			width: 40px;
-			height: 40px;
-		}
-	}
-
-	@media (min-width: 480px) {
-		.inventory-card {
-			--card-spacing: 16px;
+		.card-header {
+			padding: 12px 16px;
 		}
 
 		.card-body {
-			gap: 12px;
+			padding: 16px;
+			gap: 16px;
 		}
 
-		.metric-cell {
-			padding: 16px;
+		.item-id {
+			font-size: 1.25rem;
+		}
+
+		.quantity-value {
+			font-size: 1.875rem;
+		}
+
+		.metric-value {
+			font-size: 1.125rem;
 		}
 	}
 </style>
