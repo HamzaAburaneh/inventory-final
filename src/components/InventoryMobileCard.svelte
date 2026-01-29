@@ -181,9 +181,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 16px 24px;
-		border-bottom: 1px solid #e5e7eb;
-		background: #fafafa;
+		padding: 0px 16px;
+		border-bottom: 1px solid oklch(.88 0 0);
 	}
 
 	.item-id-container {
@@ -205,13 +204,12 @@
 		line-height: 1;
 		font-weight: 700;
 		color: #111827;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist Mono', monospace;
 	}
 
 	.card-actions {
 		display: flex;
 		align-items: center;
-		gap: 8px;
 	}
 
 	/* Action Buttons */
@@ -224,14 +222,14 @@
 		border-radius: 6px;
 		border: none;
 		background: transparent;
-		color: #6b7280;
+		color: oklch(0.45 0 0);
 		cursor: pointer;
 		transition: all 0.15s ease;
 		padding: 0;
 	}
 
 	.action-btn i {
-		font-size: 0.875rem;
+		font-size: 0.7rem;
 	}
 
 	.action-btn:hover {
@@ -272,8 +270,8 @@
 		line-height: 1;
 		font-weight: 700;
 		color: #111827;
-		font-family: 'JetBrains Mono', monospace;
 		font-variant-numeric: tabular-nums;
+		font-family: 'Geist Mono', monospace;
 	}
 
 	/* Low Stock Alert */
@@ -389,8 +387,8 @@
 		border: 1px solid #d1d5db;
 		border-radius: 6px;
 		color: #111827;
-		font-family: 'JetBrains Mono', monospace;
 		font-variant-numeric: tabular-nums;
+		font-family: 'Geist Mono', monospace;
 	}
 
 	.threshold-input:focus {
@@ -440,8 +438,8 @@
 		line-height: 1;
 		font-weight: 700;
 		color: #111827;
-		font-family: 'JetBrains Mono', monospace;
 		font-variant-numeric: tabular-nums;
+		font-family: 'Geist Mono', monospace;
 	}
 
 	.metric-value-success {
