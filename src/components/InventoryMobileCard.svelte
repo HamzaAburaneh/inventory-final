@@ -204,7 +204,7 @@
 		line-height: 1;
 		font-weight: 700;
 		color: #111827;
-		font-family: 'Geist Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 	}
 
 	.card-actions {
@@ -271,7 +271,7 @@
 		font-weight: 700;
 		color: #111827;
 		font-variant-numeric: tabular-nums;
-		font-family: 'Geist Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 	}
 
 	/* Low Stock Alert */
@@ -388,7 +388,7 @@
 		border-radius: 6px;
 		color: #111827;
 		font-variant-numeric: tabular-nums;
-		font-family: 'Geist Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 	}
 
 	.threshold-input:focus {
@@ -439,7 +439,7 @@
 		font-weight: 700;
 		color: #111827;
 		font-variant-numeric: tabular-nums;
-		font-family: 'Geist Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 	}
 
 	.metric-value-success {
