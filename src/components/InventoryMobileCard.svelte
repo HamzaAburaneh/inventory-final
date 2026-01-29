@@ -10,7 +10,24 @@
 
 	let { item, onEdit, onDelete, onTooltipShow, onTooltipHide } = $props();
 
-	function handleEdit(event, field, currentValue) {
+	// Get storage type icon and color
+	const getStorageIcon = (storageType) => {
+		const type = storageType?.toLowerCase() || '';
+		if (type.includes('freezer')) return 'fa-snowflake';
+		if (type.includes('refrigerator')) return 'fa-temperature-low';
+		if (type.includes('dry')) return 'fa-box';
+		return 'fa-box';
+	};
+
+	const getStorageColor = (storageType) => {
+		const type = storageType?.toLowerCase() || '';
+		if (type.includes('freezer')) return '#3B82F6';
+		if (type.includes('refrigerator')) return '#10B981';
+		if (type.includes('dry')) return '#F59E0B';
+		return '#0ea5e9';
+	};
+
+	function handleEdit(event) {
 		const button = event.currentTarget;
 		const rect = button.getBoundingClientRect();
 
@@ -19,7 +36,8 @@
 			y: rect.top + rect.height / 2
 		};
 
-		onEdit(item.id, field, currentValue, position);
+		// Pass entire item for comprehensive editing
+		onEdit(item.id, 'all', item, position);
 	}
 
 	function handleDelete(event) {
@@ -47,10 +65,10 @@
 		<div class="card-actions">
 			<button
 				class="action-btn action-edit"
-				onclick={(e) => handleEdit(e, 'name', item.name)}
+				onclick={handleEdit}
 				onmouseenter={onTooltipShow}
 				onmouseleave={onTooltipHide}
-				data-tooltip="Edit"
+				data-tooltip="Edit Item"
 				aria-label="Edit item"
 			>
 				<i class="fas fa-pencil-alt"></i>
@@ -106,16 +124,7 @@
 		<div class="cost-value-grid">
 			<div class="metric-item">
 				<span class="metric-label">UNIT COST</span>
-				<div class="metric-value-with-edit">
-					<span class="metric-value">{formatCost(item.cost)}</span>
-					<button
-						class="inline-edit-btn"
-						onclick={(e) => handleEdit(e, 'cost', item.cost)}
-						aria-label="Edit cost"
-					>
-						<i class="fas fa-pencil-alt"></i>
-					</button>
-				</div>
+				<span class="metric-value">{formatCost(item.cost)}</span>
 			</div>
 			<div class="metric-item metric-item-right">
 				<span class="metric-label">TOTAL VALUE</span>
@@ -125,15 +134,8 @@
 
 		<!-- Location -->
 		<div class="location-section">
-			<i class="fas fa-snowflake location-icon"></i>
+			<i class="fas {getStorageIcon(item.storageType)} location-icon" style="color: {getStorageColor(item.storageType)}"></i>
 			<span class="location-text">{item.storageType || 'N/A'}</span>
-			<button
-				class="inline-edit-btn"
-				onclick={(e) => handleEdit(e, 'storageType', item.storageType)}
-				aria-label="Edit storage type"
-			>
-				<i class="fas fa-pencil-alt"></i>
-			</button>
 		</div>
 
 		<!-- Tags -->
@@ -144,13 +146,6 @@
 					{booth}
 				</span>
 			{/each}
-			<button
-				class="inline-edit-btn"
-				onclick={(e) => handleEdit(e, 'booths', item.booths)}
-				aria-label="Edit locations"
-			>
-				<i class="fas fa-pencil-alt"></i>
-			</button>
 		</div>
 	</div>
 </article>
@@ -427,12 +422,6 @@
 		color: #9ca3af;
 	}
 
-	.metric-value-with-edit {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-
 	.metric-value {
 		font-size: 1.25rem;
 		line-height: 1;
@@ -444,31 +433,6 @@
 
 	.metric-value-success {
 		color: #10b981;
-	}
-
-	.inline-edit-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 20px;
-		height: 20px;
-		border-radius: 4px;
-		border: none;
-		background: transparent;
-		color: #9ca3af;
-		cursor: pointer;
-		transition: all 0.15s ease;
-		padding: 0;
-		flex-shrink: 0;
-	}
-
-	.inline-edit-btn i {
-		font-size: 0.6875rem;
-	}
-
-	.inline-edit-btn:hover {
-		color: #111827;
-		background: #f3f4f6;
 	}
 
 	/* Location Section */

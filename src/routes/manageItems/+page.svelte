@@ -170,31 +170,49 @@
 			editButtonPosition = position;
 		}
 
-		editData = {
-			id,
-			field,
-			value: oldValue != null ? oldValue.toString() : '',
-			title: `Edit ${String(field).charAt(0).toUpperCase() + String(field).slice(1)}`
-		};
+		// Handle comprehensive edit mode (all fields)
+		if (field === 'all' && typeof oldValue === 'object') {
+			const item = oldValue;
+			editData = {
+				id,
+				field: 'all',
+				value: {
+					name: item.name || '',
+					lowCount: item.lowCount != null ? item.lowCount.toString() : '0',
+					cost: item.cost != null ? item.cost.toString() : '0',
+					storageType: item.storageType || '',
+					booths: Array.isArray(item.booths) ? [...item.booths] : []
+				},
+				title: 'Edit Item'
+			};
+		} else {
+			// Handle single field edit mode
+			editData = {
+				id,
+				field,
+				value: oldValue != null ? oldValue.toString() : '',
+				title: `Edit ${String(field).charAt(0).toUpperCase() + String(field).slice(1)}`
+			};
 
-		// Normalize storage type values for proper dropdown selection
-		if (field === 'storageType' && editData.value) {
-			const normalizedValue = editData.value.toLowerCase();
-			if (normalizedValue === 'dry storage') editData.value = 'Dry Storage';
-			else if (normalizedValue === 'refrigerator') editData.value = 'Refrigerator';
-			else if (normalizedValue === 'freezer') editData.value = 'Freezer';
-		}
-
-		// Handle booths field - keep as array for checkbox editing
-		if (field === 'booths') {
-			if (Array.isArray(oldValue)) {
-				editData.value = [...oldValue];
-			} else if (oldValue) {
-				editData.value = [oldValue];
-			} else {
-				editData.value = [];
+			// Normalize storage type values for proper dropdown selection
+			if (field === 'storageType' && editData.value) {
+				const normalizedValue = editData.value.toLowerCase();
+				if (normalizedValue === 'dry storage') editData.value = 'Dry Storage';
+				else if (normalizedValue === 'refrigerator') editData.value = 'Refrigerator';
+				else if (normalizedValue === 'freezer') editData.value = 'Freezer';
 			}
-			editData.title = 'Edit Booths';
+
+			// Handle booths field - keep as array for checkbox editing
+			if (field === 'booths') {
+				if (Array.isArray(oldValue)) {
+					editData.value = [...oldValue];
+				} else if (oldValue) {
+					editData.value = [oldValue];
+				} else {
+					editData.value = [];
+				}
+				editData.title = 'Edit Booths';
+			}
 		}
 
 		showEditModal = true;
@@ -203,7 +221,24 @@
 	const confirmEdit = async (event) => {
 		event.preventDefault();
 		try {
-			await updateItem(editData.id, editData.field, editData.value);
+			if (editData.field === 'all') {
+				// Update all editable fields at once (excluding count)
+				const updates = {};
+				const values = editData.value;
+				
+				// Process each editable field
+				updates.name = values.name;
+				updates.lowCount = parseInt(values.lowCount, 10) || 0;
+				updates.cost = parseFloat(values.cost) || 0;
+				updates.storageType = values.storageType;
+				updates.booths = Array.isArray(values.booths) ? values.booths : [];
+				
+				await itemStore.updateItem(editData.id, updates);
+				notificationStore.showNotification('Item updated successfully!', 'success');
+			} else {
+				// Single field update
+				await updateItem(editData.id, editData.field, editData.value);
+			}
 		} finally {
 			closeEditModal();
 		}
@@ -390,14 +425,118 @@
 	<div class="modal-container">
 		<form class="tech-modal" onsubmit={confirmEdit} transition:blur={{ duration: 300 }}>
 			<div class="modal-header">
-				<div class="header-icon">
-					<i class="fas fa-edit"></i>
+				<div class="header-left">
+					<div class="header-icon">
+						<i class="fas fa-edit"></i>
+					</div>
+					<h2 class="modal-title">{editData.title}</h2>
 				</div>
-				<h2 class="modal-title">{editData.title}</h2>
+				<button type="button" class="close-btn" onclick={closeEditModal} aria-label="Close">
+					<i class="fas fa-times"></i>
+				</button>
 			</div>
 
 			<div class="modal-body">
-				{#if editData.field === 'storageType'}
+				{#if editData.field === 'all'}
+					<!-- Comprehensive Edit Form -->
+					<div class="comprehensive-edit-form">
+						<div class="form-field">
+							<label for="edit-name" class="field-label">Item Name</label>
+							<input
+								id="edit-name"
+								type="text"
+								bind:value={editData.value.name}
+								class="tech-input"
+								placeholder="Enter item name..."
+								required
+							/>
+						</div>
+
+						<div class="form-row">
+							<div class="form-field">
+								<label for="edit-lowCount" class="field-label">Low Count Alert</label>
+								<input
+									id="edit-lowCount"
+									type="number"
+									bind:value={editData.value.lowCount}
+									class="tech-input"
+									placeholder="0"
+									min="0"
+								/>
+							</div>
+
+							<div class="form-field">
+								<label for="edit-cost" class="field-label">Unit Cost ($)</label>
+								<input
+									id="edit-cost"
+									type="number"
+									bind:value={editData.value.cost}
+									class="tech-input"
+									placeholder="0.00"
+									step="0.01"
+									min="0"
+								/>
+							</div>
+						</div>
+
+						<div class="form-field">
+							<label class="field-label">Storage Type</label>
+							<div class="storage-type-grid horizontal">
+								{#each [
+									{ value: 'Freezer', icon: 'fa-snowflake', color: '#3B82F6' },
+									{ value: 'Refrigerator', icon: 'fa-temperature-low', color: '#10B981' },
+									{ value: 'Dry Storage', icon: 'fa-box', color: '#F59E0B' }
+								] as type}
+									<label class="storage-node">
+										<input
+											type="radio"
+											name="storageTypeEdit"
+											value={type.value}
+											bind:group={editData.value.storageType}
+											class="hidden-radio"
+										/>
+										<div class="node-card icon-only">
+											<i class="fas {type.icon} storage-icon" style="--type-color: {type.color}"></i>
+											<i class="fas fa-check node-check"></i>
+										</div>
+									</label>
+								{/each}
+							</div>
+						</div>
+
+						<div class="form-field">
+							<label class="field-label">Booths</label>
+							<div class="booths-container compact">
+								{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth}
+									<label class="booth-option">
+										<input
+											type="checkbox"
+											value={booth.value}
+											bind:group={editData.value.booths}
+											class="booth-checkbox"
+										/>
+										<div class="booth-card" style="--booth-color: {booth.color}">
+											<div class="booth-indicator"></div>
+											<span class="booth-name">{booth.label}</span>
+											<div class="checkmark">
+												<svg
+													width="16"
+													height="16"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="3"
+												>
+													<polyline points="20,6 9,17 4,12"></polyline>
+												</svg>
+											</div>
+										</div>
+									</label>
+								{/each}
+							</div>
+						</div>
+					</div>
+				{:else if editData.field === 'storageType'}
 					<div class="storage-type-grid vertical">
 						{#each ['Freezer', 'Refrigerator', 'Dry Storage'] as type}
 							<label class="storage-node">
@@ -820,20 +959,29 @@
 		position: relative;
 		background: var(--tech-glass-bg);
 		border: 1px solid var(--tech-glass-border);
-		border-radius: 4px;
+		border-radius: 8px;
 		width: 90%;
-		max-width: 400px;
+		max-width: 500px;
+		max-height: 90vh;
 		box-shadow: var(--tech-glass-shadow);
 		pointer-events: auto;
-		overflow: hidden;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.modal-header {
 		display: flex;
 		align-items: center;
-		gap: 12px;
-		padding: 16px 20px;
+		justify-content: space-between;
+		padding: 12px 16px;
 		border-bottom: 1px solid var(--tech-glass-border);
+		flex-shrink: 0;
+	}
+
+	.header-left {
+		display: flex;
+		align-items: center;
+		gap: 10px;
 	}
 
 	.header-icon {
@@ -841,21 +989,47 @@
 		align-items: center;
 		justify-content: center;
 		color: var(--tech-accent);
-		font-size: 1.1rem;
+		font-size: 1rem;
 		flex-shrink: 0;
 	}
 
 	.modal-title {
 		margin: 0;
 		color: var(--tech-title);
-		font-size: 1.1rem;
+		font-size: 0.95rem;
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.025em;
 	}
 
+	.close-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border-radius: 4px;
+		border: none;
+		background: transparent;
+		color: var(--tech-label);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		padding: 0;
+	}
+
+	.close-btn:hover {
+		background: var(--tech-badge-bg);
+		color: var(--tech-value);
+	}
+
+	.close-btn i {
+		font-size: 1rem;
+	}
+
 	.modal-body {
-		padding: 20px;
+		padding: 16px;
+		overflow-y: auto;
+		flex: 1;
 	}
 
 	.tech-input {
@@ -863,10 +1037,10 @@
 		background: var(--tech-badge-bg);
 		border: 1px solid var(--tech-glass-border);
 		border-radius: 4px;
-		padding: 0.75rem 1rem;
+		padding: 0.6rem 0.85rem;
 		color: var(--tech-value);
 		font-family: 'Inter', sans-serif;
-		font-size: 0.9rem;
+		font-size: 0.875rem;
 		font-weight: 500;
 		transition: all 0.2s;
 	}
@@ -881,12 +1055,16 @@
 	.storage-type-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: 0.75rem;
+		gap: 0.5rem;
 		width: 100%;
 	}
 
 	.storage-type-grid.vertical {
 		grid-template-columns: 1fr;
+	}
+
+	.storage-type-grid.horizontal {
+		grid-template-columns: repeat(3, 1fr);
 	}
 
 	.storage-node {
@@ -902,7 +1080,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 0.6rem 0.8rem;
+		padding: 0.5rem 0.7rem;
 		background: var(--tech-badge-bg);
 		border: 1px solid var(--tech-glass-border);
 		border-radius: 4px;
@@ -917,12 +1095,15 @@
 	}
 
 	.storage-node .node-label {
-		font-size: 0.7rem;
+		font-size: 0.55rem;
 		font-weight: 800;
 		color: var(--tech-label);
 		text-transform: uppercase;
-		margin-left: 0.5rem;
+		margin-left: 0.4rem;
 		flex: 1;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.storage-node .node-check {
@@ -930,6 +1111,24 @@
 		color: var(--tech-accent);
 		opacity: 0;
 		transition: all 0.2s;
+	}
+
+	.storage-node .node-card.icon-only {
+		justify-content: center;
+		position: relative;
+		min-height: 36px;
+	}
+
+	.storage-icon {
+		font-size: 1rem;
+		color: var(--type-color);
+	}
+
+	.storage-node .node-card.icon-only .node-check {
+		position: absolute;
+		top: 2px;
+		right: 2px;
+		font-size: 0.6rem;
 	}
 
 	.hidden-radio:checked + .node-card {
@@ -949,9 +1148,10 @@
 		display: flex;
 		justify-content: flex-end;
 		gap: 8px;
-		padding: 12px 20px;
+		padding: 10px 16px;
 		background: var(--tech-header-bg);
 		border-top: 1px solid var(--tech-glass-border);
+		flex-shrink: 0;
 	}
 
 	.modal-btn {
@@ -993,8 +1193,7 @@
 	.booths-container {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
-		gap: 0.75rem;
-		margin-bottom: 1.5rem;
+		gap: 0.5rem;
 	}
 
 	.booth-option {
@@ -1010,26 +1209,32 @@
 	.booth-card {
 		display: flex;
 		align-items: center;
-		padding: 0.75rem;
+		padding: 0.45rem 0.5rem;
 		background: var(--tech-badge-bg);
 		border: 1px solid var(--tech-glass-border);
-		border-radius: 6px;
+		border-radius: 4px;
 		transition: all 0.2s;
+		min-height: 36px;
 	}
 
 	.booth-indicator {
 		width: 3px;
 		height: 12px;
 		background: var(--booth-color);
-		margin-right: 0.75rem;
+		margin-right: 0.5rem;
 		border-radius: 2px;
+		flex-shrink: 0;
 	}
 
 	.booth-name {
-		font-size: 0.75rem;
+		font-size: 0.6rem;
 		font-weight: 700;
 		color: var(--tech-label);
 		text-transform: uppercase;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		flex: 1;
 	}
 
 	.booth-checkbox:checked + .booth-card {
@@ -1039,6 +1244,49 @@
 
 	.booth-checkbox:checked + .booth-card .booth-name {
 		color: var(--tech-value);
+	}
+
+	.booths-container.compact {
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.4rem;
+	}
+
+	/* Comprehensive Edit Form Styles */
+	.comprehensive-edit-form {
+		display: flex;
+		flex-direction: column;
+		gap: 0.875rem;
+	}
+
+	.form-field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	.form-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.75rem;
+	}
+
+	.field-label {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.6rem;
+		font-weight: 800;
+		color: var(--tech-label);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.tech-input[type="number"] {
+		-moz-appearance: textfield;
+	}
+
+	.tech-input[type="number"]::-webkit-outer-spin-button,
+	.tech-input[type="number"]::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
 	}
 
 	@media (max-width: 768px) {
@@ -1200,6 +1448,16 @@
 
 		.booth-name {
 			font-size: 0.7rem;
+		}
+
+		/* Comprehensive Edit Form - Mobile */
+		.form-row {
+			grid-template-columns: 1fr;
+			gap: 1rem;
+		}
+
+		.comprehensive-edit-form {
+			gap: 1rem;
 		}
 	}
 </style>
