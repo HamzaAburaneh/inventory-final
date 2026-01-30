@@ -302,7 +302,7 @@
 	}
 
 	.count-highlight {
-		color: #fbbf24;
+		color: var(--tech-accent, #0ea5e9);
 	}
 
 	.arrow-container {
