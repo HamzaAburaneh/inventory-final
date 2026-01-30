@@ -616,9 +616,29 @@
 		.user-meta { flex: 1; justify-content: center; }
 	}
 
+	@media (max-width: 768px) {
+		.content-container {
+			padding: 1.25rem;
+			gap: 1rem;
+		}
+
+		.main-title {
+			font-size: 1.5rem;
+			letter-spacing: -0.02em;
+		}
+
+		.system-status {
+			display: none;
+		}
+
+		.page-header {
+			gap: 1rem;
+			margin-bottom: 0;
+		}
+	}
+
 	@media (max-width: 600px) {
 		.profile-sidebar { flex-direction: column; }
 		.form-grid { grid-template-columns: 1fr; }
-		.main-title { font-size: 1.8rem; }
 	}
 </style>

@@ -22,6 +22,7 @@
 		getSummaryStats
 	} from '../../lib/transactionAnalysis';
 	import { notificationStore } from '../../stores/notificationStore';
+	import TransactionAnalysisMobileCard from '../../components/TransactionAnalysisMobileCard.svelte';
 	import { onMount } from 'svelte';
 
 	// Get pre-loaded data from +page.js
@@ -73,6 +74,17 @@
 	let topMovers = $state(data.topMovers || []);
 	let summaryStats = $state(data.summaryStats || null);
 	let activeFilter = $state(30);
+	let isMobile = $state(false);
+
+	// Detect mobile viewport
+	$effect(() => {
+		const checkMobile = () => {
+			isMobile = window.innerWidth <= 768;
+		};
+		checkMobile();
+		window.addEventListener('resize', checkMobile);
+		return () => window.removeEventListener('resize', checkMobile);
+	});
 
 	// Chart instances
 	let dailyTrendChart = null;
@@ -610,49 +622,62 @@
 			</div>
 		</div>
 
-		<div class="table-frame">
-			<div class="frame-header">
-				<span class="frame-title">TOP MOVING ITEMS DETAILS</span>
+		{#if isMobile}
+			<!-- Mobile Card View -->
+			<div class="mobile-cards-container">
+				<div class="cards-header">
+					<span class="frame-title">TOP MOVING ITEMS</span>
+				</div>
+				{#each topMovers as mover (mover.itemName)}
+					<TransactionAnalysisMobileCard {mover} />
+				{/each}
 			</div>
-			<div class="table-scroll">
-				<table class="tech-table">
-					<thead>
-						<tr>
-							<th>Item Name</th>
-							<th>Total Transactions</th>
-							<th>Stock In</th>
-							<th>Stock Out</th>
-							<th>Net Change</th>
-							<th>Volatility</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each topMovers as mover (mover.itemName)}
-							<tr class="table-row">
-								<td class="name-text">{mover.itemName}</td>
-								<td class="digital-font">
-									<span class="count-badge">{mover.totalTransactions}</span>
-								</td>
-								<td class="digital-font">
-									<span class="trend-tag positive">+{mover.totalAdded}</span>
-								</td>
-								<td class="digital-font">
-									<span class="trend-tag negative">-{mover.totalRemoved}</span>
-								</td>
-								<td class="digital-font">
-									<span class="trend-tag" class:positive={mover.netChange >= 0} class:negative={mover.netChange < 0}>
-										{mover.netChange >= 0 ? '+' : ''}{mover.netChange}
-									</span>
-								</td>
-								<td class="digital-font">
-									<span class="volatility-tag">{mover.volatility}</span>
-								</td>
+		{:else}
+			<!-- Desktop Table View -->
+			<div class="table-frame">
+				<div class="frame-header">
+					<span class="frame-title">TOP MOVING ITEMS DETAILS</span>
+				</div>
+				<div class="table-scroll">
+					<table class="tech-table">
+						<thead>
+							<tr>
+								<th>Item Name</th>
+								<th>Total Transactions</th>
+								<th>Stock In</th>
+								<th>Stock Out</th>
+								<th>Net Change</th>
+								<th>Volatility</th>
 							</tr>
-						{/each}
-					</tbody>
-				</table>
+						</thead>
+						<tbody>
+							{#each topMovers as mover (mover.itemName)}
+								<tr class="table-row">
+									<td class="name-text">{mover.itemName}</td>
+									<td class="digital-font">
+										<span class="count-badge">{mover.totalTransactions}</span>
+									</td>
+									<td class="digital-font">
+										<span class="trend-tag positive">+{mover.totalAdded}</span>
+									</td>
+									<td class="digital-font">
+										<span class="trend-tag negative">-{mover.totalRemoved}</span>
+									</td>
+									<td class="digital-font">
+										<span class="trend-tag" class:positive={mover.netChange >= 0} class:negative={mover.netChange < 0}>
+											{mover.netChange >= 0 ? '+' : ''}{mover.netChange}
+										</span>
+									</td>
+									<td class="digital-font">
+										<span class="volatility-tag">{mover.volatility}</span>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
 			</div>
-		</div>
+		{/if}
 	</div>
 </div>
 
@@ -1096,6 +1121,31 @@
 	.positive { color: #22c55e; }
 	.negative { color: #ef4444; }
 
+	/* Mobile Cards Container */
+	.mobile-cards-container {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding: 0;
+	}
+
+	.cards-header {
+		background: var(--tech-glass-bg);
+		border: 1px solid var(--tech-glass-border);
+		border-radius: 12px;
+		padding: 1rem 1.5rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.cards-header .frame-title {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.7rem;
+		font-weight: 800;
+		color: var(--tech-header-text);
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+	}
+
 	@media (max-width: 1024px) {
 		.charts-layout { grid-template-columns: 1fr; }
 		.chart-frame.full-width { grid-column: span 1; }
@@ -1107,8 +1157,8 @@
 			gap: 1rem;
 		}
 
-		.main-title { 
-			font-size: 1.75rem;
+		.main-title {
+			font-size: 1.5rem;
 			letter-spacing: -0.02em;
 		}
 
@@ -1132,19 +1182,23 @@
 			font-size: 0.65rem;
 		}
 
-		.ledger-actions { 
-			flex-direction: column; 
+		.ledger-actions {
+			flex-direction: column;
 			align-items: stretch;
-			padding: 1rem;
+			padding: 0;
 			gap: 1rem;
-			background: var(--tech-glass-bg);
-			border: 1px solid var(--tech-glass-border);
-			border-radius: 8px;
+			background: transparent;
+			border: none;
+			border-radius: 0;
 		}
 
-		.filter-ribbon { 
-			flex-direction: column; 
+		.filter-ribbon {
+			flex-direction: column;
 			gap: 0.75rem;
+			background: var(--tech-glass-bg);
+			padding: 0.875rem 1rem;
+			border-radius: 8px;
+			border: 1px solid var(--tech-glass-border);
 		}
 
 		.ribbon-group {
@@ -1154,8 +1208,9 @@
 		}
 
 		.ribbon-label {
-			font-size: 0.6rem;
-			color: var(--tech-value);
+			font-size: 0.55rem;
+			color: var(--tech-label);
+			opacity: 0.8;
 		}
 
 		.ribbon-options {
@@ -1171,6 +1226,10 @@
 			min-width: max-content;
 		}
 
+		.date-picker-primary {
+			width: 100%;
+		}
+
 		.date-input-group {
 			padding: 0.5rem 0.75rem;
 			gap: 0.75rem;
@@ -1183,7 +1242,7 @@
 			flex: 1;
 		}
 
-		.summary-grid { 
+		.summary-grid {
 			grid-template-columns: repeat(2, 1fr);
 			gap: 0.75rem;
 		}
@@ -1230,123 +1289,17 @@
 			height: 220px;
 		}
 
-		.table-frame {
-			border-radius: 8px;
-			background: transparent;
-			border: none;
+		.mobile-cards-container {
+			gap: 12px;
 		}
 
-		.table-scroll {
-			overflow-x: visible;
-			padding: 0;
-		}
-
-		/* Hide table header on mobile */
-		.tech-table thead {
-			display: none;
-		}
-
-		/* Convert table to card layout */
-		.tech-table,
-		.tech-table tbody {
-			display: block;
-			width: 100%;
-		}
-
-		.tech-table tr {
-			display: block;
-			padding: 0.875rem;
-			margin-bottom: 0.5rem;
-			background: var(--tech-glass-bg) !important;
-			border-radius: 12px;
-			border: 1px solid var(--tech-glass-border);
-			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.02);
-			position: relative;
-			overflow: hidden;
-		}
-
-		.tech-table tr::before {
-			content: '';
-			position: absolute;
-			top: 0;
-			left: 0;
-			right: 0;
-			height: 2px;
-			background: linear-gradient(90deg, var(--tech-accent), transparent);
-			opacity: 0.4;
-		}
-
-		.tech-table td {
-			display: block;
-			padding: 0;
-			border: none;
-			font-size: 0.85rem;
-		}
-
-		/* Item name - prominent header */
-		.tech-table td:first-child {
-			margin-bottom: 0.75rem;
-			padding-bottom: 0.5rem;
-			border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-		}
-
-		.tech-table td:first-child::before {
-			content: 'Item Name';
-			display: block;
-			font-size: 0.55rem;
-			font-weight: 700;
-			color: var(--tech-label);
-			letter-spacing: 0.08em;
-			margin-bottom: 0.35rem;
-			text-transform: uppercase;
-			font-family: 'JetBrains Mono', monospace;
-			opacity: 0.7;
-		}
-
-		.name-text {
-			font-size: 1rem;
-			font-weight: 700;
-			color: var(--tech-accent);
-		}
-
-		/* Stats grid for the remaining columns */
-		.tech-table td:nth-child(n+2) {
-			display: inline-block;
-			width: calc(50% - 0.5rem);
-			margin-bottom: 0.5rem;
-		}
-
-		.tech-table td:nth-child(2)::before { content: 'Transactions'; }
-		.tech-table td:nth-child(3)::before { content: 'Stock In'; }
-		.tech-table td:nth-child(4)::before { content: 'Stock Out'; }
-		.tech-table td:nth-child(5)::before { content: 'Net Change'; }
-		.tech-table td:nth-child(6)::before { content: 'Volatility'; }
-
-		.tech-table td:nth-child(n+2)::before {
-			display: block;
-			font-size: 0.55rem;
-			font-weight: 700;
-			color: var(--tech-label);
-			letter-spacing: 0.08em;
+		.cards-header {
+			padding: 0.875rem 1rem;
 			margin-bottom: 0.25rem;
-			text-transform: uppercase;
-			font-family: 'JetBrains Mono', monospace;
-			opacity: 0.7;
 		}
 
-		.trend-tag {
-			padding: 0.2rem 0.5rem;
-			font-size: 0.75rem;
-		}
-
-		.count-badge {
-			padding: 0.2rem 0.5rem;
-			font-size: 0.8rem;
-		}
-
-		.volatility-tag {
-			font-size: 0.8rem;
-			color: var(--tech-accent);
+		.cards-header .frame-title {
+			font-size: 0.65rem;
 		}
 	}
 </style>

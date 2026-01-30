@@ -151,24 +151,26 @@
 </article>
 
 <style>
-	/* Card Container - Clean light design */
+	/* Card Container - Dark Tech Theme */
 	.inventory-card {
 		width: 100%;
 		max-width: 28rem;
-		background: #ffffff;
-		border-radius: 16px;
+		background: var(--tech-glass-bg, rgba(15, 23, 42, 0.6));
+		border-radius: 12px;
 		box-shadow:
-			0 1px 3px 0 rgba(0, 0, 0, 0.1),
-			0 1px 2px 0 rgba(0, 0, 0, 0.06);
-		border: 1px solid #e5e7eb;
+			0 4px 6px -1px rgba(0, 0, 0, 0.3),
+			0 2px 4px -1px rgba(0, 0, 0, 0.2),
+			inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--tech-glass-border, rgba(255, 255, 255, 0.08));
 		overflow: hidden;
-		transition: box-shadow 0.3s ease;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
 	.inventory-card:hover {
 		box-shadow:
-			0 4px 6px -1px rgba(0, 0, 0, 0.1),
-			0 2px 4px -1px rgba(0, 0, 0, 0.06);
+			0 10px 20px -5px rgba(0, 0, 0, 0.4),
+			0 6px 10px -5px rgba(0, 0, 0, 0.3);
+		border-color: rgba(255, 255, 255, 0.1);
 	}
 
 	/* Header */
@@ -176,8 +178,9 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 0px 16px;
-		border-bottom: 1px solid oklch(.88 0 0);
+		padding: 12px 16px;
+		border-bottom: 1px solid var(--tech-glass-border, rgba(255, 255, 255, 0.08));
+		background: var(--tech-header-bg, rgba(15, 23, 42, 0.4));
 	}
 
 	.item-id-container {
@@ -191,20 +194,22 @@
 		font-weight: 500;
 		letter-spacing: 0.025em;
 		text-transform: uppercase;
-		color: #9ca3af;
+		color: var(--tech-label, rgba(148, 163, 184, 0.8));
 	}
 
 	.item-id {
-		font-size: 1.5rem;
+		font-size: 1.2em;
+		margin-bottom: 0.1em;
 		line-height: 1;
 		font-weight: 700;
-		color: #111827;
+		color: var(--tech-title, #f1f5f9);
 		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 	}
 
 	.card-actions {
 		display: flex;
 		align-items: center;
+		gap: 4px;
 	}
 
 	/* Action Buttons */
@@ -214,35 +219,35 @@
 		justify-content: center;
 		width: 32px;
 		height: 32px;
-		border-radius: 6px;
+		border-radius: 4px;
 		border: none;
 		background: transparent;
-		color: oklch(0.45 0 0);
+		color: var(--tech-label, rgba(148, 163, 184, 0.8));
 		cursor: pointer;
 		transition: all 0.15s ease;
 		padding: 0;
 	}
 
 	.action-btn i {
-		font-size: 0.7rem;
+		font-size: 0.875rem;
 	}
 
 	.action-btn:hover {
-		background: #f3f4f6;
-		color: #111827;
+		background: var(--tech-badge-bg, rgba(30, 41, 59, 0.6));
+		color: var(--tech-value, #e2e8f0);
 	}
 
 	.action-delete:hover {
-		color: #374151;
+		color: #ef4444;
 	}
 
 	/* Body */
 	.card-body {
-		padding: 24px;
+		padding: 16px;
 		display: flex;
 		flex-direction: column;
-		gap: 20px;
-		background: #ffffff;
+		gap: 16px;
+		background: var(--tech-glass-bg, rgba(15, 23, 42, 0.6));
 	}
 
 	/* Quantity Section */
@@ -253,62 +258,68 @@
 	}
 
 	.section-label {
-		font-size: 0.6875rem;
+		font-size: 0.6rem;
 		font-weight: 600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		color: #9ca3af;
+		color: var(--tech-label, rgba(148, 163, 184, 0.8));
 	}
 
 	.quantity-value {
-		font-size: 2.25rem;
+		font-size: 1.5em;
 		line-height: 1;
 		font-weight: 700;
-		color: #111827;
+		color: var(--tech-title, #f1f5f9);
 		font-variant-numeric: tabular-nums;
 		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 	}
 
 	/* Low Stock Alert */
 	.low-stock-section {
-		padding: 0;
-		background: transparent;
-		border-radius: 0;
+		padding: 10px 12px;
+		background: var(--tech-badge-bg, rgba(30, 41, 59, 0.6));
+		border: 1px solid var(--tech-glass-border, rgba(255, 255, 255, 0.08));
+		border-radius: 8px;
 		display: flex;
 		flex-direction: column;
-		gap: 12px;
+		gap: 0;
 	}
 
 	.low-stock-header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		padding-bottom: 8px;
+		border-bottom: 1px solid var(--tech-glass-border, rgba(255, 255, 255, 0.08));
 	}
 
 	.low-stock-title {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: 6px;
 	}
 
 	.warning-icon {
-		width: 14px;
-		height: 14px;
-		color: #f59e0b;
+		width: 1em;
+		height: 1em;
+		color: #fbbf24;
+		font-size: 1em;
 	}
 
 	.low-stock-text {
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: #111827;
+		margin-top: 1px;
+		font-size: 0.75em;
+		font-weight: 600;
+		color: var(--tech-value, #e2e8f0);
 	}
 
 	/* Switch Component */
 	.switch {
 		position: relative;
 		display: inline-block;
-		width: 44px;
-		height: 24px;
+		width: 40px;
+		height: 20px;
+		flex-shrink: 0;
 	}
 
 	.switch input {
@@ -324,26 +335,26 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background-color: #d1d5db;
+		background-color: rgba(71, 85, 105, 0.5);
 		transition: 0.3s;
-		border-radius: 24px;
+		border-radius: 22px;
 	}
 
 	.slider:before {
 		position: absolute;
 		content: '';
-		height: 18px;
-		width: 18px;
+		height: 14px;
+		width: 14px;
 		left: 3px;
 		bottom: 3px;
-		background-color: white;
+		background-color: #f1f5f9;
 		transition: 0.3s;
 		border-radius: 50%;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 	}
 
 	.switch input:checked + .slider {
-		background-color: #111827;
+		background-color: var(--tech-accent-toggle, #0ea5e9);
 	}
 
 	.switch input:checked + .slider:before {
@@ -355,45 +366,50 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 0;
+		padding: 8px 0 0 0;
 		border: none;
 	}
 
 	.threshold-label {
-		font-size: 0.75rem;
+		font-size: 0.75em;
 		font-weight: 400;
-		color: #6b7280;
+		color: var(--tech-label, rgba(148, 163, 184, 0.8));
 	}
 
 	.threshold-input-group {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: 6px;
 	}
 
 	.threshold-input {
-		width: 70px;
-		height: 32px;
-		padding: 0 12px;
+		width: 4rem;
+		min-height: 1.75rem;
+		max-height: 1.75rem;
+		padding: 0 0.75rem;
 		font-size: 0.875rem;
-		font-weight: 500;
+		font-weight: 600;
 		text-align: center;
-		background: #ffffff;
-		border: 1px solid #d1d5db;
+		background: var(--tech-header-bg, rgba(15, 23, 42, 0.4));
+		border: 1px solid var(--tech-glass-border, rgba(255, 255, 255, 0.08));
 		border-radius: 6px;
-		color: #111827;
+		color: var(--tech-value, #e2e8f0);
 		font-variant-numeric: tabular-nums;
 		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+		box-sizing: border-box;
+		line-height: normal;
+		transition: all 0.2s ease;
 	}
 
 	.threshold-input:focus {
 		outline: none;
-		border-color: #9ca3af;
+		border-color: var(--tech-accent, #0ea5e9);
+		box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
 	}
 
 	.threshold-unit {
-		font-size: 0.75rem;
-		color: #6b7280;
+		font-size: 0.75em;
+		color: var(--tech-label, rgba(148, 163, 184, 0.8));
 	}
 
 	/* Cost & Value Grid */
@@ -415,24 +431,24 @@
 	}
 
 	.metric-label {
-		font-size: 0.6875rem;
+		font-size: 0.7em;
 		font-weight: 600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		color: #9ca3af;
+		color: var(--tech-label, rgba(148, 163, 184, 0.8));
 	}
 
 	.metric-value {
-		font-size: 1.25rem;
+		font-size: 1.125rem;
 		line-height: 1;
 		font-weight: 700;
-		color: #111827;
+		color: var(--tech-value, #e2e8f0);
 		font-variant-numeric: tabular-nums;
 		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 	}
 
 	.metric-value-success {
-		color: #10b981;
+		color: #34d399;
 	}
 
 	/* Location Section */
@@ -441,21 +457,21 @@
 		align-items: center;
 		gap: 8px;
 		padding: 10px 12px;
-		background: #f9fafb;
+		background: var(--tech-badge-bg, rgba(30, 41, 59, 0.6));
+		border: 1px solid var(--tech-glass-border, rgba(255, 255, 255, 0.08));
 		border-radius: 8px;
 	}
 
 	.location-icon {
-		width: 14px;
-		height: 14px;
-		color: #0ea5e9;
+		width: 16px;
+		height: 16px;
 		flex-shrink: 0;
 	}
 
 	.location-text {
 		font-size: 0.875rem;
-		font-weight: 500;
-		color: #111827;
+		font-weight: 600;
+		color: var(--tech-value, #e2e8f0);
 		flex: 1;
 	}
 
@@ -463,7 +479,7 @@
 	.tags-section {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
+		gap: 6px;
 		align-items: center;
 	}
 
@@ -472,11 +488,14 @@
 		align-items: center;
 		gap: 6px;
 		padding: 6px 10px;
-		background: #f3f4f6;
+		background: var(--tech-badge-bg, rgba(30, 41, 59, 0.6));
+		border: 1px solid var(--tech-glass-border, rgba(255, 255, 255, 0.08));
 		border-radius: 6px;
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: #374151;
+		font-size: 0.7rem;
+		font-weight: 700;
+		color: var(--tech-value, #e2e8f0);
+		text-transform: uppercase;
+		letter-spacing: 0.025em;
 	}
 
 	.tag-dot {

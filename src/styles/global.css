@@ -91,6 +91,7 @@
 	--tech-glass-border: #e2e4e8;
 	--tech-glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
 	--tech-accent: #0066ff;
+	--tech-accent-toggle: #ffb800;
 	--tech-accent-muted: rgba(0, 102, 255, 0.1);
 	--tech-label: #8b949e;
 	--tech-value: #1f2328;
@@ -159,6 +160,7 @@
 	--tech-glass-border: #1c1d21;
 	--tech-glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 	--tech-accent: #ffe260;
+	--tech-accent-toggle: #ffb800;
 	--tech-accent-muted: rgba(255, 226, 96, 0.1);
 	--tech-label: #55555e;
 	--tech-value: #e2e2e7;

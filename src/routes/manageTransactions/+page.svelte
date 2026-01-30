@@ -2,6 +2,7 @@
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import ConfirmModal from '../../components/ConfirmModal.svelte';
+	import TransactionMobileCard from '../../components/TransactionMobileCard.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { itemStore } from '../../stores/itemStore';
 	import { getSearchStore } from '../../stores/searchStore';
@@ -17,6 +18,7 @@
 	let sortAscending = $state(true);
 	let itemsLoaded = $state(false);
 	let tableLoading = $state(false);
+	let isMobile = $state(false);
 
 	// Modal state
 	let confirmModal = $state({
@@ -97,6 +99,20 @@
 		`${filteredItemsList.length} results of ${items.length} total items.`
 	);
 
+	// Detect mobile viewport
+	$effect(() => {
+		const checkMobile = () => {
+			isMobile = window.innerWidth <= 768;
+		};
+		
+		checkMobile();
+		window.addEventListener('resize', checkMobile);
+		
+		return () => {
+			window.removeEventListener('resize', checkMobile);
+		};
+	});
+
 	// Load items on mount instead of async $effect
 	onMount(async () => {
 		await itemStore.loadItems();
@@ -158,7 +174,7 @@
 				await addTransaction({
 					itemId: item.id,
 					itemName: item.name,
-					type: 'remove',
+					type: 'reset',
 					previousCount: previousCount,
 					newCount: 0,
 					user: getCurrentUser()
@@ -188,7 +204,7 @@
 					await addTransaction({
 						itemId: item.id,
 						itemName: item.name,
-						type: 'remove',
+						type: 'reset',
 						previousCount: item.count,
 						newCount: 0,
 						user: getCurrentUser()
@@ -298,113 +314,127 @@
 				</div>
 			{:else}
 				<div class="table-render-layer">
-					<div class="table-wrapper">
-						<div class="table-scroll">
-							<table class="tech-table">
-								<thead>
-									<tr>
-										<th class="name-col" onclick={() => sortBy('name')}>
-											<div class="header-content">
-												<span>Item Name</span>
-												<i
-													class="fas fa-sort{currentSortColumn === 'name'
-														? sortAscending
-															? '-up'
-															: '-down'
-														: ''} sort-icon"
-												></i>
-											</div>
-										</th>
-										<th class="count-col" onclick={() => sortBy('count')}>
-											<div class="header-content justify-center">
-												<span class="header-text">Count</span>
-												<i
-													class="fas fa-sort{currentSortColumn === 'count'
-														? sortAscending
-															? '-up'
-															: '-down'
-														: ''} sort-icon"
-												></i>
-											</div>
-										</th>
-										<th class="change-col">
-											<div class="header-content justify-center">
-												<span class="header-text">Change Amount</span>
-											</div>
-										</th>
-										<th class="actions-col">
-											<div class="header-content justify-center">
-												<span class="header-text">Actions</span>
-											</div>
-										</th>
-									</tr>
-								</thead>
-								<tbody
-									class="table-body-transition"
-									class:loading-fade={!itemsLoaded || tableLoading}
-								>
-									{#each paginatedItemsList as item (item.id)}
-										<tr class="table-row" tabindex="0">
-											<td class="name-col" data-label="Item Name">
-												<span class="name-text">{item.name}</span>
-											</td>
-											<td class="count-col" data-label="Count">
-												{#key item.count}
-													<span
-														class="count-badge result text-update"
-														in:blur={{ duration: 400, amount: 2 }}
-													>
-														{item.count}
-													</span>
-												{/key}
-											</td>
-											<td class="change-col" data-label="Change Amount">
-												<div class="flex justify-center">
-													<input
-														type="number"
-														inputmode="numeric"
-														pattern="[0-9]*"
-														placeholder="0"
-														value={item.changeAmount === 0 ? '' : item.changeAmount}
-														oninput={(e) => handleChangeAmountInput(item, e)}
-														class="change-amount-input"
-													/>
-												</div>
-											</td>
-											<td class="actions-col" data-label="Actions">
-												<div class="actions-grid">
-													<button
-														class="action-btn add"
-														onclick={() => changeCount(item, +item.changeAmount)}
-														disabled={item.changeAmount === 0}
-														title="Add Amount"
-													>
-														<i class="fas fa-plus"></i>
-													</button>
-													<button
-														class="action-btn subtract"
-														onclick={() => changeCount(item, -item.changeAmount)}
-														disabled={item.changeAmount === 0}
-														title="Subtract Amount"
-													>
-														<i class="fas fa-minus"></i>
-													</button>
-													<button
-														class="action-btn reset"
-														onclick={() => resetCount(item)}
-														disabled={item.count === 0}
-														title="Reset to Zero"
-													>
-														<i class="fas fa-undo"></i>
-													</button>
-												</div>
-											</td>
-										</tr>
-									{/each}
-								</tbody>
-							</table>
+					{#if isMobile}
+						<!-- Mobile Card View -->
+						<div class="mobile-cards-container">
+							{#each paginatedItemsList as item (item.id)}
+								<TransactionMobileCard
+									{item}
+									onChangeCount={changeCount}
+									onResetCount={resetCount}
+								/>
+							{/each}
 						</div>
-					</div>
+					{:else}
+						<!-- Desktop Table View -->
+						<div class="table-wrapper">
+							<div class="table-scroll">
+								<table class="tech-table">
+									<thead>
+										<tr>
+											<th class="name-col" onclick={() => sortBy('name')}>
+												<div class="header-content">
+													<span>Item Name</span>
+													<i
+														class="fas fa-sort{currentSortColumn === 'name'
+															? sortAscending
+																? '-up'
+																: '-down'
+															: ''} sort-icon"
+													></i>
+												</div>
+											</th>
+											<th class="count-col" onclick={() => sortBy('count')}>
+												<div class="header-content justify-center">
+													<span class="header-text">Count</span>
+													<i
+														class="fas fa-sort{currentSortColumn === 'count'
+															? sortAscending
+																? '-up'
+																: '-down'
+															: ''} sort-icon"
+													></i>
+												</div>
+											</th>
+											<th class="change-col">
+												<div class="header-content justify-center">
+													<span class="header-text">Change Amount</span>
+												</div>
+											</th>
+											<th class="actions-col">
+												<div class="header-content justify-center">
+													<span class="header-text">Actions</span>
+												</div>
+											</th>
+										</tr>
+									</thead>
+									<tbody
+										class="table-body-transition"
+										class:loading-fade={!itemsLoaded || tableLoading}
+									>
+										{#each paginatedItemsList as item (item.id)}
+											<tr class="table-row" tabindex="0">
+												<td class="name-col" data-label="Item Name">
+													<span class="name-text">{item.name}</span>
+												</td>
+												<td class="count-col" data-label="Count">
+													{#key item.count}
+														<span
+															class="count-badge result text-update"
+															in:blur={{ duration: 400, amount: 2 }}
+														>
+															{item.count}
+														</span>
+													{/key}
+												</td>
+												<td class="change-col" data-label="Change Amount">
+													<div class="flex justify-center">
+														<input
+															type="number"
+															inputmode="numeric"
+															pattern="[0-9]*"
+															placeholder="0"
+															value={item.changeAmount === 0 ? '' : item.changeAmount}
+															oninput={(e) => handleChangeAmountInput(item, e)}
+															class="change-amount-input"
+														/>
+													</div>
+												</td>
+												<td class="actions-col" data-label="Actions">
+													<div class="actions-grid">
+														<button
+															class="action-btn add"
+															onclick={() => changeCount(item, +item.changeAmount)}
+															disabled={item.changeAmount === 0}
+															title="Add Amount"
+														>
+															<i class="fas fa-plus"></i>
+														</button>
+														<button
+															class="action-btn subtract"
+															onclick={() => changeCount(item, -item.changeAmount)}
+															disabled={item.changeAmount === 0}
+															title="Subtract Amount"
+														>
+															<i class="fas fa-minus"></i>
+														</button>
+														<button
+															class="action-btn reset"
+															onclick={() => resetCount(item)}
+															disabled={item.count === 0}
+															title="Reset to Zero"
+														>
+															<i class="fas fa-undo"></i>
+														</button>
+													</div>
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
+						</div>
+					{/if}
 				</div>
 			{/if}
 		</div>
@@ -1090,6 +1120,14 @@
 		font-weight: 700;
 	}
 
+	/* Mobile Cards Container */
+	.mobile-cards-container {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 0;
+	}
+
 	/* Mobile */
 	@media (max-width: 768px) {
 		.content-container {
@@ -1139,12 +1177,12 @@
 		.ribbon-label {
 			font-size: 0.6rem;
 			opacity: 1 !important;
-			color: var(--tech-value); /* Brighter text */
+			color: var(--tech-value);
 		}
 
 		.ribbon-value {
 			font-size: 0.85rem;
-			color: var(--tech-accent); /* Brighter value */
+			color: var(--tech-accent);
 		}
 
 		.search-primary {
@@ -1159,239 +1197,34 @@
 		.table-frame {
 			border-radius: 8px;
 			min-height: auto;
-			border: 1px solid rgba(255, 255, 255, 0.05);
+			border: none;
 			background: transparent;
 			box-shadow: none;
 		}
 
-		.table-scroll {
-			padding: 0;
-			min-height: auto;
-			overflow-y: auto;
-			max-height: none;
+		.table-frame:hover {
+			box-shadow: none;
+			border-color: transparent;
 		}
 
-		.tech-table thead {
-			display: none;
-		}
-
-		.tech-table,
-		.tech-table tbody {
-			display: block;
-			width: 100%;
-		}
-
-		/* Mobile Card Design - Compact */
-		.tech-table tr {
-			display: block;
-			padding: 0.875rem 0.75rem 0.75rem;
-			margin-bottom: 0.5rem;
-			background: var(--tech-glass-bg) !important;
+		.ledger-loading,
+		.null-state {
+			height: 300px;
+			background: var(--tech-glass-bg);
 			border-radius: 12px;
 			border: 1px solid var(--tech-glass-border);
-			box-shadow:
-				0 2px 8px rgba(0, 0, 0, 0.2),
-				0 0 0 1px rgba(255, 255, 255, 0.02);
-			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-			outline: none;
-			position: relative;
-			overflow: hidden;
 		}
 
-		.tech-table tr::before {
-			content: '';
-			position: absolute;
-			top: 0;
-			left: 0;
-			right: 0;
-			height: 2px;
-			background: linear-gradient(90deg, var(--tech-accent), transparent);
-			opacity: 0.4;
+		.null-state i {
+			font-size: 2rem;
 		}
 
-		.tech-table tr:focus,
-		.tech-table tr:focus-within,
-		.tech-table tr:active {
-			border-color: var(--tech-accent);
-			background: var(--tech-row-hover) !important;
-			box-shadow:
-				0 0 0 1px var(--tech-accent),
-				0 2px 8px rgba(0, 0, 0, 0.2);
+		.null-state p {
+			font-size: 0.7rem;
 		}
 
-		.tech-table tr:hover {
-			background: var(--tech-glass-bg) !important;
-		}
-
-		.tech-table tr:active {
-			transform: scale(0.98);
-		}
-
-		/* Reset all td styles */
-		.tech-table td {
-			padding: 0;
-			border: none;
-			display: block;
-		}
-
-		/* Item name - Prominent header */
-		.tech-table td.name-col {
-			width: 100%;
-			margin-bottom: 0.6rem;
-			padding-bottom: 0.5rem;
-			border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-		}
-
-		.tech-table td.name-col::before {
-			content: 'Item Name';
-			display: block;
-			font-size: 0.6rem;
-			font-weight: 700;
-			color: var(--tech-label);
-			letter-spacing: 0.08em;
-			margin-bottom: 0.35rem;
-			text-transform: uppercase;
-			font-family: 'JetBrains Mono', monospace;
-			text-align: center;
-			opacity: 0.7;
-		}
-
-		.name-text {
-			font-size: 1rem;
-			font-weight: 700;
-			color: var(--tech-accent);
-			display: block;
-			line-height: 1.2;
-			letter-spacing: -0.01em;
-			text-align: center;
-		}
-
-		/* Current count display */
-		.tech-table td.count-col {
-			width: 100%;
-			margin-bottom: 0.6rem;
-		}
-
-		.tech-table td.count-col::before {
-			content: 'Current Count';
-			display: block;
-			font-size: 0.6rem;
-			font-weight: 700;
-			color: var(--tech-label);
-			letter-spacing: 0.08em;
-			margin-bottom: 0.35rem;
-			text-transform: uppercase;
-			font-family: 'JetBrains Mono', monospace;
-			text-align: center;
-			opacity: 0.7;
-		}
-
-		.count-badge.result {
-			font-size: 1rem;
-			min-width: 100%;
-			height: 36px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			padding: 0 0.75rem;
-			background: rgba(0, 0, 0, 0.3);
-			border-radius: 6px;
-			border: 1px solid rgba(255, 255, 255, 0.05);
-			font-weight: 800;
-			letter-spacing: 0.02em;
-			box-shadow: none;
-			color: #fbbf24;
-			text-shadow: 0 0 10px rgba(251, 191, 36, 0.2);
-		}
-
-		/* Change amount section */
-		.tech-table td.change-col {
-			width: 100%;
-			margin-bottom: 0.6rem;
-		}
-
-		.tech-table td.change-col::before {
-			content: 'Change Amount';
-			display: block;
-			font-size: 0.6rem;
-			font-weight: 700;
-			color: var(--tech-label);
-			letter-spacing: 0.08em;
-			margin-bottom: 0.35rem;
-			text-transform: uppercase;
-			font-family: 'JetBrains Mono', monospace;
-			text-align: center;
-			opacity: 0.7;
-		}
-
-		.tech-table td.change-col .flex {
-			justify-content: stretch;
-		}
-
-		.change-amount-input {
-			height: 40px;
-			width: 100%;
-			font-size: 1rem;
-			border-radius: 8px;
-			border: 1px solid var(--tech-glass-border);
-			background: rgba(0, 0, 0, 0.3);
-			font-weight: 700;
-			letter-spacing: 0.02em;
-			transition: all 0.2s ease;
-		}
-
-		.change-amount-input:focus {
-			outline: none;
-			border-color: var(--tech-accent);
-			box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.15);
-		}
-
-		/* Action buttons section */
-		.tech-table td.actions-col {
-			width: 100%;
-		}
-
-		.tech-table td.actions-col::before {
-			content: 'Actions';
-			display: block;
-			font-size: 0.6rem;
-			font-weight: 700;
-			color: var(--tech-label);
-			letter-spacing: 0.08em;
-			margin-bottom: 0.5rem;
-			text-transform: uppercase;
-			font-family: 'JetBrains Mono', monospace;
-			text-align: center;
-			opacity: 0.7;
-		}
-
-		.actions-grid {
-			gap: 0.5rem;
-			display: grid;
-			grid-template-columns: 1fr 1fr 1fr;
-		}
-
-		.action-btn {
-			width: 100%;
-			height: 36px;
-			border-radius: 6px;
-			font-weight: 700;
-			border-width: 1px;
-			display: flex;
-			flex-direction: row;
-			gap: 0;
-			padding: 0;
-			align-items: center;
-			justify-content: center;
-		}
-
-		.action-btn i {
-			font-size: 0.9rem;
-			line-height: 1;
-		}
-
-		.action-btn:not(:disabled):active {
-			transform: scale(0.95);
+		.loading-text {
+			font-size: 0.65rem;
 		}
 
 		/* Footer adjustments */
@@ -1419,10 +1252,6 @@
 			right: 1rem;
 			left: 1rem;
 			max-width: calc(100vw - 2rem);
-		}
-
-		.loading-text {
-			font-size: 0.65rem;
 		}
 	}
 </style>

@@ -5,6 +5,7 @@
 	import { notificationStore } from '../stores/notificationStore.js';
 	import { getSearchStore } from '../stores/searchStore.js';
 	import SearchBar from './SearchBar.svelte';
+	import PredictionMobileCard from './PredictionMobileCard.svelte';
 
 	let predictions = $state({});
 	let loading = $state(true);
@@ -12,7 +13,18 @@
 	let timeframeValue = $state(14);
 	let useAI = $state(false);
 	let isExpanded = $state(true);
+	let isMobile = $state(false);
 	const ANALYSIS_WINDOW = 7;
+
+	// Detect mobile viewport
+	$effect(() => {
+		const checkMobile = () => {
+			isMobile = window.innerWidth <= 768;
+		};
+		checkMobile();
+		window.addEventListener('resize', checkMobile);
+		return () => window.removeEventListener('resize', checkMobile);
+	});
 
 	// Store values as reactive state
 	let items = $state([]);
@@ -151,91 +163,118 @@
 		</button>
 		{#if isExpanded}
 		<div class="predictions-content" transition:slide={{ duration: 500, easing: quintOut }}>
-			<div class="predictions-grid" in:fade={{ duration: 300, delay: 200 }}>
-			{#if loading}
-				{#each Array(6) as _}
-					<div class="prediction-card loading-skeleton">
-						<div class="skeleton-header"></div>
-						<div class="skeleton-body"></div>
-						<div class="skeleton-footer"></div>
-					</div>
-				{/each}
-			{:else if error}
-				<div class="error-state">
-					<i class="fas fa-exclamation-triangle"></i>
-					<p>{error}</p>
-				</div>
-			{:else if itemsWithPredictions.length === 0}
-				<div class="null-state">
-					<i class="fas fa-search-minus"></i>
-					<p>NO PREDICTIONS MATCHED.</p>
+			{#if isMobile}
+				<!-- Mobile Card View -->
+				<div class="mobile-cards-container" in:fade={{ duration: 300, delay: 200 }}>
+					{#if loading}
+						<div class="ledger-loading">
+							<div class="pulse-ring"></div>
+							<span class="loading-text">LOADING PREDICTIONS...</span>
+						</div>
+					{:else if error}
+						<div class="error-state">
+							<i class="fas fa-exclamation-triangle"></i>
+							<p>{error}</p>
+						</div>
+					{:else if itemsWithPredictions.length === 0}
+						<div class="null-state">
+							<i class="fas fa-search-minus"></i>
+							<p>NO PREDICTIONS MATCHED.</p>
+						</div>
+					{:else}
+						{#each itemsWithPredictions as item (item.id)}
+							<PredictionMobileCard {item} {getStatusClass} />
+						{/each}
+					{/if}
 				</div>
 			{:else}
-				{#each itemsWithPredictions as item (item.id)}
-					<div class="prediction-card" class:urgent={getStatusClass(item.currentCount, item.totalPrediction) === 'urgent'}>
-						<div class="card-header">
-							<h3 class="item-name">{item.name}</h3>
-							<div class="method-badge" class:ai={item.method.includes('GPT')}>
-								{item.method}
+				<!-- Desktop Grid View -->
+				<div class="predictions-grid" in:fade={{ duration: 300, delay: 200 }}>
+					{#if loading}
+						{#each Array(6) as _}
+							<div class="prediction-card loading-skeleton">
+								<div class="skeleton-header"></div>
+								<div class="skeleton-body"></div>
+								<div class="skeleton-footer"></div>
 							</div>
+						{/each}
+					{:else if error}
+						<div class="error-state">
+							<i class="fas fa-exclamation-triangle"></i>
+							<p>{error}</p>
 						</div>
-
-						<div class="card-metrics">
-							<div class="metric-row">
-								<span class="metric-label">CURRENT STOCK</span>
-								<span class="metric-value digital-font">{item.currentCount}</span>
-							</div>
-							<div class="metric-row">
-								<span class="metric-label">PREDICTED NEED</span>
-								<span class="metric-value digital-font">{item.totalPrediction.toFixed(1)}</span>
-							</div>
-							<div class="metric-row highlight">
-								<span class="metric-label">RECOMMENDED ORDER</span>
-								<span class="metric-value digital-font">{item.recommendedOrder.toFixed(1)}</span>
-							</div>
+					{:else if itemsWithPredictions.length === 0}
+						<div class="null-state">
+							<i class="fas fa-search-minus"></i>
+							<p>NO PREDICTIONS MATCHED.</p>
 						</div>
-
-						<div class="status-indicator {getStatusClass(item.currentCount, item.totalPrediction)}">
-							<div class="status-dot"></div>
-							<span class="status-text">
-								{#if item.currentCount < item.totalPrediction * 0.5}
-									URGENT_RESTOCK
-								{:else if item.currentCount < item.totalPrediction}
-									RESTOCK_RECOMMENDED
-								{:else if item.currentCount > item.totalPrediction * 1.5}
-									POTENTIAL_OVERSTOCK
-								{:else}
-									STOCK_OPTIMAL
-								{/if}
-							</span>
-						</div>
-
-						{#if item.reasoning && item.reasoning !== 'ARIMA time series analysis'}
-							<div class="ai-insight">
-								<div class="insight-header">
-									<i class="fas fa-lightbulb"></i>
-									<span>AI_INSIGHT</span>
-									<span class="confidence">{Math.round(item.confidence * 100)}% CONF</span>
-								</div>
-								<p class="insight-text">{item.reasoning}</p>
-							</div>
-						{/if}
-
-						<details class="breakdown-details">
-							<summary>DAILY_BREAKDOWN</summary>
-							<div class="breakdown-grid">
-								{#each item.prediction as daily, i}
-									<div class="breakdown-item">
-										<span class="day-label">D{i + 1}</span>
-										<span class="day-value">{daily.toFixed(1)}</span>
+					{:else}
+						{#each itemsWithPredictions as item (item.id)}
+							<div class="prediction-card" class:urgent={getStatusClass(item.currentCount, item.totalPrediction) === 'urgent'}>
+								<div class="card-header">
+									<h3 class="item-name">{item.name}</h3>
+									<div class="method-badge" class:ai={item.method.includes('GPT')}>
+										{item.method}
 									</div>
-								{/each}
+								</div>
+
+								<div class="card-metrics">
+									<div class="metric-row">
+										<span class="metric-label">CURRENT STOCK</span>
+										<span class="metric-value digital-font">{item.currentCount}</span>
+									</div>
+									<div class="metric-row">
+										<span class="metric-label">PREDICTED NEED</span>
+										<span class="metric-value digital-font">{item.totalPrediction.toFixed(1)}</span>
+									</div>
+									<div class="metric-row highlight">
+										<span class="metric-label">RECOMMENDED ORDER</span>
+										<span class="metric-value digital-font">{item.recommendedOrder.toFixed(1)}</span>
+									</div>
+								</div>
+
+								<div class="status-indicator {getStatusClass(item.currentCount, item.totalPrediction)}">
+									<div class="status-dot"></div>
+									<span class="status-text">
+										{#if item.currentCount < item.totalPrediction * 0.5}
+											URGENT_RESTOCK
+										{:else if item.currentCount < item.totalPrediction}
+											RESTOCK_RECOMMENDED
+										{:else if item.currentCount > item.totalPrediction * 1.5}
+											POTENTIAL_OVERSTOCK
+										{:else}
+											STOCK_OPTIMAL
+										{/if}
+									</span>
+								</div>
+
+								{#if item.reasoning && item.reasoning !== 'ARIMA time series analysis'}
+									<div class="ai-insight">
+										<div class="insight-header">
+											<i class="fas fa-lightbulb"></i>
+											<span>AI_INSIGHT</span>
+											<span class="confidence">{Math.round(item.confidence * 100)}% CONF</span>
+										</div>
+										<p class="insight-text">{item.reasoning}</p>
+									</div>
+								{/if}
+
+								<details class="breakdown-details">
+									<summary>DAILY_BREAKDOWN</summary>
+									<div class="breakdown-grid">
+										{#each item.prediction as daily, i}
+											<div class="breakdown-item">
+												<span class="day-label">D{i + 1}</span>
+												<span class="day-value">{daily.toFixed(1)}</span>
+											</div>
+										{/each}
+									</div>
+								</details>
 							</div>
-						</details>
-					</div>
-				{/each}
+						{/each}
+					{/if}
+				</div>
 			{/if}
-			</div>
 		</div>
 		{/if}
 	</div>
@@ -682,6 +721,48 @@
 		font-family: 'JetBrains Mono', monospace;
 	}
 
+	/* Mobile Cards Container */
+	.mobile-cards-container {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding: 0;
+	}
+
+	.ledger-loading {
+		height: 300px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 2rem;
+		background: var(--tech-glass-bg);
+		border-radius: 12px;
+		border: 1px solid var(--tech-glass-border);
+	}
+
+	.pulse-ring {
+		width: 44px;
+		height: 44px;
+		border: 3px solid var(--tech-cell-border);
+		border-top-color: var(--tech-accent);
+		border-radius: 50%;
+		animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
+
+	.loading-text {
+		color: var(--tech-accent);
+		font-family: 'JetBrains Mono', monospace;
+		font-weight: 700;
+		letter-spacing: 0.3em;
+		font-size: 0.7rem;
+		opacity: 0.8;
+	}
+
 	.null-state, .error-state {
 		grid-column: 1 / -1;
 		height: 300px;
@@ -762,86 +843,23 @@
 			font-size: 0.75rem;
 		}
 
-		.predictions-grid {
-			grid-template-columns: 1fr;
-			gap: 0.75rem;
+		.mobile-cards-container {
+			gap: 12px;
 		}
 
-		.prediction-card {
-			padding: 1rem;
-			border-radius: 8px;
-			gap: 1rem;
-		}
-
-		.prediction-card:hover {
-			transform: none;
-		}
-
-		.item-name {
-			font-size: 1rem;
-		}
-
-		.method-badge {
-			font-size: 0.55rem;
-			padding: 0.15rem 0.4rem;
-		}
-
-		.card-metrics {
-			padding: 0.75rem;
-		}
-
-		.metric-label {
-			font-size: 0.55rem;
-		}
-
-		.metric-value {
-			font-size: 1rem;
-		}
-
-		.status-indicator {
-			padding: 0.5rem 0.75rem;
-		}
-
-		.status-text {
-			font-size: 0.6rem;
-		}
-
-		.ai-insight {
-			padding: 0.75rem;
-		}
-
-		.insight-header {
-			font-size: 0.55rem;
-		}
-
-		.insight-text {
-			font-size: 0.75rem;
-		}
-
-		.breakdown-grid {
-			grid-template-columns: repeat(4, 1fr);
-			gap: 0.35rem;
-		}
-
-		.breakdown-item {
-			padding: 0.3rem;
-		}
-
-		.day-label {
-			font-size: 0.45rem;
-		}
-
-		.day-value {
-			font-size: 0.65rem;
-		}
-
-		.null-state, .error-state {
-			height: 200px;
-			border-radius: 8px;
+		.ledger-loading,
+		.null-state,
+		.error-state {
+			height: 250px;
+			border-radius: 12px;
 		}
 
 		.null-state i, .error-state i {
 			font-size: 2rem;
+		}
+
+		.loading-text {
+			font-size: 0.65rem;
 		}
 	}
 </style>

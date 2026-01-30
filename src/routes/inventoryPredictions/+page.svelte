@@ -449,8 +449,8 @@
 			gap: 1rem;
 		}
 
-		.main-title { 
-			font-size: 1.75rem;
+		.main-title {
+			font-size: 1.5rem;
 			letter-spacing: -0.02em;
 		}
 

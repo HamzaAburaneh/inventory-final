@@ -14,8 +14,21 @@
 		getCountFromServer
 	} from 'firebase/firestore';
 	import TransactionTable from '../../components/TransactionTable.svelte';
+	import TransactionHistoryMobileCard from '../../components/TransactionHistoryMobileCard.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import { getSearchStore } from '../../stores/searchStore';
+
+	// Detect mobile viewport
+	let isMobile = $state(false);
+
+	$effect(() => {
+		const checkMobile = () => {
+			isMobile = window.innerWidth <= 768;
+		};
+		checkMobile();
+		window.addEventListener('resize', checkMobile);
+		return () => window.removeEventListener('resize', checkMobile);
+	});
 
 	// Get pre-loaded data from +page.js
 	let { data } = $props();
@@ -289,31 +302,53 @@
 			</div>
 		</div>
 
-			<div class="table-frame">
-				{#if loading && transactions.length === 0}
-					<div class="ledger-loading">
-						<div class="pulse-ring"></div>
-						<span class="loading-text">LOADING HISTORY...</span>
-					</div>
-				{:else if transactions.length === 0}
-					<div class="null-state">
-						<i class="fas fa-search-minus"></i>
-						<p>NO ITEMS MATCHED.</p>
-					</div>
-				{:else}
-					<div
-						class="table-render-layer"
-					>
-						<TransactionTable
-							paginatedItems={transactions}
-							sortBy={handleSort}
-							{currentSortColumn}
-							{sortAscending}
-							{loading}
-						/>
-					</div>
-				{/if}
-			</div>
+			{#if isMobile}
+				<!-- Mobile Card View -->
+				<div class="mobile-cards-container">
+					{#if loading && transactions.length === 0}
+						<div class="ledger-loading">
+							<div class="pulse-ring"></div>
+							<span class="loading-text">LOADING HISTORY...</span>
+						</div>
+					{:else if transactions.length === 0}
+						<div class="null-state">
+							<i class="fas fa-search-minus"></i>
+							<p>NO ITEMS MATCHED.</p>
+						</div>
+					{:else}
+						{#each transactions as transaction (transaction.id)}
+							<TransactionHistoryMobileCard {transaction} />
+						{/each}
+					{/if}
+				</div>
+			{:else}
+				<!-- Desktop Table View -->
+				<div class="table-frame">
+					{#if loading && transactions.length === 0}
+						<div class="ledger-loading">
+							<div class="pulse-ring"></div>
+							<span class="loading-text">LOADING HISTORY...</span>
+						</div>
+					{:else if transactions.length === 0}
+						<div class="null-state">
+							<i class="fas fa-search-minus"></i>
+							<p>NO ITEMS MATCHED.</p>
+						</div>
+					{:else}
+						<div
+							class="table-render-layer"
+						>
+							<TransactionTable
+								paginatedItems={transactions}
+								sortBy={handleSort}
+								{currentSortColumn}
+								{sortAscending}
+								{loading}
+							/>
+						</div>
+					{/if}
+				</div>
+			{/if}
 
 			<footer class="ledger-footer">
 				<div class="footer-summary">
@@ -688,6 +723,15 @@
 		font-size: 0.7rem;
 	}
 
+	/* Mobile Cards Container */
+	.mobile-cards-container {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding: 0;
+		min-height: 400px;
+	}
+
 	.table-frame {
 		position: relative;
 		background: var(--tech-glass-bg);
@@ -696,7 +740,7 @@
 		min-height: 500px;
 		overflow: hidden;
 		/* Professional multi-layered base shadow */
-		box-shadow: 
+		box-shadow:
 			0 4px 6px -1px rgba(0, 0, 0, 0.1),
 			0 2px 4px -1px rgba(0, 0, 0, 0.06),
 			inset 0 0 0 1px rgba(255, 255, 255, 0.02);
@@ -705,10 +749,10 @@
 
 	.table-frame:hover {
 		/* Deeper, more atmospheric shadow on hover */
-		box-shadow: 
+		box-shadow:
 			0 30px 60px -12px rgba(0, 0, 0, 0.5),
 			0 18px 36px -18px rgba(0, 0, 0, 0.5);
-		border-color: rgba(255, 255, 255, 0.1); 
+		border-color: rgba(255, 255, 255, 0.1);
 	}
 
 	@media (max-width: 768px) {
@@ -718,7 +762,7 @@
 		}
 
 		.table-frame:hover {
-			box-shadow: 
+			box-shadow:
 				0 4px 6px -1px rgba(0, 0, 0, 0.1),
 				0 2px 4px -1px rgba(0, 0, 0, 0.06),
 				inset 0 0 0 1px rgba(255, 255, 255, 0.02);
