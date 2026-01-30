@@ -574,7 +574,7 @@
 	}
 
 	.status-text {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.6rem;
 		color: var(--tech-status-text);
 		letter-spacing: 0.2em;
@@ -618,7 +618,7 @@
 
 	.ribbon-label {
 		color: var(--tech-label);
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-weight: 800;
 		font-size: 0.65rem;
 		letter-spacing: 0.1em;
@@ -626,7 +626,7 @@
 
 	.ribbon-value {
 		color: var(--tech-value);
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-weight: 700;
 		font-size: 0.85rem;
 		transition: color 0.3s ease;
@@ -752,7 +752,7 @@
 		z-index: 20;
 		padding: 1.1rem 1.25rem;
 		text-align: left;
-		font-family: 'Inter', sans-serif;
+		font-family: 'Geist', sans-serif;
 		font-weight: 700;
 		color: var(--tech-header-text);
 		text-transform: uppercase;
@@ -863,7 +863,7 @@
 	}
 
 	.count-badge.result {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 1rem;
 		color: var(--tech-accent);
 		display: inline-block;
@@ -881,7 +881,7 @@
 		border: 1px solid var(--tech-badge-border);
 		color: var(--tech-value);
 		text-align: center;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.9rem;
 		font-weight: 700;
 		border-radius: 4px;
@@ -1002,7 +1002,7 @@
 		border: 1px solid rgba(239, 68, 68, 0.2);
 		color: #ef4444;
 		padding: 0.75rem 1.5rem;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-weight: 800;
 		font-size: 0.75rem;
 		letter-spacing: 0.1em;
@@ -1100,7 +1100,7 @@
 
 	.loading-text {
 		color: var(--tech-accent);
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-weight: 700;
 		letter-spacing: 0.3em;
 		font-size: 0.7rem;
@@ -1114,7 +1114,7 @@
 		opacity: 0.5;
 	}
 	.null-state p {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.8rem;
 		letter-spacing: 0.15em;
 		font-weight: 700;

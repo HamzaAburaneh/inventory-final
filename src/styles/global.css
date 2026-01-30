@@ -222,6 +222,8 @@ body {
 		'Segoe UI Emoji',
 		'Segoe UI Symbol',
 		'Noto Color Emoji';
+	/* Use non-slashed zeros for better readability */
+	font-feature-settings: 'zero' 0;
 	/* Ensure body takes full width */
 	width: 100%;
 	min-height: 100vh;

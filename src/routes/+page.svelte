@@ -314,7 +314,7 @@
 
 
 	.status-text {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.65rem;
 		color: var(--tech-status-text);
 		letter-spacing: 0.2em;
@@ -355,7 +355,7 @@
 		justify-content: center;
 		gap: 0.625rem;
 		padding: 0.875rem 1.75rem;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.85rem;
 		font-weight: 800;
 		letter-spacing: 0.05em;
@@ -602,7 +602,7 @@
 		font-size: 0.75rem;
 		color: var(--tech-label);
 		margin: 0;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		letter-spacing: 0.02em;
 	}
 

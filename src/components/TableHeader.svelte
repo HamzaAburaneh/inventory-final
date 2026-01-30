@@ -53,7 +53,7 @@
 		z-index: 20;
 		padding: 1.1rem 1.25rem;
 		text-align: left;
-		font-family: 'Inter', sans-serif;
+		font-family: 'Geist', sans-serif;
 		font-weight: 700;
 		color: var(--tech-header-text);
 		text-transform: uppercase;

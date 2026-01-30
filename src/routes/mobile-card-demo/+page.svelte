@@ -155,8 +155,8 @@
 				<ul>
 					<li><strong>1.25rem:</strong> Item name, values (Primary)</li>
 					<li><strong>0.65rem:</strong> Labels (Tertiary)</li>
-					<li><strong>JetBrains Mono:</strong> Numbers</li>
-					<li><strong>System UI:</strong> Text</li>
+					<li><strong>Geist Mono:</strong> Numbers</li>
+					<li><strong>Geist:</strong> Text</li>
 				</ul>
 			</div>
 		</div>
@@ -375,7 +375,7 @@
 	}
 
 	.swatch-info code {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.7rem;
 		color: var(--tech-label);
 		background: rgba(255, 255, 255, 0.05);

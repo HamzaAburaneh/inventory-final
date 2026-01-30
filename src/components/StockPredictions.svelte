@@ -321,7 +321,7 @@
 	}
 
 	.toolbar-label {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.65rem;
 		font-weight: 800;
 		color: var(--tech-label);
@@ -338,7 +338,7 @@
 		border: 1px solid var(--tech-badge-border);
 		color: var(--tech-label);
 		padding: 0.4rem 0.8rem;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.65rem;
 		font-weight: 700;
 		border-radius: 4px;
@@ -377,7 +377,7 @@
 		border: none;
 		color: var(--tech-label);
 		padding: 0.4rem 0.8rem;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.65rem;
 		font-weight: 700;
 		border-radius: 4px;
@@ -450,7 +450,7 @@
 	}
 
 	.summary-text {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.75rem;
 		font-weight: 800;
 		color: var(--tech-value);
@@ -538,7 +538,7 @@
 	}
 
 	.method-badge {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.6rem;
 		font-weight: 800;
 		padding: 0.2rem 0.5rem;
@@ -571,7 +571,7 @@
 	}
 
 	.metric-label {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.6rem;
 		font-weight: 800;
 		color: var(--tech-label);
@@ -605,7 +605,7 @@
 	}
 
 	.status-text {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.65rem;
 		font-weight: 800;
 		letter-spacing: 0.05em;
@@ -641,7 +641,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.6rem;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.6rem;
 		font-weight: 800;
 		color: var(--tech-accent);
@@ -665,7 +665,7 @@
 	}
 
 	.breakdown-details summary {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.6rem;
 		font-weight: 800;
 		color: var(--tech-label);
@@ -704,21 +704,21 @@
 	}
 
 	.day-label {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.5rem;
 		font-weight: 800;
 		color: var(--tech-label);
 	}
 
 	.day-value {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.7rem;
 		font-weight: 700;
 		color: var(--tech-value);
 	}
 
 	.digital-font {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 	}
 
 	/* Mobile Cards Container */
@@ -756,7 +756,7 @@
 
 	.loading-text {
 		color: var(--tech-accent);
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-weight: 700;
 		letter-spacing: 0.3em;
 		font-size: 0.7rem;

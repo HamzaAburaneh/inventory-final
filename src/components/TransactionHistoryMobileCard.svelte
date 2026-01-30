@@ -268,14 +268,14 @@
 		font-size: 0.875rem;
 		font-weight: 600;
 		color: var(--tech-value, #e2e8f0);
-		font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 	}
 
 	.highlight-date {
 		font-size: 0.8rem;
 		font-weight: 500;
 		color: var(--tech-value, #e2e8f0);
-		font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 	}
 
 	/* Counts Section */

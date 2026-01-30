@@ -80,11 +80,11 @@
 							y: {
 								beginAtZero: true,
 								grid: { color: 'rgba(139, 148, 158, 0.1)' },
-								ticks: { color: '#8b949e', font: { family: 'JetBrains Mono' } }
+								ticks: { color: '#8b949e', font: { family: 'Geist' } }
 							},
 							x: {
 								grid: { display: false },
-								ticks: { color: '#8b949e', font: { family: 'JetBrains Mono' } }
+								ticks: { color: '#8b949e', font: { family: 'Geist' } }
 							}
 						}
 					}
@@ -274,7 +274,7 @@
 	}
 
 	.status-text {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.6rem;
 		color: var(--tech-status-text);
 		letter-spacing: 0.2em;
@@ -311,7 +311,7 @@
 	}
 
 	.card-label {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.65rem;
 		font-weight: 800;
 		color: var(--tech-label);
@@ -329,7 +329,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.6rem;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.6rem;
 		font-weight: 800;
 		color: var(--tech-label);
@@ -340,7 +340,7 @@
 	.summary-card.danger .card-value { color: #ef4444; }
 
 	.digital-font {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 	}
 
 	.chart-frame {
@@ -359,7 +359,7 @@
 	}
 
 	.frame-title {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.75rem;
 		font-weight: 800;
 		color: var(--tech-label);

@@ -236,7 +236,7 @@
 	}
 
 	.count-badge {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		display: inline-block;
 		min-width: 32px;
 		text-align: center;
@@ -256,7 +256,7 @@
 	}
 
 	.value-text {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-weight: 700;
 		color: var(--tech-value);
 		font-size: 0.85rem;

@@ -278,7 +278,7 @@
 		position: relative;
 		overflow: hidden;
 		background: var(--tech-badge-bg, rgba(30, 41, 59, 0.6));
-		font-family: 'Inter', sans-serif;
+		font-family: 'Geist', sans-serif;
 	}
 
 	.action-btn i {

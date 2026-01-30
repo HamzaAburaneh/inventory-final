@@ -291,7 +291,7 @@
 	}
 
 	.status-text {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.6rem;
 		color: var(--tech-status-text);
 		letter-spacing: 0.2em;
@@ -335,7 +335,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.7rem;
 		font-weight: 800;
 		color: var(--tech-label);
@@ -354,7 +354,7 @@
 		border-radius: 6px;
 		padding: 0.875rem 1rem;
 		color: var(--tech-value);
-		font-family: 'Inter', sans-serif;
+		font-family: 'Geist', sans-serif;
 		font-size: 0.95rem;
 		font-weight: 500;
 		transition: all 0.2s;
@@ -384,7 +384,7 @@
 		border: 1px solid var(--tech-accent);
 		color: #000;
 		padding: 1rem;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.85rem;
 		font-weight: 800;
 		letter-spacing: 0.1em;
@@ -437,7 +437,7 @@
 		background: transparent;
 		border: none;
 		color: var(--tech-accent);
-		font-family: 'Inter', sans-serif;
+		font-family: 'Geist', sans-serif;
 		font-size: 0.9rem;
 		font-weight: 600;
 		cursor: pointer;
@@ -470,7 +470,7 @@
 		background: rgba(255, 255, 255, 0.02);
 		border: 1px solid var(--tech-cell-border);
 		border-radius: 6px;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.7rem;
 		color: var(--tech-label);
 		letter-spacing: 0.02em;

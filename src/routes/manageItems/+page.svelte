@@ -703,7 +703,7 @@
 	}
 
 	.status-text {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.6rem;
 		color: var(--tech-status-text);
 		letter-spacing: 0.2em;
@@ -750,7 +750,7 @@
 
 	.ribbon-label {
 		color: var(--tech-label);
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-weight: 800;
 		font-size: 0.65rem;
 		letter-spacing: 0.1em;
@@ -758,7 +758,7 @@
 
 	.ribbon-value {
 		color: var(--tech-value);
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-weight: 700;
 		font-size: 0.85rem;
 		transition: color 0.3s ease;
@@ -873,7 +873,7 @@
 
 	.loading-text {
 		color: var(--tech-accent);
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-weight: 700;
 		letter-spacing: 0.3em;
 		font-size: 0.7rem;
@@ -882,7 +882,7 @@
 	.null-state { color: var(--tech-label); }
 	.null-state i { font-size: 3rem; opacity: 0.5; }
 	.null-state p { 
-		font-family: 'JetBrains Mono', monospace; 
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
 		font-size: 0.8rem; 
 		letter-spacing: 0.15em;
 		font-weight: 700;
@@ -1039,7 +1039,7 @@
 		border-radius: 4px;
 		padding: 0.6rem 0.85rem;
 		color: var(--tech-value);
-		font-family: 'Inter', sans-serif;
+		font-family: 'Geist', sans-serif;
 		font-size: 0.875rem;
 		font-weight: 500;
 		transition: all 0.2s;
@@ -1271,7 +1271,7 @@
 	}
 
 	.field-label {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.6rem;
 		font-weight: 800;
 		color: var(--tech-label);

@@ -150,7 +150,7 @@
 		padding: 1.1rem 1.25rem;
 		text-align: left;
 		font-family:
-			'Inter',
+			'Geist',
 			-apple-system,
 			BlinkMacSystemFont,
 			'Segoe UI',
@@ -228,7 +228,7 @@
 
 	/* Count Badges */
 	.count-badge {
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.9rem;
 		color: var(--tech-label);
 		display: inline-block;
@@ -476,7 +476,7 @@
 		.previouscount-col::before,
 		.changedamount-col::before,
 		.newcount-col::before {
-			font-family: 'JetBrains Mono', monospace;
+			font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 			font-size: 0.6rem;
 			font-weight: 700;
 			color: var(--tech-label);
@@ -545,7 +545,7 @@
 			flex-wrap: nowrap;
 			justify-content: center;
 			width: 100%;
-			font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 		}
 
 		.user-cell::before {

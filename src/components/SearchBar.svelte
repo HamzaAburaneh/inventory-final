@@ -59,7 +59,7 @@
 		border-radius: 4px;
 		color: var(--tech-value);
 		font-size: 0.85rem;
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		letter-spacing: 0.1em;
 		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 		box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);

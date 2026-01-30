@@ -409,7 +409,7 @@
 		text-decoration: none;
 		padding: 0.5rem 0.75rem;
 		color: var(--tech-label);
-		font-family: 'JetBrains Mono', monospace;
+		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 0.75rem;
 		font-weight: 700;
 		text-transform: uppercase;
