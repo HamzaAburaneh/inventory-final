@@ -8,3 +8,9 @@ svelte5-syntax
 
 # Claude Code configuration/skill files (contain pseudo-code with diff markers)
 .claude/
+
+# GitHub skill/reference docs (same pseudo-code content as .claude)
+.github/skills/
+
+# Test run artifacts
+test-results/
