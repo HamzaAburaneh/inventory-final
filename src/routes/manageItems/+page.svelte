@@ -3,79 +3,58 @@
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Table from '../../components/Table.svelte';
 	import Pagination from '../../components/Pagination.svelte';
-	import ConfirmModal from '../../components/ConfirmModal.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
-	import { getSearchStore } from '../../stores/searchStore';
 	import { itemStore } from '../../stores/itemStore';
+	import { searchTerm, setSearchTerm, clearSearch } from '../../stores/searchStore';
 	import { notificationStore } from '../../stores/notificationStore';
+	import { fade } from 'svelte/transition';
 	import { applySorting } from '../../lib/items';
 	import { onMount } from 'svelte';
-	import { blur } from 'svelte/transition';
 
-	// UI state
 	let currentSortColumn = $state('name');
 	let sortAscending = $state(true);
 	let itemsLoaded = $state(false);
-	let tableLoading = $state(false);
 	let isEditingInProgress = $state(false);
 	let showEditModal = $state(false);
 	let editData = $state({ id: null, field: '', value: '', title: '' });
-	let editButtonPosition = $state(null);
 
-	// Delete modal state
-	let deleteModal = $state({
-		visible: false,
-		itemId: null,
-		itemName: '',
-		onConfirm: () => {}
-	});
-
-	// Pagination store
 	const paginationStore = getPaginationStore('manageItems');
 	const { currentPage, itemsPerPage, setTotalItems } = paginationStore;
 
-	// Search store
-	const searchStore = getSearchStore('manageItems');
-	const { setSearchTerm, clearSearch } = searchStore;
+	// Reactive store views ($store auto-subscription)
+	const items = $derived($itemStore);
+	const searchTermValue = $derived($searchTerm);
+	const notification = $derived($notificationStore.at(-1) ?? null);
 
-	// Store values as reactive state
-	let items = $state([]);
-	let searchTermValue = $state('');
-	let latestNotification = $state(null);
+	// Global scroll preservation
+	let lastScrollPosition = 0;
+	let scrollPreservationActive = false;
 
-	// Subscribe to stores
-	$effect(() => {
-		const unsubscribeItems = itemStore.subscribe((value) => {
-			items = value;
-		});
-		const unsubscribeSearch = searchStore.subscribe((value) => {
-			searchTermValue = value;
-		});
-		const unsubscribeNotification = notificationStore.subscribe((value) => {
-			latestNotification = value?.[value.length - 1] || null;
-		});
+	function preserveScroll() {
+		lastScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+		scrollPreservationActive = true;
+	}
 
-		return () => {
-			unsubscribeItems();
-			unsubscribeSearch();
-			unsubscribeNotification();
-		};
-	});
+	function restoreScroll() {
+		if (scrollPreservationActive && lastScrollPosition > 0) {
+			requestAnimationFrame(() => {
+				window.scrollTo(0, lastScrollPosition);
+				scrollPreservationActive = false;
+			});
+		}
+	}
 
-	// Derived computations
-	const filteredItemsList = $derived.by(() => {
-		if (!searchTermValue) return items;
-		const lowerTerm = searchTermValue.toLowerCase();
-		return items.filter(item => item.name.toLowerCase().includes(lowerTerm));
-	});
+	const filteredItemsList = $derived(
+		items.filter((item) => item.name.toLowerCase().includes(searchTermValue.toLowerCase()))
+	);
 
-	const totalInventoryValue = $derived.by(() => {
-		return filteredItemsList.reduce((total, item) => {
+	const totalInventoryValue = $derived(
+		filteredItemsList.reduce((total, item) => {
 			const count = parseFloat(item.count) || 0;
 			const cost = parseFloat(item.cost) || 0;
-			return total + (count * cost);
-		}, 0);
-	});
+			return total + count * cost;
+		}, 0)
+	);
 
 	const formatCurrency = (value) => {
 		return new Intl.NumberFormat('en-CA', {
@@ -86,33 +65,31 @@
 		}).format(value);
 	};
 
-	const capitalizeColumn = (column) => {
-		return column.replace(/([A-Z])/g, ' $1').trim().toUpperCase();
-	};
-
-	// Update pagination total when filtered list changes
 	$effect(() => {
 		setTotalItems(filteredItemsList.length);
 	});
 
 	const sortedItems = $derived.by(() => {
 		if (currentSortColumn === 'totalValue') {
+			// Custom sorting for total value (count * cost)
 			return [...filteredItemsList].sort((a, b) => {
-				const aValue = (a.count || 0) * (a.cost || 0);
-				const bValue = (b.count || 0) * (b.cost || 0);
-				return sortAscending ? aValue - bValue : bValue - aValue;
+				const aTotal = (a.count || 0) * (a.cost || 0);
+				const bTotal = (b.count || 0) * (b.cost || 0);
+				return sortAscending ? aTotal - bTotal : bTotal - aTotal;
 			});
 		}
 		return applySorting(filteredItemsList, currentSortColumn, sortAscending);
 	});
 
 	const paginatedItemsList = $derived.by(() => {
-		if ($itemsPerPage === 'all') return sortedItems;
+		if ($itemsPerPage === 'all') {
+			return sortedItems;
+		}
 		const startIndex = ($currentPage - 1) * $itemsPerPage;
-		return sortedItems.slice(startIndex, startIndex + $itemsPerPage);
+		const endIndex = startIndex + $itemsPerPage;
+		return sortedItems.slice(startIndex, endIndex);
 	});
 
-	// Load items on mount
 	onMount(async () => {
 		await itemStore.loadItems();
 		itemsLoaded = true;
@@ -124,14 +101,11 @@
 			return;
 		}
 		try {
-			// Clean cost string (remove commas) before parsing
-			const cleanCost = typeof formData.cost === 'string' ? formData.cost.replace(/,/g, '') : formData.cost;
-			
 			const newItem = {
 				...formData,
 				count: formData.count ? parseInt(formData.count, 10) : 0,
 				lowCount: formData.lowCount ? parseInt(formData.lowCount, 10) : 0,
-				cost: cleanCost ? parseFloat(parseFloat(cleanCost).toFixed(2)) : 0,
+				cost: formData.cost ? parseFloat(parseFloat(formData.cost).toFixed(2)) : 0,
 				booths: formData.booths || []
 			};
 			await itemStore.addItem(newItem);
@@ -144,75 +118,43 @@
 	};
 
 	const handleDelete = async (id) => {
-		const item = items.find(i => i.id === id);
-		if (!item) return;
-
-		deleteModal = {
-			visible: true,
-			itemId: id,
-			itemName: item.name,
-			onConfirm: async () => {
-				await itemStore.deleteItem(id);
-				notificationStore.showNotification('Item deleted successfully!', 'success');
-				deleteModal.visible = false;
-			}
-		};
+		await itemStore.deleteItem(id);
+		notificationStore.showNotification('Item deleted successfully!', 'success');
 	};
 
-	const handleEdit = async (id, field, oldValue, position) => {
+	const handleEdit = async (id, field, oldValue) => {
 		// Prevent multiple simultaneous edit dialogs
 		if (isEditingInProgress) {
 			return;
 		}
 
 		isEditingInProgress = true;
-		if (position) {
-			editButtonPosition = position;
+
+		editData = {
+			id,
+			field,
+			value: oldValue != null ? oldValue.toString() : '',
+			title: `Edit ${String(field).charAt(0).toUpperCase() + String(field).slice(1)}`
+		};
+
+		// Normalize storage type values for proper dropdown selection
+		if (field === 'storageType' && editData.value) {
+			const normalizedValue = editData.value.toLowerCase();
+			if (normalizedValue === 'dry storage') editData.value = 'Dry Storage';
+			else if (normalizedValue === 'refrigerator') editData.value = 'Refrigerator';
+			else if (normalizedValue === 'freezer') editData.value = 'Freezer';
 		}
 
-		// Handle comprehensive edit mode (all fields)
-		if (field === 'all' && typeof oldValue === 'object') {
-			const item = oldValue;
-			editData = {
-				id,
-				field: 'all',
-				value: {
-					name: item.name || '',
-					lowCount: item.lowCount != null ? item.lowCount.toString() : '0',
-					cost: item.cost != null ? item.cost.toString() : '0',
-					storageType: item.storageType || '',
-					booths: Array.isArray(item.booths) ? [...item.booths] : []
-				},
-				title: 'Edit Item'
-			};
-		} else {
-			// Handle single field edit mode
-			editData = {
-				id,
-				field,
-				value: oldValue != null ? oldValue.toString() : '',
-				title: `Edit ${String(field).charAt(0).toUpperCase() + String(field).slice(1)}`
-			};
-
-			// Normalize storage type values for proper dropdown selection
-			if (field === 'storageType' && editData.value) {
-				const normalizedValue = editData.value.toLowerCase();
-				if (normalizedValue === 'dry storage') editData.value = 'Dry Storage';
-				else if (normalizedValue === 'refrigerator') editData.value = 'Refrigerator';
-				else if (normalizedValue === 'freezer') editData.value = 'Freezer';
+		// Handle booths field - keep as array for checkbox editing
+		if (field === 'booths') {
+			if (Array.isArray(oldValue)) {
+				editData.value = [...oldValue];
+			} else if (oldValue) {
+				editData.value = [oldValue];
+			} else {
+				editData.value = [];
 			}
-
-			// Handle booths field - keep as array for checkbox editing
-			if (field === 'booths') {
-				if (Array.isArray(oldValue)) {
-					editData.value = [...oldValue];
-				} else if (oldValue) {
-					editData.value = [oldValue];
-				} else {
-					editData.value = [];
-				}
-				editData.title = 'Edit Booths';
-			}
+			editData.title = 'Edit Booths';
 		}
 
 		showEditModal = true;
@@ -221,24 +163,7 @@
 	const confirmEdit = async (event) => {
 		event.preventDefault();
 		try {
-			if (editData.field === 'all') {
-				// Update all editable fields at once (excluding count)
-				const updates = {};
-				const values = editData.value;
-				
-				// Process each editable field
-				updates.name = values.name;
-				updates.lowCount = parseInt(values.lowCount, 10) || 0;
-				updates.cost = parseFloat(values.cost) || 0;
-				updates.storageType = values.storageType;
-				updates.booths = Array.isArray(values.booths) ? values.booths : [];
-				
-				await itemStore.updateItem(editData.id, updates);
-				notificationStore.showNotification('Item updated successfully!', 'success');
-			} else {
-				// Single field update
-				await updateItem(editData.id, editData.field, editData.value);
-			}
+			await updateItem(editData.id, editData.field, editData.value);
 		} finally {
 			closeEditModal();
 		}
@@ -251,6 +176,8 @@
 	};
 
 	const updateItem = async (id, field, value) => {
+		preserveScroll();
+
 		try {
 			const item = items.find((item) => item.id === id);
 			if (!item) {
@@ -277,122 +204,62 @@
 				notificationStore.showNotification(error.message, 'error');
 			}
 		}
+
+		// Restore scroll after all updates complete
+		setTimeout(restoreScroll, 100);
 	};
 
 	const handleSearch = (value) => {
-		tableLoading = true;
+		preserveScroll();
 		setSearchTerm(value);
 		paginationStore.setCurrentPage(1);
-		setTimeout(() => tableLoading = false, 300);
+		setTimeout(restoreScroll, 50);
 	};
 
 	const handleClearSearch = () => {
-		tableLoading = true;
+		preserveScroll();
 		clearSearch();
-		setTimeout(() => tableLoading = false, 300);
+		setTimeout(restoreScroll, 50);
 	};
 
 	const sortBy = (column) => {
-		tableLoading = true;
 		if (currentSortColumn === column) {
 			sortAscending = !sortAscending;
 		} else {
 			currentSortColumn = column;
 			sortAscending = true;
 		}
-		setTimeout(() => tableLoading = false, 300);
-	};
-
-	const handlePageChange = () => {
-		tableLoading = true;
-		setTimeout(() => tableLoading = false, 300);
 	};
 </script>
 
-<svelte:head>
-	<title>Item Manager | Inventory</title>
-</svelte:head>
-
-<div class="page-viewport-wrapper">
-	<div class="glow-layer"></div>
-	<div class="content-container">
-		<header class="page-header">
-			<div class="title-group">
-				<h1 class="main-title">Item Manager</h1>
-				<div class="system-status">
-					<span class="status-dot"></span>
-					<span class="status-text">SYSTEM SECURE</span>
-				</div>
-			</div>
-		</header>
-
-		<div class="form-frame">
+{#if itemsLoaded}
+	<div class="page-container">
+		<!-- Form Section -->
+		<div class="form-section">
 			<ItemForm onAdd={handleItemAdd} />
 		</div>
 
-		<div class="ledger-actions">
-			<div class="stats-ribbon">
-				<div class="ribbon-item">
-					<span class="ribbon-label">ITEMS:</span>
-					<div class="ribbon-value">
-						{#key items.length}
-							<div class="count-context text-update">
-								<span class="digital-font">{filteredItemsList.length}</span>
-								<span class="count-separator">/</span>
-								<span class="count-total">{items.length}</span>
-							</div>
-						{/key}
-					</div>
-				</div>
-				<div class="ribbon-item">
-					<span class="ribbon-label">TOTAL VALUE:</span>
-					<div class="ribbon-value">
-						{#key totalInventoryValue}
-							<span class="digital-font text-update">
-								{formatCurrency(totalInventoryValue)}
-							</span>
-						{/key}
-					</div>
-				</div>
-				<div class="ribbon-item">
-					<span class="ribbon-label">SORTING:</span>
-					<div class="ribbon-value">
-						{#key currentSortColumn}
-							<span class="text-update">
-								{capitalizeColumn(currentSortColumn)}
-							</span>
-						{/key}
-						{#key sortAscending}
-							<span class="order-tag text-update">
-								{sortAscending ? 'ASC' : 'DESC'}
-							</span>
-						{/key}
-					</div>
+		<!-- Inventory Section -->
+		<div class="inventory-section">
+			<div class="inventory-header">
+				<h2 class="inventory-title">Inventory Items</h2>
+				<div class="inventory-stats">
+					<span class="stats-text">{filteredItemsList.length} of {items.length} items</span>
+					<span class="stats-text total-value"
+						>Total Value: {formatCurrency(totalInventoryValue)}</span
+					>
 				</div>
 			</div>
 
-			<div class="search-primary">
+			<div class="search-section">
 				<SearchBar
 					searchValue={searchTermValue}
 					onSearch={handleSearch}
 					onClear={handleClearSearch}
-					placeholder="Search items..."
 				/>
 			</div>
-		</div>
 
-		<div class="table-frame">
-			{#if !itemsLoaded}
-				<div class="ledger-loading">
-					<div class="pulse-ring"></div>
-					<span class="loading-text">LOADING INVENTORY...</span>
-				</div>
-			{:else if paginatedItemsList.length === 0}
-				<div class="null-state">
-					<i class="fas fa-search-minus"></i>
-					<p>NO ITEMS MATCHED.</p>
-				</div>
-			{:else}
+			<div class="table-section">
 				<Table
 					paginatedItems={paginatedItemsList}
 					onEdit={handleEdit}
@@ -400,800 +267,181 @@
 					{sortBy}
 					{currentSortColumn}
 					{sortAscending}
-					loading={!itemsLoaded || tableLoading}
 				/>
-			{/if}
-		</div>
+			</div>
 
-		<div class="footer-extension">
-			<Pagination store={paginationStore} globalTotal={items.length} onPageChange={handlePageChange} />
+			<div class="pagination-section">
+				<Pagination store={paginationStore} />
+			</div>
 		</div>
 	</div>
-</div>
-
-{#if latestNotification}
-	<div class="notification {latestNotification.type}">
-		<div class="notification-content">
-			<i class="fas {latestNotification.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-			<span>{latestNotification.message}</span>
-		</div>
+{:else}
+	<div class="flex justify-center items-center h-screen">
+		<div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
+	</div>
+{/if}
+{#if notification}
+	<div class="notification {notification.type}" in:fade out:fade>
+		{notification.message}
 	</div>
 {/if}
 
 {#if showEditModal}
-	<div class="modal-backdrop" onclick={closeEditModal} transition:blur={{ duration: 200 }}></div>
-	<div class="modal-container">
-		<form class="tech-modal" onsubmit={confirmEdit} transition:blur={{ duration: 300 }}>
-			<div class="modal-header">
-				<div class="header-left">
-					<div class="header-icon">
-						<i class="fas fa-edit"></i>
-					</div>
-					<h2 class="modal-title">{editData.title}</h2>
-				</div>
-				<button type="button" class="close-btn" onclick={closeEditModal} aria-label="Close">
-					<i class="fas fa-times"></i>
-				</button>
-			</div>
-
-			<div class="modal-body">
-				{#if editData.field === 'all'}
-					<!-- Comprehensive Edit Form -->
-					<div class="comprehensive-edit-form">
-						<div class="form-field">
-							<label for="edit-name" class="field-label">Item Name</label>
-							<input
-								id="edit-name"
-								type="text"
-								bind:value={editData.value.name}
-								class="tech-input"
-								placeholder="Enter item name..."
-								required
-							/>
-						</div>
-
-						<div class="form-row">
-							<div class="form-field">
-								<label for="edit-lowCount" class="field-label">Low Count Alert</label>
+	<div
+		class="modal-backdrop"
+		role="presentation"
+		onclick={closeEditModal}
+		onkeydown={(e) => e.key === 'Escape' && closeEditModal()}
+	></div>
+	<div class="modal-overlay">
+		<form class="edit-modal" onsubmit={confirmEdit}>
+			<h3>{editData.title}</h3>
+			{#if editData.field === 'storageType'}
+				<select bind:value={editData.value} class="edit-input" required>
+					<option value="Dry Storage">Dry Storage</option>
+					<option value="Refrigerator">Refrigerator</option>
+					<option value="Freezer">Freezer</option>
+				</select>
+			{:else if editData.field === 'booths'}
+				<div class="booths-edit-container">
+					<div class="booths-container">
+						{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth (booth.value)}
+							<label class="booth-option">
 								<input
-									id="edit-lowCount"
-									type="number"
-									bind:value={editData.value.lowCount}
-									class="tech-input"
-									placeholder="0"
-									min="0"
-								/>
-							</div>
-
-							<div class="form-field">
-								<label for="edit-cost" class="field-label">Unit Cost ($)</label>
-								<input
-									id="edit-cost"
-									type="number"
-									bind:value={editData.value.cost}
-									class="tech-input"
-									placeholder="0.00"
-									step="0.01"
-									min="0"
-								/>
-							</div>
-						</div>
-
-						<div class="form-field">
-							<label class="field-label">Storage Type</label>
-							<div class="storage-type-grid horizontal">
-								{#each [
-									{ value: 'Freezer', icon: 'fa-snowflake', color: '#3B82F6' },
-									{ value: 'Refrigerator', icon: 'fa-temperature-low', color: '#10B981' },
-									{ value: 'Dry Storage', icon: 'fa-box', color: '#F59E0B' }
-								] as type}
-									<label class="storage-node">
-										<input
-											type="radio"
-											name="storageTypeEdit"
-											value={type.value}
-											bind:group={editData.value.storageType}
-											class="hidden-radio"
-										/>
-										<div class="node-card icon-only">
-											<i class="fas {type.icon} storage-icon" style="--type-color: {type.color}"></i>
-											<i class="fas fa-check node-check"></i>
-										</div>
-									</label>
-								{/each}
-							</div>
-						</div>
-
-						<div class="form-field">
-							<label class="field-label">Booths</label>
-							<div class="booths-container compact">
-								{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth}
-									<label class="booth-option">
-										<input
-											type="checkbox"
-											value={booth.value}
-											bind:group={editData.value.booths}
-											class="booth-checkbox"
-										/>
-										<div class="booth-card" style="--booth-color: {booth.color}">
-											<div class="booth-indicator"></div>
-											<span class="booth-name">{booth.label}</span>
-											<div class="checkmark">
-												<svg
-													width="16"
-													height="16"
-													viewBox="0 0 24 24"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="3"
-												>
-													<polyline points="20,6 9,17 4,12"></polyline>
-												</svg>
-											</div>
-										</div>
-									</label>
-								{/each}
-							</div>
-						</div>
-					</div>
-				{:else if editData.field === 'storageType'}
-					<div class="storage-type-grid vertical">
-						{#each ['Freezer', 'Refrigerator', 'Dry Storage'] as type}
-							<label class="storage-node">
-								<input
-									type="radio"
-									name="storageTypeEdit"
-									value={type}
+									type="checkbox"
+									value={booth.value}
 									bind:group={editData.value}
-									class="hidden-radio"
+									class="booth-checkbox"
 								/>
-								<div class="node-card">
-									<div class="node-indicator" style="--type-color: {type === 'Freezer' ? '#3B82F6' : type === 'Refrigerator' ? '#10B981' : '#F59E0B'}"></div>
-									<span class="node-label">{type}</span>
-									<i class="fas fa-check node-check"></i>
+								<div class="booth-card" style="--booth-color: {booth.color}">
+									<div class="booth-indicator"></div>
+									<span class="booth-name">{booth.label}</span>
+									<div class="checkmark">
+										<svg
+											width="16"
+											height="16"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="3"
+										>
+											<polyline points="20,6 9,17 4,12"></polyline>
+										</svg>
+									</div>
 								</div>
 							</label>
 						{/each}
 					</div>
-				{:else if editData.field === 'booths'}
-					<div class="booths-edit-container">
-						<div class="booths-container">
-							{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth}
-								<label class="booth-option">
-									<input
-										type="checkbox"
-										value={booth.value}
-										bind:group={editData.value}
-										class="booth-checkbox"
-									/>
-									<div class="booth-card" style="--booth-color: {booth.color}">
-										<div class="booth-indicator"></div>
-										<span class="booth-name">{booth.label}</span>
-										<div class="checkmark">
-											<svg
-												width="16"
-												height="16"
-												viewBox="0 0 24 24"
-												fill="none"
-												stroke="currentColor"
-												stroke-width="3"
-											>
-												<polyline points="20,6 9,17 4,12"></polyline>
-											</svg>
-										</div>
-									</div>
-								</label>
-							{/each}
-						</div>
-					</div>
-				{:else}
-					<input
-						type="text"
-						bind:value={editData.value}
-						class="tech-input"
-						placeholder="Enter value..."
-						required
-					/>
-				{/if}
-			</div>
-
-			<div class="modal-footer">
-				<button type="button" class="modal-btn cancel-btn" onclick={closeEditModal}>
-					Cancel
-				</button>
-				<button type="submit" class="modal-btn confirm-btn">
-					Confirm
-				</button>
+				</div>
+			{:else}
+				<input
+					type="text"
+					bind:value={editData.value}
+					class="edit-input"
+					placeholder="Enter value..."
+					required
+				/>
+			{/if}
+			<div class="modal-buttons">
+				<button type="button" class="cancel-btn" onclick={closeEditModal}> Cancel </button>
+				<button type="submit" class="confirm-btn"> Confirm </button>
 			</div>
 		</form>
+		<button type="button" class="modal-backdrop" onclick={closeEditModal} aria-label="Close modal"
+		></button>
 	</div>
 {/if}
 
-<ConfirmModal
-	bind:show={deleteModal.visible}
-	title="Delete Item"
-	message={`Are you sure you want to delete <strong>"${deleteModal.itemName}"</strong>?<br><span style="color: #ef4444; font-size: 0.8rem; font-weight: 800;">THIS ACTION CANNOT BE UNDONE.</span>`}
-	type="danger"
-	confirmText="Delete"
-	cancelText="Cancel"
-	onConfirm={deleteModal.onConfirm}
-	onCancel={() => deleteModal.visible = false}
-/>
-
 <style>
-	:global(body) {
-		background-color: var(--tech-bg-end) !important;
-		background-image: radial-gradient(circle at 50% -10%, var(--tech-bg-start) 0%, var(--tech-bg-end) 100%) !important;
-		background-attachment: fixed !important;
-		margin: 0;
-		padding: 0;
-		overflow-x: hidden;
-	}
-
-	.page-viewport-wrapper {
-		position: relative;
+	.page-container {
+		max-width: 95%;
+		margin: 0 auto;
+		padding: 1rem;
 		min-height: 100vh;
 		width: 100%;
-		display: flex;
-		flex-direction: column;
-		box-sizing: border-box;
 	}
 
-	.glow-layer {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100vh;
-		background: radial-gradient(circle at 50% 0%, var(--tech-accent-muted) 0%, transparent 50%);
-		pointer-events: none;
-		z-index: 0;
+	.form-section {
+		margin-bottom: 3rem;
 	}
 
-	.content-container {
-		position: relative;
-		z-index: 2;
-		max-width: 1400px;
-		margin: 0 auto;
-		width: 100%;
-		padding: 3rem 1.5rem;
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
-	}
-
-	.page-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		flex-wrap: wrap;
-		gap: 2rem;
-	}
-
-	.main-title {
-		font-size: 2.5rem;
-		font-weight: 800;
-		color: var(--tech-title);
-		margin: 0;
-		letter-spacing: -0.05em;
-		text-transform: uppercase;
-		line-height: 1;
-	}
-
-	.system-status {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		margin-top: 0.8rem;
-		opacity: 0.8;
-	}
-
-	.status-dot {
-		width: 6px;
-		height: 6px;
-		background: var(--tech-accent);
-		border-radius: 50%;
-		box-shadow: 0 0 10px var(--tech-accent-muted);
-		animation: pulse-soft 3s ease-in-out infinite;
-	}
-
-	@keyframes pulse-soft {
-		0%, 100% { opacity: 0.4; transform: scale(0.9); }
-		50% { opacity: 1; transform: scale(1.1); }
-	}
-
-	.status-text {
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.6rem;
-		color: var(--tech-status-text);
-		letter-spacing: 0.2em;
-	}
-
-	.form-frame {
-		margin-bottom: 1rem;
-	}
-
-	.ledger-actions {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-end;
-		flex-wrap: wrap;
-		gap: 2rem;
-	}
-
-	.stats-ribbon {
-		display: flex;
-		align-items: center;
-		gap: 3rem;
-	}
-
-	.search-primary {
-		flex: 1;
-		display: flex;
-		justify-content: flex-end;
-		max-width: 600px;
-	}
-
-	.ribbon-item {
-		display: flex;
-		align-items: baseline;
-		gap: 0.75rem;
-		opacity: 0.6;
-		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-		cursor: default;
-	}
-
-	.ribbon-item:hover {
-		opacity: 1;
-		transform: translateY(-1px);
-	}
-
-	.ribbon-label {
-		color: var(--tech-label);
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-weight: 800;
-		font-size: 0.65rem;
-		letter-spacing: 0.1em;
-	}
-
-	.ribbon-value {
-		color: var(--tech-value);
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-weight: 700;
-		font-size: 0.85rem;
-		transition: color 0.3s ease;
-		display: inline-flex;
-		align-items: baseline;
-		gap: 0.4rem;
-		min-width: fit-content;
-	}
-	
-	/* Prevent layout shift by reserving space for dynamic content */
-	.ribbon-item:nth-child(1) .ribbon-value {
-		min-width: 80px; /* Reserve space for item counts */
-	}
-	
-	.ribbon-item:nth-child(2) .ribbon-value {
-		min-width: 120px; /* Reserve space for currency values */
-	}
-	
-	.ribbon-item:nth-child(3) .ribbon-value {
-		min-width: 160px; /* Reserve space for sorting column + order */
-	}
-
-	.ribbon-item:hover .ribbon-value {
-		color: var(--tech-accent);
-	}
-
-	.digital-font {
-		color: var(--tech-accent);
-		text-shadow: 0 0 15px var(--tech-accent-muted);
-	}
-
-	.count-context {
-		display: flex;
-		align-items: baseline;
-		gap: 0.35rem;
-	}
-
-	.count-separator {
-		color: var(--tech-label);
-		font-size: 0.7rem;
-		opacity: 0.5;
-	}
-
-	.count-total {
-		color: var(--tech-label);
-		font-size: 0.8rem;
-		opacity: 0.8;
-	}
-
-	.text-update {
-		animation: subtle-glow 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-		display: inline-block;
-	}
-
-	.order-tag {
-		color: var(--tech-label);
-		font-size: 0.7rem;
-	}
-
-	@keyframes subtle-glow {
-		0% { 
-			color: var(--tech-accent); 
-			text-shadow: 0 0 12px var(--tech-accent-muted);
-		}
-		100% { 
-			text-shadow: 0 0 0px transparent;
-		}
-	}
-
-	.table-frame {
-		position: relative;
-		background: var(--tech-glass-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 12px;
-		min-height: 500px;
+	.inventory-section {
+		background: var(--container-bg);
+		border-radius: var(--border-radius);
+		padding: 0;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		border: 1px solid var(--table-border-color);
 		overflow: hidden;
-		/* Professional multi-layered base shadow */
-		box-shadow: 
-			0 4px 6px -1px rgba(0, 0, 0, 0.1),
-			0 2px 4px -1px rgba(0, 0, 0, 0.06),
-			inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-		transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
-	.table-frame:hover {
-		/* Deeper, more atmospheric shadow on hover */
-		box-shadow: 
-			0 30px 60px -12px rgba(0, 0, 0, 0.5),
-			0 18px 36px -18px rgba(0, 0, 0, 0.5);
-		border-color: rgba(255, 255, 255, 0.1); 
-	}
-
-	.ledger-loading, .null-state {
-		height: 500px;
+	.inventory-header {
+		background: var(--table-header-bg);
+		padding: 1.5rem 2rem;
+		border-bottom: 1px solid var(--table-border-color);
 		display: flex;
-		flex-direction: column;
+		justify-content: space-between;
 		align-items: center;
-		justify-content: center;
-		gap: 2rem;
+		flex-wrap: wrap;
+		gap: 1rem;
 	}
 
-	.pulse-ring {
-		width: 44px;
-		height: 44px;
-		border: 3px solid var(--tech-cell-border);
-		border-top-color: var(--tech-accent);
-		border-radius: 50%;
-		animation: spin 1s infinite linear;
-	}
-
-	@keyframes spin { to { transform: rotate(360deg); } }
-
-	.loading-text {
-		color: var(--tech-accent);
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+	.inventory-title {
+		margin: 0;
+		font-size: 1.375rem;
 		font-weight: 700;
-		letter-spacing: 0.3em;
-		font-size: 0.7rem;
+		color: var(--table-header-text);
+		letter-spacing: -0.025em;
 	}
 
-	.null-state { color: var(--tech-label); }
-	.null-state i { font-size: 3rem; opacity: 0.5; }
-	.null-state p { 
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
-		font-size: 0.8rem; 
-		letter-spacing: 0.15em;
-		font-weight: 700;
-	}
-
-	/* Footer */
-	.ledger-footer {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		padding: 1.5rem 0;
-		border-top: 1px solid var(--tech-cell-border);
-		margin-top: 1rem;
-	}
-
-	/* Notifications */
-	.notification {
-		position: fixed;
-		bottom: 2rem;
-		right: 2rem;
-		z-index: 1000;
-		background: var(--tech-glass-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 8px;
-		padding: 1rem 1.5rem;
-		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-		animation: slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-	}
-
-	@keyframes slide-in {
-		from { transform: translateX(100%); opacity: 0; }
-		to { transform: translateX(0); opacity: 1; }
-	}
-
-	.notification-content {
+	.inventory-stats {
 		display: flex;
 		align-items: center;
 		gap: 1rem;
-		color: var(--tech-value);
-		font-weight: 700;
-		font-size: 0.9rem;
 	}
 
-	.notification.success i { color: #22c55e; }
-	.notification.error i { color: #ef4444; }
-
-	/* Tech Modals */
-	.modal-backdrop {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: rgba(0, 0, 0, 0.5);
-		backdrop-filter: blur(2px);
-		-webkit-backdrop-filter: blur(2px);
-		z-index: 10000;
+	.stats-text {
+		font-size: 0.875rem;
+		color: var(--text-color-dimmed);
+		font-weight: 500;
+		padding: 0.5rem 1rem;
+		background: var(--hover-bg-color);
+		border-radius: var(--border-radius);
+		border: 1px solid var(--table-border-color);
 	}
 
-	.modal-container {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 10001;
-		pointer-events: none;
+	.stats-text.total-value {
+		background: var(--add-item-color);
+		color: #000;
+		font-weight: 600;
+		border-color: var(--add-item-color);
 	}
 
-	.tech-modal {
-		position: relative;
-		background: var(--tech-glass-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 8px;
-		width: 90%;
-		max-width: 500px;
-		max-height: 90vh;
-		box-shadow: var(--tech-glass-shadow);
-		pointer-events: auto;
+	.booths-edit-container {
 		display: flex;
 		flex-direction: column;
-	}
-
-	.modal-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 12px 16px;
-		border-bottom: 1px solid var(--tech-glass-border);
-		flex-shrink: 0;
-	}
-
-	.header-left {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.header-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: var(--tech-accent);
-		font-size: 1rem;
-		flex-shrink: 0;
-	}
-
-	.modal-title {
-		margin: 0;
-		color: var(--tech-title);
-		font-size: 0.95rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.025em;
-	}
-
-	.close-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 32px;
-		height: 32px;
-		border-radius: 4px;
-		border: none;
-		background: transparent;
-		color: var(--tech-label);
-		cursor: pointer;
-		transition: all 0.15s ease;
-		padding: 0;
-	}
-
-	.close-btn:hover {
-		background: var(--tech-badge-bg);
-		color: var(--tech-value);
-	}
-
-	.close-btn i {
-		font-size: 1rem;
-	}
-
-	.modal-body {
-		padding: 16px;
-		overflow-y: auto;
-		flex: 1;
-	}
-
-	.tech-input {
-		width: 100%;
-		background: var(--tech-badge-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 4px;
-		padding: 0.6rem 0.85rem;
-		color: var(--tech-value);
-		font-family: 'Geist', sans-serif;
-		font-size: 0.875rem;
-		font-weight: 500;
-		transition: all 0.2s;
-	}
-
-	.tech-input:focus {
-		outline: none;
-		border-color: var(--tech-accent);
-		background: var(--tech-header-bg);
-		box-shadow: 0 0 10px var(--tech-accent-muted);
-	}
-
-	.storage-type-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 0.5rem;
-		width: 100%;
-	}
-
-	.storage-type-grid.vertical {
-		grid-template-columns: 1fr;
-	}
-
-	.storage-type-grid.horizontal {
-		grid-template-columns: repeat(3, 1fr);
-	}
-
-	.storage-node {
-		cursor: pointer;
-	}
-
-	.hidden-radio {
-		position: absolute;
-		opacity: 0;
-	}
-
-	.storage-node .node-card {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0.5rem 0.7rem;
-		background: var(--tech-badge-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 4px;
-		transition: all 0.2s;
-	}
-
-	.storage-node .node-indicator {
-		width: 3px;
-		height: 14px;
-		background: var(--type-color);
-		border-radius: 2px;
-	}
-
-	.storage-node .node-label {
-		font-size: 0.55rem;
-		font-weight: 800;
-		color: var(--tech-label);
-		text-transform: uppercase;
-		margin-left: 0.4rem;
-		flex: 1;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.storage-node .node-check {
-		font-size: 0.7rem;
-		color: var(--tech-accent);
-		opacity: 0;
-		transition: all 0.2s;
-	}
-
-	.storage-node .node-card.icon-only {
-		justify-content: center;
-		position: relative;
-		min-height: 36px;
-	}
-
-	.storage-icon {
-		font-size: 1rem;
-		color: var(--type-color);
-	}
-
-	.storage-node .node-card.icon-only .node-check {
-		position: absolute;
-		top: 2px;
-		right: 2px;
-		font-size: 0.6rem;
-	}
-
-	.hidden-radio:checked + .node-card {
-		border-color: var(--tech-accent);
-		background: var(--tech-accent-muted);
-	}
-
-	.hidden-radio:checked + .node-card .node-label {
-		color: var(--tech-value);
-	}
-
-	.hidden-radio:checked + .node-card .node-check {
-		opacity: 1;
-	}
-
-	.modal-footer {
-		display: flex;
-		justify-content: flex-end;
-		gap: 8px;
-		padding: 10px 16px;
-		background: var(--tech-header-bg);
-		border-top: 1px solid var(--tech-glass-border);
-		flex-shrink: 0;
-	}
-
-	.modal-btn {
-		padding: 8px 16px;
-		border-radius: 2px;
-		font-family: inherit;
-		font-size: 0.75rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.15s ease;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		outline: none;
-		border: 1px solid transparent;
-	}
-
-	.cancel-btn {
-		background: transparent;
-		border: 1px solid var(--tech-badge-border);
-		color: var(--tech-label);
-	}
-
-	.cancel-btn:hover {
-		border-color: var(--tech-label);
-		color: var(--tech-value);
-	}
-
-	.confirm-btn {
-		background: var(--tech-badge-bg);
-		border: 1px solid var(--tech-accent);
-		color: var(--tech-accent);
-	}
-
-	.confirm-btn:hover {
-		background: var(--tech-accent);
-		color: #ffffff;
+		gap: 0.75rem;
 	}
 
 	.booths-container {
 		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 0.5rem;
+		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+		gap: 0.75rem;
+		margin-top: 0.75rem;
+	}
+
+	/* Mobile responsiveness */
+	@media (max-width: 640px) {
+		.booths-container {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 0.5rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.booths-container {
+			grid-template-columns: 1fr;
+			gap: 0.5rem;
+		}
 	}
 
 	.booth-option {
@@ -1204,260 +452,331 @@
 	.booth-checkbox {
 		position: absolute;
 		opacity: 0;
+		pointer-events: none;
 	}
 
 	.booth-card {
+		position: relative;
 		display: flex;
 		align-items: center;
-		padding: 0.45rem 0.5rem;
-		background: var(--tech-badge-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 4px;
-		transition: all 0.2s;
-		min-height: 36px;
+		padding: 0.75rem;
+		background: var(--input-bg);
+		border: 2px solid var(--input-border-color);
+		border-radius: var(--border-radius);
+		transition: all 0.2s ease;
+		min-height: 50px;
+		overflow: hidden;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	/* Mobile adjustments */
+	@media (max-width: 640px) {
+		.booth-card {
+			padding: 0.5rem;
+			min-height: 45px;
+		}
+	}
+
+	.booth-card:hover {
+		border-color: var(--input-hover-border-color);
+		background: var(--input-hover-bg);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 	}
 
 	.booth-indicator {
-		width: 3px;
-		height: 12px;
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 4px;
 		background: var(--booth-color);
-		margin-right: 0.5rem;
-		border-radius: 2px;
-		flex-shrink: 0;
+		opacity: 0.7;
+		transition: all 0.2s ease;
 	}
 
 	.booth-name {
-		font-size: 0.6rem;
-		font-weight: 700;
-		color: var(--tech-label);
-		text-transform: uppercase;
+		flex: 1;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--text-color);
+		margin-left: 0.5rem;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		flex: 1;
+		min-width: 0;
+	}
+
+	/* Mobile font adjustments */
+	@media (max-width: 640px) {
+		.booth-name {
+			font-size: 0.8rem;
+			margin-left: 0.4rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.booth-name {
+			font-size: 0.85rem;
+			margin-left: 0.5rem;
+		}
+	}
+
+	.checkmark {
+		opacity: 0;
+		color: var(--booth-color);
+		transition: all 0.2s ease;
+		transform: scale(0.8);
+		flex-shrink: 0;
+		margin-left: 0.25rem;
+	}
+
+	.checkmark svg {
+		width: 14px;
+		height: 14px;
+	}
+
+	/* Mobile checkmark adjustments */
+	@media (max-width: 640px) {
+		.checkmark svg {
+			width: 12px;
+			height: 12px;
+		}
 	}
 
 	.booth-checkbox:checked + .booth-card {
 		border-color: var(--booth-color);
-		background: rgba(255, 255, 255, 0.05);
+		background: color-mix(in srgb, var(--booth-color) 10%, var(--input-bg));
+	}
+
+	.booth-checkbox:checked + .booth-card .booth-indicator {
+		opacity: 1;
+		width: 6px;
+	}
+
+	.booth-checkbox:checked + .booth-card .checkmark {
+		opacity: 1;
+		transform: scale(1);
 	}
 
 	.booth-checkbox:checked + .booth-card .booth-name {
-		color: var(--tech-value);
+		color: var(--booth-color);
 	}
 
-	.booths-container.compact {
-		grid-template-columns: repeat(3, 1fr);
-		gap: 0.4rem;
-	}
-
-	/* Comprehensive Edit Form Styles */
-	.comprehensive-edit-form {
-		display: flex;
-		flex-direction: column;
-		gap: 0.875rem;
-	}
-
-	.form-field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.4rem;
-	}
-
-	.form-row {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 0.75rem;
-	}
-
-	.field-label {
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.6rem;
-		font-weight: 800;
-		color: var(--tech-label);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	.tech-input[type="number"] {
-		-moz-appearance: textfield;
-	}
-
-	.tech-input[type="number"]::-webkit-outer-spin-button,
-	.tech-input[type="number"]::-webkit-inner-spin-button {
-		-webkit-appearance: none;
-		margin: 0;
-	}
-
-	@media (max-width: 768px) {
-		.content-container {
-			padding: 1.25rem;
-			gap: 1rem;
-		}
-
-		.page-header {
-			gap: 1rem;
-			margin-bottom: 0;
-		}
-
-		.main-title { 
-			font-size: 1.5rem;
-			letter-spacing: -0.02em;
-		}
-
-		.system-status {
-			display: none;
-		}
-
-		.form-frame {
-			margin-bottom: 0.5rem;
-		}
-
-		.ledger-actions {
-			flex-direction: column;
-			gap: 1rem;
-			align-items: stretch;
-		}
-
-		.stats-ribbon {
-			gap: 0.75rem;
-			background: var(--tech-glass-bg);
-			padding: 0.875rem 1rem;
-			border-radius: 8px;
-			border: 1px solid var(--tech-glass-border);
-			flex-direction: row;
-			flex-wrap: wrap;
-			justify-content: space-between;
-		}
-
-		.ribbon-item {
-			opacity: 1;
-			padding: 0.25rem 0;
-			flex: 1 1 auto;
-			min-width: max-content;
-		}
-
-		.ribbon-item:not(:last-child) {
-			border-bottom: none;
-		}
-
-		.ribbon-item:hover {
-			transform: none;
-		}
-
-		.ribbon-label {
-			font-size: 0.55rem;
-			opacity: 0.8;
-		}
-
-		.ribbon-value {
-			font-size: 0.75rem;
-		}
-
-		.ribbon-item:nth-child(1) .ribbon-value,
-		.ribbon-item:nth-child(2) .ribbon-value,
-		.ribbon-item:nth-child(3) .ribbon-value {
-			min-width: auto;
-		}
-
-		.search-primary {
-			max-width: 100%;
-			width: 100%;
-		}
-
-		/* Table frame - transparent background for mobile cards */
-		.table-frame {
-			min-height: auto;
-			border-radius: 8px;
-			background: transparent;
-			border: none;
-			box-shadow: none;
-		}
-
-		.table-frame:hover {
-			box-shadow: none;
-			border-color: transparent;
-		}
-
-		.ledger-loading, .null-state {
-			height: 300px;
-			background: var(--tech-glass-bg);
-			border-radius: 12px;
-			border: 1px solid var(--tech-glass-border);
-		}
-
-		.null-state i {
-			font-size: 2rem;
-		}
-
-		.null-state p {
-			font-size: 0.7rem;
-		}
-
-		.loading-text {
-			font-size: 0.6rem;
-		}
-
-		/* Footer */
-		.footer-extension {
-			margin-top: 0.5rem;
-		}
-
-		.notification {
-			bottom: 1rem;
-			right: 1rem;
-			left: 1rem;
-			padding: 0.875rem 1.25rem;
-		}
-
-		.notification-content {
-			font-size: 0.85rem;
-		}
-
-		.tech-modal {
-			width: 95%;
-			max-width: none;
-			margin: 1rem;
-		}
-
-		.modal-header {
-			padding: 14px 16px;
-		}
-
-		.modal-title {
-			font-size: 1rem;
-		}
-
-		.modal-body {
-			padding: 16px;
-		}
-
-		.storage-type-grid {
-			grid-template-columns: 1fr;
-			gap: 0.5rem;
-		}
-
-		.booths-container {
-			grid-template-columns: 1fr;
-			gap: 0.5rem;
-		}
-
+	/* Dark mode improvements */
+	@media (prefers-color-scheme: dark) {
 		.booth-card {
-			padding: 0.65rem;
+			background: var(--container-bg);
+			border-color: var(--table-border-color);
 		}
 
-		.booth-name {
-			font-size: 0.7rem;
+		.booth-card:hover {
+			background: var(--hover-bg-color);
+			border-color: var(--input-hover-border-color);
 		}
 
-		/* Comprehensive Edit Form - Mobile */
-		.form-row {
-			grid-template-columns: 1fr;
-			gap: 1rem;
+		.booth-checkbox:checked + .booth-card {
+			background: color-mix(in srgb, var(--booth-color) 15%, var(--container-bg));
+			border-color: var(--booth-color);
+		}
+	}
+
+	.search-section {
+		padding: 1.5rem 2rem;
+		border-bottom: 1px solid var(--table-border-color);
+	}
+
+	.table-section {
+		padding: 0;
+	}
+
+	.pagination-section {
+		padding: 1.5rem 2rem;
+		border-top: 1px solid var(--table-border-color);
+		background: var(--hover-bg-color);
+	}
+
+	.notification {
+		position: fixed;
+		bottom: 20px;
+		right: 20px;
+		color: white;
+		padding: 1rem 2rem;
+		border-radius: var(--border-radius);
+		z-index: 1000;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		font-weight: 500;
+	}
+
+	.notification.success {
+		background: var(--add-item-color);
+	}
+
+	.notification.error {
+		background: #dc3545;
+	}
+
+	.notification.warning {
+		background: #ffc107;
+		color: #333;
+	}
+
+	.notification.info {
+		background: var(--nav-logo-color);
+	}
+
+	/* Custom edit modal */
+	.modal-backdrop {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgba(0, 0, 0, 0.4);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		z-index: 9999;
+	}
+
+	.modal-overlay {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		z-index: 10000;
+	}
+
+	.edit-modal {
+		background-color: var(--container-bg);
+		border-radius: var(--border-radius);
+		padding: 2rem;
+		max-width: min(25rem, calc(100vw - 2rem));
+		width: 300px;
+		box-shadow: 0 0.625rem 1.875rem rgba(0, 0, 0, 0.4);
+		border: none;
+		position: relative;
+		z-index: 10001;
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
+	}
+
+	.edit-modal h3 {
+		margin: 0 0 1rem 0;
+		color: var(--text-color);
+		font-size: 1.25rem;
+		font-weight: 700;
+	}
+
+	.edit-input {
+		width: 100%;
+		padding: 0.875rem 1rem;
+		border: 2px solid var(--input-border-color);
+		border-radius: var(--border-radius);
+		background-color: var(--input-bg);
+		color: var(--input-text);
+		font-size: 1rem;
+		margin-bottom: 1.5rem;
+		transition: all 0.2s ease;
+	}
+
+	.edit-input:focus {
+		outline: none;
+		border-color: var(--focus-border-color);
+		box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+	}
+
+	.modal-buttons {
+		display: flex;
+		gap: 1rem;
+		margin-top: 1.5rem;
+		margin-bottom: 1rem;
+	}
+
+	.modal-buttons button {
+		flex: 1;
+		padding: 0.875rem 1rem;
+		border: none;
+		border-radius: var(--border-radius);
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.cancel-btn {
+		background-color: var(--hover-bg-color);
+		color: var(--text-color);
+		border: 1px solid var(--table-border-color);
+	}
+
+	.cancel-btn:hover {
+		background-color: var(--table-row-hover-bg);
+	}
+
+	.confirm-btn {
+		background: var(--nav-logo-color);
+		color: white;
+	}
+
+	.confirm-btn:hover {
+		background: var(--nav-logo-hover-color);
+		transform: translateY(-1px);
+	}
+
+	/* Responsive Design */
+	@media (min-width: 640px) {
+		.page-container {
+			max-width: 98%;
+			padding: 1.5rem;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.page-container {
+			max-width: 96%;
+			padding: 2rem;
 		}
 
-		.comprehensive-edit-form {
-			gap: 1rem;
+		.inventory-header {
+			padding: 2rem 2.5rem;
+		}
+
+		.search-section {
+			padding: 2rem 2.5rem;
+		}
+
+		.pagination-section {
+			padding: 2rem 2.5rem;
+		}
+
+		.inventory-title {
+			font-size: 1.5rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.page-container {
+			max-width: 94%;
+			padding: 2.5rem;
+		}
+
+		.form-section {
+			margin-bottom: 4rem;
+		}
+	}
+
+	@media (min-width: 1280px) {
+		.page-container {
+			max-width: 92%;
+			padding: 3rem;
+		}
+	}
+
+	@media (min-width: 1536px) {
+		.page-container {
+			max-width: 90%;
+			padding: 3.5rem;
 		}
 	}
 </style>

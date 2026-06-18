@@ -1,281 +1,159 @@
 <script>
-	let { store, globalTotal = null, onPageChange = null } = $props();
+	let { store } = $props();
 
-	const {
-		currentPage,
-		totalPages,
-		itemsPerPage,
-		totalItems,
-		startIndex,
-		endIndex,
-		setCurrentPage,
-		setItemsPerPage,
-		nextPage,
-		previousPage,
-		goToFirstPage,
-		goToLastPage
-	} = store;
+	// The pagination store is created once per page (`getPaginationStore(key)`) and its
+	// identity never changes, so capturing the initial value is intentional. Destructuring
+	// at the top level is required for the nested `$currentPage` etc. store subscriptions.
+	// svelte-ignore state_referenced_locally
+	const { currentPage, totalPages, itemsPerPage, setCurrentPage, setItemsPerPage } = store;
 
-	function handlePageChange(action) {
-		onPageChange?.();
-		action();
+	function goToPage(page) {
+		if (page >= 1 && page <= $totalPages) {
+			// Preserve scroll position during pagination
+			const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
+			setCurrentPage(page);
+
+			// Restore scroll position after pagination update
+			setTimeout(() => {
+				window.scrollTo(0, scrollPos);
+			}, 50);
+		}
 	}
 
 	function handleItemsPerPageChange(event) {
-		const newItemsPerPage = event.target.value === 'all' ? 'all' : parseInt(event.target.value);
-		onPageChange?.();
+		const select = event.target;
+		const newItemsPerPage = select.value === 'all' ? 'all' : parseInt(select.value);
+
+		// Preserve scroll position during items per page change
+		const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
 		setItemsPerPage(newItemsPerPage);
+
+		// Restore scroll position after items per page update
+		setTimeout(() => {
+			window.scrollTo(0, scrollPos);
+		}, 50);
 	}
 </script>
 
-<div class="ledger-footer">
-	<div class="footer-summary">
-		<span class="summary-text">
-			SHOWING <span class="summary-highlight">{$totalItems === 0 ? 0 : $startIndex + 1}</span> 
-			TO <span class="summary-highlight">{$endIndex}</span> 
-			OF <span class="summary-highlight">{$totalItems}</span>
-			{#if globalTotal !== null && globalTotal !== $totalItems}
-				<span class="summary-separator">/</span>
-				<span class="summary-total">{globalTotal}</span>
-			{/if}
-			ENTRIES
-		</span>
-	</div>
-
-	<div class="pagination-modern">
+<div class="pagination-controls">
+	<div class="pagination-buttons">
 		<button
-			class="pag-btn icon-only"
-			onclick={() => handlePageChange(goToFirstPage)}
+			class="pagination-button"
+			onclick={() => goToPage($currentPage - 1)}
 			disabled={$currentPage === 1}
-			aria-label="First Page"
-		>
-			<i class="fas fa-angle-double-left"></i>
-		</button>
-
-		<button
-			class="pag-btn"
-			onclick={() => handlePageChange(previousPage)}
-			disabled={$currentPage === 1}
-			aria-label="Previous Page"
+			aria-label="Previous page"
 		>
 			<i class="fas fa-chevron-left"></i>
-			<span class="btn-text">PREV</span>
 		</button>
-
-		<div class="pag-indicator">
-			<span class="indicator-current">{$currentPage}</span>
-			<span class="indicator-separator">/</span>
-			<span class="indicator-total">{$totalPages}</span>
-		</div>
-
+		<span class="pagination-info">Page {$currentPage} of {$totalPages}</span>
 		<button
-			class="pag-btn"
-			onclick={() => handlePageChange(nextPage)}
-			disabled={$currentPage === $totalPages || $totalPages === 0}
-			aria-label="Next Page"
+			class="pagination-button"
+			onclick={() => goToPage($currentPage + 1)}
+			disabled={$currentPage === $totalPages}
+			aria-label="Next page"
 		>
-			<span class="btn-text">NEXT</span>
 			<i class="fas fa-chevron-right"></i>
 		</button>
-
-		<button
-			class="pag-btn icon-only"
-			onclick={() => handlePageChange(goToLastPage)}
-			disabled={$currentPage === $totalPages || $totalPages === 0}
-			aria-label="Last Page"
-		>
-			<i class="fas fa-angle-double-right"></i>
-		</button>
 	</div>
-
-	<div class="footer-settings">
-		<span class="settings-label">ITEMS PER PAGE:</span>
-		<div class="page-size-control">
-			<select
-				id="itemsPerPage"
-				value={$itemsPerPage}
-				onchange={handleItemsPerPageChange}
-				class="settings-select"
-			>
-				{#each [5, 10, 25, 50, 'all'] as option}
-					<option value={option}>{option === 'all' ? 'ALL' : option}</option>
-				{/each}
-			</select>
-			<i class="fas fa-chevron-down select-icon"></i>
-		</div>
+	<div class="items-per-page">
+		<label for="itemsPerPage">Items per page:</label>
+		<select
+			id="itemsPerPage"
+			value={$itemsPerPage}
+			onchange={handleItemsPerPageChange}
+			class="pagination-select"
+		>
+			{#each [5, 10, 25, 50, 'all'] as option (option)}
+				<option value={option}>{option === 'all' ? 'All' : option}</option>
+			{/each}
+		</select>
 	</div>
 </div>
 
 <style>
-	.ledger-footer {
+	.pagination-controls {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 1.5rem 0;
-		border-top: 1px solid var(--tech-cell-border);
-		width: 100%;
+		padding: 1rem 0;
 		flex-wrap: wrap;
-		gap: 2rem;
+		gap: 1rem;
 	}
 
-	.footer-summary {
-		flex: 1;
-		min-width: 200px;
-	}
-
-	.summary-text {
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.75rem;
-		color: var(--tech-label);
-		letter-spacing: 0.05em;
-		font-weight: 700;
-	}
-
-	.summary-highlight {
-		color: var(--tech-accent);
-		font-weight: 800;
-	}
-
-	.summary-separator {
-		color: var(--tech-label);
-		margin: 0 0.2rem;
-		font-size: 0.7rem;
-		opacity: 0.4;
-	}
-
-	.summary-total {
-		color: var(--tech-label);
-		font-size: 0.75rem;
-		font-weight: 800;
-	}
-
-	.pagination-modern {
+	.pagination-buttons {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
-		flex: 1;
-		justify-content: center;
-		min-width: 300px;
-	}
-
-	.pag-btn {
-		background: var(--tech-badge-bg);
-		border: 1px solid var(--tech-badge-border);
-		color: var(--tech-label);
-		padding: 0.5rem 1rem;
-		font-size: 0.7rem;
-		font-weight: 800;
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		letter-spacing: 0.05em;
-		border-radius: 4px;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transition: all 0.2s;
-		min-width: 38px;
 		gap: 0.5rem;
 	}
 
-	.pag-btn:hover:not(:disabled) {
-		background: var(--tech-header-bg);
-		border-color: var(--tech-accent);
-		color: var(--tech-accent);
+	.pagination-button {
+		background-color: var(--table-cell-bg);
+		color: var(--text-color);
+		border: 1px solid var(--table-border-color);
+		border-radius: var(--border-radius);
+		padding: 0.5rem 1rem;
+		font-size: 1rem;
+		cursor: pointer;
+		transition:
+			background-color 0.3s ease,
+			color 0.3s ease;
 	}
 
-	.pag-btn:disabled {
-		opacity: 0.3;
+	.pagination-button:hover:not(:disabled) {
+		background-color: var(--hover-bg-color);
+	}
+
+	.pagination-button:disabled {
+		opacity: 0.5;
 		cursor: not-allowed;
 	}
 
-	.pag-btn.icon-only {
-		padding: 0.5rem;
-	}
-
-	.pag-indicator {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-weight: 800;
-		font-size: 0.8rem;
+	.pagination-info {
+		font-size: 1rem;
+		color: var(--text-color);
 		padding: 0 1rem;
 	}
 
-	.indicator-current {
-		color: var(--tech-accent);
-	}
-
-	.indicator-separator {
-		color: var(--tech-label);
-		opacity: 0.3;
-	}
-
-	.indicator-total {
-		color: var(--tech-label);
-	}
-
-	.footer-settings {
-		flex: 1;
-		display: flex;
-		justify-content: flex-end;
-		align-items: center;
-		gap: 1rem;
-		min-width: 250px;
-	}
-
-	.settings-label {
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.65rem;
-		font-weight: 800;
-		color: var(--tech-label);
-		letter-spacing: 0.05em;
-	}
-
-	.page-size-control {
-		position: relative;
+	.items-per-page {
 		display: flex;
 		align-items: center;
+		gap: 0.5rem;
 	}
 
-	.settings-select {
+	.items-per-page label {
+		font-size: 1rem;
+		color: var(--text-color);
+	}
+
+	.pagination-select {
+		background-color: var(--table-cell-bg);
+		color: var(--text-color);
+		border: 1px solid var(--table-border-color);
+		border-radius: var(--border-radius);
+		padding: 0.5rem 2rem 0.5rem 0.5rem;
+		font-size: 1rem;
 		appearance: none;
-		background: var(--tech-badge-bg);
-		border: 1px solid var(--tech-badge-border);
-		color: var(--tech-value);
-		padding: 0.4rem 2.2rem 0.4rem 0.8rem;
-		border-radius: 4px;
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.75rem;
-		font-weight: 700;
+		background-image: var(--pagination-arrow-icon);
+		background-repeat: no-repeat;
+		background-position: right 0.5rem center;
+		background-size: 1.5em;
 		cursor: pointer;
-		transition: all 0.2s;
 	}
 
-	.settings-select:hover {
-		border-color: var(--tech-accent);
-	}
-
-	.settings-select:focus {
+	.pagination-select:focus {
 		outline: none;
-		border-color: var(--tech-accent);
-		box-shadow: 0 0 10px var(--tech-accent-muted);
+		box-shadow: 0 0 0 2px var(--icon-hover-color);
 	}
 
-	.select-icon {
-		position: absolute;
-		right: 0.8rem;
-		font-size: 0.7rem;
-		color: var(--tech-accent);
-		pointer-events: none;
-	}
-
-	@media (max-width: 768px) {
-		.btn-text { display: none; }
-		.ledger-footer {
+	@media (max-width: 640px) {
+		.pagination-controls {
 			flex-direction: column;
-			text-align: center;
+			align-items: stretch;
 		}
-		.footer-settings { justify-content: center; }
+
+		.pagination-buttons,
+		.items-per-page {
+			justify-content: center;
+		}
 	}
 </style>

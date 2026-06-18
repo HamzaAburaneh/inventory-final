@@ -1,12 +1,8 @@
 <script>
-	import { slide } from 'svelte/transition';
-	import { cubicOut } from 'svelte/easing';
-	import { notificationStore } from '../stores/notificationStore';
-	import ConfirmModal from './ConfirmModal.svelte';
+	import { fly, fade } from 'svelte/transition';
+	import Swal from 'sweetalert2';
 
 	let { onAdd } = $props();
-	let isCollapsed = $state(true);
-	let showValidationModal = $state(false);
 
 	let formData = $state({
 		name: '',
@@ -35,18 +31,9 @@
 	const handleInput = (event, field, allowDecimal = false) => {
 		let value = event.target.value;
 		if (allowDecimal) {
-			// Remove all non-digits
-			let digits = value.replace(/\D/g, '');
-			if (digits === '') {
-				value = '';
-			} else {
-				// Convert to number and format as currency
-				let amount = parseInt(digits, 10) / 100;
-				value = amount.toLocaleString('en-CA', {
-					minimumFractionDigits: 2,
-					maximumFractionDigits: 2
-				});
-			}
+			value = value.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1');
+			const [integer, decimal] = value.split('.');
+			value = decimal ? `${integer}.${decimal.slice(0, 2)}` : value;
 		} else {
 			value = value.replace(/\D/g, '');
 		}
@@ -55,8 +42,24 @@
 	};
 
 	const handleAdd = async () => {
-		if (formData.name.trim() === '' || !formData.storageType) {
-			showValidationModal = true;
+		if (formData.name.trim() === '') {
+			// Preserve scroll position before showing alert
+			const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
+
+			await Swal.fire({
+				icon: 'error',
+				title: 'Empty Item Name',
+				text: 'Item name cannot be empty.',
+				background: 'var(--container-bg)',
+				color: 'var(--text-color)',
+				scrollbarPadding: false,
+				heightAuto: false
+			});
+
+			// Restore scroll position after alert
+			setTimeout(() => {
+				window.scrollTo(0, scrollPos);
+			}, 50);
 			return;
 		}
 
@@ -66,599 +69,554 @@
 	};
 </script>
 
-<div class="tech-form-frame" class:is-collapsed={isCollapsed}>
-	<button 
-		type="button" 
-		class="form-toggle-header" 
-		onclick={() => (isCollapsed = !isCollapsed)}
-		aria-expanded={!isCollapsed}
-	>
-		<div class="header-main">
-			<i class="fas fa-plus-square toggle-icon"></i>
-			<h3 class="form-title">Add New Item</h3>
-			<div class="form-separator"></div>
-		</div>
-		<div class="header-action">
-			<span class="action-hint">{isCollapsed ? 'EXPAND FORM' : 'COLLAPSE'}</span>
-			<i class="fas fa-chevron-down chevron" class:rotated={!isCollapsed}></i>
-		</div>
-	</button>
+<div class="form-card">
+	<div class="form-header">
+		<h3 class="form-title">Add New Item</h3>
+		<p class="form-subtitle">Enter item details to add to your inventory</p>
+	</div>
 
-	{#if !isCollapsed}
-		<div transition:slide={{ duration: 400, easing: cubicOut }}>
-			<div class="form-content-inner">
-				<div class="form-grid">
-					<div class="input-group name-group">
-						<label for="name" class="tech-label">Item Name</label>
-						<div class="tech-input-wrapper">
-							<input
-								id="name"
-								class="tech-input"
-								bind:value={formData.name}
-								placeholder="Enter item name..."
-							/>
+	<div class="form-content">
+		<div class="form-row primary-row">
+			<div class="form-group">
+				<label for="name" class="form-label">Item Name</label>
+				<div class="input-wrapper">
+					<input
+						id="name"
+						class="form-input {errors.name ? 'error' : ''}"
+						bind:value={formData.name}
+						placeholder="Enter item name"
+						oninput={() => validateField('name', formData.name)}
+					/>
+					{#if errors.name}
+						<div
+							class="error-message"
+							in:fly={{ y: -10, duration: 200 }}
+							out:fade={{ duration: 100 }}
+						>
+							{errors.name}
 						</div>
-					</div>
+					{/if}
+				</div>
+			</div>
 
-					<div class="input-group storage-group">
-						<label class="tech-label">Storage Type</label>
-						<div class="storage-type-grid">
-							{#each ['Freezer', 'Refrigerator', 'Dry Storage'] as type}
-								<label class="storage-node">
-									<input
-										type="radio"
-										name="storageType"
-										value={type}
-										bind:group={formData.storageType}
-										class="hidden-radio"
-									/>
-									<div class="node-card">
-										<div class="node-indicator" style="--type-color: {type === 'Freezer' ? '#3B82F6' : type === 'Refrigerator' ? '#10B981' : '#F59E0B'}"></div>
-										<span class="node-label">{type}</span>
-										<i class="fas fa-check node-check"></i>
+			<div class="form-group">
+				<label for="storageType" class="form-label">Storage Type</label>
+				<div class="input-wrapper">
+					<select
+						id="storageType"
+						class="form-input {errors.storageType ? 'error' : ''}"
+						bind:value={formData.storageType}
+						class:placeholder-selected={!formData.storageType}
+					>
+						<option value="" disabled>Select storage type...</option>
+						<option value="Freezer">Freezer</option>
+						<option value="Refrigerator">Refrigerator</option>
+						<option value="Dry Storage">Dry Storage</option>
+					</select>
+				</div>
+			</div>
+
+			<div class="form-group booths-group">
+				<span class="form-label">Booths</span>
+				<div class="input-wrapper">
+					<div class="booths-container">
+						{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth (booth.value)}
+							<label class="booth-option">
+								<input
+									type="checkbox"
+									value={booth.value}
+									bind:group={formData.booths}
+									class="booth-checkbox"
+								/>
+								<div class="booth-card" style="--booth-color: {booth.color}">
+									<div class="booth-indicator"></div>
+									<span class="booth-name">{booth.label}</span>
+									<div class="checkmark">
+										<svg
+											width="16"
+											height="16"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="3"
+										>
+											<polyline points="20,6 9,17 4,12"></polyline>
+										</svg>
 									</div>
-								</label>
-							{/each}
-						</div>
+								</div>
+							</label>
+						{/each}
 					</div>
-
-					<div class="input-group count-group">
-						<label for="count" class="tech-label">Current Count</label>
-						<div class="tech-input-wrapper">
-							<input
-								id="count"
-								class="tech-input"
-								type="text"
-								bind:value={formData.count}
-								placeholder="0"
-								oninput={(event) => handleInput(event, 'count')}
-							/>
+					{#if errors.booths}
+						<div
+							class="error-message"
+							in:fly={{ y: -10, duration: 200 }}
+							out:fade={{ duration: 100 }}
+						>
+							{errors.booths}
 						</div>
-					</div>
+					{/if}
+				</div>
+			</div>
+		</div>
 
-					<div class="input-group full-width">
-						<label class="tech-label">Booths</label>
-						<div class="booth-selection-grid">
-							{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth}
-								<label class="booth-node">
-									<input
-										type="checkbox"
-										value={booth.value}
-										bind:group={formData.booths}
-										class="hidden-check"
-									/>
-									<div class="node-card" style="--node-color: {booth.color}">
-										<div class="node-indicator"></div>
-										<span class="node-label">{booth.label}</span>
-										<i class="fas fa-check node-check"></i>
-									</div>
-								</label>
-							{/each}
+		<div class="form-row secondary-row">
+			<div class="form-group">
+				<label for="count" class="form-label">Current Stock</label>
+				<div class="input-wrapper">
+					<input
+						id="count"
+						class="form-input {errors.count ? 'error' : ''}"
+						type="text"
+						bind:value={formData.count}
+						pattern="^[0-9]*$"
+						placeholder="0"
+						oninput={(event) => handleInput(event, 'count')}
+					/>
+					{#if errors.count}
+						<div
+							class="error-message"
+							in:fly={{ y: -10, duration: 200 }}
+							out:fade={{ duration: 100 }}
+						>
+							{errors.count}
 						</div>
-					</div>
+					{/if}
+				</div>
+			</div>
 
-					<div class="input-group alert-group">
-						<label for="lowCount" class="tech-label">Low Count Alert</label>
-						<div class="tech-input-wrapper">
-							<input
-								id="lowCount"
-								class="tech-input"
-								type="text"
-								bind:value={formData.lowCount}
-								placeholder="0"
-								oninput={(event) => handleInput(event, 'lowCount')}
-							/>
+			<div class="form-group">
+				<label for="lowCount" class="form-label">Low Stock Alert</label>
+				<div class="input-wrapper">
+					<input
+						id="lowCount"
+						class="form-input {errors.lowCount ? 'error' : ''}"
+						type="text"
+						bind:value={formData.lowCount}
+						pattern="^[0-9]*$"
+						placeholder="0"
+						oninput={(event) => handleInput(event, 'lowCount')}
+					/>
+					{#if errors.lowCount}
+						<div
+							class="error-message"
+							in:fly={{ y: -10, duration: 200 }}
+							out:fade={{ duration: 100 }}
+						>
+							{errors.lowCount}
 						</div>
-					</div>
+					{/if}
+				</div>
+			</div>
 
-					<div class="input-group cost-group">
-						<label for="cost" class="tech-label">Unit Cost ($)</label>
-						<div class="tech-input-wrapper">
+			<div class="form-group">
+				<label for="cost" class="form-label">Unit Cost ($)</label>
+				<div class="input-wrapper">
 					<input
 						id="cost"
-						class="tech-input"
+						class="form-input {errors.cost ? 'error' : ''}"
 						type="text"
 						bind:value={formData.cost}
 						placeholder="0.00"
 						oninput={(event) => handleInput(event, 'cost', true)}
 					/>
+					{#if errors.cost}
+						<div
+							class="error-message"
+							in:fly={{ y: -10, duration: 200 }}
+							out:fade={{ duration: 100 }}
+						>
+							{errors.cost}
 						</div>
-					</div>
-				</div>
-
-				<div class="form-footer centered">
-					<button class="tech-add-btn primary-action" onclick={handleAdd}>
-						<i class="fas fa-plus-circle"></i>
-						<span>Add New Item</span>
-					</button>
+					{/if}
 				</div>
 			</div>
 		</div>
-	{/if}
+
+		<div class="form-actions">
+			<button class="add-button" onclick={handleAdd}>
+				<svg
+					width="20"
+					height="20"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
+					<line x1="12" y1="5" x2="12" y2="19"></line>
+					<line x1="5" y1="12" x2="19" y2="12"></line>
+				</svg>
+				Add Item
+			</button>
+		</div>
+	</div>
 </div>
 
-<ConfirmModal
-	bind:show={showValidationModal}
-	title="Required Fields"
-	message={`<div style="display: flex; flex-direction: column; gap: 1.5rem; padding: 0.5rem 0;">
-		<div style="display: flex; flex-direction: column; gap: 1rem;">
-			${formData.name.trim() === '' ? `
-				<div style="display: flex; align-items: flex-start; gap: 1rem; background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; padding: 1rem; border-radius: 0 8px 8px 0;">
-					<div style="color: #ef4444; margin-top: 0.1rem;"><i class="fas fa-tag"></i></div>
-					<div style="display: flex; flex-direction: column; gap: 0.25rem;">
-						<span style="color: #ef4444; font-weight: 800; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;">Item Name</span>
-						<span style="color: var(--tech-label); font-size: 0.85rem;">This field is required to identify the item.</span>
-					</div>
-				</div>
-			` : ''}
-			${!formData.storageType ? `
-				<div style="display: flex; align-items: flex-start; gap: 1rem; background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; padding: 1rem; border-radius: 0 8px 8px 0;">
-					<div style="color: #ef4444; margin-top: 0.1rem;"><i class="fas fa-warehouse"></i></div>
-					<div style="display: flex; flex-direction: column; gap: 0.25rem;">
-						<span style="color: #ef4444; font-weight: 800; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;">Storage Type</span>
-						<span style="color: var(--tech-label); font-size: 0.85rem;">Please select where this item will be stored.</span>
-					</div>
-				</div>
-			` : ''}
-		</div>
-		<p style="margin: 0; color: var(--tech-label); font-size: 0.75rem; font-style: italic; text-align: center;">All highlighted fields must be completed before proceeding.</p>
-	</div>`}
-	type="warning"
-	confirmText="Understood"
-	cancelText=""
-	onConfirm={() => showValidationModal = false}
-/>
-
 <style>
-	.tech-form-frame {
-		background: var(--tech-glass-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 12px;
+	.form-card {
+		background: var(--container-bg);
+		border-radius: var(--border-radius);
 		padding: 0;
+		margin-bottom: 2rem;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		border: 1px solid var(--table-border-color);
 		overflow: hidden;
-		box-shadow: var(--tech-glass-shadow);
-		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
-	.tech-form-frame.is-collapsed {
-		border-color: var(--tech-glass-border);
-		opacity: 0.9;
-	}
-
-	.tech-form-frame.is-collapsed:hover {
-		opacity: 1;
-		border-color: var(--tech-accent-muted);
-	}
-
-	.form-toggle-header {
-		width: 100%;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 1.25rem 2rem;
-		background: transparent;
-		border: none;
-		cursor: pointer;
-		outline: none;
-		transition: background-color 0.2s;
-	}
-
-	.form-toggle-header:hover {
-		background: rgba(255, 255, 255, 0.02);
-	}
-
-	.header-main {
-		display: flex;
-		align-items: center;
-		gap: 1.25rem;
-	}
-
-	.toggle-icon {
-		color: var(--tech-accent);
-		font-size: 1.2rem;
-		opacity: 0.8;
+	.form-header {
+		background: var(--table-header-bg);
+		padding: 1.5rem 2rem;
+		border-bottom: 1px solid var(--table-border-color);
 	}
 
 	.form-title {
+		margin: 0 0 0.25rem 0;
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: var(--text-color);
+		letter-spacing: -0.025em;
+	}
+
+	.form-subtitle {
 		margin: 0;
-		font-size: 1rem;
-		font-weight: 800;
-		color: var(--tech-title);
-		text-transform: uppercase;
-		letter-spacing: 0.15em;
+		font-size: 0.875rem;
+		color: var(--text-color-dimmed);
+		font-weight: 400;
 	}
 
-	.form-separator {
-		height: 2px;
-		width: 30px;
-		background: var(--tech-accent);
-		box-shadow: 0 0 10px var(--tech-accent-muted);
-		opacity: 0.5;
+	.form-content {
+		padding: 2rem;
 	}
 
-	.header-action {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-	}
-
-	.action-hint {
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.65rem;
-		font-weight: 800;
-		color: var(--tech-label);
-		letter-spacing: 0.1em;
-		opacity: 0.6;
-	}
-
-	.chevron {
-		color: var(--tech-label);
-		font-size: 0.9rem;
-		transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-		opacity: 0.5;
-	}
-
-	.chevron.rotated {
-		transform: rotate(-180deg);
-	}
-
-	.form-content-inner {
-		padding: 0 2rem 2rem 2rem;
-	}
-
-	.form-grid {
+	.form-row {
 		display: grid;
-		grid-template-columns: repeat(6, 1fr);
-		gap: 1.25rem;
-		margin-bottom: 2rem;
+		gap: 1.5rem;
+		margin-bottom: 1.5rem;
 	}
 
-	.name-group { grid-column: span 6; }
-	.storage-group { grid-column: span 6; }
-	.count-group { grid-column: span 2; }
-	.alert-group { grid-column: span 2; }
-	.cost-group { grid-column: span 2; }
-	.booths-group { grid-column: span 6; }
-
-	.full-width {
-		grid-column: 1 / -1;
+	.primary-row {
+		grid-template-columns: 1fr;
 	}
 
-	.input-group {
-		display: flex;
-		flex-direction: column;
-		gap: 0.6rem;
+	.secondary-row {
+		grid-template-columns: 1fr;
 	}
 
-	.tech-label {
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.65rem;
-		font-weight: 800;
-		color: var(--tech-label);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	.tech-input-wrapper {
+	.form-group {
 		position: relative;
 	}
 
-	.tech-input {
+	.form-label {
+		display: block;
+		margin-bottom: 0.5rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-color);
+		letter-spacing: 0.025em;
+	}
+
+	.input-wrapper {
+		position: relative;
+	}
+
+	.form-input {
 		width: 100%;
-		background: var(--tech-badge-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 4px;
-		padding: 0.75rem 1rem;
-		color: var(--tech-value);
-		font-family: 'Geist', sans-serif;
-		font-size: 0.9rem;
+		padding: 0.875rem 1rem;
+		border: 2px solid var(--input-border-color);
+		border-radius: var(--border-radius);
+		background-color: var(--input-bg);
+		color: var(--input-text);
+		font-size: 0.95rem;
 		font-weight: 500;
-		transition: all 0.2s;
+		transition: all 0.2s ease;
 	}
 
-	.tech-input:focus {
+	.form-input::placeholder {
+		color: var(--placeholder-text);
+		font-weight: 400;
+	}
+
+	.form-input:focus {
 		outline: none;
-		border-color: var(--tech-accent);
-		background: var(--tech-header-bg);
-		box-shadow: 0 0 10px var(--tech-accent-muted);
+		border-color: var(--focus-border-color);
+		box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
 	}
 
-	.storage-type-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 0.75rem;
+	.form-input:hover:not(:focus) {
+		border-color: var(--input-hover-border-color);
+		background-color: var(--input-hover-bg);
 	}
 
-	.storage-node {
-		cursor: pointer;
+	.form-input.error {
+		border-color: #dc3545;
+		box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
 	}
 
-	.hidden-radio {
+	.placeholder-selected {
+		color: var(--placeholder-text) !important;
+	}
+
+	.error-message {
 		position: absolute;
-		opacity: 0;
-	}
-
-	.storage-node .node-card {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0.6rem 0.8rem;
-		background: var(--tech-badge-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 4px;
-		transition: all 0.2s;
-	}
-
-	.storage-node .node-indicator {
-		width: 3px;
-		height: 14px;
-		background: var(--type-color);
-		border-radius: 2px;
-	}
-
-	.storage-node .node-label {
-		font-size: 0.7rem;
-		font-weight: 800;
-		color: var(--tech-label);
-		text-transform: uppercase;
-		margin-left: 0.5rem;
-		flex: 1;
-	}
-
-	.storage-node .node-check {
-		font-size: 0.7rem;
-		color: var(--tech-accent);
-		opacity: 0;
-		transition: all 0.2s;
-	}
-
-	.hidden-radio:checked + .node-card {
-		border-color: var(--tech-accent);
-		background: var(--tech-accent-muted);
-	}
-
-	.hidden-radio:checked + .node-card .node-label {
-		color: var(--tech-value);
-	}
-
-	.hidden-radio:checked + .node-card .node-check {
-		opacity: 1;
-	}
-
-	.tech-input.error {
-		border-color: #ef4444;
-		box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
-	}
-
-	.tech-input::placeholder {
-		color: var(--tech-label);
-		opacity: 0.4;
-	}
-
-	.tech-error-message {
-		position: absolute;
-		top: calc(100% + 5px);
+		top: 100%;
 		left: 0;
-		color: #ef4444;
-		font-size: 0.65rem;
-		font-weight: 700;
-		display: flex;
-		align-items: center;
-		gap: 0.4rem;
-		z-index: 5;
+		right: 0;
+		margin-top: 0.5rem;
+		padding: 0.75rem 1rem;
+		background: #dc3545;
+		color: white;
+		border-radius: var(--border-radius);
+		font-size: 0.8rem;
+		font-weight: 500;
+		box-shadow: 0 4px 6px -1px rgba(220, 53, 69, 0.3);
+		z-index: 10;
 	}
 
-	.booth-selection-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-		gap: 0.75rem;
-	}
-
-	.booth-node {
-		cursor: pointer;
-	}
-
-	.hidden-check {
-		position: absolute;
-		opacity: 0;
-	}
-
-	.node-card {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0.6rem 0.8rem;
-		background: var(--tech-badge-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 4px;
-		transition: all 0.2s;
-	}
-
-	.node-indicator {
-		width: 3px;
-		height: 14px;
-		background: var(--node-color);
-		border-radius: 2px;
-	}
-
-	.node-label {
-		font-size: 0.7rem;
-		font-weight: 800;
-		color: var(--tech-label);
-		text-transform: uppercase;
-		margin-left: -0.5rem;
-	}
-
-	.node-check {
-		font-size: 0.7rem;
-		color: var(--node-color);
-		opacity: 0;
-		transition: all 0.2s;
-	}
-
-	.hidden-check:checked + .node-card {
-		border-color: var(--node-color);
-		background: rgba(255, 255, 255, 0.05);
-	}
-
-	.hidden-check:checked + .node-card .node-label {
-		color: var(--tech-value);
-	}
-
-	.hidden-check:checked + .node-card .node-check {
-		opacity: 1;
-	}
-
-	.form-footer {
+	.form-actions {
+		margin-top: 2rem;
 		display: flex;
 		justify-content: center;
-		padding-top: 1rem;
-		border-top: 1px solid var(--tech-glass-border);
-		margin-top: 1rem;
 	}
 
-	.tech-add-btn.primary-action {
-		padding: 1.25rem 5rem;
-		min-width: 350px;
-		font-size: 1rem;
-		border-radius: 8px;
-		background: var(--tech-accent-muted);
-		color: var(--tech-accent);
-		border-color: var(--tech-accent-muted);
-	}
-
-	.tech-add-btn.primary-action i {
-		font-size: 1.2rem;
-	}
-
-	.tech-add-btn {
-		background: var(--tech-accent-muted);
-		color: var(--tech-accent);
-		border: 1px solid var(--tech-accent-muted);
-		padding: 0.85rem 2.5rem;
-		border-radius: 4px;
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-weight: 800;
-		font-size: 0.75rem;
-		letter-spacing: 0.15em;
-		text-transform: uppercase;
-		display: flex;
+	.add-button {
+		display: inline-flex;
 		align-items: center;
-		gap: 1rem;
-		transition: all 0.3s;
+		justify-content: center;
+		gap: 0.75rem;
+		padding: 1rem 2.5rem;
+		background: var(--add-item-color);
+		color: black;
+		border: none;
+		border-radius: var(--border-radius);
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		box-shadow:
+			0 4px 15px rgba(0, 0, 0, 0.12),
+			0 2px 6px rgba(0, 0, 0, 0.08);
+		letter-spacing: 0.025em;
+		text-transform: uppercase;
+		position: relative;
+		overflow: hidden;
+		user-select: none;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.add-button::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: -100%;
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+		transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.add-button:hover {
+		transform: translateY(-2px);
+		box-shadow:
+			0 8px 25px rgba(0, 0, 0, 0.15),
+			0 4px 12px rgba(0, 0, 0, 0.1);
+		filter: brightness(1.25);
+	}
+
+	.add-button:hover::before {
+		left: 100%;
+	}
+
+	.add-button:active {
+		transform: translateY(0);
+		transition-duration: 0.1s;
+		box-shadow:
+			0 2px 8px rgba(0, 0, 0, 0.15),
+			0 1px 4px rgba(0, 0, 0, 0.1);
+	}
+
+	.add-button:focus-visible {
+		outline: 2px solid var(--add-item-color);
+		outline-offset: 3px;
+	}
+
+	.add-button:active {
+		transform: translateY(0);
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	}
+
+	.add-button svg {
+		width: 18px;
+		height: 18px;
+	}
+
+	/* Responsive Design */
+	@media (min-width: 640px) {
+		.primary-row {
+			grid-template-columns: 1fr 1fr;
+		}
+
+		.secondary-row {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+
+	@media (min-width: 768px) {
+		.form-header {
+			padding: 2rem 2.5rem;
+		}
+
+		.form-content {
+			padding: 2.5rem;
+		}
+
+		.form-title {
+			font-size: 1.375rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.form-row {
+			gap: 2rem;
+		}
+
+		.form-input {
+			padding: 1rem 1.25rem;
+			font-size: 1rem;
+		}
+
+		.add-button {
+			padding: 1rem 2.5rem;
+			font-size: 1rem;
+		}
+	}
+
+	.booths-group {
+		grid-column: 1 / -1;
+	}
+
+	.booths-container {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+		gap: 0.75rem;
+		margin-top: 0.75rem;
+	}
+
+	/* Mobile responsiveness */
+	@media (max-width: 640px) {
+		.booths-container {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 0.5rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.booths-container {
+			grid-template-columns: 1fr;
+			gap: 0.5rem;
+		}
+	}
+
+	.booth-option {
+		position: relative;
 		cursor: pointer;
 	}
 
-	.tech-add-btn:hover {
-		background: var(--tech-accent);
-		color: var(--tech-bg-start);
-		box-shadow: 0 0 20px var(--tech-accent-muted);
+	.booth-checkbox {
+		position: absolute;
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.booth-card {
+		position: relative;
+		display: flex;
+		align-items: center;
+		padding: 0.75rem;
+		background: var(--input-bg);
+		border: 2px solid var(--input-border-color);
+		border-radius: var(--border-radius);
+		transition: all 0.2s ease;
+		min-height: 50px;
+		overflow: hidden;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	/* Mobile adjustments */
+	@media (max-width: 640px) {
+		.booth-card {
+			padding: 0.5rem;
+			min-height: 45px;
+		}
+	}
+
+	.booth-card:hover {
+		border-color: var(--input-hover-border-color);
+		background: var(--input-hover-bg);
 		transform: translateY(-2px);
-		outline: none;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 	}
 
-	.tech-add-btn:focus {
-		outline: none;
-		box-shadow: 0 0 20px var(--tech-accent-muted);
+	.booth-indicator {
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 4px;
+		background: var(--booth-color);
+		opacity: 0.7;
+		transition: all 0.2s ease;
 	}
 
-	.tech-add-btn:active {
-		outline: none;
-		transform: translateY(0);
+	.booth-name {
+		flex: 1;
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: var(--text-color);
+		margin-left: 0.75rem;
 	}
 
-	.tech-add-btn i {
-		font-size: 1rem;
+	.checkmark {
+		opacity: 0;
+		color: var(--booth-color);
+		transition: all 0.2s ease;
+		transform: scale(0.8);
 	}
 
-	@media (max-width: 768px) {
-		.form-toggle-header {
-			padding: 1rem 1.25rem;
+	.booth-checkbox:checked + .booth-card {
+		border-color: var(--booth-color);
+		background: color-mix(in srgb, var(--booth-color) 10%, var(--input-bg));
+	}
+
+	.booth-checkbox:checked + .booth-card .booth-indicator {
+		opacity: 1;
+		width: 6px;
+	}
+
+	.booth-checkbox:checked + .booth-card .checkmark {
+		opacity: 1;
+		transform: scale(1);
+	}
+
+	.booth-checkbox:checked + .booth-card .booth-name {
+		color: var(--booth-color);
+	}
+
+	/* Dark mode improvements */
+	@media (prefers-color-scheme: dark) {
+		.booth-card {
+			background: var(--container-bg);
+			border-color: var(--table-border-color);
 		}
-		
-		.form-title {
-			font-size: 0.85rem;
+
+		.booth-card:hover {
+			background: var(--hover-bg-color);
+			border-color: var(--input-hover-border-color);
 		}
-		
-		.form-separator {
-			display: none;
-		}
-		
-		.action-hint {
-			display: none;
-		}
-		
-		.form-content-inner {
-			padding: 0 1rem 1.5rem 1rem;
-		}
-		
-		.form-grid { 
-			grid-template-columns: 1fr; 
-			gap: 1rem;
-			margin-bottom: 1.5rem;
-		}
-		
-		.name-group,
-		.storage-group,
-		.count-group,
-		.alert-group,
-		.cost-group,
-		.full-width {
-			grid-column: span 1;
-		}
-		
-		.storage-type-grid { 
-			grid-template-columns: 1fr; 
-			gap: 0.5rem;
-		}
-		
-		.storage-node .node-card {
-			padding: 0.75rem 1rem;
-		}
-		
-		.storage-node .node-label {
-			font-size: 0.8rem;
-		}
-		
-		.booth-selection-grid { 
-			grid-template-columns: repeat(2, 1fr); 
-			gap: 0.5rem;
-		}
-		
-		.booth-node .node-card {
-			padding: 0.6rem 0.75rem;
-		}
-		
-		.tech-input {
-			padding: 0.875rem 1rem;
-			font-size: 1rem;
-		}
-		
-		.tech-add-btn.primary-action {
-			min-width: 100%;
-			width: 100%;
-			padding: 1rem 2rem;
-			font-size: 0.9rem;
+
+		.booth-checkbox:checked + .booth-card {
+			background: color-mix(in srgb, var(--booth-color) 15%, var(--container-bg));
+			border-color: var(--booth-color);
 		}
 	}
 </style>

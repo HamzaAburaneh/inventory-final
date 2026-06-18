@@ -1,11 +1,7 @@
 <script>
 	import { TABLE_COLUMNS, getColumnDisplayName } from '../lib/tableUtils.js';
 
-	let { 
-		sortBy, 
-		currentSortColumn, 
-		sortAscending 
-	} = $props();
+	let { sortBy, currentSortColumn, sortAscending } = $props();
 
 	function handleSort(columnName) {
 		if (columnName) {
@@ -21,20 +17,23 @@
 
 <thead>
 	<tr class="table-header">
-		{#each TABLE_COLUMNS as column, i}
+		{#each TABLE_COLUMNS as column (column.name)}
 			<th
 				class="{column.name}-col"
+				style="width: {column.width}; min-width: {column.minWidth}; max-width: {column.name === ''
+					? '2.2rem'
+					: 'none'};"
 				onclick={() => handleSort(column.name)}
 			>
-				<div class="header-content {column.name === '' ? 'justify-center' : ''}">
+				<div class="header">
 					{#if column.name}
-						<span class="header-text">{getColumnDisplayName(column.name)}</span>
+						{getColumnDisplayName(column.name)}
 						<i
 							class="fas fa-sort{currentSortColumn === column.name
 								? sortAscending
 									? '-up'
 									: '-down'
-								: ''} sort-icon"
+								: ''}"
 						></i>
 					{/if}
 				</div>
@@ -47,65 +46,45 @@
 	.table-header th {
 		position: sticky;
 		top: 0;
-		background: var(--tech-header-bg);
-		backdrop-filter: blur(12px);
-		-webkit-backdrop-filter: blur(12px);
-		z-index: 20;
-		padding: 1.1rem 1.25rem;
+		background-color: var(--table-header-bg);
+		z-index: 10;
+		box-shadow: 0 0.063rem 0.188rem rgba(0, 0, 0, 0.2);
+		color: var(--nav-logo-color);
+		font-weight: 600;
+		will-change: transform;
+		transform: translateZ(0);
+		overflow: visible !important;
+		text-overflow: unset !important;
+		white-space: nowrap !important;
+		padding: 0.5rem;
 		text-align: left;
-		font-family: 'Geist', sans-serif;
-		font-weight: 700;
-		color: var(--tech-header-text);
-		text-transform: uppercase;
-		font-size: 0.7rem;
-		letter-spacing: 0.1em;
-		cursor: pointer;
-		border-bottom: 1px solid var(--tech-cell-border);
-		transition: color 0.2s;
+		border-bottom: 0.063rem solid var(--table-border-color);
 	}
 
-	.table-header th:hover {
-		color: var(--tech-accent);
-	}
-
-	.header-content {
+	.header {
 		display: flex;
 		align-items: center;
-		gap: 0.6rem;
-		white-space: nowrap;
-		position: relative;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		overflow: visible !important;
+		white-space: nowrap !important;
+		min-width: max-content;
 	}
 
-	.header-text {
-		position: relative;
-		z-index: 1;
-	}
-
-	.sort-icon {
-		font-size: 0.75rem;
-		color: var(--tech-accent);
-		opacity: 0.4;
-		transition: all 0.2s;
+	.header i {
 		margin-left: 0.5rem;
+		font-size: 0.8em;
+		transition: transform 0.3s ease;
+		flex-shrink: 0;
+		min-width: 1rem;
 	}
 
-	.table-header th:hover .sort-icon {
-		opacity: 1;
+	.header:hover {
+		color: var(--icon-hover-color);
+		transform: scale(1.05);
 	}
 
-	.justify-center {
-		justify-content: center;
-	}
-
-	/* Specific column styles */
-	.count-col, .lowCount-col, .cost-col, .totalValue-col {
-		text-align: center;
-	}
-
-	.count-col .header-content,
-	.lowCount-col .header-content,
-	.cost-col .header-content,
-	.totalValue-col .header-content {
-		justify-content: center;
+	.header:hover i {
+		transform: scale(1.2);
 	}
 </style>

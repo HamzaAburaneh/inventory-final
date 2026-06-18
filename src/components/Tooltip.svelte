@@ -1,16 +1,23 @@
 <script>
+	import { fade } from 'svelte/transition';
+
 	let { text, x = 0, y = 0, visible = false } = $props();
 </script>
 
 {#if visible}
-	<div class="tooltip" style="left: {x}px; top: {y}px;">
+	<div
+		class="tooltip"
+		style="left: {x}px; top: {y}px;"
+		in:fade={{ duration: 150 }}
+		out:fade={{ duration: 150 }}
+	>
 		{text}
 	</div>
 {/if}
 
 <style>
 	.tooltip {
-		position: fixed;
+		position: absolute;
 		background-color: #333;
 		color: white;
 		padding: 0.5rem 0.75rem;

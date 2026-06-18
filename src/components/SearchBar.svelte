@@ -1,15 +1,10 @@
 <script>
-	let { 
-		searchValue = $bindable(''), 
-		onSearch, 
-		onClear,
-		placeholder = "Search..."
-	} = $props();
+	import { fade, fly } from 'svelte/transition';
+
+	let { searchValue = $bindable(''), onSearch, onClear } = $props();
 
 	function handleInput(event) {
-		const value = event.target.value;
-		searchValue = value;
-		onSearch(value);
+		onSearch(event.target.value);
 	}
 
 	function clearSearch() {
@@ -18,121 +13,138 @@
 	}
 </script>
 
-<div class="tech-search-container">
-	<div class="tech-search-wrapper">
-		<i class="fas fa-search tech-search-icon"></i>
+<div class="search-container" in:fly={{ y: -20, duration: 300 }} out:fade={{ duration: 200 }}>
+	<div class="search-wrapper">
 		<input
 			id="search"
-			class="tech-search-input"
+			class="search-input"
 			bind:value={searchValue}
-			{placeholder}
+			placeholder="Search Items"
 			oninput={handleInput}
 		/>
+		<label for="search" class="search-icon">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<circle cx="11" cy="11" r="8"></circle>
+				<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+			</svg>
+		</label>
 		{#if searchValue}
-			<button class="tech-clear-button" onclick={clearSearch} aria-label="Clear search">
-				<i class="fas fa-times"></i>
+			<button
+				class="clear-button"
+				onclick={clearSearch}
+				transition:fade={{ duration: 200 }}
+				aria-label="Clear search"
+			>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<line x1="18" y1="6" x2="6" y2="18"></line>
+					<line x1="6" y1="6" x2="18" y2="18"></line>
+				</svg>
 			</button>
 		{/if}
 	</div>
 </div>
 
 <style>
-	.tech-search-container {
-		width: 100%;
-		display: flex;
-		justify-content: flex-end;
-	}
-
-	.tech-search-wrapper {
-		position: relative;
+	.search-container {
 		width: 100%;
 		max-width: 600px;
-		display: flex;
-		align-items: center;
+		margin: 0 auto;
+		padding: 1rem 0;
 	}
 
-	.tech-search-input {
+	.search-wrapper {
+		position: relative;
 		width: 100%;
-		padding: 0.7rem 1rem 0.7rem 2.8rem;
-		background: var(--tech-badge-bg);
-		border: 1px solid var(--tech-badge-border);
-		border-radius: 4px;
-		color: var(--tech-value);
-		font-size: 0.85rem;
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		letter-spacing: 0.1em;
-		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-		box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
 	}
 
-	.tech-search-input:focus {
+	.search-input {
+		width: 100%;
+		padding: 0.75rem 2.5rem 0.75rem 2.5rem;
+		border: 2px solid var(--table-border-color);
+		border-radius: var(--border-radius);
+		background-color: var(--table-cell-bg);
+		color: var(--text-color);
+		font-size: 1rem;
+		transition: all 0.3s ease;
+	}
+
+	.search-input:hover {
+		border-color: var(--icon-color);
+	}
+
+	.search-input:focus {
 		outline: none;
-		border-color: var(--tech-accent);
-		background: var(--tech-glass-bg);
-		box-shadow: 0 0 20px var(--tech-accent-muted), inset 0 2px 4px rgba(0, 0, 0, 0.05);
+		border-color: var(--icon-hover-color);
+		box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
 	}
 
-	.tech-search-input::placeholder {
-		color: var(--tech-label);
-		opacity: 0.6;
+	.search-input::placeholder {
+		color: var(--placeholder-text);
 	}
 
-	.tech-search-icon {
+	.search-icon {
 		position: absolute;
-		left: 1.1rem;
-		color: var(--tech-label);
-		font-size: 0.9rem;
+		left: 0.75rem;
+		top: 50%;
+		transform: translateY(-50%);
+		color: var(--icon-color);
 		pointer-events: none;
-		transition: color 0.2s;
+		transition: color 0.3s ease;
 	}
 
-	.tech-search-input:focus ~ .tech-search-icon,
-	.tech-search-input:not(:placeholder-shown) ~ .tech-search-icon {
-		color: var(--tech-accent);
+	.search-icon svg {
+		width: 1.25rem;
+		height: 1.25rem;
 	}
 
-	/* Fix: use the input:focus class to color the icon if it's after the input or just use a sibling selector if possible */
-	/* Re-ordering for better CSS control */
-	
-	.tech-clear-button {
+	.search-input:focus + .search-icon {
+		color: var(--icon-hover-color);
+	}
+
+	.clear-button {
 		position: absolute;
-		right: 0.8rem;
+		right: 0.75rem;
+		top: 50%;
+		transform: translateY(-50%);
 		background: none;
 		border: none;
-		color: var(--tech-label);
 		cursor: pointer;
-		font-size: 0.9rem;
-		transition: all 0.2s;
-		display: flex;
-		align-items: center;
-		justify-content: center;
+		color: var(--icon-color);
+		transition: color 0.3s ease;
 	}
 
-	.tech-clear-button:hover {
-		color: #ff4757;
+	.clear-button:hover {
+		color: var(--icon-hover-color);
 	}
 
-	@media (max-width: 768px) {
-		.tech-search-wrapper {
-			max-width: 100%;
+	.clear-button svg {
+		width: 1.25rem;
+		height: 1.25rem;
+	}
+
+	@media (max-width: 640px) {
+		.search-container {
+			padding: 0.5rem 0;
 		}
 
-		.tech-search-input {
-			padding: 1rem 1rem 1rem 3rem;
-			font-size: 1rem;
-			border-radius: 8px;
-			background: var(--tech-glass-bg);
-			border: 1px solid var(--tech-glass-border);
-		}
-
-		.tech-search-icon {
-			left: 1.2rem;
-			font-size: 1rem;
-		}
-
-		.tech-clear-button {
-			right: 1rem;
-			font-size: 1rem;
+		.search-input {
+			font-size: 0.875rem;
 		}
 	}
 </style>
