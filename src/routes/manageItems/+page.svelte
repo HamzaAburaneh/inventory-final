@@ -5,7 +5,7 @@
 	import Pagination from '../../components/Pagination.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { itemStore } from '../../stores/itemStore';
-	import { searchTerm, setSearchTerm, clearSearch } from '../../stores/searchStore';
+	import { createSearchState } from '../../lib/runes/search.svelte.js';
 	import { notificationStore } from '../../stores/notificationStore';
 	import { fade } from 'svelte/transition';
 	import { applySorting } from '../../lib/items';
@@ -22,8 +22,10 @@
 	const { currentPage, itemsPerPage, setTotalItems } = paginationStore;
 
 	// Reactive store views ($store auto-subscription)
+	const search = createSearchState();
+
 	const items = $derived($itemStore);
-	const searchTermValue = $derived($searchTerm);
+	const searchTermValue = $derived(search.term);
 	const notification = $derived($notificationStore.at(-1) ?? null);
 
 	// Global scroll preservation
@@ -211,14 +213,14 @@
 
 	const handleSearch = (value) => {
 		preserveScroll();
-		setSearchTerm(value);
+		search.setTerm(value);
 		paginationStore.setCurrentPage(1);
 		setTimeout(restoreScroll, 50);
 	};
 
 	const handleClearSearch = () => {
 		preserveScroll();
-		clearSearch();
+		search.clear();
 		setTimeout(restoreScroll, 50);
 	};
 

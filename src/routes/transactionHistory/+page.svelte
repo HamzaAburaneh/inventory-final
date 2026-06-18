@@ -5,7 +5,7 @@
 	import Pagination from '../../components/Pagination.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
-	import { searchTerm, setSearchTerm, clearSearch } from '../../stores/searchStore';
+	import { createSearchState } from '../../lib/runes/search.svelte.js';
 	import { onMount } from 'svelte';
 
 	let allTransactions = $state([]);
@@ -17,8 +17,10 @@
 	const paginationStore = getPaginationStore('transactionHistory');
 	const { currentPage, itemsPerPage, setTotalItems, setCurrentPage } = paginationStore;
 
+	const search = createSearchState();
+
 	// Reactive store views ($store auto-subscription)
-	const searchTermValue = $derived($searchTerm);
+	const searchTermValue = $derived(search.term);
 	const transactionsLoaded = $derived(allTransactions.length > 0);
 
 	const filteredTransactions = $derived.by(() => {
@@ -113,12 +115,12 @@
 	});
 
 	function handleSearch(value) {
-		setSearchTerm(value);
+		search.setTerm(value);
 		setCurrentPage(1);
 	}
 
 	function handleClear() {
-		clearSearch();
+		search.clear();
 		setCurrentPage(1);
 	}
 

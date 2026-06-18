@@ -2,7 +2,7 @@
 	import { itemStore } from '../stores/itemStore.js';
 	import { fade, slide, scale } from 'svelte/transition';
 	import { notificationStore } from '../stores/notificationStore.js';
-	import { searchTerm as searchStore, setSearchTerm, clearSearch } from '../stores/searchStore.js';
+	import { createSearchState } from '../lib/runes/search.svelte.js';
 	import SearchBar from './SearchBar.svelte';
 	import { onMount } from 'svelte';
 
@@ -12,9 +12,11 @@
 	let timeframeValue = $state(14);
 	let useAI = $state(false);
 
+	const search = createSearchState();
+
 	// Reactive store views ($store auto-subscription)
 	const items = $derived($itemStore);
-	const searchTermValue = $derived($searchStore);
+	const searchTermValue = $derived(search.term);
 
 	async function fetchPredictions(timeframe, ai) {
 		try {
@@ -39,11 +41,11 @@
 	});
 
 	function onSearch(value) {
-		setSearchTerm(value);
+		search.setTerm(value);
 	}
 
 	function onClear() {
-		clearSearch();
+		search.clear();
 	}
 
 	// Debounced (re)fetch whenever the timeframe or analysis method changes;

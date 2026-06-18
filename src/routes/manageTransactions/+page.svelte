@@ -6,7 +6,7 @@
 	import Pagination from '../../components/Pagination.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { itemStore } from '../../stores/itemStore';
-	import { searchTerm, clearSearch, setSearchTerm } from '../../stores/searchStore';
+	import { createSearchState } from '../../lib/runes/search.svelte.js';
 	import { notificationStore } from '../../stores/notificationStore';
 	import { applySorting } from '../../lib/items';
 	import { themeStore } from '../../stores/themes.js';
@@ -22,8 +22,10 @@
 	const { currentPage, itemsPerPage, setTotalItems } = paginationStore;
 
 	// Reactive store views ($store auto-subscription)
+	const search = createSearchState();
+
 	const items = $derived($itemStore);
-	const searchTermValue = $derived($searchTerm);
+	const searchTermValue = $derived(search.term);
 	const notification = $derived($notificationStore.at(-1) ?? null);
 	const currentTheme = $derived($themeStore);
 	const authUser = $derived($authStore);
@@ -70,7 +72,7 @@
 	};
 
 	const handleSearch = (value) => {
-		setSearchTerm(value);
+		search.setTerm(value);
 		paginationStore.setCurrentPage(1);
 	};
 
@@ -174,7 +176,11 @@
 
 {#if itemsLoaded}
 	<div class="container mx-auto p-4 sm:p-6 rounded-lg shadow-md bg-container mt-4">
-		<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={clearSearch} />
+		<SearchBar
+			searchValue={searchTermValue}
+			onSearch={handleSearch}
+			onClear={() => search.clear()}
+		/>
 
 		<div class="filter-legend text-white mb-4">
 			{filterLegend}
