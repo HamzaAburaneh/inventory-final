@@ -92,15 +92,15 @@ IMPORTANT:
 - Be bold but **realistic**
 `;
 
-
 	try {
 		// Check if we're in a browser environment
-		const referer = typeof window !== 'undefined' ? window.location.origin : 'https://localhost:5173';
-		
+		const referer =
+			typeof window !== 'undefined' ? window.location.origin : 'https://localhost:5173';
+
 		const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
 			method: 'POST',
 			headers: {
-				'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+				Authorization: `Bearer ${OPENROUTER_API_KEY}`,
 				'Content-Type': 'application/json',
 				'HTTP-Referer': referer,
 				'X-Title': 'Inventory Management System'
@@ -124,7 +124,7 @@ IMPORTANT:
 
 		const data = await response.json();
 		let content = data.choices[0].message.content;
-		
+
 		// Handle markdown code blocks if present
 		if (content.includes('```json')) {
 			const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
@@ -138,14 +138,17 @@ IMPORTANT:
 				content = codeMatch[1];
 			}
 		}
-		
+
 		// Clean up any remaining backticks or extra whitespace
 		content = content.trim().replace(/^`+|`+$/g, '');
-		
+
 		const aiResponse = JSON.parse(content);
-		
+
 		// Validate the response structure
-		if (!Array.isArray(aiResponse.prediction) || aiResponse.prediction.length !== analysisData.forecastDays) {
+		if (
+			!Array.isArray(aiResponse.prediction) ||
+			aiResponse.prediction.length !== analysisData.forecastDays
+		) {
 			throw new Error('Invalid AI response format');
 		}
 
@@ -169,22 +172,23 @@ IMPORTANT:
  */
 function prepareHistoricalSales(transactions, itemId) {
 	const itemTransactions = transactions
-		.filter(t => t.itemId === itemId)
+		.filter((t) => t.itemId === itemId)
 		.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
 	if (itemTransactions.length === 0) return [];
 
 	// Group by day and calculate daily sales
 	const dailySales = {};
-	itemTransactions.forEach(transaction => {
+	itemTransactions.forEach((transaction) => {
 		const date = new Date(transaction.timestamp);
 		date.setHours(0, 0, 0, 0);
 		const dateKey = date.toISOString().split('T')[0];
-		
-		const change = transaction.type === 'add' 
-			? transaction.newCount - transaction.previousCount
-			: transaction.previousCount - transaction.newCount;
-		
+
+		const change =
+			transaction.type === 'add'
+				? transaction.newCount - transaction.previousCount
+				: transaction.previousCount - transaction.newCount;
+
 		dailySales[dateKey] = (dailySales[dateKey] || 0) + change;
 	});
 
@@ -201,17 +205,17 @@ function prepareHistoricalSales(transactions, itemId) {
 export async function predictStockLevelsWithAI(transactions, items, forecastDays = 14) {
 	// Get baseline ARIMA predictions
 	const arimaPredictions = arimaPredict(transactions, forecastDays);
-	
+
 	// Enhanced predictions with AI analysis
 	const enhancedPredictions = {};
-	
+
 	// Process each item that has ARIMA predictions
 	for (const [itemId, arimaPrediction] of Object.entries(arimaPredictions)) {
-		const item = items.find(i => i.id === itemId);
+		const item = items.find((i) => i.id === itemId);
 		if (!item) continue; // Skip items that don't exist
-		
+
 		const historicalSales = prepareHistoricalSales(transactions, itemId);
-		
+
 		try {
 			const aiAnalysis = await getAIAnalysis({
 				itemName: item.name,
@@ -220,7 +224,7 @@ export async function predictStockLevelsWithAI(transactions, items, forecastDays
 				arimaPrediction,
 				forecastDays
 			});
-			
+
 			enhancedPredictions[itemId] = {
 				prediction: aiAnalysis.prediction,
 				reasoning: aiAnalysis.reasoning,
@@ -241,7 +245,7 @@ export async function predictStockLevelsWithAI(transactions, items, forecastDays
 			};
 		}
 	}
-	
+
 	return enhancedPredictions;
 }
 
@@ -252,7 +256,7 @@ export async function predictStockLevelsWithAI(transactions, items, forecastDays
  */
 export async function batchAIAnalysis(analysisRequests) {
 	if (!OPENROUTER_API_KEY) {
-		return analysisRequests.map(req => ({
+		return analysisRequests.map((req) => ({
 			prediction: req.arimaPrediction,
 			reasoning: 'ARIMA model (AI unavailable)',
 			confidence: 0.7,
@@ -263,31 +267,33 @@ export async function batchAIAnalysis(analysisRequests) {
 	// Process in batches of 5 to avoid rate limits
 	const batchSize = 5;
 	const results = [];
-	
+
 	for (let i = 0; i < analysisRequests.length; i += batchSize) {
 		const batch = analysisRequests.slice(i, i + batchSize);
-		const batchPromises = batch.map(req => getAIAnalysis(req));
+		const batchPromises = batch.map((req) => getAIAnalysis(req));
 		const batchResults = await Promise.allSettled(batchPromises);
-		
-		results.push(...batchResults.map((result, index) => {
-			if (result.status === 'fulfilled') {
-				return result.value;
-			} else {
-				// Fallback for failed requests
-				return {
-					prediction: batch[index].arimaPrediction,
-					reasoning: `ARIMA fallback (${result.reason})`,
-					confidence: 0.6,
-					factors: ['Historical sales patterns']
-				};
-			}
-		}));
-		
+
+		results.push(
+			...batchResults.map((result, index) => {
+				if (result.status === 'fulfilled') {
+					return result.value;
+				} else {
+					// Fallback for failed requests
+					return {
+						prediction: batch[index].arimaPrediction,
+						reasoning: `ARIMA fallback (${result.reason})`,
+						confidence: 0.6,
+						factors: ['Historical sales patterns']
+					};
+				}
+			})
+		);
+
 		// Small delay between batches to respect rate limits
 		if (i + batchSize < analysisRequests.length) {
-			await new Promise(resolve => setTimeout(resolve, 1000));
+			await new Promise((resolve) => setTimeout(resolve, 1000));
 		}
 	}
-	
+
 	return results;
 }

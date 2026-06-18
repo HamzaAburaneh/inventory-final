@@ -5,7 +5,7 @@ let ARIMA;
 try {
 	// Try destructuring first
 	ARIMA = arimaPackage.ARIMA || arimaPackage.default?.ARIMA || arimaPackage.default || arimaPackage;
-} catch (error) {
+} catch {
 	console.warn('ARIMA import issue, using fallback predictions');
 	ARIMA = null;
 }
@@ -106,7 +106,7 @@ function predictWithARIMA(data, forecastDays) {
 		});
 
 		arima.train(data);
-		const [pred, errors] = arima.predict(forecastDays);
+		const [pred] = arima.predict(forecastDays);
 		return pred;
 	} catch (error) {
 		console.error('ARIMA prediction failed:', error);
