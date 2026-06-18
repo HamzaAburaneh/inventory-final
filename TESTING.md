@@ -89,8 +89,11 @@ repro, expected vs. actual, and severity). Driver scripts used for the run live 
 - **Re-test (real browser):** logged out → `/manageItems` and `/transactionHistory` both
   redirect to `/login` with no form flash; `/` still public. Logged in → protected pages
   render, and a **hard refresh on `/manageItems` stays on `/manageItems`** (no flash-logout).
-- **Recommended follow-up (server-side, can't edit from here):** also require
-  `request.auth != null` in Firestore security rules for `items`/`transactions`.
+- **Server-side follow-up:** Firestore rules requiring `request.auth != null` are now
+  tracked in [firestore.rules](firestore.rules) (with `firebase.json` + `.firebaserc`).
+  They still need to be **deployed** by the project owner:
+  `firebase login && firebase deploy --only firestore:rules`. Until then the database
+  itself remains open even though the client guard blocks the UI.
 
 ### 4. [LOW — FIXED] `THREE.Clock` deprecation console warning
 

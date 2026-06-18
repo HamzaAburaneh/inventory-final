@@ -1,0 +1,39 @@
+rules_version = '2';
+
+// StockSense Firestore security rules.
+//
+// Deploy with:  firebase deploy --only firestore:rules
+// (run `firebase login` first; project is pinned in .firebaserc)
+//
+// Model: single-tenant inventory. Every signed-in user shares the `items`
+// and `transactions` collections; each user owns only their own
+// `userProfiles/{uid}` document. Unauthenticated access is denied.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Shared inventory — any signed-in user may read/write.
+    match /items/{itemId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Shared transaction ledger — any signed-in user may read/write.
+    // To make the ledger append-only instead, swap the line above for:
+    //   allow read, create: if request.auth != null;
+    //   allow update, delete: if false;
+    // (note: that also blocks deleting transactions from the client.)
+    match /transactions/{txId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Per-user profile (phone number etc.) — only the owner.
+    match /userProfiles/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Deny everything not explicitly matched above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
