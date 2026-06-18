@@ -486,7 +486,9 @@
 				<div class="summary-card negative">
 					<i class="fas fa-minus-circle"></i>
 					<h3>Stock Out</h3>
-					<p>-{summaryStats.totalRemoved.toLocaleString()}</p>
+					<p>
+						{summaryStats.totalRemoved > 0 ? '-' : ''}{summaryStats.totalRemoved.toLocaleString()}
+					</p>
 					<small>Total units removed</small>
 				</div>
 				<div class="summary-card {summaryStats.netChange >= 0 ? 'positive' : 'negative'}">

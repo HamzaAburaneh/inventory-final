@@ -57,7 +57,11 @@ function createItemStore() {
 		try {
 			const docRef = await addDoc(collection(db, 'items'), item);
 			const newItem = { id: docRef.id, ...item, changeAmount: 0 };
-			update((items) => [...items, newItem]);
+			// NOTE: do not optimistically append here. The active subscribeToItems
+			// listener (set up in loadItems) re-emits the full collection on every
+			// write, so appending locally races that snapshot and can briefly leave
+			// two rows with the same id in the store — crashing the keyed
+			// {#each item (item.id)} in the items table (each_key_duplicate).
 
 			// Create a transaction for the new item
 			const authUser = get(authStore);
