@@ -1,14 +1,35 @@
 <script>
 	import Navbar from '../components/Navbar.svelte';
 	import '../styles/global.css';
-	import { authStore } from '../stores/authStore.js';
+	import { authStore, authReady } from '../stores/authStore.js';
 	import { onMount } from 'svelte';
-	import { onNavigate } from '$app/navigation';
+	import { onNavigate, goto } from '$app/navigation';
 	import { page } from '$app/stores';
 
 	let { children } = $props();
 	const user = $derived($authStore);
+	const ready = $derived($authReady);
 	const pathname = $derived($page.url.pathname);
+
+	// Routes that require an authenticated user. A logged-out visitor reaching one
+	// of these by direct URL is redirected to /login; until Firebase has reported
+	// the initial auth state we hold content back so protected data never flashes.
+	const PROTECTED = [
+		'/manageItems',
+		'/manageTransactions',
+		'/transactionHistory',
+		'/transactionAnalysis',
+		'/inventoryPredictions',
+		'/profile'
+	];
+	const isProtected = $derived(
+		PROTECTED.some((p) => pathname === p || pathname.startsWith(p + '/'))
+	);
+	const showContent = $derived(!isProtected || (ready && !!user));
+
+	$effect(() => {
+		if (isProtected && ready && !user) goto('/login');
+	});
 
 	// Enter animation runs only after the first client-side navigation — never on
 	// the initial cold page load (which should appear immediately, no fade).
@@ -71,7 +92,14 @@
 	     ThreeScene canvas correctly positioned (transform/filter would not). -->
 	{#key pathname}
 		<div class="route" class:animate={navigated}>
-			{@render children()}
+			{#if showContent}
+				{@render children()}
+			{:else}
+				<div class="auth-gate" aria-busy="true" aria-live="polite">
+					<div class="auth-spinner"></div>
+					<span class="sr-only">Checking your session…</span>
+				</div>
+			{/if}
 		</div>
 	{/key}
 </main>
@@ -93,6 +121,48 @@
 		width: 100%;
 		display: flex;
 		justify-content: center;
+	}
+
+	/* Shown on protected routes until Firebase reports the initial auth state. */
+	.auth-gate {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: calc(100vh - 160px);
+		width: 100%;
+	}
+
+	.auth-spinner {
+		width: 2.5rem;
+		height: 2.5rem;
+		border-radius: 50%;
+		border: 3px solid var(--table-border-color, #dee2e6);
+		border-top-color: var(--tech-accent, #007bff);
+		animation: auth-spin 0.8s linear infinite;
+	}
+
+	@keyframes auth-spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.auth-spinner {
+			animation-duration: 2s;
+		}
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
 	}
 
 	/* Enter fade — only on client-side navigations (see `navigated`). */

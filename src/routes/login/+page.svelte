@@ -131,8 +131,6 @@
 		<button class="switch-mode" onclick={toggleMode}>
 			{isRegistering ? 'Already have an account? Log in' : 'Need an account? Register'}
 		</button>
-
-		<p class="hint">Test account: test@example.com / password123</p>
 	</div>
 </div>
 
@@ -334,12 +332,6 @@
 
 	.switch-mode:hover {
 		text-decoration: underline;
-	}
-
-	.hint {
-		margin: 1rem 0 0;
-		font-size: 0.82rem;
-		color: var(--tech-label);
 	}
 
 	@media (min-width: 640px) {

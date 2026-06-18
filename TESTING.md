@@ -24,17 +24,17 @@ repro, expected vs. actual, and severity). Driver scripts used for the run live 
 
 ## Status summary
 
-| #   | Severity | Area               | Finding                                                              | Status               |
-| --- | -------- | ------------------ | -------------------------------------------------------------------- | -------------------- |
-| 1   | **High** | manageItems        | Adding an item crashed the table with `each_key_duplicate`           | **Fixed & verified** |
-| 2   | Low      | transactionAnalysis| "Stock Out" rendered `-0` when nothing was removed                   | **Fixed**            |
-| 3   | **High** | Auth / routing     | No client-side guard: logged-out users can open protected routes     | **Open — needs decision** |
-| 4   | Low      | ThreeScene         | `THREE.Clock` deprecation warning in console on `/` and `/login`     | Open (cosmetic)      |
-| 5   | Low      | Navbar (a11y)      | Build warns `a11y_no_static_element_interactions` (dropdown hover divs)| Open (cosmetic)    |
-| 6   | Low      | Navbar (UX)        | On desktop, hovering opens the avatar menu, then a click toggles it shut | Open (minor)     |
-| 7   | Low      | Data/docs          | `storageType` stored capitalized vs. lowercase in `types.js`/AGENTS  | Open (doc mismatch)  |
-| 8   | Info     | themes.js          | `blue`/`green` themes + `--color-*` vars are dead code               | Open (cleanup)       |
-| 9   | Info/Sec | Login UI           | Test credentials printed in the production login page                | Open (by design?)    |
+| #   | Severity | Area                | Finding                                                                  | Status               |
+| --- | -------- | ------------------- | ------------------------------------------------------------------------ | -------------------- |
+| 1   | **High** | manageItems         | Adding an item crashed the table with `each_key_duplicate`               | **Fixed & verified** |
+| 2   | Low      | transactionAnalysis | "Stock Out" rendered `-0` when nothing was removed                       | **Fixed**            |
+| 3   | **High** | Auth / routing      | No client-side guard: logged-out users can open protected routes         | **Fixed & verified** |
+| 4   | Low      | ThreeScene          | `THREE.Clock` deprecation warning in console on `/` and `/login`         | Open (cosmetic)      |
+| 5   | Low      | Navbar (a11y)       | Build warns `a11y_no_static_element_interactions` (dropdown hover divs)  | **Fixed**            |
+| 6   | Low      | Navbar (UX)         | On desktop, hovering opens the avatar menu, then a click toggles it shut | Open (minor)         |
+| 7   | Low      | Data/docs           | `storageType` stored capitalized vs. lowercase in `types.js`/AGENTS      | Open (doc mismatch)  |
+| 8   | Info     | themes.js           | `blue`/`green` themes + `--color-*` vars are dead code                   | **Fixed (removed)**  |
+| 9   | Info/Sec | Login UI            | Test credentials printed in the production login page                    | **Fixed (removed)**  |
 
 ---
 
@@ -69,22 +69,28 @@ repro, expected vs. actual, and severity). Driver scripts used for the run live 
   [src/routes/transactionAnalysis/+page.svelte](src/routes/transactionAnalysis/+page.svelte#L489)
   — only prepend `-` when `totalRemoved > 0`.
 
-### 3. [HIGH — OPEN, needs decision] No client-side auth guard on protected routes
+### 3. [HIGH — FIXED] No client-side auth guard on protected routes
 
-- **Repro:** While **logged out** (navbar shows "Login"), navigate directly to
+- **Repro (before):** While **logged out** (navbar shows "Login"), navigate directly to
   `/manageItems` (or `/manageTransactions`, `/transactionHistory`, `/transactionAnalysis`,
   `/inventoryPredictions`, `/profile`).
 - **Expected:** Redirect to `/login` (or a logged-out placeholder).
-- **Actual:** The full page renders (e.g. the "Add New Item" form). `+page.js` loaders return
-  `{}` and no page/layout redirects on missing auth.
+- **Actual (before):** The full page rendered (e.g. the "Add New Item" form). `+page.js`
+  loaders return `{}` and nothing redirected on missing auth.
 - **Why it matters:** During cleanup, the test account was able to **read, write and delete**
   items/transactions directly, which means the Firestore security rules are permissive — so
-  the client-side guard may be the main thing keeping unauthenticated visitors out of the UI.
-- **Recommended fix (not applied — your call):** a layout-level guard in
-  `src/routes/+layout.svelte` that, **after** Firebase auth has initialized (to avoid a
-  redirect flash for already-logged-in users on hard refresh), redirects to `/login` when
-  `$authStore` is null and the path is protected. Optionally tighten Firestore rules to
-  require `request.auth != null`.
+  the client-side guard is the main thing keeping unauthenticated visitors out of the UI.
+- **Fix:** Added a layout-level guard in
+  [src/routes/+layout.svelte](src/routes/+layout.svelte). A new `authReady` signal in
+  [src/stores/authStore.js](src/stores/authStore.js) flips true after Firebase reports the
+  initial auth state; the layout redirects logged-out users on protected routes to `/login`
+  and **holds content behind a spinner until `authReady`** so (a) protected data never
+  flashes for logged-out users and (b) logged-in users are **not** bounced on hard refresh.
+- **Re-test (real browser):** logged out → `/manageItems` and `/transactionHistory` both
+  redirect to `/login` with no form flash; `/` still public. Logged in → protected pages
+  render, and a **hard refresh on `/manageItems` stays on `/manageItems`** (no flash-logout).
+- **Recommended follow-up (server-side, can't edit from here):** also require
+  `request.auth != null` in Firestore security rules for `items`/`transactions`.
 
 ### 4. [LOW — OPEN] `THREE.Clock` deprecation console warning
 
@@ -93,12 +99,13 @@ repro, expected vs. actual, and severity). Driver scripts used for the run live 
 - Internal to Three.js usage. `ThreeScene.svelte` is flagged "don't modify casually" in
   AGENTS.md, so left as-is. Cosmetic console noise only.
 
-### 5. [LOW — OPEN] Navbar a11y compiler warnings
+### 5. [LOW — FIXED] Navbar a11y compiler warnings
 
-- `npm run build` warns `a11y_no_static_element_interactions` at
-  `Navbar.svelte:294` and `:314` — `<div>`s carrying `mouseenter`/`mouseleave` need an ARIA
-  role. Pre-existing; `Navbar.svelte` is flagged as protected. (Keyboard access to the menu
-  works regardless — see Passing checks.)
+- `npm run build` warned `a11y_no_static_element_interactions` at `Navbar.svelte:294` and
+  `:314` — `<div>`s carrying `mouseenter`/`mouseleave` need an ARIA role.
+- **Fix:** added `role="presentation"` to the two hover-wrapper `<div>`s (they are styling/
+  grouping wrappers; the real controls — button, links — keep their own roles). Build is now
+  warning-free for these. Keyboard access to the menu is unchanged.
 
 ### 6. [LOW — OPEN] Avatar dropdown: hover-open vs click-toggle
 
@@ -116,16 +123,20 @@ repro, expected vs. actual, and severity). Driver scripts used for the run live 
   Internally consistent (edit normalizes legacy lowercase rows), but the docs/typedef and
   stored values disagree.
 
-### 8. [INFO — OPEN] Dead theme code
+### 8. [INFO — FIXED] Dead theme code
 
-- `src/stores/themes.js` defines `blue`/`green` themes and writes `--color-*` CSS variables,
+- `src/stores/themes.js` defined `blue`/`green` themes and wrote `--color-*` CSS variables,
   but the app themes via the `[data-theme]` attribute + `global.css`, and the toggle only
-  switches `light`/`dark`. The `--color-*` variables and the extra themes are unused.
+  switches `light`/`dark` — so those variables and themes were unused.
+- **Fix:** trimmed `themes.js` to just `subscribe` + `setTheme` over the two reachable
+  themes. The toggle (light↔dark, persisted to `localStorage`) was re-verified in-browser.
 
-### 9. [INFO / SECURITY — OPEN] Test credentials shown in production UI
+### 9. [INFO / SECURITY — FIXED] Test credentials shown in production UI
 
-- The login page prints `Test account: test@example.com / password123`. Convenient for QA;
-  worth removing before any real production deployment.
+- The login page printed `Test account: test@example.com / password123`.
+- **Fix:** removed the hint line (and its dead CSS) from
+  [src/routes/login/+page.svelte](src/routes/login/+page.svelte). Verified the string no
+  longer appears on the rendered page.
 
 ---
 

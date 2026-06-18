@@ -8,6 +8,11 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 
+// Becomes true after Firebase reports the initial auth state (logged in or out).
+// Route guards must wait for this so a logged-in user isn't bounced to /login
+// during the brief window before onAuthStateChanged first fires on a hard load.
+export const authReady = writable(false);
+
 function createAuthStore() {
 	const { subscribe, set } = writable(null);
 
@@ -15,6 +20,7 @@ function createAuthStore() {
 	function init() {
 		onAuthStateChanged(auth, (firebaseUser) => {
 			set(firebaseUser);
+			authReady.set(true);
 		});
 	}
 

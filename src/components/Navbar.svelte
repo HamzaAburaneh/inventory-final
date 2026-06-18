@@ -295,6 +295,7 @@
 			{#if user}
 				<div
 					class="profile-wrap"
+					role="presentation"
 					use:handleClickOutside
 					bind:this={userMenuNode}
 					onmouseenter={handleMouseEnter}
@@ -313,6 +314,7 @@
 					{#if isDropdownOpen}
 						<div
 							class="dropdown"
+							role="presentation"
 							transition:slide={{ duration: 160, easing: cubicOut }}
 							bind:this={dropdownNode}
 							onmouseenter={handleMouseEnter}
