@@ -1,47 +1,54 @@
 <script>
+	import { fade } from 'svelte/transition';
 	import { authStore } from '../stores/authStore.js';
-	import { fly } from 'svelte/transition';
 	import ThreeScene from '../components/ThreeScene.svelte';
+	import ScrollReveal from '../components/ScrollReveal.svelte';
+	import { createGestureTracker, nextTarget, normalizeWheelDelta } from '../lib/sectionPager.js';
 
-	let showFeatures = $state(false);
-	let activeTestimonial = $state(0);
-	let showBackToTop = $state(false);
-	let hoveredCard = $state(-1);
-
-	// Store values as reactive state
-	let authUser = $state(null);
-
-	// Subscribe to stores
-	$effect(() => {
-		const unsubscribeAuth = authStore.subscribe((value) => {
-			authUser = value;
-		});
-
-		return () => {
-			unsubscribeAuth();
-		};
-	});
+	const authUser = $derived($authStore);
 
 	const features = [
-		{ 
-			name: 'Real-time Tracking', 
+		{
+			name: 'Real-time Tracking',
 			icon: 'fa-chart-line',
-			description: 'Monitor your inventory in real-time with advanced tracking capabilities and instant updates.'
+			description:
+				'Watch stock levels update the moment they change. Every movement across your warehouse is reflected instantly, so you always act on live data.'
 		},
-		{ 
-			name: 'Smart Analytics', 
+		{
+			name: 'Smart Analytics',
 			icon: 'fa-brain',
-			description: 'Leverage AI-powered insights to optimize stock levels and predict future demand patterns.'
+			description:
+				'AI-powered demand forecasting and trend analysis turn your transaction history into actionable restocking decisions.'
 		},
-		{ 
-			name: 'Easy Management', 
+		{
+			name: 'Easy Management',
 			icon: 'fa-tasks',
-			description: 'Streamline operations with intuitive interfaces and automated workflow management.'
+			description:
+				'Add, edit, and organize items in seconds with a streamlined interface built for speed.'
 		},
-		{ 
-			name: 'Secure Data', 
+		{
+			name: 'Secure Data',
 			icon: 'fa-shield-alt',
-			description: 'Enterprise-grade security ensures your inventory data is protected at all times.'
+			description:
+				'Enterprise-grade authentication and encrypted storage keep your inventory data protected around the clock.'
+		}
+	];
+
+	const steps = [
+		{
+			icon: 'fa-box-open',
+			title: 'Add Your Inventory',
+			text: 'Import existing items or add them manually. Categories, quantities, and details are set up in minutes.'
+		},
+		{
+			icon: 'fa-sync-alt',
+			title: 'Track in Real Time',
+			text: 'Record transactions as they happen. Stock levels, history, and alerts stay perfectly in sync.'
+		},
+		{
+			icon: 'fa-lightbulb',
+			title: 'Act on Insights',
+			text: 'AI-driven predictions tell you what to reorder and when — before you run out.'
 		}
 	];
 
@@ -63,13 +70,15 @@
 		}
 	];
 
-	function nextTestimonial() {
-		activeTestimonial = (activeTestimonial + 1) % testimonials.length;
-	}
+	const sections = $derived([
+		{ id: 'intro', label: 'Intro' },
+		{ id: 'features', label: 'Features' },
+		{ id: 'process', label: 'Process' },
+		{ id: 'voices', label: 'Voices' },
+		...(authUser ? [] : [{ id: 'begin', label: 'Begin' }])
+	]);
 
-	function prevTestimonial() {
-		activeTestimonial = (activeTestimonial - 1 + testimonials.length) % testimonials.length;
-	}
+	let activeSection = $state('intro');
 
 	function scrollToSection(sectionId) {
 		const section = document.getElementById(sectionId);
@@ -78,1251 +87,731 @@
 		}
 	}
 
-	function scrollToTop() {
-		window.scrollTo({ top: 0, behavior: 'smooth' });
-	}
-
-	function handleScroll() {
-		showBackToTop = window.pageYOffset > 300;
-	}
-
+	// Scope section-snap scrolling to the home page only: the class lives on <html>
+	// (the document scroller) and is removed when navigating away.
 	$effect(() => {
-		const links = document.querySelectorAll('a[href^="#"]');
-		links.forEach((link) => {
-			link.addEventListener('click', (e) => {
-				e.preventDefault();
-				const href = link.getAttribute('href');
-				if (href) {
-					scrollToSection(href.slice(1));
+		document.documentElement.classList.add('home-snap');
+		return () => document.documentElement.classList.remove('home-snap');
+	});
+
+	// Full paging: one wheel gesture moves exactly one section, fullPage-style.
+	// Mandatory CSS snap (below) covers touch swipes and keyboard scrolling;
+	// this handler gives mouse/trackpad the deliberate one-section-per-gesture
+	// feel. The navbar height is MEASURED (not hardcoded) and the intro's snap
+	// point is pinned to the absolute top, so scrolling up never bounces.
+	$effect(() => {
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+		const navEl = document.querySelector('nav');
+		const tracker = createGestureTracker();
+		let animating = false;
+
+		function navHeight() {
+			return navEl?.offsetHeight ?? 0;
+		}
+
+		function setOffsets() {
+			document.documentElement.style.setProperty('--snap-top', `${navHeight()}px`);
+			const intro = document.getElementById('intro');
+			if (intro) {
+				// Snap point for the first section is the very top of the page
+				intro.style.scrollMarginTop = `${intro.getBoundingClientRect().top + window.scrollY}px`;
+			}
+		}
+
+		function targets() {
+			// Clamp every target to the real maximum scroll position: the last
+			// section's ideal target can exceed it, which would otherwise leave
+			// the pager waiting for an unreachable position (and then skipping
+			// sections on the way back up).
+			const maxScroll = Math.max(
+				0,
+				(document.scrollingElement?.scrollHeight ?? 0) - window.innerHeight
+			);
+			return sections
+				.map((s) => document.getElementById(s.id))
+				.filter(Boolean)
+				.map((el) =>
+					el.id === 'intro'
+						? 0
+						: Math.min(
+								Math.round(el.getBoundingClientRect().top + window.scrollY - navHeight()),
+								maxScroll
+							)
+				);
+		}
+
+		function pageTo(y) {
+			animating = true;
+			window.scrollTo({ top: y, behavior: 'smooth' });
+			const start = performance.now();
+			function check() {
+				if (Math.abs(window.scrollY - y) < 4 || performance.now() - start > 900) {
+					// Trailing inertia is handled by gesture tracking in onWheel,
+					// so the pager can re-arm immediately.
+					animating = false;
+				} else {
+					requestAnimationFrame(check);
 				}
-			});
-		});
+			}
+			requestAnimationFrame(check);
+		}
 
-		window.addEventListener('scroll', handleScroll);
+		// Direction/inertia rules live in src/lib/sectionPager.js (unit tested):
+		// gestures are tracked by direction so reversing always pages the
+		// reversed way, trailing trackpad inertia never re-triggers, and the
+		// target is the next snap point strictly in the gesture's direction.
+		function onWheel(e) {
+			if (e.ctrlKey || window.innerHeight <= 540) return; // zoom / short viewports
+			e.preventDefault();
+			const delta = normalizeWheelDelta(e.deltaY, e.deltaMode, window.innerHeight);
+			const dir = tracker.feed(delta, performance.now(), animating);
+			if (dir === 0) return;
+			const target = nextTarget(targets(), window.scrollY, dir);
+			if (target !== undefined) pageTo(target);
+		}
 
+		setOffsets();
+		window.addEventListener('resize', setOffsets);
+		window.addEventListener('wheel', onWheel, { passive: false });
 		return () => {
-			window.removeEventListener('scroll', handleScroll);
+			window.removeEventListener('resize', setOffsets);
+			window.removeEventListener('wheel', onWheel);
 		};
+	});
+
+	// Track which panel occupies the viewport so the rail can mirror it
+	$effect(() => {
+		const ids = sections.map((s) => s.id);
+		const observer = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (entry.isIntersecting) {
+						activeSection = entry.target.id;
+					}
+				}
+			},
+			{ threshold: 0.45 }
+		);
+		for (const id of ids) {
+			const el = document.getElementById(id);
+			if (el) observer.observe(el);
+		}
+		return () => observer.disconnect();
 	});
 </script>
 
 <svelte:head>
-	<title>StockSense | Intelligent Inventory Management</title>
+	<title>StockSense — Intelligent Inventory Management</title>
 </svelte:head>
 
-<div class="page-viewport">
-	<ThreeScene />
-	<div class="glow-layer"></div>
+<ThreeScene />
 
-	<main class="content-container">
-		<!-- Hero Section -->
-		<section id="hero" class="hero-section">
-			<div class="hero-content">
-				<div class="status-badge">
-					<span class="status-dot"></span>
-					<span class="status-text">SYSTEM ONLINE</span>
-				</div>
-				
-				<h1 class="hero-title">
-					Welcome to <span class="highlight">StockSense</span>
-				</h1>
-				
-				<p class="hero-subtitle">
-					Your intelligent inventory management solution
-				</p>
-				
-				{#if !authUser}
-					<div class="hero-cta">
-						<a href="/login" class="cta-button primary">
-							<i class="fas fa-rocket"></i>
-							<span>Get Started</span>
-						</a>
-						<a href="#features" class="cta-button secondary">
-							<i class="fas fa-info-circle"></i>
-							<span>Learn More</span>
-						</a>
-					</div>
-				{/if}
-			</div>
-		</section>
+<nav class="rail" aria-label="Page sections">
+	{#each sections as s (s.id)}
+		<button
+			class="rail-stop"
+			class:active={activeSection === s.id}
+			onclick={() => scrollToSection(s.id)}
+			aria-label="Go to {s.label}"
+			aria-current={activeSection === s.id ? 'true' : undefined}
+		>
+			<span class="rail-label">{s.label}</span>
+			<span class="rail-dot" aria-hidden="true"></span>
+		</button>
+	{/each}
+</nav>
 
-		<!-- Features Section -->
-		<section id="features" class="features-section">
-			<div class="section-header">
-				<h2 class="section-title">Key Features</h2>
-				<div class="title-underline"></div>
-			</div>
-			
-			<div class="features-grid">
-				{#each features as feature, i (feature.name)}
-					<div
-						class="feature-card"
-						role="article"
-						onmouseenter={() => (hoveredCard = i)}
-						onmouseleave={() => (hoveredCard = -1)}
-						style="transform: {hoveredCard === i ? 'translateY(-8px)' : 'translateY(0)'};"
-					>
-						<div class="feature-icon">
-							<i class="fas {feature.icon}"></i>
-						</div>
-						<h3 class="feature-title">{feature.name}</h3>
-						<p class="feature-description">{feature.description}</p>
-						<div class="feature-glow"></div>
-					</div>
-				{/each}
-			</div>
-		</section>
-
-		<!-- Testimonials Section -->
-		<section id="testimonials" class="testimonials-section">
-			<div class="section-header">
-				<h2 class="section-title">What Our Users Say</h2>
-				<div class="title-underline"></div>
-			</div>
-			
-			<div class="testimonials-grid">
-				{#each testimonials as testimonial, i (testimonial.name)}
-					<div class="testimonial-card-new">
-						<div class="card-top">
-							<div class="stars" aria-label="5 star rating">
-								{#each Array(5) as _, starIdx (starIdx)}
-									<i class="fas fa-star" aria-hidden="true"></i>
-								{/each}
-							</div>
-							<div class="quote-mark">
-								<i class="fas fa-quote-right"></i>
-							</div>
-						</div>
-						<p class="testimonial-text-new">{testimonial.text}</p>
-						<div class="testimonial-footer">
-							<div class="author-avatar-new">
-								<i class="fas fa-user"></i>
-							</div>
-							<div class="author-details">
-								<p class="author-name-new">{testimonial.name}</p>
-								<p class="author-role-new">{testimonial.role}</p>
-							</div>
-						</div>
-					</div>
-				{/each}
-			</div>
-		</section>
-
-		<!-- CTA Section -->
-		{#if !authUser}
-			<section id="cta" class="cta-section">
-				<div class="cta-card">
-					<div class="cta-content">
-						<h2 class="cta-title">Ready to optimize your inventory?</h2>
-						<p class="cta-text">
-							Join thousands of businesses already using StockSense to streamline their operations.
-						</p>
-						<a href="/login" class="cta-button large primary">
-							<i class="fas fa-rocket"></i>
-							<span>Start Your Free Trial</span>
-						</a>
-					</div>
-					<div class="cta-glow"></div>
-				</div>
-			</section>
+<main class="page">
+	<!-- =================== INTRO: centered monolith hero =================== -->
+	<section id="intro" class="panel hero" aria-labelledby="intro-heading">
+		<p class="kicker">Live inventory intelligence</p>
+		<h1 id="intro-heading" class="wordmark">Stock<span class="accent">Sense</span></h1>
+		<p class="lede">
+			Tracking, analysis, and AI-assisted stock predictions — one calm place for everything your
+			inventory does.
+		</p>
+		<div class="actions">
+			{#if !authUser}
+				<a href="/login" class="btn" aria-label="Get started with StockSense">Get Started</a>
+			{:else}
+				<a href="/manageItems" class="btn" aria-label="Go to your inventory">Open Your Inventory</a>
+			{/if}
+		</div>
+		{#if activeSection === 'intro'}
+			<button
+				class="scroll-hint"
+				transition:fade={{ duration: 300 }}
+				onclick={() => scrollToSection('features')}
+				aria-label="Scroll to features"
+			>
+				<i class="fas fa-chevron-down" aria-hidden="true"></i>
+			</button>
 		{/if}
-	</main>
-</div>
+	</section>
 
-{#if showBackToTop}
-	<button onclick={scrollToTop} class="back-to-top" aria-label="Back to top" transition:fly={{ y: 20, duration: 300 }}>
-		<i class="fas fa-arrow-up" aria-hidden="true"></i>
-	</button>
-{/if}
+	<!-- =================== FEATURES: ghost-numeral stack =================== -->
+	<section id="features" class="panel" aria-labelledby="features-heading">
+		<ScrollReveal blur>
+			<h2 id="features-heading" class="panel-title">What it does</h2>
+		</ScrollReveal>
+		<div class="feature-stack">
+			{#each features as feature, i (feature.name)}
+				<ScrollReveal delay={100}>
+					<article class="feature" aria-labelledby="feature-heading-{i}">
+						<div class="feature-icon" aria-hidden="true"><i class="fas {feature.icon}"></i></div>
+						<h3 id="feature-heading-{i}">{feature.name}</h3>
+						<p>{feature.description}</p>
+					</article>
+				</ScrollReveal>
+			{/each}
+		</div>
+	</section>
+
+	<!-- =================== PROCESS: center-spine timeline =================== -->
+	<section id="process" class="panel" aria-labelledby="process-heading">
+		<ScrollReveal blur>
+			<h2 id="process-heading" class="panel-title">How it works</h2>
+		</ScrollReveal>
+		<ol class="timeline">
+			{#each steps as step, i (step.title)}
+				<li class="tl-item">
+					<ScrollReveal delay={120}>
+						<div class="tl-row" class:flip={i % 2 === 1}>
+							<div class="tl-node" aria-hidden="true"><i class="fas {step.icon}"></i></div>
+							<div class="tl-body">
+								<span class="tl-step">Step {i + 1}</span>
+								<h3>{step.title}</h3>
+								<p>{step.text}</p>
+							</div>
+						</div>
+					</ScrollReveal>
+				</li>
+			{/each}
+		</ol>
+	</section>
+
+	<!-- =================== VOICES: stacked quotes =================== -->
+	<section id="voices" class="panel" aria-labelledby="voices-heading">
+		<ScrollReveal blur>
+			<h2 id="voices-heading" class="panel-title">In their words</h2>
+		</ScrollReveal>
+		<div class="quotes">
+			{#each testimonials as t, i (t.name)}
+				<ScrollReveal delay={100}>
+					<figure class="quote" class:flip={i % 2 === 1}>
+						<span class="quote-mark" aria-hidden="true">“</span>
+						<blockquote>{t.text}</blockquote>
+						<figcaption>{t.name} — {t.role}</figcaption>
+					</figure>
+				</ScrollReveal>
+			{/each}
+		</div>
+	</section>
+
+	<!-- =================== BEGIN: full-viewport finale =================== -->
+	{#if !authUser}
+		<section id="begin" class="panel finale" aria-labelledby="begin-heading">
+			<ScrollReveal blur>
+				<h2 id="begin-heading" class="finale-title">Begin.</h2>
+			</ScrollReveal>
+			<ScrollReveal delay={150}>
+				<p class="lede">
+					Join thousands of businesses running calmer, smarter inventory on StockSense.
+				</p>
+			</ScrollReveal>
+			<ScrollReveal delay={250}>
+				<a href="/login" class="btn" aria-label="Start your free trial of StockSense">
+					Start Your Free Trial
+				</a>
+			</ScrollReveal>
+		</section>
+	{/if}
+</main>
 
 <style>
-	:global(body) {
-		background-color: var(--tech-bg-end) !important;
-		background-image: radial-gradient(circle at 50% -10%, var(--tech-bg-start) 0%, var(--tech-bg-end) 100%) !important;
-		background-attachment: fixed !important;
-		margin: 0;
-		padding: 0;
-		overflow-x: hidden;
-	}
-
-	.page-viewport {
+	.page {
 		position: relative;
-		min-height: 100vh;
+		z-index: 1;
 		width: 100%;
+		max-width: 880px;
+		margin: 0 auto;
+		padding: 0 1.25rem;
+		cursor: default;
+		text-align: center;
 	}
 
-	.glow-layer {
+	/* =================== SIDE RAIL =================== */
+	.rail {
 		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100vh;
-		background: radial-gradient(circle at 50% 0%, var(--tech-accent-muted) 0%, transparent 50%);
-		pointer-events: none;
-		z-index: 0;
+		right: 2rem;
+		top: 50%;
+		transform: translateY(-50%);
+		z-index: 5;
+		display: none;
+		flex-direction: column;
+		gap: 1.4rem;
 	}
 
-
-	.content-container {
-		position: relative;
-		z-index: 2;
-		max-width: 1400px;
-		margin: 0 auto;
-		padding: 2rem 1.5rem;
+	@media (min-width: 1024px) {
+		.rail {
+			display: flex;
+		}
 	}
 
-	/* Hero Section */
-	.hero-section {
-		position: relative;
-		min-height: 50vh;
+	.rail-stop {
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		text-align: center;
-		margin-bottom: 4rem;
-		overflow: hidden;
-	}
-
-	.hero-content {
-		max-width: 900px;
-	}
-
-	.status-badge {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 1rem;
-		background: rgba(255, 255, 255, 0.02);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 20px;
-		margin-bottom: 2rem;
-	}
-
-	.status-dot {
-		width: 6px;
-		height: 6px;
-		background: var(--tech-accent);
-		border-radius: 50%;
-		box-shadow: 0 0 10px var(--tech-accent-muted);
-		animation: pulse-soft 3s ease-in-out infinite;
-	}
-
-	@keyframes pulse-soft {
-		0%, 100% { opacity: 0.4; transform: scale(0.9); }
-		50% { opacity: 1; transform: scale(1.1); }
-	}
-
-
-	.status-text {
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.65rem;
-		color: var(--tech-status-text);
-		letter-spacing: 0.2em;
-		font-weight: 800;
-	}
-
-	.hero-title {
-		font-size: clamp(2rem, 5vw, 3.5rem);
-		font-weight: 800;
-		color: var(--tech-title);
-		margin: 0 0 1rem 0;
-		letter-spacing: -0.02em;
-		line-height: 1.1;
-	}
-
-	.highlight {
-		color: var(--tech-accent);
-		text-shadow: 0 0 30px var(--tech-accent-muted);
-	}
-
-	.hero-subtitle {
-		font-size: clamp(1rem, 2vw, 1.25rem);
-		color: var(--tech-label);
-		margin: 0 0 2rem 0;
-		opacity: 0.9;
-	}
-
-	.hero-cta {
-		display: flex;
-		gap: 1rem;
-		justify-content: center;
-		flex-wrap: wrap;
-	}
-
-	.cta-button {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.625rem;
-		padding: 0.875rem 1.75rem;
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.85rem;
-		font-weight: 800;
-		letter-spacing: 0.05em;
-		border-radius: 8px;
-		cursor: pointer;
-		transition: all 0.3s;
-		text-decoration: none;
-		border: 1px solid transparent;
-	}
-
-	.cta-button i {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		line-height: 1;
-		transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-	}
-
-	.cta-button.primary {
-		background: var(--tech-accent);
-		color: #000;
-		box-shadow: 0 0 20px var(--tech-accent-muted);
-	}
-
-	.cta-button.primary:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 5px 30px var(--tech-accent-muted);
-	}
-
-	.cta-button.primary:hover i {
-		transform: translate(4px, -4px) scale(1.1);
-	}
-
-	.cta-button.secondary {
+		justify-content: flex-end;
+		gap: 0.75rem;
 		background: transparent;
-		color: var(--tech-accent);
-		border-color: var(--tech-accent);
+		border: none;
+		padding: 0.35rem 0.5rem;
+		border-radius: 9999px;
+		color: var(--tech-label);
 	}
 
-	.cta-button.secondary:hover {
-		background: var(--tech-accent-muted);
-		transform: translateY(-3px);
+	/* Replace the browser's blue focus ring with a theme-accent ring,
+	   and only show it for keyboard focus — not mouse clicks. */
+	.rail-stop:focus,
+	.btn:focus,
+	.scroll-hint:focus {
+		outline: none;
 	}
 
-	.cta-button.large {
-		padding: 1rem 2rem;
-		font-size: 0.9rem;
+	.rail-stop:focus-visible,
+	.btn:focus-visible,
+	.scroll-hint:focus-visible {
+		outline: 2px solid rgba(var(--tech-accent-rgb), 0.7);
+		outline-offset: 3px;
 	}
 
-	/* Section Headers */
-	.section-header {
-		text-align: center;
-		margin-bottom: 2.5rem;
+	.rail-label {
+		font-size: 0.68rem;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		opacity: 0;
+		transform: translateX(6px);
+		transition:
+			opacity 0.35s ease,
+			transform 0.35s ease;
 	}
 
-	.section-title {
-		font-size: clamp(1.75rem, 3.5vw, 2.5rem);
-		font-weight: 800;
-		color: var(--tech-title);
-		margin: 0 0 0.75rem 0;
-		letter-spacing: 0.02em;
+	.rail-stop:hover .rail-label,
+	.rail-stop.active .rail-label {
+		opacity: 1;
+		transform: translateX(0);
 	}
 
-	.title-underline {
-		width: 80px;
-		height: 3px;
+	.rail-dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: var(--tech-label);
+		opacity: 0.45;
+		transition:
+			opacity 0.35s ease,
+			transform 0.35s ease,
+			background 0.35s ease;
+	}
+
+	.rail-stop.active .rail-dot {
 		background: var(--tech-accent);
-		margin: 0 auto;
-		box-shadow: 0 0 15px var(--tech-accent-muted);
+		opacity: 1;
+		transform: scale(1.5);
 	}
 
-	/* Features Section */
-	.features-section {
-		margin-bottom: 5rem;
+	/* =================== SECTION-SNAP SCROLLING =================== */
+	/* Mandatory snapping backs up the wheel pager for touch and keyboard:
+	   scrolling always ends on a section boundary. --snap-top is set from
+	   the measured navbar height at runtime. */
+	:global(html.home-snap) {
+		scroll-snap-type: y mandatory;
+		scroll-behavior: smooth;
 	}
 
-	.features-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-		gap: 1.5rem;
+	/* Snapping off when it would fight the user: reduced motion, or short
+	   viewports where sections are taller than the screen. */
+	@media (prefers-reduced-motion: reduce), (max-height: 540px) {
+		:global(html.home-snap) {
+			scroll-snap-type: none;
+			scroll-behavior: auto;
+		}
 	}
 
-	.feature-card {
+	/* =================== PANELS =================== */
+	.panel {
+		/* Fill the viewport below the sticky navbar so each section reads
+		   as one complete screen after snapping. */
+		min-height: max(560px, calc(100vh - var(--snap-top, 84px)));
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 3rem 0;
+		scroll-snap-align: start;
+		scroll-margin-top: var(--snap-top, 84px);
+	}
+
+	.panel-title {
+		font-size: 0.8rem;
+		font-weight: 500;
+		letter-spacing: 0.34em;
+		text-transform: uppercase;
+		color: var(--tech-label);
+		margin: 0 0 2.25rem;
+	}
+
+	/* =================== HERO =================== */
+	.hero {
 		position: relative;
-		background: var(--tech-glass-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 12px;
-		padding: 2rem 1.5rem;
-		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-		overflow: hidden;
+		/* The layout's main padding sits below the hero; subtract it so the
+		   scroll hint is never pushed past the viewport edge. */
+		min-height: max(560px, calc(100vh - var(--snap-top, 84px) - 1.5rem));
 	}
 
-	.feature-card:hover {
-		border-color: var(--tech-accent);
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+	.kicker {
+		font-size: 0.75rem;
+		font-weight: 500;
+		letter-spacing: 0.34em;
+		text-transform: uppercase;
+		color: var(--tech-label);
+		margin: 0 0 1.5rem;
+	}
+
+	.wordmark {
+		font-size: clamp(3.25rem, 13vw, 8rem);
+		font-weight: 200;
+		line-height: 1;
+		letter-spacing: -0.03em;
+		color: var(--tech-title);
+		margin: 0;
+	}
+
+	.accent {
+		color: var(--tech-accent);
+		font-weight: 400;
+	}
+
+	.lede {
+		font-size: clamp(1rem, 1.8vw, 1.2rem);
+		font-weight: 400;
+		line-height: 1.8;
+		color: var(--input-text);
+		max-width: 44ch;
+		margin: 2rem auto 0;
+	}
+
+	.actions {
+		margin-top: 3rem;
+	}
+
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 52px;
+		padding: 0 2.75rem;
+		border: 1px solid var(--tech-accent);
+		border-radius: 9999px;
+		color: var(--tech-accent);
+		background: transparent;
+		font-size: 0.9rem;
+		font-weight: 500;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		transition:
+			background 0.4s ease,
+			color 0.4s ease;
+	}
+
+	.btn:hover {
+		background: var(--tech-accent);
+		color: var(--tech-bg-end);
+	}
+
+	.scroll-hint {
+		position: absolute;
+		bottom: 2.25rem;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 48px;
+		height: 48px;
+		min-height: 48px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		border: none;
+		color: var(--tech-label);
+		font-size: 1rem;
+		animation: drift 2.8s ease-in-out infinite;
+		transition: color 0.4s ease;
+	}
+
+	.scroll-hint:hover {
+		color: var(--tech-accent);
+	}
+
+	@keyframes drift {
+		0%,
+		100% {
+			transform: translate(-50%, 0);
+		}
+		50% {
+			transform: translate(-50%, 7px);
+		}
+	}
+
+	/* =================== FEATURES =================== */
+	.feature-stack {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 3.5rem;
+		width: 100%;
+	}
+
+	@media (min-width: 768px) {
+		.feature-stack {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 4.5rem 4rem;
+		}
+	}
+
+	.feature {
+		position: relative;
 	}
 
 	.feature-icon {
-		width: 60px;
-		height: 60px;
-		background: var(--tech-accent-muted);
-		border: 2px solid var(--tech-accent);
-		border-radius: 10px;
+		width: 48px;
+		height: 48px;
+		margin: 0 auto 1.25rem;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		margin-bottom: 1.25rem;
-		font-size: 1.75rem;
+		border-radius: 50%;
+		background: rgba(var(--tech-accent-rgb), 0.1);
 		color: var(--tech-accent);
-		transition: all 0.3s;
+		font-size: 1.05rem;
 	}
 
-	.feature-card:hover .feature-icon {
-		transform: scale(1.1) rotate(5deg);
-		box-shadow: 0 0 25px var(--tech-accent-muted);
-	}
-
-	.feature-title {
-		font-size: 1.2rem;
-		font-weight: 700;
+	.feature h3 {
+		font-size: 1.45rem;
+		font-weight: 400;
+		letter-spacing: -0.01em;
 		color: var(--tech-title);
-		margin: 0 0 0.75rem 0;
-		letter-spacing: 0.02em;
+		margin: 0 0 0.75rem;
 	}
 
-	.feature-description {
-		font-size: 0.9rem;
-		color: var(--tech-label);
-		line-height: 1.6;
-		margin: 0;
-	}
-
-	.feature-glow {
-		position: absolute;
-		bottom: -50%;
-		left: -50%;
-		width: 200%;
-		height: 200%;
-		background: radial-gradient(circle, var(--tech-accent-muted) 0%, transparent 70%);
-		opacity: 0;
-		transition: opacity 0.4s;
-		pointer-events: none;
-	}
-
-	.feature-card:hover .feature-glow {
-		opacity: 0.15;
-	}
-
-	/* Testimonials Section */
-	.testimonials-section {
-		margin-bottom: 5rem;
-	}
-
-	.testimonials-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: 1.5rem;
-		max-width: 1200px;
+	.feature p {
+		font-weight: 400;
+		font-size: 0.97rem;
+		line-height: 1.75;
+		color: var(--input-text);
+		max-width: 40ch;
 		margin: 0 auto;
 	}
 
-	.testimonial-card-new {
-		background: var(--tech-glass-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 12px;
-		padding: 1.75rem;
-		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	/* =================== PROCESS: timeline =================== */
+	.timeline {
 		position: relative;
-		overflow: hidden;
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		width: 100%;
 	}
 
-	.testimonial-card-new:hover {
-		transform: translateY(-5px);
-		border-color: var(--tech-accent);
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+	/* The spine is desktop-only: on narrow screens it would run through the text */
+	@media (min-width: 768px) {
+		.timeline::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			left: 50%;
+			width: 1px;
+			background: linear-gradient(
+				to bottom,
+				transparent,
+				rgba(var(--tech-accent-rgb), 0.3) 12%,
+				rgba(var(--tech-accent-rgb), 0.3) 88%,
+				transparent
+			);
+		}
 	}
 
-	.card-top {
+	.tl-item {
+		position: relative;
+		padding: 1.25rem 0;
+	}
+
+	.tl-row {
 		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		margin-bottom: 1rem;
-	}
-
-	.stars {
-		display: flex;
-		gap: 0.2rem;
-	}
-
-	.stars i {
-		color: var(--tech-accent);
-		font-size: 0.75rem;
-	}
-
-	.quote-mark {
-		font-size: 1.5rem;
-		color: var(--tech-accent);
-		opacity: 0.2;
-		line-height: 1;
-	}
-
-	.testimonial-text-new {
-		font-size: 0.95rem;
-		color: var(--tech-value);
-		line-height: 1.6;
-		margin: 0 0 1.5rem 0;
-		min-height: 80px;
-	}
-
-	.testimonial-footer {
-		display: flex;
+		flex-direction: column;
 		align-items: center;
-		gap: 0.875rem;
-		padding-top: 1.25rem;
-		border-top: 1px solid var(--tech-cell-border);
+		gap: 1rem;
 	}
 
-	.author-avatar-new {
-		width: 40px;
-		height: 40px;
-		background: var(--tech-accent-muted);
-		border: 2px solid var(--tech-accent);
+	.tl-node {
+		width: 48px;
+		height: 48px;
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		background: var(--tech-glass-bg);
+		border: 1px solid rgba(var(--tech-accent-rgb), 0.4);
 		color: var(--tech-accent);
 		font-size: 1rem;
 		flex-shrink: 0;
 	}
 
-	.author-details {
-		flex: 1;
-	}
-
-	.author-name-new {
-		font-size: 0.95rem;
-		font-weight: 700;
-		color: var(--tech-title);
-		margin: 0 0 0.2rem 0;
-	}
-
-	.author-role-new {
-		font-size: 0.75rem;
-		color: var(--tech-label);
-		margin: 0;
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		letter-spacing: 0.02em;
-	}
-
-	/* CTA Section */
-	.cta-section {
-		margin-bottom: 3rem;
-	}
-
-	.cta-card {
-		position: relative;
-		background: var(--tech-glass-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 12px;
-		padding: 3rem 2.5rem;
+	.tl-body {
 		text-align: center;
-		overflow: hidden;
-		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
-	.cta-card:hover {
-		transform: translateY(-5px);
-		border-color: var(--tech-accent);
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-	}
-
-	.cta-content {
-		position: relative;
-		z-index: 2;
-	}
-
-	.cta-title {
-		font-size: clamp(1.5rem, 3.5vw, 2rem);
-		font-weight: 800;
-		color: var(--tech-title);
-		margin: 0 0 0.75rem 0;
-	}
-
-	.cta-text {
-		font-size: 1rem;
+	.tl-step {
+		display: block;
+		font-size: 0.7rem;
+		font-weight: 500;
+		letter-spacing: 0.3em;
+		text-transform: uppercase;
 		color: var(--tech-label);
-		margin: 0 0 2rem 0;
-		max-width: 600px;
-		margin-left: auto;
-		margin-right: auto;
+		margin-bottom: 0.5rem;
 	}
 
-	.cta-glow {
-		position: absolute;
-		top: -50%;
-		left: -50%;
-		width: 200%;
-		height: 200%;
-		background: radial-gradient(circle, var(--tech-accent-muted) 0%, transparent 70%);
-		opacity: 0.1;
-		pointer-events: none;
-		transition: all 0.6s ease;
+	.tl-body h3 {
+		font-size: 1.3rem;
+		font-weight: 400;
+		color: var(--tech-title);
+		margin: 0 0 0.5rem;
 	}
 
-	.cta-card:hover .cta-glow {
-		opacity: 0.2;
-		transform: scale(1.1);
+	.tl-body p {
+		font-weight: 400;
+		font-size: 0.95rem;
+		line-height: 1.7;
+		color: var(--input-text);
+		max-width: 42ch;
+		margin: 0 auto;
 	}
 
-	/* Back to Top */
-	.back-to-top {
-		position: fixed;
-		bottom: 2rem;
-		right: 2rem;
-		width: 50px;
-		height: 50px;
-		background: var(--tech-accent);
-		color: #000;
-		border: none;
-		border-radius: 50%;
+	@media (min-width: 768px) {
+		.tl-row {
+			flex-direction: row;
+			align-items: flex-start;
+			gap: 2.25rem;
+			width: 50%;
+			margin-left: 50%;
+			transform: translateX(-24px);
+		}
+
+		.tl-row.flip {
+			flex-direction: row-reverse;
+			margin-left: 0;
+			margin-right: 50%;
+			transform: translateX(24px);
+		}
+
+		.tl-body {
+			text-align: left;
+			padding-top: 0.4rem;
+		}
+
+		.tl-row.flip .tl-body {
+			text-align: right;
+		}
+
+		.tl-body p {
+			margin: 0;
+		}
+
+		.tl-row.flip .tl-body p {
+			margin-left: auto;
+		}
+	}
+
+	/* =================== VOICES =================== */
+	.quotes {
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		cursor: pointer;
-		transition: all 0.3s;
-		box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-		z-index: 100;
-		padding: 0;
+		flex-direction: column;
+		gap: 2.5rem;
+		width: 100%;
 	}
 
-	.back-to-top i {
-		display: flex;
-		align-items: center;
-		justify-content: center;
+	.quote {
+		position: relative;
+		margin: 0 auto;
+		max-width: 38rem;
+	}
+
+	@media (min-width: 768px) {
+		.quote {
+			text-align: left;
+			margin: 0;
+		}
+
+		.quote.flip {
+			text-align: right;
+			margin-left: auto;
+		}
+	}
+
+	.quote-mark {
+		display: block;
+		font-family: Georgia, 'Times New Roman', serif;
+		font-size: 3.25rem;
+		font-weight: 400;
 		line-height: 1;
-		font-size: 1.1rem;
+		height: 0.55em;
+		color: rgba(var(--tech-accent-rgb), 0.45);
+		margin-bottom: 0.5rem;
 	}
 
-	.back-to-top:hover {
-		transform: translateY(-5px);
-		box-shadow: 0 8px 25px var(--tech-accent-muted);
+	.quote blockquote {
+		font-size: clamp(1.05rem, 2vw, 1.35rem);
+		font-weight: 300;
+		line-height: 1.6;
+		color: var(--tech-title);
+		margin: 0 0 0.9rem;
 	}
 
-	/* ===== MOBILE RESPONSIVENESS ===== */
-
-	/* Extra small devices (320px - 374px) - iPhone SE, older phones */
-	@media (max-width: 374px) {
-		.content-container {
-			padding: 1rem 0.75rem;
-			padding-top: max(1rem, env(safe-area-inset-top));
-			padding-bottom: max(1rem, env(safe-area-inset-bottom));
-		}
-
-		.hero-section {
-			min-height: 45vh;
-			margin-bottom: 2.5rem;
-		}
-
-		.status-badge {
-			padding: 0.4rem 0.75rem;
-			margin-bottom: 1.5rem;
-		}
-
-		.status-text {
-			font-size: 0.6rem;
-		}
-
-		.hero-title {
-			font-size: 1.75rem;
-			margin-bottom: 0.75rem;
-		}
-
-		.hero-subtitle {
-			font-size: 0.9rem;
-			margin-bottom: 1.5rem;
-		}
-
-		.hero-cta {
-			flex-direction: column;
-			gap: 0.75rem;
-		}
-
-		.cta-button {
-			width: 100%;
-			padding: 0.875rem 1.25rem;
-			font-size: 0.8rem;
-			min-height: 48px;
-		}
-
-		.cta-button.large {
-			padding: 1rem 1.5rem;
-			font-size: 0.85rem;
-		}
-
-		.section-header {
-			margin-bottom: 1.75rem;
-		}
-
-		.section-title {
-			font-size: 1.5rem;
-		}
-
-		.title-underline {
-			width: 60px;
-			height: 2px;
-		}
-
-		.features-section,
-		.testimonials-section {
-			margin-bottom: 3rem;
-		}
-
-		.features-grid {
-			grid-template-columns: 1fr;
-			gap: 1rem;
-		}
-
-		.feature-card {
-			padding: 1.5rem 1.25rem;
-		}
-
-		.feature-icon {
-			width: 50px;
-			height: 50px;
-			font-size: 1.5rem;
-			margin-bottom: 1rem;
-		}
-
-		.feature-title {
-			font-size: 1.1rem;
-		}
-
-		.feature-description {
-			font-size: 0.85rem;
-		}
-
-		.testimonials-grid {
-			grid-template-columns: 1fr;
-			gap: 1rem;
-		}
-
-		.testimonial-card-new {
-			padding: 1.25rem;
-		}
-
-		.testimonial-text-new {
-			font-size: 0.9rem;
-			min-height: auto;
-			margin-bottom: 1.25rem;
-		}
-
-		.testimonial-footer {
-			padding-top: 1rem;
-		}
-
-		.author-avatar-new {
-			width: 36px;
-			height: 36px;
-			font-size: 0.9rem;
-		}
-
-		.author-name-new {
-			font-size: 0.9rem;
-		}
-
-		.author-role-new {
-			font-size: 0.7rem;
-		}
-
-		.cta-section {
-			margin-bottom: 2rem;
-		}
-
-		.cta-card {
-			padding: 2rem 1.25rem;
-		}
-
-		.cta-title {
-			font-size: 1.25rem;
-		}
-
-		.cta-text {
-			font-size: 0.9rem;
-			margin-bottom: 1.5rem;
-		}
-
-		.back-to-top {
-			bottom: max(1rem, env(safe-area-inset-bottom));
-			right: 1rem;
-			width: 44px;
-			height: 44px;
-		}
-
-		.back-to-top i {
-			font-size: 0.95rem;
-		}
+	.quote figcaption {
+		font-size: 0.78rem;
+		font-weight: 500;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--tech-label);
 	}
 
-	/* Small devices (375px - 479px) - iPhone 12/13/14, standard phones */
-	@media (min-width: 375px) and (max-width: 479px) {
-		.content-container {
-			padding: 1.25rem 1rem;
-			padding-top: max(1.25rem, env(safe-area-inset-top));
-			padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
-		}
-
-		.hero-section {
-			min-height: 50vh;
-			margin-bottom: 3rem;
-		}
-
-		.status-badge {
-			margin-bottom: 1.75rem;
-		}
-
-		.hero-title {
-			font-size: 2rem;
-		}
-
-		.hero-subtitle {
-			font-size: 1rem;
-		}
-
-		.hero-cta {
-			flex-direction: column;
-			gap: 0.875rem;
-		}
-
-		.cta-button {
-			width: 100%;
-			padding: 0.875rem 1.5rem;
-			min-height: 50px;
-		}
-
-		.section-title {
-			font-size: 1.6rem;
-		}
-
-		.features-section,
-		.testimonials-section {
-			margin-bottom: 3.5rem;
-		}
-
-		.features-grid {
-			grid-template-columns: 1fr;
-			gap: 1.25rem;
-		}
-
-		.feature-card {
-			padding: 1.75rem 1.5rem;
-		}
-
-		.testimonials-grid {
-			grid-template-columns: 1fr;
-			gap: 1.25rem;
-		}
-
-		.testimonial-card-new {
-			padding: 1.5rem;
-		}
-
-		.testimonial-text-new {
-			min-height: auto;
-		}
-
-		.cta-card {
-			padding: 2.5rem 1.5rem;
-		}
-
-		.cta-title {
-			font-size: 1.4rem;
-		}
-
-		.back-to-top {
-			bottom: max(1.25rem, env(safe-area-inset-bottom));
-			right: 1.25rem;
-			width: 46px;
-			height: 46px;
-		}
+	/* =================== FINALE =================== */
+	.finale-title {
+		font-size: clamp(3rem, 10vw, 6.5rem);
+		font-weight: 200;
+		letter-spacing: -0.02em;
+		color: var(--tech-title);
+		margin: 0;
 	}
 
-	/* Medium devices (480px - 639px) - Large phones, phablets */
-	@media (min-width: 480px) and (max-width: 639px) {
-		.content-container {
-			padding: 1.5rem 1.25rem;
-			padding-top: max(1.5rem, env(safe-area-inset-top));
-			padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
-		}
-
-		.hero-section {
-			min-height: 55vh;
-			margin-bottom: 3.5rem;
-		}
-
-		.hero-cta {
-			flex-direction: row;
-			justify-content: center;
-		}
-
-		.cta-button {
-			width: auto;
-			min-width: 160px;
-			min-height: 50px;
-		}
-
-		.features-section,
-		.testimonials-section {
-			margin-bottom: 4rem;
-		}
-
-		.features-grid {
-			grid-template-columns: 1fr;
-			gap: 1.25rem;
-		}
-
-		.testimonials-grid {
-			grid-template-columns: 1fr;
-			gap: 1.25rem;
-		}
-
-		.testimonial-text-new {
-			min-height: auto;
-		}
-
-		.cta-card {
-			padding: 2.5rem 2rem;
-		}
-
-		.back-to-top {
-			bottom: max(1.5rem, env(safe-area-inset-bottom));
-			right: 1.5rem;
-			width: 48px;
-			height: 48px;
-		}
+	.finale .lede {
+		margin-top: 1.75rem;
 	}
 
-	/* Small tablets (640px - 767px) */
-	@media (min-width: 640px) and (max-width: 767px) {
-		.content-container {
-			padding: 1.75rem 1.5rem;
-		}
-
-		.hero-section {
-			min-height: 50vh;
-			margin-bottom: 4rem;
-		}
-
-		.features-section,
-		.testimonials-section {
-			margin-bottom: 4.5rem;
-		}
-
-		.features-grid {
-			grid-template-columns: repeat(2, 1fr);
-			gap: 1.25rem;
-		}
-
-		.feature-card {
-			padding: 1.75rem 1.5rem;
-		}
-
-		.testimonials-grid {
-			grid-template-columns: 1fr;
-			gap: 1.25rem;
-		}
-
-		.testimonial-text-new {
-			min-height: auto;
-		}
-
-		.cta-card {
-			padding: 2.75rem 2rem;
-		}
-
-		.back-to-top {
-			bottom: 1.5rem;
-			right: 1.5rem;
-			width: 48px;
-			height: 48px;
-		}
+	.finale :global(.btn) {
+		margin-top: 3rem;
 	}
 
-	/* Tablets (768px - 1023px) */
-	@media (min-width: 768px) and (max-width: 1023px) {
-		.content-container {
-			padding: 2rem 1.5rem;
-		}
-
-		.hero-section {
-			margin-bottom: 4rem;
-		}
-
-		.features-section,
-		.testimonials-section {
-			margin-bottom: 4.5rem;
-		}
-
-		.features-grid {
-			grid-template-columns: repeat(2, 1fr);
-			gap: 1.5rem;
-		}
-
-		.testimonials-grid {
-			grid-template-columns: repeat(2, 1fr);
-			gap: 1.5rem;
-		}
-
-		.testimonial-text-new {
-			min-height: 90px;
-		}
-
-		.cta-card {
-			padding: 3rem 2rem;
-		}
-	}
-
-	/* Large tablets / small desktops (1024px - 1279px) */
-	@media (min-width: 1024px) and (max-width: 1279px) {
-		.features-grid {
-			grid-template-columns: repeat(4, 1fr);
-			gap: 1.25rem;
-		}
-
-		.feature-card {
-			padding: 1.75rem 1.25rem;
-		}
-
-		.testimonials-grid {
-			grid-template-columns: repeat(3, 1fr);
-			gap: 1.5rem;
-		}
-	}
-
-	/* Landscape mode for phones */
-	@media (max-height: 500px) and (orientation: landscape) {
-		.content-container {
-			padding: 1rem 2rem;
-			padding-left: max(2rem, env(safe-area-inset-left));
-			padding-right: max(2rem, env(safe-area-inset-right));
-		}
-
-		.hero-section {
-			min-height: auto;
-			padding: 2rem 0;
-			margin-bottom: 2rem;
-		}
-
-		.status-badge {
-			margin-bottom: 1rem;
-		}
-
-		.hero-title {
-			font-size: 1.75rem;
-			margin-bottom: 0.5rem;
-		}
-
-		.hero-subtitle {
-			margin-bottom: 1rem;
-		}
-
-		.hero-cta {
-			flex-direction: row;
-		}
-
-		.cta-button {
-			padding: 0.75rem 1.25rem;
-		}
-
-		.section-header {
-			margin-bottom: 1.5rem;
-		}
-
-		.features-section,
-		.testimonials-section {
-			margin-bottom: 2.5rem;
-		}
-
-		.features-grid {
-			grid-template-columns: repeat(2, 1fr);
-			gap: 1rem;
-		}
-
-		.feature-card {
-			padding: 1.25rem 1rem;
-		}
-
-		.feature-icon {
-			width: 45px;
-			height: 45px;
-			font-size: 1.25rem;
-			margin-bottom: 0.75rem;
-		}
-
-		.testimonials-grid {
-			grid-template-columns: repeat(2, 1fr);
-			gap: 1rem;
-		}
-
-		.testimonial-card-new {
-			padding: 1.25rem;
-		}
-
-		.testimonial-text-new {
-			min-height: auto;
-			margin-bottom: 1rem;
-		}
-
-		.cta-section {
-			margin-bottom: 1.5rem;
-		}
-
-		.cta-card {
-			padding: 1.5rem;
-		}
-
-		.cta-text {
-			margin-bottom: 1rem;
-		}
-
-		.back-to-top {
-			bottom: 0.75rem;
-			right: max(0.75rem, env(safe-area-inset-right));
-			width: 40px;
-			height: 40px;
-		}
-
-		.back-to-top i {
-			font-size: 0.9rem;
-		}
-	}
-
-	/* Touch interaction improvements */
-	@media (hover: none) and (pointer: coarse) {
-		.cta-button {
-			-webkit-tap-highlight-color: transparent;
-			min-height: 48px;
-		}
-
-		.cta-button:active {
-			transform: scale(0.98);
-			transition: transform 0.1s;
-		}
-
-		.cta-button.primary:active {
-			box-shadow: 0 2px 15px var(--tech-accent-muted);
-		}
-
-		.feature-card {
-			-webkit-tap-highlight-color: transparent;
-		}
-
-		.feature-card:active {
-			transform: scale(0.99);
-			transition: transform 0.15s;
-		}
-
-		.testimonial-card-new {
-			-webkit-tap-highlight-color: transparent;
-		}
-
-		.testimonial-card-new:active {
-			transform: scale(0.99);
-		}
-
-		.back-to-top {
-			-webkit-tap-highlight-color: transparent;
-			min-width: 48px;
-			min-height: 48px;
-		}
-
-		.back-to-top:active {
-			transform: scale(0.95);
-			transition: transform 0.1s;
-		}
-
-		/* Disable hover effects on touch devices */
-		.feature-card:hover {
-			transform: none;
-		}
-
-		.feature-card:hover .feature-icon {
-			transform: none;
-		}
-
-		.testimonial-card-new:hover {
-			transform: none;
-		}
-
-		.cta-card:hover {
-			transform: none;
-		}
-
-		.back-to-top:hover {
-			transform: none;
-		}
-	}
-
-	/* Reduced motion for accessibility */
+	/* =================== MOTION =================== */
 	@media (prefers-reduced-motion: reduce) {
-		.status-dot {
+		.scroll-hint {
 			animation: none;
 		}
 
-		.cta-button,
-		.feature-card,
-		.feature-icon,
-		.testimonial-card-new,
-		.cta-card,
-		.cta-glow,
-		.feature-glow,
-		.back-to-top {
+		.btn,
+		.rail-label,
+		.rail-dot,
+		.scroll-hint {
 			transition: none;
-		}
-
-		.cta-button:hover,
-		.feature-card:hover,
-		.testimonial-card-new:hover,
-		.cta-card:hover,
-		.back-to-top:hover {
-			transform: none;
-		}
-
-		.feature-card:hover .feature-icon {
-			transform: none;
-		}
-
-		.cta-button.primary:hover i,
-		.cta-button.secondary:hover i {
-			transform: none;
-		}
-	}
-
-	/* High contrast mode support */
-	@media (prefers-contrast: high) {
-		.feature-card,
-		.testimonial-card-new,
-		.cta-card,
-		.status-badge {
-			border-width: 2px;
-		}
-
-		.cta-button {
-			border-width: 2px;
-		}
-
-		.cta-button:focus-visible {
-			outline: 3px solid var(--tech-accent);
-			outline-offset: 2px;
-		}
-
-		.back-to-top:focus-visible {
-			outline: 3px solid var(--tech-accent);
-			outline-offset: 2px;
-		}
-
-		.title-underline {
-			height: 4px;
-		}
-	}
-
-	/* Dark mode enhancements for OLED screens */
-	@media (prefers-color-scheme: dark) {
-		.feature-card,
-		.testimonial-card-new,
-		.cta-card {
-			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 		}
 	}
 </style>

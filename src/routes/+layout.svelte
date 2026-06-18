@@ -1,138 +1,135 @@
 <script>
-	import { onNavigate, beforeNavigate, afterNavigate } from '$app/navigation';
 	import Navbar from '../components/Navbar.svelte';
 	import '../styles/global.css';
 	import { authStore } from '../stores/authStore.js';
+	import { onMount } from 'svelte';
+	import { onNavigate } from '$app/navigation';
+	import { page } from '$app/stores';
 
 	let { children } = $props();
-	let isNavigating = $state(false);
+	const user = $derived($authStore);
+	const pathname = $derived($page.url.pathname);
 
-	// Initialize auth listener on mount
-	$effect(() => {
+	// Enter animation runs only after the first client-side navigation — never on
+	// the initial cold page load (which should appear immediately, no fade).
+	let navigated = $state(false);
+
+	onMount(() => {
 		authStore.init();
 	});
 
-	// Use Svelte's $ prefix for auto-subscription to stores
-	const user = $derived($authStore);
-
-	// Navigation progress indicator
-	beforeNavigate(() => {
-		isNavigating = true;
-	});
-
-	afterNavigate(() => {
-		isNavigating = false;
-	});
-
-	// Enable View Transitions API for smooth page transitions
+	// Coordinated page transition. We fade the OUTGOING page out before committing
+	// the navigation, then let the incoming page fade in.
+	//
+	// Why fade the outgoing page (and delay the swap) rather than just fade the
+	// incoming one: right after a navigation the main thread is busy mounting the
+	// new page (ThreeScene/WebGL, Chart.js, effects). An enter animation has
+	// nothing painted to fade yet, so it finishes before the content appears and
+	// looks instant. The outgoing page, by contrast, is already painted and the
+	// main thread is idle, so its fade-out renders smoothly. Delaying the swap
+	// until it finishes also guarantees the two pages never overlap (the old
+	// "landing flash").
 	onNavigate((navigation) => {
-		// @ts-ignore - startViewTransition may not exist in all browsers
-		if (!document.startViewTransition) return;
+		if (navigation.to?.url?.pathname === navigation.from?.url?.pathname) return;
+		navigated = true;
 
+		const main = document.querySelector('main.main-container');
+		const current = main?.firstElementChild;
+		if (!current) return;
+
+		// Reduced motion: skip the fade, but still remove the outgoing page from
+		// layout so the two pages can't overlap (the "landing flash").
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			current.style.display = 'none';
+			return;
+		}
+
+		current.classList.add('route-leaving');
 		return new Promise((resolve) => {
-			// @ts-ignore
-			document.startViewTransition(async () => {
+			let done = false;
+			const finish = () => {
+				if (done) return;
+				done = true;
+				// Remove the faded-out page from layout so it can't overlap the
+				// incoming page while its outro transitions finish unmounting.
+				current.style.display = 'none';
 				resolve();
-				await navigation.complete;
-			});
+			};
+			current.addEventListener('animationend', finish, { once: true });
+			setTimeout(finish, 220); // fallback if animationend doesn't fire
 		});
 	});
 </script>
 
-<!-- Navigation progress accent line -->
-<div class="nav-progress" class:active={isNavigating}>
-	<div class="nav-progress-bar"></div>
-</div>
-
 <Navbar {user} />
 
 <main class="main-container">
-	{@render children()}
+	<!-- Keyed on the route so the wrapper is recreated on every client-side
+	     navigation, which replays the CSS fade-in below. CSS animations (not
+	     Svelte JS transitions) are used so the fade runs on the compositor rather
+	     than rAF, and opacity-only keeps the home/login `position:fixed`
+	     ThreeScene canvas correctly positioned (transform/filter would not). -->
+	{#key pathname}
+		<div class="route" class:animate={navigated}>
+			{@render children()}
+		</div>
+	{/key}
 </main>
 
 <style>
-	/* Navigation Progress Bar */
-	.nav-progress {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		z-index: 9999;
-		pointer-events: none;
-		opacity: 0;
-	}
-
-	.nav-progress.active {
-		opacity: 1;
-	}
-
-	.nav-progress-bar {
-		height: 100%;
-		background: var(--nav-logo-color);
-		transform: scaleX(0);
-		transform-origin: left;
-	}
-
-	.nav-progress.active .nav-progress-bar {
-		animation: progress-load 250ms ease-out forwards;
-	}
-
-	@keyframes progress-load {
-		to {
-			transform: scaleX(1);
-		}
-	}
-
 	main {
 		padding: 1rem;
 		display: flex;
-		flex-direction: column;
-		align-items: center;
+		justify-content: center;
 		width: 100%;
 		min-height: calc(100vh - 80px);
-		overflow-x: hidden;
+		overflow-x: auto; /* Changed from hidden to auto to allow scrolling if needed */
 		overflow-y: visible;
 	}
 
-	/* Ensure page content takes full width and prevents side-by-side rendering */
-	main > :global(*) {
+	/* Mirrors <main>'s flex centering so wrapping the page in this element does
+	   not change any page's layout. */
+	.route {
 		width: 100%;
-		max-width: 100%;
+		display: flex;
+		justify-content: center;
 	}
 
-	/* Clean, fast page transition */
-	:root::view-transition-old(root) {
-		animation: 150ms ease-out both fade-out;
+	/* Enter fade — only on client-side navigations (see `navigated`). */
+	.route.animate {
+		animation: route-fade-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
 
-	:root::view-transition-new(root) {
-		animation: 150ms ease-out 100ms both fade-in;
+	/* Applied to the outgoing page in onNavigate. `route-leaving` is added via JS,
+	   so it must be :global or Svelte prunes the rule as "unused". Defined after
+	   `.route.animate` so it wins the `animation` cascade (the outgoing page may
+	   still carry `.animate` from its own entrance). */
+	.route:global(.route-leaving) {
+		animation: route-fade-out 160ms ease forwards;
 	}
 
-	@keyframes -global-fade-out {
+	@keyframes route-fade-in {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
+	@keyframes route-fade-out {
+		from {
+			opacity: 1;
+		}
 		to {
 			opacity: 0;
 		}
 	}
 
-	@keyframes -global-fade-in {
-		from {
-			opacity: 0;
-		}
-	}
-
-	/* Navbar stays fixed */
-	:root::view-transition-old(navbar),
-	:root::view-transition-new(navbar) {
-		animation: none;
-	}
-
-	/* Respect reduced motion */
 	@media (prefers-reduced-motion: reduce) {
-		:root::view-transition-old(root),
-		:root::view-transition-new(root) {
-			animation: none !important;
+		.route.animate,
+		.route:global(.route-leaving) {
+			animation: none;
 		}
 	}
 
