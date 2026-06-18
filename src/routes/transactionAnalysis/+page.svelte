@@ -1,92 +1,40 @@
 <script>
-	import {
-		Chart,
-		LineController,
-		BarController,
-		DoughnutController,
-		LineElement,
-		BarElement,
-		ArcElement,
-		PointElement,
-		CategoryScale,
-		LinearScale,
-		Title,
-		Tooltip,
-		Legend
-	} from 'chart.js';
-	import { browser } from '$app/environment';
-	import {
-		getDailyAnalysis,
-		getHourlyActivityPattern,
-		getTopMovers,
-		getSummaryStats
-	} from '../../lib/transactionAnalysis';
+	import { Chart, registerables } from 'chart.js';
+	import { getAnalyticsForRange } from '../../lib/transactionAnalysis';
 	import { notificationStore } from '../../stores/notificationStore';
-	import TransactionAnalysisMobileCard from '../../components/TransactionAnalysisMobileCard.svelte';
 	import { onMount } from 'svelte';
-
-	// Get pre-loaded data from +page.js
-	let { data } = $props();
-
-	// Register Chart.js components
-	Chart.register(
-		LineController,
-		BarController,
-		DoughnutController,
-		LineElement,
-		BarElement,
-		ArcElement,
-		PointElement,
-		CategoryScale,
-		LinearScale,
-		Title,
-		Tooltip,
-		Legend
-	);
+	import { fade } from 'svelte/transition';
 
 	// Constants
 	const CHART_COLORS = {
-		stockIn: '#22c55e',
-		stockOut: '#ef4444',
-		netChange: '#3b82f6',
-		activity: '#a855f7',
-		cne: '#f59e0b'
+		stockIn: '#4CAF50',
+		stockOut: '#F44336',
+		netChange: '#2196F3',
+		activity: '#9C27B0',
+		cne: '#FF6B35'
 	};
 
 	const CNE_DATES = {
 		2022: { start: new Date(2022, 7, 19), end: new Date(2022, 8, 5, 23, 59, 59) },
 		2023: { start: new Date(2023, 7, 18), end: new Date(2023, 8, 4, 23, 59, 59) },
 		2024: { start: new Date(2024, 7, 16), end: new Date(2024, 8, 2, 23, 59, 59) },
-		2025: { start: new Date(2025, 7, 13), end: new Date(2025, 8, 1, 23, 59, 59) },
-		2026: { start: new Date(2026, 7, 21), end: new Date(2026, 8, 7, 23, 59, 59) }
+		2025: { start: new Date(2025, 7, 13), end: new Date(2025, 8, 1, 23, 59, 59) }
 	};
 
 	// State variables
-	let loading = $state(false);
-	let dateRange = $state(
-		data.dateRange || {
-			start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-			end: new Date()
-		}
-	);
-	let dailyAnalysis = $state(data.dailyAnalysis || []);
-	let hourlyActivity = $state(data.hourlyActivity || []);
-	let topMovers = $state(data.topMovers || []);
-	let summaryStats = $state(data.summaryStats || null);
-	let activeFilter = $state(30);
-	let isMobile = $state(false);
-
-	// Detect mobile viewport
-	$effect(() => {
-		const checkMobile = () => {
-			isMobile = window.innerWidth <= 768;
-		};
-		checkMobile();
-		window.addEventListener('resize', checkMobile);
-		return () => window.removeEventListener('resize', checkMobile);
+	let loading = $state(true); // full-page spinner — first load only
+	let refreshing = $state(false); // in-place refresh — keeps charts mounted
+	let dateRange = $state({
+		start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+		end: new Date()
 	});
+	let dailyAnalysis = $state([]);
+	let hourlyActivity = $state([]);
+	let topMovers = $state([]);
+	let summaryStats = $state(null);
+	let activeFilter = $state(30);
 
-	// Chart instances
+	// Chart instances — plain let; never read by template or $derived
 	let dailyTrendChart = null;
 	let hourlyHeatmapChart = null;
 	let topMoversChart = null;
@@ -141,8 +89,9 @@
 	function destroyChart(chart) {
 		if (chart) {
 			chart.destroy();
+			return null;
 		}
-		return null;
+		return chart;
 	}
 
 	function destroyAllCharts() {
@@ -152,16 +101,40 @@
 		transactionTypeChart = destroyChart(transactionTypeChart);
 	}
 
+	// TEMP PERF INSTRUMENTATION — remove after read/latency measurement.
+	// Logs each analytics load duration plus a running median over the session, so
+	// warm re-clicks of the same range accumulate samples. Collect 3–5 cold (one
+	// per hard reload, read the first line each time) and 3–5 warm (re-click the
+	// same range), then take the medians. Keep the read-count check BEFORE enabling
+	// Firestore offline persistence so local caching doesn't pollute it.
+	const __perfSamples = [];
+	function __logLoadDuration(ms) {
+		__perfSamples.push(ms);
+		const sorted = [...__perfSamples].sort((a, b) => a - b);
+		const mid = Math.floor(sorted.length / 2);
+		const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+		console.log(
+			`[PERF] analytics load ${ms.toFixed(1)}ms — n=${sorted.length}, median=${median.toFixed(1)}ms`
+		);
+	}
+
 	// Data loading
 	async function loadAnalysisData() {
-		loading = true;
+		const __perfStart = performance.now(); // TEMP PERF — remove with __logLoadDuration
+		// Only show the full-page spinner before the first dataset exists.
+		// Later filter changes refresh in place so charts never unmount.
+		if (summaryStats) {
+			refreshing = true;
+		} else {
+			loading = true;
+		}
 		try {
-			const [daily, hourly, movers, summary] = await Promise.all([
-				getDailyAnalysis(dateRange.start, dateRange.end),
-				getHourlyActivityPattern(daysDifference, dateRange.start, dateRange.end),
-				getTopMovers(10, daysDifference, dateRange.start, dateRange.end),
-				getSummaryStats(dateRange.start, dateRange.end)
-			]);
+			const {
+				daily,
+				hourly,
+				topMovers: movers,
+				summary
+			} = await getAnalyticsForRange(dateRange.start, dateRange.end, { topMoversLimit: 10 });
 
 			dailyAnalysis = daily;
 			hourlyActivity = hourly;
@@ -174,6 +147,8 @@
 			notificationStore.showNotification('Failed to load analysis data', 'error');
 		} finally {
 			loading = false;
+			refreshing = false;
+			__logLoadDuration(performance.now() - __perfStart); // TEMP PERF — remove after measuring
 		}
 	}
 
@@ -194,24 +169,21 @@
 						data: dailyAnalysis.map((d) => d.totalAdded),
 						borderColor: CHART_COLORS.stockIn,
 						backgroundColor: `${CHART_COLORS.stockIn}1A`,
-						tension: 0.3,
-						fill: true
+						tension: 0.1
 					},
 					{
 						label: 'Stock Out',
 						data: dailyAnalysis.map((d) => d.totalRemoved),
 						borderColor: CHART_COLORS.stockOut,
 						backgroundColor: `${CHART_COLORS.stockOut}1A`,
-						tension: 0.3,
-						fill: true
+						tension: 0.1
 					},
 					{
 						label: 'Net Change',
 						data: dailyAnalysis.map((d) => d.netChange),
 						borderColor: CHART_COLORS.netChange,
 						backgroundColor: `${CHART_COLORS.netChange}1A`,
-						tension: 0.3,
-						fill: true
+						tension: 0.1
 					}
 				]
 			},
@@ -219,21 +191,21 @@
 				responsive: true,
 				maintainAspectRatio: false,
 				plugins: {
-					title: { display: false },
+					title: {
+						display: true,
+						text: 'Daily Transaction Trends'
+					},
 					legend: {
-						position: 'top',
-						labels: { color: '#8b949e', font: { family: 'Geist' } }
+						position: 'top'
 					}
 				},
 				scales: {
 					y: {
 						beginAtZero: true,
-						grid: { color: 'rgba(139, 148, 158, 0.1)' },
-						ticks: { color: '#8b949e' }
-					},
-					x: {
-						grid: { display: false },
-						ticks: { color: '#8b949e' }
+						title: {
+							display: true,
+							text: 'Quantity'
+						}
 					}
 				}
 			}
@@ -246,6 +218,8 @@
 
 		hourlyHeatmapChart = destroyChart(hourlyHeatmapChart);
 
+		const maxCount = Math.max(...hourlyActivity.map((h) => h.transactionCount)) || 1;
+
 		hourlyHeatmapChart = new Chart(ctx.getContext('2d'), {
 			type: 'bar',
 			data: {
@@ -254,8 +228,12 @@
 					{
 						label: 'Transactions',
 						data: hourlyActivity.map((h) => h.transactionCount),
-						backgroundColor: CHART_COLORS.netChange,
-						borderRadius: 4
+						backgroundColor: hourlyActivity.map((h) => {
+							const intensity = h.transactionCount / maxCount;
+							return `${CHART_COLORS.netChange}${Math.round((0.2 + intensity * 0.8) * 255)
+								.toString(16)
+								.padStart(2, '0')}`;
+						})
 					}
 				]
 			},
@@ -263,18 +241,21 @@
 				responsive: true,
 				maintainAspectRatio: false,
 				plugins: {
-					title: { display: false },
-					legend: { display: false }
+					title: {
+						display: true,
+						text: `Hourly Activity Pattern (${formatDateRange()})`
+					},
+					legend: {
+						display: false
+					}
 				},
 				scales: {
 					y: {
 						beginAtZero: true,
-						grid: { color: 'rgba(139, 148, 158, 0.1)' },
-						ticks: { color: '#8b949e' }
-					},
-					x: {
-						grid: { display: false },
-						ticks: { color: '#8b949e' }
+						title: {
+							display: true,
+							text: 'Number of Transactions'
+						}
 					}
 				}
 			}
@@ -295,8 +276,7 @@
 					{
 						label: 'Total Transactions',
 						data: topMovers.map((m) => m.totalTransactions),
-						backgroundColor: CHART_COLORS.activity,
-						borderRadius: 4
+						backgroundColor: CHART_COLORS.activity
 					}
 				]
 			},
@@ -305,18 +285,18 @@
 				maintainAspectRatio: false,
 				indexAxis: 'y',
 				plugins: {
-					title: { display: false },
-					legend: { display: false }
+					title: {
+						display: true,
+						text: `Top 10 Most Active Items (${formatDateRange()})`
+					}
 				},
 				scales: {
 					x: {
 						beginAtZero: true,
-						grid: { color: 'rgba(139, 148, 158, 0.1)' },
-						ticks: { color: '#8b949e' }
-					},
-					y: {
-						grid: { display: false },
-						ticks: { color: '#8b949e' }
+						title: {
+							display: true,
+							text: 'Number of Transactions'
+						}
 					}
 				}
 			}
@@ -338,20 +318,17 @@
 				datasets: [
 					{
 						data: [summaryStats.totalAdded, summaryStats.totalRemoved],
-						backgroundColor: [CHART_COLORS.stockIn, CHART_COLORS.stockOut],
-						borderWidth: 0
+						backgroundColor: [CHART_COLORS.stockIn, CHART_COLORS.stockOut]
 					}
 				]
 			},
 			options: {
 				responsive: true,
 				maintainAspectRatio: false,
-				cutout: '70%',
 				plugins: {
-					title: { display: false },
-					legend: {
-						position: 'bottom',
-						labels: { color: '#8b949e', font: { family: 'Geist' } }
+					title: {
+						display: true,
+						text: 'Transaction Type Distribution'
 					}
 				}
 			}
@@ -446,22 +423,11 @@
 		notificationStore.showNotification('Analysis exported successfully', 'success');
 	}
 
-	// Effects
-	$effect(() => {
-		const timer = setTimeout(() => {
-			if (dailyAnalysis.length > 0 || summaryStats) {
-				updateCharts();
-			}
-		}, 100);
+	// One-time setup: Chart.js registration, initial data load, and resize handling
+	onMount(() => {
+		Chart.register(...registerables);
 
-		return () => {
-			clearTimeout(timer);
-			destroyAllCharts();
-		};
-	});
-
-	$effect(() => {
-		if (!browser) return;
+		loadAnalysisData();
 
 		let resizeTimer;
 		let previousWidth = window.innerWidth;
@@ -481,165 +447,214 @@
 		}
 
 		window.addEventListener('resize', handleResize);
+		window.addEventListener('orientationchange', handleResize);
+
 		return () => {
+			destroyAllCharts();
 			window.removeEventListener('resize', handleResize);
+			window.removeEventListener('orientationchange', handleResize);
 			clearTimeout(resizeTimer);
 		};
 	});
 </script>
 
 <svelte:head>
-	<title>Transaction Analysis</title>
+	<title>Transaction Analysis - StockSense</title>
 </svelte:head>
 
-<div class="page-viewport-wrapper">
-	<div class="glow-layer"></div>
-	<div class="content-container">
-		<header class="page-header">
-			<div class="title-group">
-				<h1 class="main-title">Transaction Analysis</h1>
-				<div class="system-status">
-					<span class="status-dot"></span>
-					<span class="status-text">SYSTEM SECURE</span>
-				</div>
-			</div>
-			<div class="header-actions">
-				<button onclick={exportToCSV} class="export-btn">
-					<i class="fas fa-download"></i>
-					<span>EXPORT DATA</span>
-				</button>
-			</div>
-		</header>
-
-		<div class="ledger-actions">
-			<div class="filter-ribbon">
-				<div class="ribbon-group">
-					<span class="ribbon-label">QUICK RANGE:</span>
-					<div class="ribbon-options">
-						<button onclick={() => setQuickRange(0)} class="ribbon-btn" class:active={activeFilter === 0}>TODAY</button>
-						<button onclick={() => setQuickRange(1)} class="ribbon-btn" class:active={activeFilter === 1}>YESTERDAY</button>
-						<button onclick={() => setQuickRange(3)} class="ribbon-btn" class:active={activeFilter === 3}>3D</button>
-						<button onclick={() => setQuickRange(7)} class="ribbon-btn" class:active={activeFilter === 7}>7D</button>
-						<button onclick={() => setQuickRange(14)} class="ribbon-btn" class:active={activeFilter === 14}>14D</button>
-						<button onclick={() => setQuickRange(21)} class="ribbon-btn" class:active={activeFilter === 21}>21D</button>
-						<button onclick={() => setQuickRange(30)} class="ribbon-btn" class:active={activeFilter === 30}>30D</button>
-					</div>
-				</div>
-				<div class="ribbon-group">
-					<span class="ribbon-label">CNE PERIODS:</span>
-					<div class="ribbon-options">
-						<button onclick={() => setCNERange(2022)} class="ribbon-btn" class:active={activeFilter === 'cne2022'}>2022</button>
-						<button onclick={() => setCNERange(2023)} class="ribbon-btn" class:active={activeFilter === 'cne2023'}>2023</button>
-						<button onclick={() => setCNERange(2024)} class="ribbon-btn" class:active={activeFilter === 'cne2024'}>2024</button>
-						<button onclick={() => setCNERange(2025)} class="ribbon-btn" class:active={activeFilter === 'cne2025'}>2025</button>
-						<button onclick={() => setCNERange(2026)} class="ribbon-btn" class:active={activeFilter === 'cne2026'}>2026</button>
-					</div>
-				</div>
-			</div>
-
-			<div class="date-picker-primary">
-				<div class="date-input-group">
-					<input type="date" value={startDateStr} onchange={(e) => handleDateChange('start', e.target.value)} class="tech-date-input" />
-					<span class="date-separator">TO</span>
-					<input type="date" value={endDateStr} onchange={(e) => handleDateChange('end', e.target.value)} class="tech-date-input" />
-				</div>
-			</div>
-		</div>
+<div class="analysis-page">
+	<!-- Summary Cards -->
+	<div class="summary-section">
+		<h1 class="text-3xl font-bold mb-6">
+			<i class="fas fa-chart-line mr-2"></i>
+			Transaction Analysis
+		</h1>
 
 		{#if summaryStats}
-			<div class="summary-grid">
+			<div class="summary-grid" in:fade={{ duration: 200 }}>
 				<div class="summary-card">
-					<span class="card-label">TOTAL TRANSACTIONS</span>
-					<span class="card-value digital-font">{summaryStats.totalTransactions.toLocaleString()}</span>
-					<div class="card-footer">
-						<i class="fas fa-exchange-alt"></i>
-						<span>SYSTEM_LOGS</span>
-					</div>
+					<i class="fas fa-exchange-alt"></i>
+					<h3>Total Transactions</h3>
+					<p>{summaryStats.totalTransactions.toLocaleString()}</p>
 				</div>
 				<div class="summary-card positive">
-					<span class="card-label">STOCK IN</span>
-					<span class="card-value digital-font">+{summaryStats.totalAdded.toLocaleString()}</span>
-					<div class="card-footer">
-						<i class="fas fa-plus-circle"></i>
-						<span>UNITS_ADDED</span>
-					</div>
+					<i class="fas fa-plus-circle"></i>
+					<h3>Stock In</h3>
+					<p>+{summaryStats.totalAdded.toLocaleString()}</p>
+					<small>Total units added</small>
 				</div>
 				<div class="summary-card negative">
-					<span class="card-label">STOCK OUT</span>
-					<span class="card-value digital-font">-{summaryStats.totalRemoved.toLocaleString()}</span>
-					<div class="card-footer">
-						<i class="fas fa-minus-circle"></i>
-						<span>UNITS_REMOVED</span>
-					</div>
+					<i class="fas fa-minus-circle"></i>
+					<h3>Stock Out</h3>
+					<p>-{summaryStats.totalRemoved.toLocaleString()}</p>
+					<small>Total units removed</small>
 				</div>
-				<div class="summary-card" class:positive={summaryStats.netChange >= 0} class:negative={summaryStats.netChange < 0}>
-					<span class="card-label">NET CHANGE</span>
-					<span class="card-value digital-font">{summaryStats.netChange >= 0 ? '+' : ''}{summaryStats.netChange.toLocaleString()}</span>
-					<div class="card-footer">
-						<i class="fas fa-balance-scale"></i>
-						<span>PERIOD_DELTA</span>
-					</div>
+				<div class="summary-card {summaryStats.netChange >= 0 ? 'positive' : 'negative'}">
+					<i class="fas fa-balance-scale"></i>
+					<h3>Net Change</h3>
+					<p>{summaryStats.netChange >= 0 ? '+' : ''}{summaryStats.netChange.toLocaleString()}</p>
 				</div>
+				<div class="summary-card">
+					<i class="fas fa-boxes"></i>
+					<h3>Active Items</h3>
+					<p>{summaryStats.uniqueItems.toLocaleString()}</p>
+					<small>Items with transactions in period</small>
+				</div>
+				<div class="summary-card inactive">
+					<i class="fas fa-archive"></i>
+					<h3>Inactive Items</h3>
+					<p>{summaryStats.inactiveItems.toLocaleString()}</p>
+					<small>Items with no transactions in period</small>
+				</div>
+				<div class="summary-card new-items">
+					<i class="fas fa-plus-square"></i>
+					<h3>New Items Created</h3>
+					<p>{summaryStats.newItemsCreated.toLocaleString()}</p>
+					<small>Items added to inventory</small>
+				</div>
+				<div class="summary-card deleted-items">
+					<i class="fas fa-trash"></i>
+					<h3>Items Deleted</h3>
+					<p>{summaryStats.itemsDeleted.toLocaleString()}</p>
+					<small>Items removed from inventory</small>
+				</div>
+			</div>
+		{:else}
+			<div class="summary-grid">
+				{#each Array(8) as _unused, i (i)}
+					<div class="summary-card skeleton"></div>
+				{/each}
 			</div>
 		{/if}
+	</div>
 
-		<div class="charts-layout">
-			<div class="chart-frame full-width">
-				<div class="frame-header">
-					<span class="frame-title">DAILY TRANSACTION TRENDS</span>
-					<div class="frame-status"><span class="dot"></span> LIVE_FEED</div>
+	<!-- Date Range Controls -->
+	<div class="controls-section">
+		<div class="date-controls">
+			<div class="date-inputs">
+				<label>
+					Start Date:
+					<input
+						type="date"
+						value={startDateStr}
+						max={endDateStr}
+						onchange={(e) => handleDateChange('start', e.target.value)}
+					/>
+				</label>
+				<label>
+					End Date:
+					<input
+						type="date"
+						value={endDateStr}
+						min={startDateStr}
+						max={new Date().toISOString().split('T')[0]}
+						onchange={(e) => handleDateChange('end', e.target.value)}
+					/>
+				</label>
+			</div>
+			<div class="quick-ranges">
+				<button onclick={() => setQuickRange(0)} class="quick-btn" class:active={activeFilter === 0}
+					>Today</button
+				>
+				<button onclick={() => setQuickRange(1)} class="quick-btn" class:active={activeFilter === 1}
+					>Yesterday</button
+				>
+				<button onclick={() => setQuickRange(3)} class="quick-btn" class:active={activeFilter === 3}
+					>Last 3 Days</button
+				>
+				<button onclick={() => setQuickRange(7)} class="quick-btn" class:active={activeFilter === 7}
+					>Last 7 Days</button
+				>
+				<button
+					onclick={() => setQuickRange(14)}
+					class="quick-btn"
+					class:active={activeFilter === 14}>Last 14 Days</button
+				>
+				<button
+					onclick={() => setQuickRange(21)}
+					class="quick-btn"
+					class:active={activeFilter === 21}>Last 21 Days</button
+				>
+				<button
+					onclick={() => setQuickRange(30)}
+					class="quick-btn"
+					class:active={activeFilter === 30}>Last 30 Days</button
+				>
+			</div>
+			<div class="cne-ranges">
+				<span class="filter-label">CNE Periods:</span>
+				<button
+					onclick={() => setCNERange(2022)}
+					class="quick-btn cne-btn"
+					class:active={activeFilter === 'cne2022'}>CNE 2022</button
+				>
+				<button
+					onclick={() => setCNERange(2023)}
+					class="quick-btn cne-btn"
+					class:active={activeFilter === 'cne2023'}>CNE 2023</button
+				>
+				<button
+					onclick={() => setCNERange(2024)}
+					class="quick-btn cne-btn"
+					class:active={activeFilter === 'cne2024'}>CNE 2024</button
+				>
+				<button
+					onclick={() => setCNERange(2025)}
+					class="quick-btn cne-btn"
+					class:active={activeFilter === 'cne2025'}>CNE 2025</button
+				>
+			</div>
+			<button onclick={exportToCSV} class="export-btn">
+				<i class="fas fa-download mr-2"></i>
+				Export CSV
+			</button>
+		</div>
+	</div>
+
+	<!-- Charts Section -->
+	{#if loading}
+		<div class="charts-grid" aria-busy="true">
+			<div class="chart-container full-width skeleton"></div>
+			<div class="chart-container skeleton"></div>
+			<div class="chart-container skeleton"></div>
+			<div class="chart-container full-width skeleton"></div>
+		</div>
+	{:else}
+		<div class="content-wrap" class:refreshing aria-busy={refreshing} in:fade={{ duration: 200 }}>
+			{#if refreshing}
+				<div class="refresh-overlay">
+					<div
+						class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"
+					></div>
 				</div>
-				<div class="chart-wrapper">
+			{/if}
+			<div class="charts-grid">
+				<!-- Daily Trend Chart -->
+				<div class="chart-container full-width">
 					<canvas id="dailyTrendChart"></canvas>
 				</div>
-			</div>
 
-			<div class="chart-frame">
-				<div class="frame-header">
-					<span class="frame-title">HOURLY ACTIVITY PATTERN</span>
-				</div>
-				<div class="chart-wrapper">
+				<!-- Hourly Activity Pattern -->
+				<div class="chart-container">
 					<canvas id="hourlyHeatmapChart"></canvas>
 				</div>
-			</div>
 
-			<div class="chart-frame">
-				<div class="frame-header">
-					<span class="frame-title">TYPE DISTRIBUTION</span>
-				</div>
-				<div class="chart-wrapper">
+				<!-- Transaction Type Distribution -->
+				<div class="chart-container">
 					<canvas id="transactionTypeChart"></canvas>
 				</div>
-			</div>
 
-			<div class="chart-frame full-width">
-				<div class="frame-header">
-					<span class="frame-title">TOP 10 MOST ACTIVE ITEMS</span>
-				</div>
-				<div class="chart-wrapper">
+				<!-- Top Movers -->
+				<div class="chart-container full-width">
 					<canvas id="topMoversChart"></canvas>
 				</div>
 			</div>
-		</div>
 
-		{#if isMobile}
-			<!-- Mobile Card View -->
-			<div class="mobile-cards-container">
-				<div class="cards-header">
-					<span class="frame-title">TOP MOVING ITEMS</span>
-				</div>
-				{#each topMovers as mover (mover.itemName)}
-					<TransactionAnalysisMobileCard {mover} />
-				{/each}
-			</div>
-		{:else}
-			<!-- Desktop Table View -->
-			<div class="table-frame">
-				<div class="frame-header">
-					<span class="frame-title">TOP MOVING ITEMS DETAILS</span>
-				</div>
-				<div class="table-scroll">
-					<table class="tech-table">
+			<!-- Top Movers Table -->
+			<div class="table-section">
+				<h2 class="text-2xl font-bold mb-4">Top Moving Items Details</h2>
+				<div class="table-wrapper">
+					<table class="data-table">
 						<thead>
 							<tr>
 								<th>Item Name</th>
@@ -651,655 +666,546 @@
 							</tr>
 						</thead>
 						<tbody>
-							{#each topMovers as mover (mover.itemName)}
-								<tr class="table-row">
-									<td class="name-text">{mover.itemName}</td>
-									<td class="digital-font">
-										<span class="count-badge">{mover.totalTransactions}</span>
+							{#each topMovers as mover (mover.itemId)}
+								<tr>
+									<td>{mover.itemName}</td>
+									<td>{mover.totalTransactions}</td>
+									<td class="positive">+{mover.totalAdded}</td>
+									<td class="negative">-{mover.totalRemoved}</td>
+									<td class={mover.netChange >= 0 ? 'positive' : 'negative'}>
+										{mover.netChange >= 0 ? '+' : ''}{mover.netChange}
 									</td>
-									<td class="digital-font">
-										<span class="trend-tag positive">+{mover.totalAdded}</span>
-									</td>
-									<td class="digital-font">
-										<span class="trend-tag negative">-{mover.totalRemoved}</span>
-									</td>
-									<td class="digital-font">
-										<span class="trend-tag" class:positive={mover.netChange >= 0} class:negative={mover.netChange < 0}>
-											{mover.netChange >= 0 ? '+' : ''}{mover.netChange}
-										</span>
-									</td>
-									<td class="digital-font">
-										<span class="volatility-tag">{mover.volatility}</span>
-									</td>
+									<td>{mover.volatility}</td>
 								</tr>
 							{/each}
 						</tbody>
 					</table>
 				</div>
 			</div>
-		{/if}
-	</div>
+		</div>
+	{/if}
 </div>
 
 <style>
-	/* Remove default mobile tap highlights */
-	* {
-		-webkit-tap-highlight-color: transparent;
-		-webkit-touch-callout: none;
-	}
-
-	button, input, select, textarea {
-		outline: none;
-		-webkit-tap-highlight-color: transparent;
-	}
-
-	button:focus-visible, input:focus-visible {
-		outline: 2px solid var(--tech-accent);
-		outline-offset: 2px;
-	}
-
-	:global(body) {
-		background-color: var(--tech-bg-end) !important;
-		background-image: radial-gradient(circle at 50% -10%, var(--tech-bg-start) 0%, var(--tech-bg-end) 100%) !important;
-		background-attachment: fixed !important;
-		margin: 0;
-		padding: 0;
-		overflow-x: hidden;
-	}
-
-	.page-viewport-wrapper {
-		position: relative;
-		min-height: 100vh;
-		width: 100%;
-		display: flex;
-		flex-direction: column;
-		box-sizing: border-box;
-	}
-
-	.glow-layer {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100vh;
-		background: radial-gradient(circle at 50% 0%, var(--tech-accent-muted) 0%, transparent 50%);
-		pointer-events: none;
-		z-index: 0;
-	}
-
-	.content-container {
-		position: relative;
-		z-index: 2;
+	.analysis-page {
+		padding: 2rem;
 		max-width: 1400px;
 		margin: 0 auto;
 		width: 100%;
-		padding: 3rem 1.5rem;
-		display: flex;
-		flex-direction: column;
-		gap: 2rem;
+		overflow-x: hidden;
 	}
 
-	.page-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		flex-wrap: wrap;
-		gap: 2rem;
-	}
-
-	.main-title {
-		font-size: 2.5rem;
-		font-weight: 800;
-		color: var(--tech-title);
-		margin: 0;
-		letter-spacing: -0.05em;
-		text-transform: uppercase;
-		line-height: 1;
-	}
-
-	.system-status {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		margin-top: 0.8rem;
-		opacity: 0.8;
-	}
-
-	.status-dot {
-		width: 6px;
-		height: 6px;
-		background: var(--tech-accent);
-		border-radius: 50%;
-		box-shadow: 0 0 10px var(--tech-accent-muted);
-		animation: pulse-soft 3s ease-in-out infinite;
-	}
-
-	@keyframes pulse-soft {
-		0%, 100% { opacity: 0.4; transform: scale(0.9); }
-		50% { opacity: 1; transform: scale(1.1); }
-	}
-
-	.status-text {
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.6rem;
-		color: var(--tech-status-text);
-		letter-spacing: 0.2em;
-		font-weight: 800;
-	}
-
-	.export-btn {
-		background: var(--tech-badge-bg);
-		border: 1px solid var(--tech-badge-border);
-		color: var(--tech-accent);
-		padding: 0.75rem 1.5rem;
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-weight: 800;
-		font-size: 0.7rem;
-		letter-spacing: 0.1em;
-		border-radius: 4px;
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		cursor: pointer;
-		transition: all 0.3s;
-		-webkit-tap-highlight-color: transparent;
-		outline: none;
-	}
-
-	.export-btn:focus-visible {
-		outline: 2px solid var(--tech-accent);
-		outline-offset: 2px;
-	}
-
-	.export-btn:hover {
-		background: var(--tech-accent);
-		color: white;
-		transform: translateY(-2px);
-		box-shadow: 0 5px 15px var(--tech-accent-muted);
-	}
-
-	.ledger-actions {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 2rem;
-		background: var(--tech-glass-bg);
-		padding: 1.5rem;
-		border-radius: 12px;
-		border: 1px solid var(--tech-glass-border);
-	}
-
-	.filter-ribbon {
-		display: flex;
-		gap: 2.5rem;
-		flex-wrap: wrap;
-	}
-
-	.ribbon-group {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-	}
-
-	.ribbon-label {
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.65rem;
-		font-weight: 800;
-		color: var(--tech-label);
-		letter-spacing: 0.05em;
-	}
-
-	.ribbon-options {
-		display: flex;
-		gap: 0.4rem;
-	}
-
-	.ribbon-btn {
-		background: var(--tech-badge-bg);
-		border: 1px solid var(--tech-badge-border);
-		color: var(--tech-label);
-		padding: 0.35rem 0.75rem;
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.65rem;
-		font-weight: 700;
-		border-radius: 4px;
-		cursor: pointer;
-		transition: all 0.2s;
-		-webkit-tap-highlight-color: transparent;
-		outline: none;
-	}
-
-	.ribbon-btn:focus-visible {
-		outline: 2px solid var(--tech-accent);
-		outline-offset: 2px;
-	}
-
-	.ribbon-btn:hover {
-		border-color: var(--tech-accent);
-		color: var(--tech-accent);
-	}
-
-	.ribbon-btn.active {
-		background: var(--tech-accent-muted);
-		border-color: var(--tech-accent);
-		color: var(--tech-accent);
-		box-shadow: 0 0 10px var(--tech-accent-muted);
-	}
-
-	.date-input-group {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		background: var(--tech-badge-bg);
-		padding: 0.5rem 1rem;
-		border-radius: 6px;
-		border: 1px solid var(--tech-badge-border);
-	}
-
-	.tech-date-input {
-		background: transparent;
-		border: none;
-		color: var(--tech-value);
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.75rem;
-		font-weight: 700;
-		outline: none;
-		cursor: pointer;
-		-webkit-tap-highlight-color: transparent;
-	}
-
-	.tech-date-input:focus-visible {
-		outline: 2px solid var(--tech-accent);
-		outline-offset: 2px;
-	}
-
-	.date-separator {
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.6rem;
-		font-weight: 800;
-		color: var(--tech-label);
-		opacity: 0.5;
+	.summary-section {
+		background-color: var(--container-bg);
+		border-radius: 1rem;
+		padding: 2rem;
+		margin-bottom: 2rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 	}
 
 	.summary-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(min(150px, 45%), 1fr));
 		gap: 1.5rem;
+		margin-top: 1.5rem;
 	}
 
 	.summary-card {
-		background: var(--tech-glass-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 12px;
+		background-color: var(--background-color);
+		border-radius: 0.5rem;
 		padding: 1.5rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		text-align: center;
+		transition: transform 0.3s ease;
 	}
 
 	.summary-card:hover {
-		transform: translateY(-4px);
-		border-color: var(--tech-accent-muted);
-		box-shadow: var(--tech-glass-shadow);
+		transform: translateY(-5px);
 	}
 
-	.card-label {
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.65rem;
-		font-weight: 800;
-		color: var(--tech-label);
-		letter-spacing: 0.1em;
-	}
-
-	.card-value {
+	.summary-card i {
 		font-size: 2rem;
-		font-weight: 800;
-		color: var(--tech-value);
+		margin-bottom: 0.5rem;
+		display: block;
 	}
 
-	.card-footer {
-		margin-top: 0.5rem;
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.6rem;
-		font-weight: 800;
-		color: var(--tech-label);
-		opacity: 0.6;
+	.summary-card h3 {
+		font-size: 0.9rem;
+		font-weight: 500;
+		margin-bottom: 0.5rem;
+		color: var(--text-color-dimmed);
 	}
 
-	.summary-card.positive .card-value { color: #22c55e; }
-	.summary-card.negative .card-value { color: #ef4444; }
-
-	.digital-font {
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+	.summary-card p {
+		font-size: 1.5rem;
+		font-weight: 700;
+		margin-bottom: 0.25rem;
 	}
 
-	.charts-layout {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 1.5rem;
+	.summary-card small {
+		font-size: 0.75rem;
+		color: var(--text-color-dimmed);
+		font-weight: 400;
 	}
 
-	.chart-frame {
-		background: var(--tech-glass-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 12px;
+	.summary-card.positive {
+		color: #4caf50;
+	}
+
+	.summary-card.negative {
+		color: #f44336;
+	}
+
+	.summary-card.inactive {
+		color: #ff9800;
+	}
+
+	.summary-card.new-items {
+		color: #2196f3;
+	}
+
+	.summary-card.deleted-items {
+		color: #9c27b0;
+	}
+
+	.controls-section {
+		background-color: var(--container-bg);
+		border-radius: 1rem;
 		padding: 1.5rem;
+		margin-bottom: 2rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	}
+
+	.date-controls {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.date-inputs {
+		display: flex;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.date-inputs label {
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
+		gap: 0.25rem;
+		font-size: 0.9rem;
 	}
 
-	.chart-frame.full-width {
-		grid-column: span 2;
+	.date-inputs input {
+		padding: 0.5rem;
+		border: 1px solid var(--table-border-color);
+		border-radius: 0.25rem;
+		background-color: var(--background-color);
+		color: var(--text-color);
 	}
 
-	.frame-header {
+	.quick-ranges {
 		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 1.25rem 1.5rem;
-		border-bottom: 1px solid var(--tech-cell-border);
-		background: var(--tech-header-bg);
-	}
-
-	.frame-title {
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.7rem;
-		font-weight: 800;
-		color: var(--tech-header-text);
-		letter-spacing: 0.15em;
-		text-transform: uppercase;
-	}
-
-	.frame-status {
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.6rem;
-		font-weight: 800;
-		color: #22c55e;
-		display: flex;
-		align-items: center;
+		flex-wrap: wrap;
 		gap: 0.5rem;
 	}
 
-	.frame-status .dot {
-		width: 6px;
-		height: 6px;
-		background: #22c55e;
-		border-radius: 50%;
-		animation: pulse-soft 2s infinite;
+	.cne-ranges {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		align-items: center;
+		margin-top: 0.75rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid var(--table-border-color);
 	}
 
-	.chart-wrapper {
-		height: 300px;
+	.filter-label {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-color-dimmed);
+		margin-right: 0.5rem;
+	}
+
+	.quick-btn {
+		padding: 0.4rem 0.8rem;
+		border: 1px solid var(--table-border-color);
+		border-radius: 0.25rem;
+		background-color: var(--background-color);
+		color: var(--text-color);
+		cursor: pointer;
+		transition: all 0.3s ease;
+		font-size: 0.875rem;
+		white-space: nowrap;
+	}
+
+	.quick-btn:hover {
+		background-color: var(--primary-color);
+		color: white;
+		border-color: var(--primary-color);
+	}
+
+	.quick-btn.active {
+		background-color: var(--primary-color);
+		color: white;
+		border-color: var(--primary-color);
+		font-weight: 600;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+		transform: translateY(-1px);
+	}
+
+	.cne-btn {
+		background-color: #ff6b35;
+		border-color: #ff6b35;
+		color: white;
+	}
+
+	.cne-btn:hover {
+		background-color: #e55a2b;
+		border-color: #e55a2b;
+	}
+
+	.cne-btn.active {
+		background-color: #d14a1f;
+		border-color: #d14a1f;
+		box-shadow: 0 2px 4px rgba(255, 107, 53, 0.4);
+	}
+
+	.export-btn {
+		padding: 0.5rem 1.5rem;
+		background-color: var(--primary-color);
+		color: white;
+		border: none;
+		border-radius: 0.25rem;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		display: flex;
+		align-items: center;
+	}
+
+	.export-btn:hover {
+		background-color: var(--primary-hover-color);
+		transform: translateY(-2px);
+	}
+
+	.skeleton {
+		position: relative;
+		overflow: hidden;
+		background-color: var(--background-color);
+	}
+
+	.summary-card.skeleton {
+		min-height: 10rem;
+	}
+
+	.skeleton::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		transform: translateX(-100%);
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+		animation: shimmer 1.4s ease-in-out infinite;
+	}
+
+	@keyframes shimmer {
+		100% {
+			transform: translateX(100%);
+		}
+	}
+
+	.content-wrap {
+		position: relative;
+		transition: opacity 0.2s ease;
+	}
+
+	.content-wrap.refreshing {
+		opacity: 0.5;
+		pointer-events: none;
+	}
+
+	.refresh-overlay {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
+		padding-top: 4rem;
+		z-index: 5;
+	}
+
+	.charts-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(500px, 100%), 1fr));
+		gap: 2rem;
+		margin-bottom: 2rem;
+	}
+
+	.chart-container {
+		background-color: var(--container-bg);
+		border-radius: 1rem;
+		padding: 1.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		height: 400px;
 		position: relative;
 	}
 
-	.table-frame {
-		background: var(--tech-glass-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 12px;
-		overflow: hidden;
+	.chart-container.full-width {
+		grid-column: 1 / -1;
 	}
 
-	.table-scroll {
+	.table-section {
+		background-color: var(--container-bg);
+		border-radius: 1rem;
+		padding: 2rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	}
+
+	.table-wrapper {
 		overflow-x: auto;
 	}
 
-	.tech-table {
+	.data-table {
 		width: 100%;
 		border-collapse: collapse;
+		font-size: 0.95rem;
 	}
 
-	.tech-table th {
-		background: var(--tech-header-bg);
-		padding: 1.1rem 1.5rem;
+	.data-table th,
+	.data-table td {
+		padding: 0.75rem;
 		text-align: left;
-		font-family: 'Geist', sans-serif;
-		font-size: 0.7rem;
-		font-weight: 700;
-		color: var(--tech-header-text);
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
-		border-bottom: 1px solid var(--tech-cell-border);
+		border-bottom: 1px solid var(--table-border-color);
 	}
 
-	.tech-table td {
-		padding: 1rem 1.5rem;
-		border-bottom: 1px solid var(--tech-cell-border);
-		color: var(--tech-cell-text);
+	.data-table th {
+		font-weight: 600;
+		text-transform: uppercase;
 		font-size: 0.85rem;
+		color: var(--text-color-dimmed);
 	}
 
-	.table-row:hover {
-		background: var(--tech-row-hover);
+	.data-table tbody tr:hover {
+		background-color: var(--table-row-hover-bg);
 	}
 
-	.name-text {
-		font-weight: 700;
-		color: var(--tech-value);
+	.positive {
+		color: #4caf50;
+		font-weight: 500;
 	}
 
-	.count-badge {
-		background: var(--tech-badge-bg);
-		border: 1px solid var(--tech-badge-border);
-		padding: 0.2rem 0.6rem;
-		border-radius: 4px;
-		color: var(--tech-value);
-	}
-
-	.trend-tag {
-		display: inline-flex;
-		align-items: center;
-		padding: 0.25rem 0.75rem;
-		border-radius: 6px;
-		font-weight: 800;
-		font-size: 0.8rem;
-	}
-
-	.trend-tag.positive {
-		background: rgba(34, 197, 94, 0.1);
-		color: #22c55e;
-		border: 1px solid rgba(34, 197, 94, 0.2);
-	}
-
-	.trend-tag.negative {
-		background: rgba(239, 68, 68, 0.1);
-		color: #ef4444;
-		border: 1px solid rgba(239, 68, 68, 0.2);
-	}
-
-	.volatility-tag {
-		color: var(--tech-accent);
-		font-weight: 700;
-	}
-
-	.positive { color: #22c55e; }
-	.negative { color: #ef4444; }
-
-	/* Mobile Cards Container */
-	.mobile-cards-container {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-		padding: 0;
-	}
-
-	.cards-header {
-		background: var(--tech-glass-bg);
-		border: 1px solid var(--tech-glass-border);
-		border-radius: 12px;
-		padding: 1rem 1.5rem;
-		margin-bottom: 0.5rem;
-	}
-
-	.cards-header .frame-title {
-		font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		font-size: 0.7rem;
-		font-weight: 800;
-		color: var(--tech-header-text);
-		letter-spacing: 0.15em;
-		text-transform: uppercase;
-	}
-
-	@media (max-width: 1024px) {
-		.charts-layout { grid-template-columns: 1fr; }
-		.chart-frame.full-width { grid-column: span 1; }
+	.negative {
+		color: #f44336;
+		font-weight: 500;
 	}
 
 	@media (max-width: 768px) {
-		.content-container {
-			padding: 1.25rem;
-			gap: 1rem;
+		.analysis-page {
+			padding: 0.5rem;
 		}
 
-		.main-title {
+		.summary-section {
+			padding: 1rem;
+			margin-bottom: 1rem;
+		}
+
+		.summary-section h1 {
 			font-size: 1.5rem;
-			letter-spacing: -0.02em;
+			margin-bottom: 1rem;
 		}
 
-		.system-status {
-			display: none;
+		.summary-grid {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 0.5rem;
+			margin-top: 1rem;
 		}
 
-		.page-header {
+		.summary-card {
+			padding: 0.5rem;
+			border-radius: 0.375rem;
+			min-width: 0;
+			overflow: hidden;
+		}
+
+		.summary-card i {
+			font-size: 1rem;
+			margin-bottom: 0.25rem;
+		}
+
+		.summary-card h3 {
+			font-size: 0.65rem;
+			margin-bottom: 0.25rem;
+			line-height: 1.1;
+		}
+
+		.summary-card p {
+			font-size: 0.9rem;
+			margin-bottom: 0.125rem;
+			word-break: break-all;
+		}
+
+		.summary-card small {
+			font-size: 0.55rem;
+			line-height: 1.1;
+			display: block;
+			word-wrap: break-word;
+		}
+
+		.controls-section {
+			padding: 1rem;
+			margin-bottom: 1rem;
+		}
+
+		.charts-grid {
+			grid-template-columns: 1fr;
 			gap: 1rem;
-			margin-bottom: 0;
+			margin-bottom: 1rem;
 		}
 
-		.header-actions {
+		.chart-container {
+			padding: 1rem;
+			height: 300px;
+		}
+
+		.date-controls {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0.75rem;
+		}
+
+		.date-inputs {
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+
+		.quick-ranges {
+			justify-content: center;
+			gap: 0.25rem;
+		}
+
+		.cne-ranges {
+			margin-top: 0.5rem;
+			padding-top: 0.5rem;
+			justify-content: center;
+			gap: 0.25rem;
+		}
+
+		.filter-label {
 			width: 100%;
+			text-align: center;
+			margin-bottom: 0.25rem;
+			margin-right: 0;
+		}
+
+		.quick-btn {
+			padding: 0.375rem 0.5rem;
+			font-size: 0.75rem;
 		}
 
 		.export-btn {
 			width: 100%;
 			justify-content: center;
-			padding: 0.65rem 1rem;
-			font-size: 0.65rem;
+			padding: 0.75rem;
 		}
 
-		.ledger-actions {
-			flex-direction: column;
-			align-items: stretch;
-			padding: 0;
-			gap: 1rem;
-			background: transparent;
-			border: none;
-			border-radius: 0;
+		.table-section {
+			padding: 1rem;
 		}
 
-		.filter-ribbon {
-			flex-direction: column;
-			gap: 0.75rem;
-			background: var(--tech-glass-bg);
-			padding: 0.875rem 1rem;
-			border-radius: 8px;
-			border: 1px solid var(--tech-glass-border);
+		.table-section h2 {
+			font-size: 1.25rem;
+			margin-bottom: 1rem;
 		}
 
-		.ribbon-group {
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 0.5rem;
+		/* Make table responsive */
+		.data-table {
+			font-size: 0.75rem;
 		}
 
-		.ribbon-label {
-			font-size: 0.55rem;
-			color: var(--tech-label);
-			opacity: 0.8;
+		.data-table th,
+		.data-table td {
+			padding: 0.5rem 0.25rem;
 		}
 
-		.ribbon-options {
-			flex-wrap: wrap;
-			gap: 0.35rem;
-			width: 100%;
-		}
-
-		.ribbon-btn {
-			padding: 0.3rem 0.6rem;
-			font-size: 0.6rem;
-			flex: 1 1 auto;
-			min-width: max-content;
-		}
-
-		.date-picker-primary {
-			width: 100%;
-		}
-
-		.date-input-group {
-			padding: 0.5rem 0.75rem;
-			gap: 0.75rem;
-			width: 100%;
-			justify-content: center;
-		}
-
-		.tech-date-input {
+		.data-table th {
 			font-size: 0.7rem;
-			flex: 1;
+		}
+
+		/* Hide less important columns on very small screens */
+		.data-table th:nth-child(6),
+		.data-table td:nth-child(6) {
+			display: none;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.analysis-page {
+			padding: 0.25rem;
+		}
+
+		.summary-section {
+			padding: 0.75rem;
 		}
 
 		.summary-grid {
-			grid-template-columns: repeat(2, 1fr);
-			gap: 0.75rem;
+			grid-template-columns: 1fr 1fr;
+			gap: 0.25rem;
 		}
 
 		.summary-card {
-			padding: 0.875rem;
-			border-radius: 8px;
-			gap: 0.35rem;
+			padding: 0.375rem;
 		}
 
-		.summary-card:hover {
-			transform: none;
-		}
-
-		.card-label {
-			font-size: 0.55rem;
-		}
-
-		.card-value {
-			font-size: 1.35rem;
-		}
-
-		.card-footer {
-			margin-top: 0.25rem;
-			font-size: 0.55rem;
-			gap: 0.4rem;
-		}
-
-		.chart-frame {
-			padding: 1rem;
-			border-radius: 8px;
-			gap: 1rem;
-		}
-
-		.frame-header {
-			padding: 0.875rem 1rem;
-		}
-
-		.frame-title {
+		.summary-card h3 {
 			font-size: 0.6rem;
 		}
 
-		.chart-wrapper {
-			height: 220px;
+		.summary-card p {
+			font-size: 0.8rem;
 		}
 
-		.mobile-cards-container {
-			gap: 12px;
+		.summary-card small {
+			font-size: 0.5rem;
 		}
 
-		.cards-header {
-			padding: 0.875rem 1rem;
-			margin-bottom: 0.25rem;
+		.quick-ranges {
+			flex-direction: column;
 		}
 
-		.cards-header .frame-title {
-			font-size: 0.65rem;
+		.cne-ranges {
+			flex-direction: column;
+			margin-top: 0.5rem;
+			padding-top: 0.5rem;
+		}
+
+		.quick-btn {
+			width: 100%;
+		}
+
+		/* Hide even more columns on very small screens */
+		.data-table th:nth-child(3),
+		.data-table td:nth-child(3),
+		.data-table th:nth-child(4),
+		.data-table td:nth-child(4) {
+			display: none;
+		}
+	}
+
+	.animate-spin {
+		animation: spin 1s linear infinite;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.skeleton::after {
+			animation: none;
+		}
+	}
+
+	@keyframes spin {
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
 		}
 	}
 </style>
