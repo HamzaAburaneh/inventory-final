@@ -10,3 +10,6 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .fuse_hidden*
 /example/*
+
+# Claude Code per-developer local settings (machine-local, not shared)
+.claude/settings.local.json
