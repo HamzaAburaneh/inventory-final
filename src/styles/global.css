@@ -1,8 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4 compatibility: restore v3 behavior for buttons */
+@layer base {
+	button:not(:disabled),
+	[role='button']:not(:disabled) {
+		cursor: pointer;
+	}
+}
 
 /* CSS Custom Properties for Responsive Design */
 :root {
@@ -84,30 +88,16 @@
 	--nav-drop-down-text-hover-color: #00aaff;
 	--pagination-arrow-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%231a1a1a' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
 
-	/* Industrial Tech System Tokens (Light) */
-	--tech-bg-start: #f8f9fc;
-	--tech-bg-end: #ffffff;
-	--tech-glass-bg: #ffffff;
-	--tech-glass-border: #e2e4e8;
-	--tech-glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+	/* === Tech/industrial design tokens (homepage revamp) === */
 	--tech-accent: #0066ff;
-	--tech-accent-toggle: #ffb800;
-	--tech-accent-muted: rgba(0, 102, 255, 0.1);
-	--tech-label: #8b949e;
-	--tech-value: #1f2328;
+	--tech-accent-rgb: 0, 102, 255;
+	--tech-bg-start: #f8f9fc;
+	--tech-bg-start-rgb: 248, 249, 252;
+	--tech-bg-end: #ffffff;
+	--tech-glass-bg: rgba(255, 255, 255, 0.93);
+	--tech-glass-border: #e2e4e8;
 	--tech-title: #000000;
-	--tech-status-text: #656d76;
-	--tech-header-bg: #f6f8fa;
-	--tech-header-text: #656d76;
-	--tech-cell-text: #484f58;
-	--tech-cell-border: #ebeff2;
-	--tech-badge-bg: #f3f5f8;
-	--tech-badge-text: #8b949e;
-	--tech-badge-border: #e1e4e8;
-	--tech-row-hover: #f1f3f5;
-	--tech-row-stripe: #f8f9fa;
-	--tech-scrollbar-thumb: #0066ff;
-	--tech-brand-icon-color: #ffffff;
+	--tech-label: #6b7280;
 }
 
 [data-theme='dark'] {
@@ -153,30 +143,16 @@
 	--text-color-dimmed: #727272;
 	--pagination-arrow-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
 
-	/* Industrial Tech System Tokens (Dark) */
-	--tech-bg-start: #16171b;
-	--tech-bg-end: #0c0c0e;
-	--tech-glass-bg: #0e0f11;
-	--tech-glass-border: #1c1d21;
-	--tech-glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+	/* === Tech/industrial design tokens (homepage revamp) === */
 	--tech-accent: #ffe260;
-	--tech-accent-toggle: #ffb800;
-	--tech-accent-muted: rgba(255, 226, 96, 0.1);
-	--tech-label: #55555e;
-	--tech-value: #e2e2e7;
+	--tech-accent-rgb: 255, 226, 96;
+	--tech-bg-start: #16171b;
+	--tech-bg-start-rgb: 22, 23, 27;
+	--tech-bg-end: #0c0c0e;
+	--tech-glass-bg: rgba(13, 14, 17, 0.92);
+	--tech-glass-border: #25262c;
 	--tech-title: #ffffff;
-	--tech-status-text: #66666e;
-	--tech-header-bg: rgba(14, 15, 17, 0.98);
-	--tech-header-text: #94949b;
-	--tech-cell-text: #b1b1b6;
-	--tech-cell-border: #18191c;
-	--tech-badge-bg: #141518;
-	--tech-badge-text: #66666e;
-	--tech-badge-border: #222328;
-	--tech-row-hover: rgba(255, 255, 255, 0.03);
-	--tech-row-stripe: rgba(255, 255, 255, 0.015);
-	--tech-scrollbar-thumb: #ffe260;
-	--tech-brand-icon-color: #000000;
+	--tech-label: #8a8e98;
 }
 
 /* Base styles with mobile-first approach */
@@ -187,6 +163,8 @@
 }
 
 html {
+	/* Prevent horizontal scrolling */
+	overflow-x: hidden;
 	/* Improve text rendering */
 	-webkit-text-size-adjust: 100%;
 	-webkit-font-smoothing: antialiased;
@@ -196,8 +174,6 @@ html {
 	/* Ensure proper sizing on all devices */
 	width: 100%;
 	height: 100%;
-	/* Background color for view transitions */
-	background-color: var(--background-color);
 }
 
 body {
@@ -205,10 +181,10 @@ body {
 	color: var(--text-color);
 	margin: 0;
 	padding: 0;
+	overflow-x: hidden;
 	font-size: 16px;
 	line-height: 1.6;
 	font-family:
-		'Geist',
 		system-ui,
 		-apple-system,
 		'Segoe UI',
@@ -222,15 +198,16 @@ body {
 		'Segoe UI Emoji',
 		'Segoe UI Symbol',
 		'Noto Color Emoji';
-	/* Use non-slashed zeros for better readability */
-	font-feature-settings: 'zero' 0;
 	/* Ensure body takes full width */
 	width: 100%;
 	min-height: 100vh;
 	position: relative;
 }
 
-/* Note: Removed contain: layout style as it breaks position: sticky for navbar */
+/* NOTE: a previous "viewport change fix" set `contain: layout style` on body.
+   That made <body> the containing block for position:fixed elements, which
+   broke fixed backgrounds/buttons (they scrolled away with the page), so it
+   has been removed. */
 
 @media (max-width: 480px) {
 	body {
@@ -397,25 +374,6 @@ button:disabled {
 .touch-target-large {
 	min-height: var(--touch-target-large);
 	min-width: var(--touch-target-large);
-}
-
-/* View Transition Enhancements */
-
-/* Ensure smooth transition backdrop */
-::view-transition {
-	background-color: var(--background-color);
-}
-
-/* Subtle image rendering during transitions */
-::view-transition-image-pair(root) {
-	isolation: isolate;
-}
-
-::view-transition-old(root),
-::view-transition-new(root) {
-	mix-blend-mode: normal;
-	height: 100%;
-	overflow: clip;
 }
 
 /* Accessibility and performance enhancements */

@@ -2,3 +2,9 @@
 pnpm-lock.yaml
 package-lock.json
 yarn.lock
+
+# Reference/documentation files that are not valid JS/TS
+svelte5-syntax
+
+# Claude Code configuration/skill files (contain pseudo-code with diff markers)
+.claude/
