@@ -96,7 +96,7 @@ function createThemeStore() {
 
 	function applyThemeToDocument(theme) {
 		if (!browser) return;
-		
+
 		const root = document.documentElement;
 		Object.entries(theme.colors).forEach(([key, value]) => {
 			root.style.setProperty(`--color-${key}`, value);

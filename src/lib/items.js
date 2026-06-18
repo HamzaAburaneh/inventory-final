@@ -70,15 +70,19 @@ export async function getItems() {
  */
 export function subscribeToItems(callback) {
 	const itemsQuery = collection(db, 'items');
-	return onSnapshot(itemsQuery, (snapshot) => {
-		const items = snapshot.docs.map((doc) => ({
-			id: doc.id,
-			...doc.data()
-		}));
-		callback(items);
-	}, (error) => {
-		console.error('Error in items subscription:', error);
-	});
+	return onSnapshot(
+		itemsQuery,
+		(snapshot) => {
+			const items = snapshot.docs.map((doc) => ({
+				id: doc.id,
+				...doc.data()
+			}));
+			callback(items);
+		},
+		(error) => {
+			console.error('Error in items subscription:', error);
+		}
+	);
 }
 
 /**
@@ -199,9 +203,9 @@ export async function searchItems(name) {
  * @returns {T[]} The sorted array.
  */
 export function sortItems(items, column, ascending) {
-    if (!Array.isArray(items)) {
-        return [];
-    }
+	if (!Array.isArray(items)) {
+		return [];
+	}
 	return [...items].sort((a, b) => {
 		const valA = a[column];
 		const valB = b[column];

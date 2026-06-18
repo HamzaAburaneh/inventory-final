@@ -1,8 +1,8 @@
 import { auth } from '../firebase';
-import { 
-	signInWithEmailAndPassword, 
-	createUserWithEmailAndPassword, 
-	signOut, 
+import {
+	signInWithEmailAndPassword,
+	createUserWithEmailAndPassword,
+	signOut,
 	updateProfile,
 	sendPasswordResetEmail,
 	onAuthStateChanged
@@ -21,11 +21,11 @@ export async function login(email, password) {
 export async function register(email, password, displayName) {
 	try {
 		const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-		
+
 		if (displayName) {
 			await updateProfile(userCredential.user, { displayName });
 		}
-		
+
 		return userCredential.user;
 	} catch (error) {
 		console.error('Registration error:', error);
@@ -51,7 +51,8 @@ export async function resetPassword(email) {
 	}
 }
 
-export async function updateUserProfile(displayName, phoneNumber) {
+// Note: phoneNumber updates require a different Firebase method; only displayName is updated.
+export async function updateUserProfile(displayName) {
 	const currentUser = auth.currentUser;
 	if (!currentUser) {
 		throw new Error('No user logged in');

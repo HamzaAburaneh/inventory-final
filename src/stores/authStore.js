@@ -1,10 +1,15 @@
 import { writable } from 'svelte/store';
 import { auth, db } from '../firebase';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
+import {
+	onAuthStateChanged,
+	signInWithEmailAndPassword,
+	signOut,
+	updateProfile
+} from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 
 function createAuthStore() {
-	const { subscribe, set, update } = writable(null);
+	const { subscribe, set } = writable(null);
 
 	// Initialize Firebase auth listener
 	function init() {
@@ -40,16 +45,20 @@ function createAuthStore() {
 		try {
 			// Update display name in Firebase Auth
 			await updateProfile(currentUser, { displayName });
-			
+
 			// Update phone number in Firestore
 			if (phoneNumber !== undefined) {
 				const userProfileRef = doc(db, 'userProfiles', currentUser.uid);
-				await setDoc(userProfileRef, {
-					phoneNumber: phoneNumber,
-					updatedAt: new Date()
-				}, { merge: true });
+				await setDoc(
+					userProfileRef,
+					{
+						phoneNumber: phoneNumber,
+						updatedAt: new Date()
+					},
+					{ merge: true }
+				);
 			}
-			
+
 			// Update the store with the new display name
 			set({ ...currentUser, displayName });
 		} catch (error) {
