@@ -183,11 +183,13 @@
 
 		// === Animation loop ===
 		let rafId = 0;
-		const clock = new THREE.Clock();
+		// Monotonic elapsed seconds since mount. Avoids THREE.Clock (deprecated in
+		// favour of THREE.Timer); performance.now() is all this loop needs.
+		const startTime = performance.now();
 		let running = true;
 
 		function renderFrame() {
-			const t = clock.getElapsedTime();
+			const t = (performance.now() - startTime) / 1000;
 			applyColors();
 			displaceTerrain(t);
 			driftMotes();

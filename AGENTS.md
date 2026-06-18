@@ -28,7 +28,7 @@ src/
 
 ## Data model (source of truth: `src/types.js`)
 
-- **Item**: `id, name, barcode, count, lowCount, cost, storageType ('' | 'freezer' | 'refrigerator' | 'dry storage')`
+- **Item**: `id, name, barcode, count, lowCount, cost, storageType ('' | 'Freezer' | 'Refrigerator' | 'Dry Storage'), booths (string[])` — `storageType` is stored title-cased by the forms (legacy lowercase rows still exist; `tableUtils.js` helpers are case-insensitive). `booths` is an optional array of tags.
 - **Transaction**: `id, itemId, itemName, type ('add' | 'remove'), previousCount, newCount, timestamp, user`
 
 ## Conventions

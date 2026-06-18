@@ -6,7 +6,11 @@
  * @property {number} count
  * @property {number | null} lowCount
  * @property {number | null} cost
- * @property {'' | 'freezer' | 'refrigerator' | 'dry storage'} storageType
+ * @property {'' | 'Freezer' | 'Refrigerator' | 'Dry Storage'} storageType -
+ *   Stored title-cased as written by the add/edit forms. Some legacy rows hold
+ *   lowercase values; display/styling helpers in tableUtils.js are
+ *   case-insensitive, so both render correctly.
+ * @property {string[]} [booths] - Optional booth tags (e.g. 'freshly', 'b1', 'jakes').
  */
 
 /**

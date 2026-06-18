@@ -29,10 +29,10 @@ repro, expected vs. actual, and severity). Driver scripts used for the run live 
 | 1   | **High** | manageItems         | Adding an item crashed the table with `each_key_duplicate`               | **Fixed & verified** |
 | 2   | Low      | transactionAnalysis | "Stock Out" rendered `-0` when nothing was removed                       | **Fixed**            |
 | 3   | **High** | Auth / routing      | No client-side guard: logged-out users can open protected routes         | **Fixed & verified** |
-| 4   | Low      | ThreeScene          | `THREE.Clock` deprecation warning in console on `/` and `/login`         | Open (cosmetic)      |
+| 4   | Low      | ThreeScene          | `THREE.Clock` deprecation warning in console on `/` and `/login`         | **Fixed & verified** |
 | 5   | Low      | Navbar (a11y)       | Build warns `a11y_no_static_element_interactions` (dropdown hover divs)  | **Fixed**            |
-| 6   | Low      | Navbar (UX)         | On desktop, hovering opens the avatar menu, then a click toggles it shut | Open (minor)         |
-| 7   | Low      | Data/docs           | `storageType` stored capitalized vs. lowercase in `types.js`/AGENTS      | Open (doc mismatch)  |
+| 6   | Low      | Navbar (UX)         | On desktop, hovering opens the avatar menu, then a click toggles it shut | **Fixed & verified** |
+| 7   | Low      | Data/docs           | `storageType` stored capitalized vs. lowercase in `types.js`/AGENTS      | **Fixed (docs)**     |
 | 8   | Info     | themes.js           | `blue`/`green` themes + `--color-*` vars are dead code                   | **Fixed (removed)**  |
 | 9   | Info/Sec | Login UI            | Test credentials printed in the production login page                    | **Fixed (removed)**  |
 
@@ -92,12 +92,14 @@ repro, expected vs. actual, and severity). Driver scripts used for the run live 
 - **Recommended follow-up (server-side, can't edit from here):** also require
   `request.auth != null` in Firestore security rules for `items`/`transactions`.
 
-### 4. [LOW — OPEN] `THREE.Clock` deprecation console warning
+### 4. [LOW — FIXED] `THREE.Clock` deprecation console warning
 
-- Emitted on `/` and `/login` (anywhere `ThreeScene.svelte` mounts):
-  `THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.`
-- Internal to Three.js usage. `ThreeScene.svelte` is flagged "don't modify casually" in
-  AGENTS.md, so left as-is. Cosmetic console noise only.
+- Emitted on `/` and `/login`: `THREE.Clock: This module has been deprecated. Please use
+THREE.Timer instead.`
+- **Fix:** the animation loop only needed monotonic elapsed seconds, so
+  [ThreeScene.svelte](src/components/ThreeScene.svelte) now derives `t` from a
+  `performance.now()` baseline instead of `THREE.Clock` — no new dependency and no change to
+  the visual behaviour. **Re-test:** `/login` now logs **0** console messages (warning gone).
 
 ### 5. [LOW — FIXED] Navbar a11y compiler warnings
 
@@ -107,21 +109,25 @@ repro, expected vs. actual, and severity). Driver scripts used for the run live 
   grouping wrappers; the real controls — button, links — keep their own roles). Build is now
   warning-free for these. Keyboard access to the menu is unchanged.
 
-### 6. [LOW — OPEN] Avatar dropdown: hover-open vs click-toggle
+### 6. [LOW — FIXED] Avatar dropdown: hover-open vs click-toggle
 
-- On a hover-capable desktop, moving the pointer onto the avatar opens the menu
-  (`mouseenter`), and then **clicking** the avatar runs `toggleDropdown`, which closes it —
-  so a deliberate click can appear to "do nothing".
-- Not blocking: the menu is fully reachable via **hover**, **keyboard** (focus avatar →
-  Enter), and on **mobile** via the burger panel. All three were verified to open the menu
-  and complete sign-out → `/login`.
+- Before: hovering the avatar opened the menu (`mouseenter`), and then **clicking** it ran
+  `toggleDropdown`, closing it — so a click could appear to "do nothing".
+- **Fix** in [Navbar.svelte](src/components/Navbar.svelte): the avatar button now **opens**
+  the menu (idempotent) instead of toggling, so hover-then-click can't close it; added an
+  Escape handler that closes the menu and returns focus to the avatar.
+- **Re-test:** plain click opens ✓; Escape closes + refocuses the avatar ✓; hover opens ✓;
+  sign-out → `/login` ✓ (mouse, keyboard, and mobile burger all still work).
 
-### 7. [LOW — OPEN] `storageType` casing vs. documented model
+### 7. [LOW — FIXED (docs)] `storageType` casing vs. documented model
 
 - The form/edit dropdowns store `Freezer` / `Refrigerator` / `Dry Storage` (capitalized),
-  while `types.js`/AGENTS.md document `'freezer' | 'refrigerator' | 'dry storage'`.
-  Internally consistent (edit normalizes legacy lowercase rows), but the docs/typedef and
-  stored values disagree.
+  while `types.js`/AGENTS.md documented `'freezer' | 'refrigerator' | 'dry storage'`.
+- The runtime is already correct and casing-robust: `getStorageTypeStyle()` lowercases before
+  matching and `capitalizeWords()` normalizes display, so no data migration is needed.
+- **Fix:** updated the canonical typedef in [types.js](src/types.js) and the data-model line
+  in AGENTS.md to the actual title-cased values (noting legacy lowercase is tolerated), and
+  documented the previously-undocumented `booths` field while there.
 
 ### 8. [INFO — FIXED] Dead theme code
 

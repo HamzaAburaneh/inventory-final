@@ -13,6 +13,7 @@
 	let isDropdownOpen = $state(false);
 	let dropdownNode = $state();
 	let userMenuNode = $state();
+	let profileBtnNode = $state();
 	let menuToggleRef = $state();
 	let mobileMenuRef = $state();
 	let isMobile = $state(browser ? window.innerWidth < 768 : false);
@@ -40,16 +41,20 @@
 		isOpen = false;
 	}
 
-	function toggleDropdown() {
-		isDropdownOpen = !isDropdownOpen;
-	}
-
 	function openDropdown() {
 		isDropdownOpen = true;
 	}
 
 	function closeDropdown() {
 		isDropdownOpen = false;
+	}
+
+	// Close on Escape from anywhere in the menu and return focus to the avatar.
+	function handleMenuKeydown(event) {
+		if (event.key === 'Escape' && isDropdownOpen) {
+			closeDropdown();
+			profileBtnNode?.focus();
+		}
 	}
 
 	async function handleLogout() {
@@ -300,10 +305,12 @@
 					bind:this={userMenuNode}
 					onmouseenter={handleMouseEnter}
 					onmouseleave={handleMouseLeave}
+					onkeydown={handleMenuKeydown}
 				>
 					<button
 						class="profile-btn"
-						onclick={toggleDropdown}
+						bind:this={profileBtnNode}
+						onclick={openDropdown}
 						aria-expanded={isDropdownOpen}
 						aria-haspopup="menu"
 						aria-label="User menu"
