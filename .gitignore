@@ -11,5 +11,9 @@ vite.config.ts.timestamp-*
 .fuse_hidden*
 /example/*
 
+# Playwright output (generated each run)
+/test-results/
+/playwright-report/
+
 # Claude Code per-developer local settings (machine-local, not shared)
 .claude/settings.local.json
