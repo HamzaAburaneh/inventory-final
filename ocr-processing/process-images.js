@@ -8,88 +8,93 @@ const outputCsvPath = path.join(__dirname, 'CNE_transactions_2024.csv');
 
 // Precise coordinates based on your input
 const rowDefinitions = [
-    { y: 875, height: 146 },
-    { y: 1025, height: 146 },
-    { y: 1175, height: 146 },
-    { y: 1325, height: 146 },
-    { y: 1475, height: 146 },
+	{ y: 875, height: 146 },
+	{ y: 1025, height: 146 },
+	{ y: 1175, height: 146 },
+	{ y: 1325, height: 146 },
+	{ y: 1475, height: 146 }
 ];
 
 const columnDefinitions = {
-    itemName: { x: 32, width: 173 },
-    type: { x: 215, width: 140 },
-    itemCount: { x: 400, width: 140 },
-    dateTime: { x: 540, width: 243 },
+	itemName: { x: 32, width: 173 },
+	type: { x: 215, width: 140 },
+	itemCount: { x: 400, width: 140 },
+	dateTime: { x: 540, width: 243 }
 };
 
 async function processScreenshots() {
-    console.log('Initializing Tesseract worker...');
-    const worker = await Tesseract.createWorker('eng');
-    
-    console.log('Starting screenshot processing...');
-    const files = fs.readdirSync(screenshotsDir)
-        .filter(file => file.endsWith('.png'))
-        .sort((a, b) => {
-            const numA = parseInt(a.match(/\d+/)[0], 10);
-            const numB = parseInt(b.match(/\d+/)[0], 10);
-            return numA - numB;
-        });
+	console.log('Initializing Tesseract worker...');
+	const worker = await Tesseract.createWorker('eng');
 
-    let allTransactions = [];
-    let processedCount = 0;
+	console.log('Starting screenshot processing...');
+	const files = fs
+		.readdirSync(screenshotsDir)
+		.filter((file) => file.endsWith('.png'))
+		.sort((a, b) => {
+			const numA = parseInt(a.match(/\d+/)[0], 10);
+			const numB = parseInt(b.match(/\d+/)[0], 10);
+			return numA - numB;
+		});
 
-    for (const file of files) {
-        processedCount++;
-        const imagePath = path.join(screenshotsDir, file);
-        console.log(`Processing ${file} (${processedCount}/${files.length})...`);
+	let allTransactions = [];
+	let processedCount = 0;
 
-        for (const row of rowDefinitions) {
-            try {
-                const transaction = {};
-                
-                for (const colName in columnDefinitions) {
-                    const col = columnDefinitions[colName];
-                    const rect = { left: col.x, top: row.y, width: col.width, height: row.height };
-                    const { data: { text } } = await worker.recognize(imagePath, { rectangle: rect });
-                    transaction[colName] = text.trim().replace(/\n/g, ' ').replace(/\|/g, '');
-                }
+	for (const file of files) {
+		processedCount++;
+		const imagePath = path.join(screenshotsDir, file);
+		console.log(`Processing ${file} (${processedCount}/${files.length})...`);
 
-                const itemName = transaction.itemName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
-                const type = transaction.type.toLowerCase().includes('add') ? 'add' : 'remove';
-                const itemCountMatch = transaction.itemCount.match(/\d+/);
-                const itemCount = itemCountMatch ? parseInt(itemCountMatch[0], 10) : null;
-                const dateTimeMatch = transaction.dateTime.replace(/[^0-9-:\s]/g, '').match(/\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/);
-                const dateTime = dateTimeMatch ? dateTimeMatch[0] : null;
+		for (const row of rowDefinitions) {
+			try {
+				const transaction = {};
 
-                if (itemName && itemCount && dateTime) {
-                    allTransactions.push({
-                        item_name: itemName,
-                        transaction_type: type,
-                        item_count: itemCount,
-                        date_time: dateTime,
-                    });
-                }
-            } catch (error) {
-                console.error(`Error processing a row in ${file}:`, error.message);
-            }
-        }
-    }
+				for (const colName in columnDefinitions) {
+					const col = columnDefinitions[colName];
+					const rect = { left: col.x, top: row.y, width: col.width, height: row.height };
+					const {
+						data: { text }
+					} = await worker.recognize(imagePath, { rectangle: rect });
+					transaction[colName] = text.trim().replace(/\n/g, ' ').replace(/\|/g, '');
+				}
 
-    await worker.terminate();
+				const itemName = transaction.itemName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+				const type = transaction.type.toLowerCase().includes('add') ? 'add' : 'remove';
+				const itemCountMatch = transaction.itemCount.match(/\d+/);
+				const itemCount = itemCountMatch ? parseInt(itemCountMatch[0], 10) : null;
+				const dateTimeMatch = transaction.dateTime
+					.replace(/[^0-9-:\s]/g, '')
+					.match(/\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/);
+				const dateTime = dateTimeMatch ? dateTimeMatch[0] : null;
 
-    const csvWriter = createObjectCsvWriter({
-        path: outputCsvPath,
-        header: [
-            { id: 'item_name', title: 'item_name' },
-            { id: 'transaction_type', title: 'transaction_type' },
-            { id: 'item_count', title: 'item_count' },
-            { id: 'date_time', title: 'date_time' },
-        ],
-    });
+				if (itemName && itemCount && dateTime) {
+					allTransactions.push({
+						item_name: itemName,
+						transaction_type: type,
+						item_count: itemCount,
+						date_time: dateTime
+					});
+				}
+			} catch (error) {
+				console.error(`Error processing a row in ${file}:`, error.message);
+			}
+		}
+	}
 
-    await csvWriter.writeRecords(allTransactions);
+	await worker.terminate();
 
-    console.log(`Finished processing all screenshots. CSV created at ${outputCsvPath}`);
+	const csvWriter = createObjectCsvWriter({
+		path: outputCsvPath,
+		header: [
+			{ id: 'item_name', title: 'item_name' },
+			{ id: 'transaction_type', title: 'transaction_type' },
+			{ id: 'item_count', title: 'item_count' },
+			{ id: 'date_time', title: 'date_time' }
+		]
+	});
+
+	await csvWriter.writeRecords(allTransactions);
+
+	console.log(`Finished processing all screenshots. CSV created at ${outputCsvPath}`);
 }
 
 processScreenshots();

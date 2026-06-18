@@ -23,6 +23,7 @@ The `add-unique-items.js` script reads items from `unique-items.txt` and adds th
 ### Installation
 
 1. Navigate to the scripts directory:
+
    ```bash
    cd src/scripts
    ```
@@ -62,6 +63,7 @@ node add-unique-items.js
 ### Output
 
 The script provides detailed console output showing:
+
 - 🗑️ Items deleted from database
 - ✅ Successfully added items
 - ❌ Items that failed to add (with error details)
@@ -72,6 +74,7 @@ The script provides detailed console output showing:
 ### Storage Type Assignment
 
 Items are assigned storage types based on the rules in `storage-rules.js`:
+
 - **Freezer**: Meat, frozen items, etc.
 - **Refrigerator**: Dairy, fresh produce, sauces, etc.
 - **Dry Storage**: Non-perishables, utensils, cleaning supplies, etc.
