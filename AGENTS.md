@@ -39,6 +39,7 @@ src/
 - Auth state flows through `src/stores/authStore.js`; preserve its subscription in layout/pages.
 - User-facing notifications go through `notificationStore` / sweetalert2, not `alert()`.
 - Never commit `.env` or hardcode Firebase/OpenRouter keys.
+- Never add `Co-Authored-By` trailers (or any AI-attribution) to commit messages.
 
 ## Goals
 
@@ -48,17 +49,21 @@ src/
 4. **Stay in stack** — no new frameworks, no TypeScript migration, no rewrites of working components (especially `ThreeScene.svelte`, `Navbar.svelte`).
 5. **Scroll direction always matches user intent** — on the landing page's section pager (`src/routes/+page.svelte`), a wheel/trackpad gesture moves exactly one section in the gesture's direction; scrolling up must never move the page down (and vice versa), and trailing trackpad inertia must never re-trigger a page turn. The direction/inertia rules are pure functions in `src/lib/sectionPager.js`, guarded by `src/lib/sectionPager.test.js` (unit) and `tests/home-scroll.test.js` (Playwright). Rules for any change: derive direction from the sign of the current gesture (never from a signed accumulator that can mix opposite-direction deltas), re-arm gesture state on direction flips, and pick targets as "next snap point strictly above/below the current scroll position" — keep this logic in `sectionPager.js`, not inline in the page.
 
-## Verification workflow (run after every change)
+## Verification workflow
 
-1. `npm run lint` — prettier + eslint must pass. Auto-fix formatting with `npm run format`.
-2. `npm run check` — svelte-kit sync.
-3. `npm run test:unit` — vitest, covers `src/**/*.test.js` (e.g. `stockPrediction.test.js`). Add/extend unit tests for any new logic in `src/lib/`.
-4. `npm run build` — must compile cleanly; Svelte 5 runes-mode errors surface here.
-5. For UI changes: `npm run dev` and manually verify the affected route in light AND dark themes, desktop and mobile widths.
-6. `npm run test:integration` runs Playwright against a preview build (`testDir: tests/`; create tests there for new critical flows).
-7. For any change touching landing-page scrolling (`src/routes/+page.svelte` snap CSS, wheel pager, or `src/lib/sectionPager.js`): `npm run test:unit` must pass `src/lib/sectionPager.test.js`, run `npm run test:integration` (covers `tests/home-scroll.test.js`), then manually verify in `npm run dev` — mouse wheel and trackpad: one section per gesture both directions, a quick down-then-up reversal goes up, touch swipe and arrow/PageDown keys still snap to section boundaries, and reduced-motion mode scrolls freely.
+Git hooks (Husky + lint-staged) run the checklist automatically — you don't run these by hand:
 
-A change is done only when steps 1–4 pass and any new behavior has a test.
+- **`git commit`** (pre-commit) runs lint-staged (`eslint --fix` + `prettier --write` on staged files), then `npm run check`, then `npm run test:unit`. Any failure blocks the commit.
+- **`git push`** (pre-push) runs `npm run build`, then `npm run test:integration`. Any failure blocks the push.
+
+Still manual — the developer's responsibility, hooks can't verify these:
+
+- For UI changes: `npm run dev`, check light + dark and desktop + mobile.
+- For landing-page scroll changes: a manual wheel/trackpad/touch/keyboard check alongside `sectionPager.test.js` + `home-scroll.test.js`.
+
+New behavior still needs a test (discipline, not enforced by the hooks).
+
+Escape hatch: `git commit --no-verify` / `git push --no-verify` skips the hooks — use sparingly.
 
 ## Gotchas
 
