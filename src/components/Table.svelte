@@ -1,5 +1,9 @@
 <script>
-	import { fade, fly } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
+	import { flip } from 'svelte/animate';
+	import { sineOut } from 'svelte/easing';
+	import { prefersReducedMotion } from 'svelte/motion';
+	import { motionDuration, rowExitDuration } from '../lib/tableUtils.js';
 	import TableHeader from './TableHeader.svelte';
 	import TableCell from './TableCell.svelte';
 	import DeleteModal from './DeleteModal.svelte';
@@ -11,10 +15,13 @@
 		onDelete,
 		sortBy,
 		currentSortColumn,
-		sortAscending
+		sortAscending,
+		searchKey = ''
 	} = $props();
 
 	let deletingItemId = $state(null);
+	let visibleItems = $derived(paginatedItems.filter((item) => item.id !== deletingItemId));
+	let isDeleting = $derived(deletingItemId !== null);
 	let showDeleteConfirm = $state(false);
 	let itemToDelete = $state(null);
 	let tooltipText = $state('');
@@ -48,7 +55,6 @@
 	}
 
 	async function confirmDelete() {
-		// Preserve scroll position during delete
 		const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
 
 		if (itemToDelete) {
@@ -59,7 +65,6 @@
 		showDeleteConfirm = false;
 		itemToDelete = null;
 
-		// Restore scroll position after delete
 		setTimeout(() => {
 			window.scrollTo(0, scrollPos);
 		}, 100);
@@ -76,9 +81,33 @@
 		<table class="custom-table">
 			<TableHeader {sortBy} {currentSortColumn} {sortAscending} />
 			<tbody>
-				{#each paginatedItems as item (item.id)}
-					{#if item.id !== deletingItemId}
-						<tr class="table-row" in:fly={{ y: 20, duration: 300 }} out:fade={{ duration: 300 }}>
+				<!--
+					Keying on the search term rebuilds the each wholesale when the filter
+					changes, so animate:flip never runs across a search. Without this, a
+					search both removes non-matching rows and reorders kept ones; to FLIP the
+					kept rows, Svelte pins the outroing rows with position: absolute, which
+					blockifies the <tr> and collapses its columns for the animation's
+					duration. Sort and delete keep the same key, so their flip/fade stay.
+
+					The result set fades in as one unit: a single, fast, opacity-only fade on
+					every row (no per-row stagger, no movement) reads as one container
+					crossfade and keeps the layout perfectly stable — restrained motion that
+					avoids the "many competing animations" mess. |global is required so the
+					fade plays when the parent {#key} rebuilds (a local transition stays silent
+					on a parent's re-creation). Sorting keeps the same key, so it animates via
+					flip, not this fade.
+				-->
+				{#key searchKey}
+					{#each visibleItems as item (item.id)}
+						<tr
+							class="table-row"
+							in:fade|global={{ duration: motionDuration(300, prefersReducedMotion.current) }}
+							out:fade={{ duration: rowExitDuration(isDeleting, prefersReducedMotion.current) }}
+							animate:flip={{
+								duration: motionDuration(250, prefersReducedMotion.current),
+								easing: sineOut
+							}}
+						>
 							<TableCell
 								type="name"
 								value={item.name}
@@ -152,8 +181,8 @@
 								onTooltipHide={handleTooltipHide}
 							/>
 						</tr>
-					{/if}
-				{/each}
+					{/each}
+				{/key}
 			</tbody>
 		</table>
 	</div>
@@ -191,20 +220,19 @@
 		border-collapse: separate;
 		border-spacing: 0;
 		width: 100%;
-		table-layout: auto;
+		table-layout: fixed;
 		min-width: 60rem;
 	}
 
 	.custom-table tbody tr {
 		background-color: var(--container-bg);
-		transition: background-color 0.3s ease;
+		transition: background-color 0.15s ease-out;
 	}
 
 	.custom-table tbody tr:hover {
 		background-color: var(--table-row-hover-bg);
 	}
 
-	/* Responsive adjustments for smaller screens */
 	@media (max-width: 48rem) {
 		.table-scroll {
 			padding-right: 0;
