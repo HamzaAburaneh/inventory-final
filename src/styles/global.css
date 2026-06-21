@@ -50,7 +50,11 @@
 	--background-color: #f9f9f9;
 	--text-color: #1a1a1a;
 	--container-bg: #ffffff;
-	--add-item-color: #28a745;
+	/* Accent follows the per-theme brand: the logo blue in light, gold in dark.
+	   --add-item-on is the text/icon color that sits on the accent (pure white here). */
+	--add-item-color: var(--nav-logo-color);
+	--add-item-on: #ffffff;
+	--value-color: var(--nav-logo-color);
 	--input-bg: #f0f0f0;
 	--nav-text-color: #000000;
 	--icon-color: #6c757d;
@@ -104,7 +108,9 @@
 	--background-color: #1a1a1a;
 	--text-color: #ffffff;
 	--container-bg: #121212;
-	--add-item-color: #2fd656;
+	--add-item-color: #ffd24a;
+	--add-item-on: #000000;
+	--value-color: #ffd24a;
 	--nav-text-color: #ffffff;
 	--input-bg: #1d1d1d;
 	--input-border-color: #2c2c2c;

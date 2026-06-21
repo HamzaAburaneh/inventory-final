@@ -326,6 +326,12 @@
 		background: var(--hover-bg-color);
 	}
 
+	/* Suppress the global button:focus outline on click (it draws a line under the
+	   collapsed form); keep a keyboard-only ring for accessibility. */
+	.form-header:focus {
+		outline: none;
+	}
+
 	.form-header:focus-visible {
 		outline: 2px solid var(--focus-border-color);
 		outline-offset: -2px;
@@ -340,7 +346,7 @@
 		height: 1.75rem;
 		border-radius: var(--border-radius);
 		background: var(--add-item-color);
-		color: #000;
+		color: var(--add-item-on);
 	}
 
 	.form-header-icon svg {
@@ -480,7 +486,7 @@
 		gap: 0.75rem;
 		padding: 0.875rem 2.5rem;
 		background: var(--add-item-color);
-		color: black;
+		color: var(--add-item-on);
 		border: none;
 		border-radius: var(--border-radius);
 		font-size: 1rem;

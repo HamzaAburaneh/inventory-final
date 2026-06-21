@@ -2,6 +2,18 @@
 <html lang="en" %sveltekit.theme%>
 	<head>
 		<meta charset="utf-8" />
+		<!--
+			Apply the saved theme before first paint so a dark-mode user never sees a
+			flash of light mode on load/refresh. Mirrors stores/themes.js (light | dark).
+		-->
+		<script>
+			(function () {
+				try {
+					var t = localStorage.getItem('theme');
+					document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+				} catch (e) {}
+			})();
+		</script>
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 		<meta
 			name="viewport"
