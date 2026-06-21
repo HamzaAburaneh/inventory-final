@@ -13,7 +13,7 @@
 	}
 </script>
 
-<div class="search-container" in:fly={{ y: -20, duration: 300 }} out:fade={{ duration: 200 }}>
+<div class="search-container" in:fly={{ y: -15, duration: 200 }} out:fade={{ duration: 150 }}>
 	<div class="search-wrapper">
 		<input
 			id="search"
@@ -40,7 +40,7 @@
 			<button
 				class="clear-button"
 				onclick={clearSearch}
-				transition:fade={{ duration: 200 }}
+				transition:fade={{ duration: 150 }}
 				aria-label="Clear search"
 			>
 				<svg
@@ -65,7 +65,7 @@
 		width: 100%;
 		max-width: 600px;
 		margin: 0 auto;
-		padding: 1rem 0;
+		padding: 0;
 	}
 
 	.search-wrapper {
@@ -75,13 +75,15 @@
 
 	.search-input {
 		width: 100%;
-		padding: 0.75rem 2.5rem 0.75rem 2.5rem;
-		border: 2px solid var(--table-border-color);
+		padding: 0.45rem 2.25rem;
+		border: 1.5px solid var(--table-border-color);
 		border-radius: var(--border-radius);
 		background-color: var(--table-cell-bg);
 		color: var(--text-color);
-		font-size: 1rem;
-		transition: all 0.3s ease;
+		font-size: 0.85rem;
+		transition:
+			border-color 0.15s ease-out,
+			box-shadow 0.15s ease-out;
 	}
 
 	.search-input:hover {
@@ -91,7 +93,7 @@
 	.search-input:focus {
 		outline: none;
 		border-color: var(--icon-hover-color);
-		box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+		box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
 	}
 
 	.search-input::placeholder {
@@ -105,15 +107,15 @@
 		transform: translateY(-50%);
 		color: var(--icon-color);
 		pointer-events: none;
-		transition: color 0.3s ease;
+		transition: color 0.15s ease-out;
 	}
 
 	.search-icon svg {
-		width: 1.25rem;
-		height: 1.25rem;
+		width: 1.05rem;
+		height: 1.05rem;
 	}
 
-	.search-input:focus + .search-icon {
+	.search-input:focus ~ .search-icon {
 		color: var(--icon-hover-color);
 	}
 
@@ -126,7 +128,9 @@
 		border: none;
 		cursor: pointer;
 		color: var(--icon-color);
-		transition: color 0.3s ease;
+		transition: color 0.15s ease-out;
+		min-height: 0;
+		padding: 0.25rem;
 	}
 
 	.clear-button:hover {
@@ -134,15 +138,11 @@
 	}
 
 	.clear-button svg {
-		width: 1.25rem;
-		height: 1.25rem;
+		width: 1.05rem;
+		height: 1.05rem;
 	}
 
 	@media (max-width: 640px) {
-		.search-container {
-			padding: 0.5rem 0;
-		}
-
 		.search-input {
 			font-size: 0.875rem;
 		}

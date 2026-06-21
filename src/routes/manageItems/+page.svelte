@@ -7,7 +7,7 @@
 	import { itemStore } from '../../stores/itemStore';
 	import { createSearchState } from '../../lib/runes/search.svelte.js';
 	import { notificationStore } from '../../stores/notificationStore';
-	import { fade } from 'svelte/transition';
+	import { fade, fly } from 'svelte/transition';
 	import { applySorting } from '../../lib/items';
 	import { onMount } from 'svelte';
 
@@ -269,6 +269,7 @@
 					{sortBy}
 					{currentSortColumn}
 					{sortAscending}
+					searchKey={searchTermValue}
 				/>
 			</div>
 
@@ -294,8 +295,10 @@
 		role="presentation"
 		onclick={closeEditModal}
 		onkeydown={(e) => e.key === 'Escape' && closeEditModal()}
+		in:fade={{ duration: 200 }}
+		out:fade={{ duration: 150 }}
 	></div>
-	<div class="modal-overlay">
+	<div class="modal-overlay" in:fly={{ y: 30, duration: 200 }} out:fade={{ duration: 150 }}>
 		<form class="edit-modal" onsubmit={confirmEdit}>
 			<h3>{editData.title}</h3>
 			{#if editData.field === 'storageType'}
@@ -349,8 +352,6 @@
 				<button type="submit" class="confirm-btn"> Confirm </button>
 			</div>
 		</form>
-		<button type="button" class="modal-backdrop" onclick={closeEditModal} aria-label="Close modal"
-		></button>
 	</div>
 {/if}
 
@@ -364,7 +365,7 @@
 	}
 
 	.form-section {
-		margin-bottom: 3rem;
+		margin-bottom: 1rem;
 	}
 
 	.inventory-section {
@@ -378,37 +379,57 @@
 
 	.inventory-header {
 		background: var(--table-header-bg);
-		padding: 1.5rem 2rem;
+		padding: 0.6rem 1.25rem;
 		border-bottom: 1px solid var(--table-border-color);
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		flex-wrap: wrap;
-		gap: 1rem;
+		gap: 0.5rem 1rem;
 	}
 
 	.inventory-title {
 		margin: 0;
-		font-size: 1.375rem;
+		font-size: 1.05rem;
 		font-weight: 700;
-		color: var(--table-header-text);
+		color: var(--text-color);
 		letter-spacing: -0.025em;
 	}
 
 	.inventory-stats {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
+		flex-wrap: wrap;
+		gap: 0.5rem;
 	}
 
 	.stats-text {
-		font-size: 0.875rem;
+		font-size: 0.8rem;
 		color: var(--text-color-dimmed);
 		font-weight: 500;
-		padding: 0.5rem 1rem;
+		padding: 0.3rem 0.75rem;
 		background: var(--hover-bg-color);
 		border-radius: var(--border-radius);
 		border: 1px solid var(--table-border-color);
+		white-space: nowrap;
+	}
+
+	@media (max-width: 640px) {
+		.inventory-header {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.inventory-stats {
+			width: 100%;
+		}
+
+		.stats-text {
+			flex: 1;
+			text-align: center;
+			padding: 0.5rem 0.75rem;
+			font-size: 0.8rem;
+		}
 	}
 
 	.stats-text.total-value {
@@ -431,7 +452,6 @@
 		margin-top: 0.75rem;
 	}
 
-	/* Mobile responsiveness */
 	@media (max-width: 640px) {
 		.booths-container {
 			grid-template-columns: repeat(2, 1fr);
@@ -465,14 +485,13 @@
 		background: var(--input-bg);
 		border: 2px solid var(--input-border-color);
 		border-radius: var(--border-radius);
-		transition: all 0.2s ease;
+		transition: all 0.15s ease-out;
 		min-height: 50px;
 		overflow: hidden;
 		width: 100%;
 		box-sizing: border-box;
 	}
 
-	/* Mobile adjustments */
 	@media (max-width: 640px) {
 		.booth-card {
 			padding: 0.5rem;
@@ -495,7 +514,7 @@
 		width: 4px;
 		background: var(--booth-color);
 		opacity: 0.7;
-		transition: all 0.2s ease;
+		transition: all 0.15s ease-out;
 	}
 
 	.booth-name {
@@ -510,7 +529,6 @@
 		min-width: 0;
 	}
 
-	/* Mobile font adjustments */
 	@media (max-width: 640px) {
 		.booth-name {
 			font-size: 0.8rem;
@@ -528,7 +546,7 @@
 	.checkmark {
 		opacity: 0;
 		color: var(--booth-color);
-		transition: all 0.2s ease;
+		transition: all 0.15s ease-out;
 		transform: scale(0.8);
 		flex-shrink: 0;
 		margin-left: 0.25rem;
@@ -539,7 +557,6 @@
 		height: 14px;
 	}
 
-	/* Mobile checkmark adjustments */
 	@media (max-width: 640px) {
 		.checkmark svg {
 			width: 12px;
@@ -566,7 +583,6 @@
 		color: var(--booth-color);
 	}
 
-	/* Dark mode improvements */
 	@media (prefers-color-scheme: dark) {
 		.booth-card {
 			background: var(--container-bg);
@@ -585,7 +601,7 @@
 	}
 
 	.search-section {
-		padding: 1.5rem 2rem;
+		padding: 0.75rem 1.25rem;
 		border-bottom: 1px solid var(--table-border-color);
 	}
 
@@ -594,7 +610,7 @@
 	}
 
 	.pagination-section {
-		padding: 1.5rem 2rem;
+		padding: 0.6rem 1.25rem;
 		border-top: 1px solid var(--table-border-color);
 		background: var(--hover-bg-color);
 	}
@@ -628,7 +644,7 @@
 		background: var(--nav-logo-color);
 	}
 
-	/* Custom edit modal */
+	/* Edit modal */
 	.modal-backdrop {
 		position: fixed;
 		top: 0;
@@ -661,6 +677,7 @@
 		z-index: 10001;
 		backdrop-filter: none;
 		-webkit-backdrop-filter: none;
+		animation: none;
 	}
 
 	.edit-modal h3 {
@@ -672,14 +689,13 @@
 
 	.edit-input {
 		width: 100%;
-		padding: 0.875rem 1rem;
+		padding: 0.75rem 1rem;
 		border: 2px solid var(--input-border-color);
 		border-radius: var(--border-radius);
 		background-color: var(--input-bg);
 		color: var(--input-text);
 		font-size: 1rem;
 		margin-bottom: 1.5rem;
-		transition: all 0.2s ease;
 	}
 
 	.edit-input:focus {
@@ -697,13 +713,12 @@
 
 	.modal-buttons button {
 		flex: 1;
-		padding: 0.875rem 1rem;
+		padding: 0.75rem 1rem;
 		border: none;
 		border-radius: var(--border-radius);
 		font-size: 1rem;
 		font-weight: 600;
 		cursor: pointer;
-		transition: all 0.2s ease;
 	}
 
 	.cancel-btn {
@@ -741,19 +756,19 @@
 		}
 
 		.inventory-header {
-			padding: 2rem 2.5rem;
+			padding: 0.7rem 2rem;
 		}
 
 		.search-section {
-			padding: 2rem 2.5rem;
+			padding: 0.85rem 2rem;
 		}
 
 		.pagination-section {
-			padding: 2rem 2.5rem;
+			padding: 0.7rem 2rem;
 		}
 
 		.inventory-title {
-			font-size: 1.5rem;
+			font-size: 1.1rem;
 		}
 	}
 
@@ -764,7 +779,7 @@
 		}
 
 		.form-section {
-			margin-bottom: 4rem;
+			margin-bottom: 2.5rem;
 		}
 	}
 
