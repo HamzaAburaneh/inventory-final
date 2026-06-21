@@ -7,6 +7,9 @@
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 
+	// `user` is the user to render the navbar for. The layout passes the SSR hint
+	// during the brief window before Firebase confirms the session, then the real
+	// authStore user — so this is correct from the first paint with no flash.
 	let { user } = $props();
 
 	let isOpen = $state(false);

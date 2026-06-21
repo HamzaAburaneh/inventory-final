@@ -6,10 +6,17 @@
 	import { onNavigate, goto } from '$app/navigation';
 	import { page } from '$app/stores';
 
-	let { children } = $props();
+	let { children, data } = $props();
 	const user = $derived($authStore);
 	const ready = $derived($authReady);
 	const pathname = $derived($page.url.pathname);
+
+	// Until Firebase confirms the session (authReady), drive the navbar from the
+	// server-provided hint cookie. This makes SSR and the first client render
+	// produce the same navbar (no hydration mismatch) and shows the signed-in
+	// shell on the first paint — no logged-out flash. Once ready, the real
+	// authStore user takes over and a stale hint self-corrects.
+	const navUser = $derived(ready ? user : (data?.hintedUser ?? null));
 
 	// Routes that require an authenticated user. A logged-out visitor reaching one
 	// of these by direct URL is redirected to /login; until Firebase has reported
@@ -82,7 +89,7 @@
 	});
 </script>
 
-<Navbar {user} />
+<Navbar user={navUser} />
 
 <main class="main-container">
 	<!-- Keyed on the route so the wrapper is recreated on every client-side
