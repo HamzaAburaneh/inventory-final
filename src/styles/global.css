@@ -171,6 +171,10 @@
 html {
 	/* Prevent horizontal scrolling */
 	overflow-x: hidden;
+	/* Always reserve the vertical scrollbar's gutter so centered layouts don't
+	   shift a few px sideways when the scrollbar appears after content loads on
+	   refresh (the "everything nudges right then settles" jump). */
+	scrollbar-gutter: stable;
 	/* Improve text rendering */
 	-webkit-text-size-adjust: 100%;
 	-webkit-font-smoothing: antialiased;
