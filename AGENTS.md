@@ -38,8 +38,19 @@ src/
 - Firestore access only through `src/lib/` modules — pages/components never call Firestore directly.
 - Auth state flows through `src/stores/authStore.js`; preserve its subscription in layout/pages.
 - User-facing notifications go through `notificationStore` / sweetalert2, not `alert()`.
+- Whenever you make a CSS change, make sure it works in BOTH light and dark — use theme CSS variables (or `[data-theme='dark']` overrides) rather than hardcoded colors, and verify the change in both themes. Never ship a color that only looks right in one theme.
 - Never commit `.env` or hardcode Firebase/OpenRouter keys.
 - Never add `Co-Authored-By` trailers (or any AI-attribution) to commit messages.
+
+## Proposing design changes
+
+When proposing a visual/design change (colors, badges, icons, button/pill styles, layout treatments, etc.), do NOT just apply one choice — preview options first:
+
+- Render them with the inline preview/visualization widget tool (`show_widget`), never as a static description, so the change can actually be seen before it's built.
+- Always show **10 options** unless the user asks for a different count.
+- Show **light and dark mode side by side** for every option (the app themes via `[data-theme]`; both must be judged), and use the app's real surfaces (`#ffffff`-ish light, `#121212`-ish dark) so the preview matches production.
+- Number/label each option so the user can pick by number or mix-and-match (e.g. "freezer icon from 3, color from 7").
+- Only after the user picks do you implement it in the codebase — then keep theme-dependent colors in CSS variables / `[data-theme]` rules, not hardcoded inline styles, so both themes stay correct.
 
 ## Goals
 
