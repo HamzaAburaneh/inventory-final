@@ -126,8 +126,8 @@ THREE.Timer instead.`
 
 - The form/edit dropdowns store `Freezer` / `Refrigerator` / `Dry Storage` (capitalized),
   while `types.js`/AGENTS.md documented `'freezer' | 'refrigerator' | 'dry storage'`.
-- The runtime is already correct and casing-robust: `getStorageTypeStyle()` lowercases before
-  matching and `capitalizeWords()` normalizes display, so no data migration is needed.
+- The runtime is already correct and casing-robust: `getStorageTypeClass()` / `getStorageTypeIcon()`
+  lowercase before matching and `capitalizeWords()` normalizes display, so no data migration is needed.
 - **Fix:** updated the canonical typedef in [types.js](src/types.js) and the data-model line
   in AGENTS.md to the actual title-cased values (noting legacy lowercase is tolerated), and
   documented the previously-undocumented `booths` field while there.

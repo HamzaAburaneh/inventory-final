@@ -1,5 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { motionDuration, rowExitDuration } from './tableUtils.js';
+import { motionDuration, rowExitDuration, isLowStock } from './tableUtils.js';
+
+describe('isLowStock', () => {
+	it('flags when count is at or below a positive threshold', () => {
+		expect(isLowStock({ count: 3, lowCount: 5 })).toBe(true);
+		expect(isLowStock({ count: 5, lowCount: 5 })).toBe(true);
+		expect(isLowStock({ count: 0, lowCount: 1 })).toBe(true);
+	});
+
+	it('does not flag when count is above the threshold', () => {
+		expect(isLowStock({ count: 10, lowCount: 5 })).toBe(false);
+	});
+
+	it('never flags when no threshold is configured', () => {
+		expect(isLowStock({ count: 0, lowCount: 0 })).toBe(false);
+		expect(isLowStock({ count: 0 })).toBe(false);
+		expect(isLowStock({})).toBe(false);
+	});
+
+	it('handles string-typed fields from Firestore', () => {
+		expect(isLowStock({ count: '2', lowCount: '5' })).toBe(true);
+		expect(isLowStock({ count: '9', lowCount: '5' })).toBe(false);
+	});
+});
 
 describe('motionDuration', () => {
 	it('returns the base duration when motion is allowed', () => {

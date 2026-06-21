@@ -4,13 +4,17 @@
 		formatTotalValue,
 		formatBooths,
 		capitalizeWords,
-		getStorageTypeStyle,
+		getStorageTypeClass,
 		getStorageTypeIcon,
-		getBoothStyle
+		getBoothStyle,
+		isLowStock
 	} from '../lib/tableUtils.js';
 	import Icon from './Icon.svelte';
 
 	let { type, value, item, onEdit, onDelete, onTooltipShow, onTooltipHide } = $props();
+
+	const low = $derived(isLowStock(item));
+	const totalIsZero = $derived((parseFloat(item.count) || 0) * (parseFloat(item.cost) || 0) === 0);
 
 	function handleEdit(field, currentValue) {
 		onEdit(item.id, field, currentValue);
@@ -38,12 +42,22 @@
 			>
 				<span>{value}</span>
 			</button>
+			{#if low}
+				<span
+					class="low-pill"
+					data-tooltip="At or below low-stock level"
+					title="At or below low-stock level"
+				>
+					<Icon name="alert" size={11} />
+					Low
+				</span>
+			{/if}
 		</div>
 	</td>
 {:else if type === 'count'}
 	<td class="count-col" data-label="Count">
 		<div class="cell-content">
-			<span class="cell-text">{value}</span>
+			<span class="cell-text" class:is-zero={(parseFloat(value) || 0) === 0}>{value}</span>
 		</div>
 	</td>
 {:else if type === 'lowCount'}
@@ -61,7 +75,9 @@
 				onmouseenter={onTooltipShow}
 				onmouseleave={onTooltipHide}
 			>
-				<span>{value != null ? value : ''}</span>
+				<span class:is-zero={!value || (parseFloat(value) || 0) === 0}>
+					{value != null ? value : ''}
+				</span>
 			</button>
 		</div>
 	</td>
@@ -80,14 +96,16 @@
 				onmouseenter={onTooltipShow}
 				onmouseleave={onTooltipHide}
 			>
-				<span>{formatCost(value)}</span>
+				<span class:is-zero={!value || (parseFloat(value) || 0) === 0}>{formatCost(value)}</span>
 			</button>
 		</div>
 	</td>
 {:else if type === 'totalValue'}
 	<td class="totalvalue-col" data-label="Total Value">
 		<div class="cell-content">
-			<span class="cell-text">{formatTotalValue(item.count, item.cost)}</span>
+			<span class="cell-text" class:is-zero={totalIsZero}
+				>{formatTotalValue(item.count, item.cost)}</span
+			>
 		</div>
 	</td>
 {:else if type === 'storageType'}
@@ -105,11 +123,7 @@
 				onmouseenter={onTooltipShow}
 				onmouseleave={onTooltipHide}
 			>
-				<span
-					class="storage-type inline-flex items-center gap-1.5"
-					style="background-color: {getStorageTypeStyle(value)
-						.backgroundColor}; color: {getStorageTypeStyle(value).color};"
-				>
+				<span class="storage-type inline-flex items-center gap-1.5 {getStorageTypeClass(value)}">
 					{#if value}
 						<Icon name={getStorageTypeIcon(value)} size={13} class="shrink-0" />
 					{/if}
@@ -157,7 +171,21 @@
 			onmouseenter={onTooltipShow}
 			onmouseleave={onTooltipHide}
 		>
-			<i class="fas fa-trash-alt"></i>
+			<svg
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+			>
+				<polyline points="3 6 5 6 21 6"></polyline>
+				<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+				></path>
+				<line x1="10" y1="11" x2="10" y2="17"></line>
+				<line x1="14" y1="11" x2="14" y2="17"></line>
+			</svg>
 		</button>
 	</td>
 {/if}
@@ -191,6 +219,40 @@
 		text-overflow: unset !important;
 		white-space: nowrap !important;
 		flex-shrink: 0 !important;
+	}
+
+	.totalvalue-col .cell-text {
+		font-weight: 700;
+		color: var(--value-color);
+	}
+
+	/* De-emphasize empty / zero values so real numbers stand out. */
+	.is-zero {
+		color: var(--text-color-dimmed);
+		opacity: 0.55;
+		font-weight: 400;
+	}
+
+	.totalvalue-col .cell-text.is-zero {
+		font-weight: 400;
+		color: var(--text-color-dimmed);
+	}
+
+	/* Low-stock pill shown beside the count. */
+	.low-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.2rem;
+		flex-shrink: 0;
+		padding: 0.08rem 0.4rem;
+		border-radius: 9999px;
+		font-size: 0.62rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		line-height: 1.4;
+		color: #ef4444;
+		background: color-mix(in srgb, #ef4444 14%, transparent);
 	}
 
 	.booths-col {
@@ -296,8 +358,6 @@
 		border-radius: 9999px;
 		font-size: 0.75rem;
 		font-weight: 600;
-		box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
-		border: 0.063rem solid rgba(0, 0, 0, 0.1);
 		transition:
 			transform 0.1s ease-out,
 			filter 0.15s ease-out;
@@ -308,8 +368,43 @@
 		transform: translateZ(0);
 	}
 
+	/* Soft-tint palette — light (default) + dark via [data-theme]. */
+	.storage-type.freezer {
+		background: #dbeafe;
+		color: #1e40af;
+	}
+	.storage-type.refrigerator {
+		background: #e0f2fe;
+		color: #075985;
+	}
+	.storage-type.dry-storage {
+		background: #fef3c7;
+		color: #92400e;
+	}
+	.storage-type.unset {
+		background: #e2e8f0;
+		color: #334155;
+	}
+
+	:global([data-theme='dark']) .storage-type.freezer {
+		background: #16294a;
+		color: #93c5fd;
+	}
+	:global([data-theme='dark']) .storage-type.refrigerator {
+		background: #0c3148;
+		color: #7dd3fc;
+	}
+	:global([data-theme='dark']) .storage-type.dry-storage {
+		background: #3a2a0e;
+		color: #fcd34d;
+	}
+	:global([data-theme='dark']) .storage-type.unset {
+		background: #1e293b;
+		color: #cbd5e1;
+	}
+
 	.storage-type-btn:hover .storage-type {
-		filter: brightness(1.15);
+		filter: brightness(1.05);
 		transform: scale(1.05);
 	}
 
@@ -362,20 +457,29 @@
 
 	/* Delete button */
 	.delete-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 		background: none;
 		border: none;
 		cursor: pointer;
 		opacity: 0;
 		transition:
 			opacity 0.15s ease-out,
-			transform 0.1s ease-out;
+			transform 0.1s ease-out,
+			color 0.15s ease-out;
 		will-change: opacity, transform;
 		flex-shrink: 0;
-		padding: 0.25rem;
-		font-size: 0.8rem;
+		padding: 0.3rem;
+		border-radius: 6px;
 		background-color: transparent;
-		color: darkred;
+		color: #ef4444;
 		min-height: 0;
+	}
+
+	.delete-button svg {
+		width: 1.05rem;
+		height: 1.05rem;
 	}
 
 	:global(.table-row:hover) .delete-button {
@@ -384,7 +488,8 @@
 
 	.delete-button:hover {
 		color: #ff0000;
-		transform: scale(1.2);
+		background-color: color-mix(in srgb, #ef4444 15%, transparent);
+		transform: scale(1.12);
 	}
 
 	.action-col {
@@ -482,8 +587,8 @@
 		}
 
 		.action-col .delete-button {
-			font-size: 1.2rem;
-			padding: 0.75rem 1.5rem;
+			gap: 0.5rem;
+			padding: 0.6rem 1.5rem;
 			color: #ff4444;
 			background-color: rgba(255, 68, 68, 0.1);
 			border-radius: 0.5rem;
@@ -495,6 +600,11 @@
 			align-items: center;
 			opacity: 1;
 			min-height: 0;
+		}
+
+		.action-col .delete-button svg {
+			width: 1.2rem;
+			height: 1.2rem;
 		}
 
 		.action-col .delete-button:hover {

@@ -30,17 +30,35 @@ export function formatBooths(booths) {
 	return boothArray.map((booth) => booth.charAt(0).toUpperCase() + booth.slice(1).toLowerCase());
 }
 
-export function getStorageTypeStyle(storageType) {
-	switch (storageType.toLowerCase()) {
+/**
+ * Map a storage type to its badge CSS modifier class. The actual soft-tint
+ * colors live in TableCell's styles (per-theme via `[data-theme]`).
+ * @param {string} storageType - the item's storage type
+ * @returns {string} 'freezer' | 'refrigerator' | 'dry-storage' | 'unset'
+ */
+export function getStorageTypeClass(storageType) {
+	switch ((storageType || '').toLowerCase()) {
 		case 'freezer':
-			return { backgroundColor: '#1E3A8A', color: '#BFDBFE' };
-		case 'dry storage':
-			return { backgroundColor: '#92400E', color: '#FDE68A' };
+			return 'freezer';
 		case 'refrigerator':
-			return { backgroundColor: '#065F46', color: '#A7F3D0' };
+			return 'refrigerator';
+		case 'dry storage':
+			return 'dry-storage';
 		default:
-			return { backgroundColor: '#374151', color: '#E5E7EB' };
+			return 'unset';
 	}
+}
+
+/**
+ * Whether an item is at or below its low-stock threshold.
+ * A threshold of 0 (or missing) means "no alert configured", so it never flags.
+ * @param {{ count?: number|string, lowCount?: number|string }} item
+ * @returns {boolean} true when stock has reached the low-stock alert level
+ */
+export function isLowStock(item) {
+	const count = parseFloat(item?.count) || 0;
+	const low = parseFloat(item?.lowCount) || 0;
+	return low > 0 && count <= low;
 }
 
 /**
@@ -53,7 +71,7 @@ export function getStorageTypeIcon(storageType) {
 		case 'freezer':
 			return 'snowflake';
 		case 'refrigerator':
-			return 'refrigerator';
+			return 'thermometer';
 		case 'dry storage':
 			return 'package';
 		default:

@@ -3,7 +3,7 @@
 	import { flip } from 'svelte/animate';
 	import { sineOut } from 'svelte/easing';
 	import { prefersReducedMotion } from 'svelte/motion';
-	import { motionDuration, rowExitDuration } from '../lib/tableUtils.js';
+	import { motionDuration, rowExitDuration, isLowStock } from '../lib/tableUtils.js';
 	import TableHeader from './TableHeader.svelte';
 	import TableCell from './TableCell.svelte';
 	import DeleteModal from './DeleteModal.svelte';
@@ -101,6 +101,7 @@
 					{#each visibleItems as item (item.id)}
 						<tr
 							class="table-row"
+							class:is-low={isLowStock(item)}
 							in:fade|global={{ duration: motionDuration(300, prefersReducedMotion.current) }}
 							out:fade={{ duration: rowExitDuration(isDeleting, prefersReducedMotion.current) }}
 							animate:flip={{
@@ -233,6 +234,19 @@
 		background-color: var(--table-row-hover-bg);
 	}
 
+	/* Low-stock rows get a red left accent + subtle tint. */
+	.custom-table tbody tr.is-low {
+		background-color: color-mix(in srgb, #ef4444 7%, var(--container-bg));
+	}
+
+	.custom-table tbody tr.is-low:hover {
+		background-color: color-mix(in srgb, #ef4444 12%, var(--container-bg));
+	}
+
+	.custom-table tbody tr.is-low :global(td:first-child) {
+		box-shadow: inset 3px 0 0 #ef4444;
+	}
+
 	@media (max-width: 48rem) {
 		.table-scroll {
 			padding-right: 0;
@@ -267,6 +281,15 @@
 
 		.custom-table :global(td:last-child) {
 			border-bottom: none;
+		}
+
+		/* Low-stock card: left accent border instead of the desktop inset shadow. */
+		.custom-table tbody tr.is-low {
+			border-left: 3px solid #ef4444;
+		}
+
+		.custom-table tbody tr.is-low :global(td:first-child) {
+			box-shadow: none;
 		}
 	}
 </style>

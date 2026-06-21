@@ -2,6 +2,7 @@
 	import ItemForm from '../../components/ItemForm.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Table from '../../components/Table.svelte';
+	import TableSkeleton from '../../components/TableSkeleton.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { itemStore } from '../../stores/itemStore';
@@ -279,9 +280,7 @@
 		</div>
 	</div>
 {:else}
-	<div class="flex justify-center items-center h-screen">
-		<div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
-	</div>
+	<TableSkeleton />
 {/if}
 {#if notification}
 	<div class="notification {notification.type}" in:fade out:fade>
@@ -434,7 +433,7 @@
 
 	.stats-text.total-value {
 		background: var(--add-item-color);
-		color: #000;
+		color: var(--add-item-on);
 		font-weight: 600;
 		border-color: var(--add-item-color);
 	}
