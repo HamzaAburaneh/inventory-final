@@ -1,11 +1,11 @@
 <script>
 	import { TABLE_COLUMNS, getColumnDisplayName } from '../lib/tableUtils.js';
+	import Icon from './Icon.svelte';
 
 	let { sortBy, currentSortColumn, sortAscending } = $props();
 
 	function handleSort(columnName) {
 		if (columnName) {
-			// Preserve scroll position during sorting
 			const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
 			sortBy(columnName);
 			setTimeout(() => {
@@ -27,14 +27,29 @@
 			>
 				<div class="header">
 					{#if column.name}
-						{getColumnDisplayName(column.name)}
-						<i
-							class="fas fa-sort{currentSortColumn === column.name
-								? sortAscending
-									? '-up'
-									: '-down'
-								: ''}"
-						></i>
+						{#if column.icon}
+							<Icon name={column.icon} size={14} class="header-col-icon shrink-0" />
+						{/if}
+						<span class="header-label">{getColumnDisplayName(column.name)}</span>
+						<span
+							class="sort-icon"
+							class:active={currentSortColumn === column.name}
+							class:asc={currentSortColumn === column.name && sortAscending}
+							class:desc={currentSortColumn === column.name && !sortAscending}
+						>
+							<svg width="10" height="14" viewBox="0 0 10 14" fill="none">
+								<path
+									d="M5 1L9 6H1L5 1Z"
+									fill="currentColor"
+									opacity={currentSortColumn === column.name ? (sortAscending ? 1 : 0.3) : 0.2}
+								/>
+								<path
+									d="M5 13L1 8H9L5 13Z"
+									fill="currentColor"
+									opacity={currentSortColumn === column.name ? (sortAscending ? 0.3 : 1) : 0.2}
+								/>
+							</svg>
+						</span>
 					{/if}
 				</div>
 			</th>
@@ -48,43 +63,54 @@
 		top: 0;
 		background-color: var(--table-header-bg);
 		z-index: 10;
-		box-shadow: 0 0.063rem 0.188rem rgba(0, 0, 0, 0.2);
-		color: var(--nav-logo-color);
-		font-weight: 600;
+		box-shadow: 0 0.063rem 0.188rem rgba(0, 0, 0, 0.15);
+		color: var(--text-color);
+		font-weight: 700;
 		will-change: transform;
 		transform: translateZ(0);
 		overflow: visible !important;
 		text-overflow: unset !important;
 		white-space: nowrap !important;
-		padding: 0.5rem;
+		padding: 0.625rem 0.5rem;
 		text-align: left;
 		border-bottom: 0.063rem solid var(--table-border-color);
+		font-size: 0.7rem;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
 	}
 
 	.header {
 		display: flex;
 		align-items: center;
+		gap: 0.375rem;
 		cursor: pointer;
-		transition: all 0.3s ease;
+		transition: color 0.15s ease-out;
 		overflow: visible !important;
 		white-space: nowrap !important;
 		min-width: max-content;
 	}
 
-	.header i {
-		margin-left: 0.5rem;
-		font-size: 0.8em;
-		transition: transform 0.3s ease;
-		flex-shrink: 0;
-		min-width: 1rem;
-	}
-
 	.header:hover {
 		color: var(--icon-hover-color);
-		transform: scale(1.05);
 	}
 
-	.header:hover i {
-		transform: scale(1.2);
+	.header :global(.header-col-icon) {
+		color: var(--icon-color);
+		transition: color 0.15s ease-out;
+	}
+
+	.header:hover :global(.header-col-icon) {
+		color: var(--icon-hover-color);
+	}
+
+	.sort-icon {
+		display: inline-flex;
+		align-items: center;
+		flex-shrink: 0;
+		line-height: 1;
+	}
+
+	.sort-icon svg {
+		display: block;
 	}
 </style>

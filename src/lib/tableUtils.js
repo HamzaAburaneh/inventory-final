@@ -43,6 +43,24 @@ export function getStorageTypeStyle(storageType) {
 	}
 }
 
+/**
+ * Map a storage type to an icon name understood by `Icon.svelte`.
+ * @param {string} storageType - the item's storage type
+ * @returns {string} the icon name (defaults to 'package')
+ */
+export function getStorageTypeIcon(storageType) {
+	switch ((storageType || '').toLowerCase()) {
+		case 'freezer':
+			return 'snowflake';
+		case 'refrigerator':
+			return 'refrigerator';
+		case 'dry storage':
+			return 'package';
+		default:
+			return 'package';
+	}
+}
+
 export function getBoothStyle(booth) {
 	const boothColors = {
 		freshly: { backgroundColor: '#10B981', color: '#FFFFFF' },
@@ -56,15 +74,43 @@ export function getBoothStyle(booth) {
 }
 
 export const TABLE_COLUMNS = [
-	{ name: 'name', width: '18%', minWidth: '9rem' },
-	{ name: 'count', width: '7%', minWidth: '5rem' },
-	{ name: 'lowCount', width: '8%', minWidth: '7rem' },
-	{ name: 'cost', width: '8%', minWidth: '5.5rem' },
-	{ name: 'totalValue', width: '10%', minWidth: '8rem' },
-	{ name: 'storageType', width: '15%', minWidth: '9rem' },
-	{ name: 'booths', width: '20%', minWidth: '9.4rem' },
-	{ name: '', width: '3%', minWidth: '1.2rem' }
+	{ name: 'name', width: '18%', minWidth: '9rem', icon: 'tag' },
+	{ name: 'count', width: '7%', minWidth: '5rem', icon: 'hash' },
+	{ name: 'lowCount', width: '8%', minWidth: '7rem', icon: 'alert' },
+	{ name: 'cost', width: '8%', minWidth: '5.5rem', icon: 'dollar' },
+	{ name: 'totalValue', width: '10%', minWidth: '8rem', icon: 'coins' },
+	{ name: 'storageType', width: '15%', minWidth: '9rem', icon: 'thermometer' },
+	{ name: 'booths', width: '20%', minWidth: '9.4rem', icon: 'store' },
+	{ name: '', width: '3%', minWidth: '1.2rem', icon: '' }
 ];
+
+/**
+ * Resolve a transition/animation duration, collapsing to 0 when the user
+ * prefers reduced motion.
+ * @param {number} base - the intended duration in milliseconds
+ * @param {boolean} reducedMotion - whether the user prefers reduced motion
+ * @returns {number} the duration to use in milliseconds
+ */
+export function motionDuration(base, reducedMotion) {
+	return reducedMotion ? 0 : base;
+}
+
+/**
+ * Duration (ms) for a table row's exit (fade-out) transition.
+ *
+ * Rows fade out only on an explicit delete. Search / pagination changes are
+ * list replacements, not deletes: their removals must resolve in 0ms so a
+ * leaving `<tr>` is never left mid-fade. Svelte pins outroing rows with
+ * `position: absolute` so surviving rows can `animate:flip`, and an absolutely
+ * positioned `<tr>` blockifies — dropping out of the table's column model and
+ * collapsing its cells. A 0ms exit removes the row before that is ever visible.
+ * @param {boolean} isDeleting - whether the row is leaving due to an explicit delete
+ * @param {boolean} reducedMotion - whether the user prefers reduced motion
+ * @returns {number} the duration to use in milliseconds
+ */
+export function rowExitDuration(isDeleting, reducedMotion) {
+	return reducedMotion || !isDeleting ? 0 : 150;
+}
 
 export function getColumnDisplayName(columnName) {
 	switch (columnName) {
