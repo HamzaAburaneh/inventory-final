@@ -24,7 +24,6 @@
 	<!-- Sun icon -->
 	<svg
 		class="toggle-icon sun-icon"
-		class:active={!isDark}
 		xmlns="http://www.w3.org/2000/svg"
 		width="13"
 		height="13"
@@ -48,14 +47,13 @@
 	</svg>
 
 	<!-- Track + thumb -->
-	<div class="track" class:dark={isDark}>
+	<div class="track">
 		<div class="thumb"></div>
 	</div>
 
 	<!-- Moon icon -->
 	<svg
 		class="toggle-icon moon-icon"
-		class:active={isDark}
 		xmlns="http://www.w3.org/2000/svg"
 		width="13"
 		height="13"
@@ -97,7 +95,25 @@
 		flex-shrink: 0;
 	}
 
-	.toggle-icon.active {
+	/*
+	 * The lit/dim state is driven by the [data-theme] attribute on <html> — which
+	 * the inline script in app.html sets before first paint — NOT by the JS theme
+	 * store. Binding to the store would render the light state during SSR and the
+	 * first client frame (the store can't read localStorage on the server), then
+	 * flip to dark after hydration: a split-second toggle flash. Sourcing it from
+	 * [data-theme] keeps the toggle correct from the very first paint.
+	 */
+	.sun-icon {
+		opacity: 0.75;
+		color: var(--tech-accent);
+	}
+
+	:global([data-theme='dark']) .sun-icon {
+		opacity: 0.3;
+		color: var(--nav-text-color);
+	}
+
+	:global([data-theme='dark']) .moon-icon {
 		opacity: 0.75;
 		color: var(--tech-accent);
 	}
@@ -116,7 +132,7 @@
 		flex-shrink: 0;
 	}
 
-	.track.dark {
+	:global([data-theme='dark']) .track {
 		background: rgba(var(--tech-accent-rgb), 0.15);
 		border-color: rgba(var(--tech-accent-rgb), 0.3);
 	}
@@ -138,7 +154,7 @@
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 	}
 
-	.track.dark .thumb {
+	:global([data-theme='dark']) .thumb {
 		transform: translateX(16px);
 		background: var(--tech-accent);
 	}
