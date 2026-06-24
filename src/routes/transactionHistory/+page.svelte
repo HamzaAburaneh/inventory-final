@@ -2,6 +2,7 @@
 	import { db } from '../../firebase';
 	import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 	import TransactionTable from '../../components/TransactionTable.svelte';
+	import TableSkeleton from '../../components/TableSkeleton.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
@@ -9,7 +10,11 @@
 	import { onMount } from 'svelte';
 
 	let allTransactions = $state([]);
-	let loading = $state(true);
+	// `ready` reveals the page chrome as soon as the listener is attached (mirrors
+	// manageItems' `itemsLoaded`); `received` flips once the first snapshot lands so
+	// the empty state only shows after real data has come back, not during the wait.
+	let ready = $state(false);
+	let received = $state(false);
 	let currentSortColumn = $state('timestamp');
 	let sortAscending = $state(false);
 	let unsubscribeFromTransactions = null;
@@ -21,7 +26,6 @@
 
 	// Reactive store views ($store auto-subscription)
 	const searchTermValue = $derived(search.term);
-	const transactionsLoaded = $derived(allTransactions.length > 0);
 
 	const filteredTransactions = $derived.by(() => {
 		if (searchTermValue) {
@@ -48,9 +52,6 @@
 		const endIndex = startIndex + $itemsPerPage;
 		return sortedTransactions.slice(startIndex, endIndex);
 	});
-	const filterLegend = $derived(
-		`Showing ${paginatedTransactions.length} of ${filteredTransactions.length} filtered transactions (${allTransactions.length} total).`
-	);
 
 	function sortTransactions(transactions, column, ascending) {
 		return [...transactions].sort((a, b) => {
@@ -69,7 +70,6 @@
 	}
 
 	function subscribeToTransactions() {
-		loading = true;
 		const transactionsRef = collection(db, 'transactions');
 		let q = query(transactionsRef, orderBy('timestamp', 'desc'));
 
@@ -91,21 +91,22 @@
 							user: data.user
 						};
 					});
-					loading = false;
+					received = true;
 				},
 				(error) => {
 					console.error('Error in transactions subscription:', error);
-					loading = false;
+					received = true;
 				}
 			);
 		} catch (error) {
 			console.error('Error setting up transactions subscription:', error);
-			loading = false;
+			received = true;
 		}
 	}
 
 	onMount(() => {
 		subscribeToTransactions();
+		ready = true;
 
 		return () => {
 			if (unsubscribeFromTransactions) {
@@ -138,55 +139,196 @@
 	<title>Transaction History</title>
 </svelte:head>
 
-{#if transactionsLoaded}
-	<div class="container mx-auto p-4 rounded-lg shadow-md bg-container mt-4">
-		<h1 class="text-3xl font-bold mb-6">Transaction History</h1>
-
-		<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClear} />
-
-		<div class="filter-legend text-white mb-4">
-			{filterLegend}
-		</div>
-
-		<div class="table-container">
-			{#if loading}
-				<p class="text-center my-4">Loading transactions...</p>
-			{:else if sortedTransactions.length === 0}
-				<p class="text-center my-4">No transactions found.</p>
-			{:else}
-				<TransactionTable
-					paginatedItems={paginatedTransactions}
-					sortBy={handleSort}
-					{currentSortColumn}
-					{sortAscending}
-				/>
-			{/if}
-		</div>
-
-		<Pagination store={paginationStore} />
-	</div>
+{#if !ready}
+	<TableSkeleton />
 {:else}
-	<div class="flex justify-center items-center h-screen">
-		<div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
+	<div class="page-container">
+		<div class="history-section">
+			<div class="history-header">
+				<h2 class="history-title">Transaction History</h2>
+				<div class="history-stats">
+					<span class="stats-text"
+						>{filteredTransactions.length} of {allTransactions.length} transactions</span
+					>
+					<span class="stats-text total-value">{paginatedTransactions.length} on this page</span>
+				</div>
+			</div>
+
+			<div class="search-section">
+				<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClear} />
+			</div>
+
+			<div class="table-section">
+				{#if received && filteredTransactions.length === 0}
+					<p class="empty-state">No transactions found.</p>
+				{:else}
+					<TransactionTable
+						paginatedItems={paginatedTransactions}
+						sortBy={handleSort}
+						{currentSortColumn}
+						{sortAscending}
+					/>
+				{/if}
+			</div>
+
+			<div class="pagination-section">
+				<Pagination store={paginationStore} />
+			</div>
+		</div>
 	</div>
 {/if}
 
 <style>
-	.container {
-		max-width: 90%;
-		background-color: var(--container-bg);
-		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-		border-radius: 1rem;
+	.page-container {
+		max-width: 95%;
+		margin: 0 auto;
+		padding: 1rem;
+		min-height: 100vh;
+		width: 100%;
 	}
 
-	.table-container {
-		height: 670px;
-		overflow: auto;
-		margin-bottom: 1rem;
+	.history-section {
+		background: var(--container-bg);
+		border-radius: var(--border-radius);
+		padding: 0;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		border: 1px solid var(--table-border-color);
+		overflow: hidden;
 	}
 
-	.filter-legend {
-		font-size: 0.9rem;
-		color: #949494;
+	.history-header {
+		background: var(--table-header-bg);
+		padding: 0.6rem 1.25rem;
+		border-bottom: 1px solid var(--table-border-color);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
+	}
+
+	.history-title {
+		margin: 0;
+		font-size: 1.05rem;
+		font-weight: 700;
+		color: var(--text-color);
+		letter-spacing: -0.025em;
+	}
+
+	.history-stats {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.stats-text {
+		font-size: 0.8rem;
+		color: var(--text-color-dimmed);
+		font-weight: 500;
+		padding: 0.3rem 0.75rem;
+		background: var(--hover-bg-color);
+		border-radius: var(--border-radius);
+		border: 1px solid var(--table-border-color);
+		white-space: nowrap;
+	}
+
+	.stats-text.total-value {
+		background: var(--add-item-color);
+		color: var(--add-item-on);
+		font-weight: 600;
+		border-color: var(--add-item-color);
+	}
+
+	.search-section {
+		padding: 0.75rem 1.25rem;
+		border-bottom: 1px solid var(--table-border-color);
+	}
+
+	.table-section {
+		padding: 0;
+	}
+
+	.empty-state {
+		margin: 0;
+		padding: 3rem 1.25rem;
+		text-align: center;
+		color: var(--text-color-dimmed);
+		font-size: 0.95rem;
+	}
+
+	.pagination-section {
+		padding: 0.6rem 1.25rem;
+		border-top: 1px solid var(--table-border-color);
+		background: var(--hover-bg-color);
+	}
+
+	@media (max-width: 640px) {
+		.history-header {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.history-stats {
+			width: 100%;
+		}
+
+		.stats-text {
+			flex: 1;
+			text-align: center;
+			padding: 0.5rem 0.75rem;
+			font-size: 0.8rem;
+		}
+	}
+
+	@media (min-width: 640px) {
+		.page-container {
+			max-width: 98%;
+			padding: 1.5rem;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.page-container {
+			max-width: 96%;
+			padding: 2rem;
+		}
+
+		.history-header {
+			padding: 0.7rem 2rem;
+		}
+
+		.search-section {
+			padding: 0.85rem 2rem;
+		}
+
+		.pagination-section {
+			padding: 0.7rem 2rem;
+		}
+
+		.history-title {
+			font-size: 1.1rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.page-container {
+			max-width: 94%;
+			padding: 2.5rem;
+		}
+	}
+
+	@media (min-width: 1280px) {
+		.page-container {
+			max-width: 92%;
+			padding: 3rem;
+		}
+	}
+
+	@media (min-width: 1536px) {
+		.page-container {
+			max-width: 90%;
+			padding: 3.5rem;
+		}
 	}
 </style>
