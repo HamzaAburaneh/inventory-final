@@ -650,9 +650,7 @@
 		left: 0;
 		width: 100%;
 		height: 100%;
-		background-color: rgba(0, 0, 0, 0.4);
-		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
+		background-color: rgba(0, 0, 0, 0.55);
 		z-index: 9999;
 	}
 
