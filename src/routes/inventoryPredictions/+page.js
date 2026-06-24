@@ -1,34 +1,7 @@
-import { itemStore } from '../../stores/itemStore.js';
-import { get } from 'svelte/store';
-
-export const ssr = false; // Disable SSR since Firebase requires client-side
-
-export async function load({ fetch }) {
-	try {
-		// Fetch items and predictions in parallel
-		const [_, predictionsResponse] = await Promise.all([
-			itemStore.fetchItems(),
-			fetch('/api/stockPredictions?timeframe=14&ai=false')
-		]);
-
-		let predictions = {};
-		if (predictionsResponse.ok) {
-			predictions = await predictionsResponse.json();
-		}
-
-		// Get items from store after fetch
-		const items = get(itemStore);
-
-		return {
-			items,
-			predictions
-		};
-	} catch (error) {
-		console.error('Error loading predictions:', error);
-		return {
-			items: [],
-			predictions: {},
-			error: 'Failed to load predictions'
-		};
-	}
-}
+export const load = async () => {
+	// Items and predictions are fetched client-side in the page's onMount, so there is
+	// nothing to load here. SSR stays enabled (as on the other protected pages) so the
+	// navbar + auth shell render on the first paint instead of the whole page blanking
+	// until the JS bundle hydrates.
+	return {};
+};
