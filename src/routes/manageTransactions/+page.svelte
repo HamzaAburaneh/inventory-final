@@ -10,6 +10,7 @@
 	import { createSearchState } from '../../lib/runes/search.svelte.js';
 	import { notificationStore } from '../../stores/notificationStore';
 	import { applySorting } from '../../lib/items';
+	import { isLowStock } from '../../lib/tableUtils.js';
 	import { addTransaction } from '../../lib/transactions';
 	import { authStore } from '../../stores/authStore';
 	import { onMount } from 'svelte';
@@ -21,7 +22,6 @@
 	const paginationStore = getPaginationStore('manageTransactions');
 	const { currentPage, itemsPerPage, setTotalItems } = paginationStore;
 
-	// Reactive store views ($store auto-subscription)
 	const search = createSearchState();
 
 	const items = $derived($itemStore);
@@ -56,6 +56,13 @@
 		filteredItemsList.reduce((sum, item) => sum + (parseInt(item.count, 10) || 0), 0)
 	);
 
+	const lowStockCount = $derived(
+		filteredItemsList.filter((item) => stockStatus(item) === 'low').length
+	);
+	const outOfStockCount = $derived(
+		filteredItemsList.filter((item) => stockStatus(item) === 'out').length
+	);
+
 	onMount(async () => {
 		await itemStore.loadItems();
 		itemsLoaded = true;
@@ -79,6 +86,28 @@
 		return authUser?.email || 'Unknown';
 	};
 
+	const stockStatus = (item) => {
+		if ((parseInt(item.count, 10) || 0) === 0) {
+			return 'out';
+		}
+		return isLowStock(item) ? 'low' : 'in';
+	};
+
+	const statusLabel = { in: 'In stock', low: 'Low stock', out: 'Out of stock' };
+
+	const storageChip = (item) => {
+		switch ((item.storageType || '').toLowerCase()) {
+			case 'freezer':
+				return { icon: 'ti-snowflake', label: 'Freezer', color: 'freezer' };
+			case 'refrigerator':
+				return { icon: 'ti-temperature', label: 'Refrigerator', color: 'refrigerator' };
+			case 'dry storage':
+				return { icon: 'ti-box', label: 'Dry Storage', color: 'dry-storage' };
+			default:
+				return null;
+		}
+	};
+
 	const changeCount = async (item, amount) => {
 		const previousCount = item.count;
 		await itemStore.changeCount(item.id, amount);
@@ -93,13 +122,10 @@
 				user: getCurrentUser()
 			});
 		}
-		// Reset the input field after operation
 		itemStore.setChangeAmount(item.id, 0);
 		notificationStore.showNotification(`Count for "${item.name}" updated successfully!`, 'success');
 	};
 
-	// Confirmation modal state. `kind` selects which action runs on confirm; `item`
-	// holds the row being reset for the single-item case.
 	let confirm = $state({ open: false, kind: null, item: null });
 
 	const askResetCount = (item) => {
@@ -135,7 +161,6 @@
 			newCount: 0,
 			user: getCurrentUser()
 		});
-		// Reset the input field after operation
 		itemStore.setChangeAmount(item.id, 0);
 		notificationStore.showNotification(`Count for "${item.name}" reset successfully!`, 'success');
 	};
@@ -173,127 +198,178 @@
 
 {#if itemsLoaded}
 	<div class="page-container">
-		<div class="transactions-section">
-			<div class="transactions-header">
-				<h2 class="transactions-title">Adjust Stock</h2>
-				<div class="transactions-stats">
-					<span class="stats-text">{filteredItemsList.length} of {items.length} items</span>
-					<span class="stats-text total-value">{totalUnits} units in stock</span>
+		<div class="tx-section">
+			<!-- Header -->
+			<div class="tx-header">
+				<div class="header-text">
+					<h2 class="tx-title">Adjust Stock</h2>
+					<p class="tx-subtitle">Manage and adjust inventory counts</p>
+				</div>
+				<div class="tx-stats">
+					<div class="stat-card">
+						<span class="stat-number">{filteredItemsList.length}</span>
+						<span class="stat-label">items</span>
+					</div>
+					<div class="stat-card">
+						<span class="stat-number">{totalUnits}</span>
+						<span class="stat-label">units</span>
+					</div>
+					{#if lowStockCount > 0}
+						<div class="stat-card stat-card-warn">
+							<span class="stat-number">{lowStockCount}</span>
+							<span class="stat-label">low</span>
+						</div>
+					{/if}
+					{#if outOfStockCount > 0}
+						<div class="stat-card stat-card-danger">
+							<span class="stat-number">{outOfStockCount}</span>
+							<span class="stat-label">out</span>
+						</div>
+					{/if}
 				</div>
 			</div>
 
-			<div class="search-section">
-				<SearchBar
-					searchValue={searchTermValue}
-					onSearch={handleSearch}
-					onClear={() => search.clear()}
-				/>
+			<!-- Toolbar -->
+			<div class="tx-toolbar">
+				<div class="tx-search">
+					<SearchBar
+						searchValue={searchTermValue}
+						onSearch={handleSearch}
+						onClear={() => search.clear()}
+					/>
+				</div>
+				<div class="tx-sort">
+					<span class="sort-label">Sort by</span>
+					<button
+						class="sort-btn"
+						class:active={currentSortColumn === 'name'}
+						onclick={() => sortBy('name')}
+					>
+						<span>Name</span>
+						{#if currentSortColumn === 'name'}
+							<i class="fas {sortAscending ? 'fa-sort-up' : 'fa-sort-down'} sort-arrow"></i>
+						{/if}
+					</button>
+					<button
+						class="sort-btn"
+						class:active={currentSortColumn === 'count'}
+						onclick={() => sortBy('count')}
+					>
+						<span>Count</span>
+						{#if currentSortColumn === 'count'}
+							<i class="fas {sortAscending ? 'fa-sort-up' : 'fa-sort-down'} sort-arrow"></i>
+						{/if}
+					</button>
+				</div>
 			</div>
 
-			<div class="table-section">
-				<div class="table-scroll">
-					<table class="custom-table">
-						<thead>
-							<tr class="table-header">
-								<th class="name-col" onclick={() => sortBy('name')} data-label="Item Name">
-									<div class="header">
-										<span>Item Name</span>
-										<i
-											class="fas fa-sort sort-icon {currentSortColumn === 'name'
-												? sortAscending
-													? 'fa-sort-up'
-													: 'fa-sort-down'
-												: ''}"
-										></i>
+			<!-- Table -->
+			<div class="table-wrap">
+				<table class="tx-table">
+					<thead>
+						<tr>
+							<th class="th-item">Item</th>
+							<th class="th-count">Count</th>
+							<th class="th-storage">Storage</th>
+							<th class="th-status">Status</th>
+							<th class="th-adjust">Adjust</th>
+							<th class="th-reset"></th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each paginatedItemsList as item (item.id)}
+							{@const status = stockStatus(item)}
+							{@const storage = storageChip(item)}
+							<tr
+								class="status-stripe"
+								style="--stripe-color: var(--st-{status}-color)"
+								in:fade={{ duration: 150 }}
+							>
+								<td class="col-item">
+									<span class="item-name">{item.name}</span>
+								</td>
+								<td class="col-count">
+									{#key item.count}
+										<span
+											class="count-value"
+											class:count-out={status === 'out'}
+											class:count-warn={status === 'low'}
+											transition:fly={{ y: -12, duration: 200, easing: elasticOut }}
+										>
+											{item.count}
+										</span>
+									{/key}
+								</td>
+								<td class="col-storage">
+									{#if storage}
+										<span class="storage-pill" data-storage={storage.color}>
+											<i class="ti {storage.icon}"></i>
+											{storage.label}
+										</span>
+									{/if}
+								</td>
+								<td class="col-status">
+									<span class="status-badge status-badge-{status}">
+										<span class="status-dot"></span>
+										{statusLabel[status]}
+									</span>
+								</td>
+								<td class="col-adjust">
+									<div class="adjuster">
+										<button
+											class="adj-btn"
+											onclick={() => changeCount(item, -item.changeAmount)}
+											disabled={item.changeAmount === 0}
+											aria-label="Remove {item.changeAmount || ''} from {item.name}"
+										>
+											−
+										</button>
+										<input
+											type="number"
+											inputmode="numeric"
+											pattern="[0-9]*"
+											placeholder="0"
+											value={item.changeAmount === 0 ? '' : item.changeAmount}
+											oninput={(e) => handleChangeAmountInput(item, e)}
+											class="adj-input"
+											aria-label="Change amount for {item.name}"
+										/>
+										<button
+											class="adj-btn"
+											onclick={() => changeCount(item, +item.changeAmount)}
+											disabled={item.changeAmount === 0}
+											aria-label="Add {item.changeAmount || ''} to {item.name}"
+										>
+											+
+										</button>
 									</div>
-								</th>
-								<th class="count-col" onclick={() => sortBy('count')} data-label="Count">
-									<div class="header header-center">
-										<span>Count</span>
-										<i
-											class="fas fa-sort sort-icon {currentSortColumn === 'count'
-												? sortAscending
-													? 'fa-sort-up'
-													: 'fa-sort-down'
-												: ''}"
-										></i>
-									</div>
-								</th>
-								<th class="change-col" data-label="Change Amount">
-									<div class="header header-center">Change Amount</div>
-								</th>
-								<th class="actions-col" data-label="Actions">
-									<div class="header header-center">Actions</div>
-								</th>
+								</td>
+								<td class="col-reset">
+									<button
+										class="reset-btn"
+										onclick={() => askResetCount(item)}
+										disabled={item.count === 0}
+										aria-label="Reset {item.name} to 0"
+										title="Reset to 0"
+									>
+										<i class="ti ti-rotate-clockwise"></i>
+									</button>
+								</td>
 							</tr>
-						</thead>
-						<tbody>
-							{#each paginatedItemsList as item (item.id)}
-								<tr in:fade={{ duration: 200 }}>
-									<td class="name-col" data-label="Item Name">{item.name}</td>
-									<td class="count-col count-cell" data-label="Count">
-										<div class="count-anim">
-											{#key item.count}
-												<span
-													class="count-value"
-													transition:fly={{ y: -20, duration: 300, easing: elasticOut }}
-												>
-													{item.count}
-												</span>
-											{/key}
-										</div>
-									</td>
-									<td class="change-col" data-label="Change Amount">
-										<div class="change-wrap">
-											<input
-												type="number"
-												inputmode="numeric"
-												pattern="[0-9]*"
-												placeholder="0"
-												value={item.changeAmount === 0 ? '' : item.changeAmount}
-												oninput={(e) => handleChangeAmountInput(item, e)}
-												class="change-amount-input"
-											/>
-										</div>
-									</td>
-									<td class="actions-col" data-label="Actions">
-										<div class="action-grid">
-											<button
-												class="act-btn act-add"
-												onclick={() => changeCount(item, +item.changeAmount)}
-												disabled={item.changeAmount === 0}
-											>
-												+
-											</button>
-											<button
-												class="act-btn act-remove"
-												onclick={() => changeCount(item, -item.changeAmount)}
-												disabled={item.changeAmount === 0}
-											>
-												−
-											</button>
-											<button
-												class="act-btn act-reset"
-												onclick={() => askResetCount(item)}
-												disabled={item.count === 0}
-											>
-												Reset
-											</button>
-										</div>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+
+			<!-- Footer -->
+			<div class="tx-footer">
+				<div class="footer-pagination">
+					<Pagination store={paginationStore} />
 				</div>
-			</div>
-
-			<div class="pagination-section">
-				<Pagination store={paginationStore} />
-			</div>
-
-			<div class="actions-section">
-				<button class="reset-all-btn" onclick={askResetAll}> Reset All Counts </button>
+				<button class="reset-all-btn" onclick={askResetAll}>
+					<i class="ti ti-rotate-clockwise"></i>
+					Reset all counts
+				</button>
 			</div>
 		</div>
 	</div>
@@ -324,290 +400,558 @@
 {/if}
 
 <style>
+	/* =============================================
+	   Status stripe colours (light)
+	   ============================================= */
+	.page-container {
+		--st-in-color: #16a34a;
+		--st-low-color: #d97706;
+		--st-out-color: #dc2626;
+		--st-in-bg: #f0fdf4;
+		--st-low-bg: #fffbeb;
+		--st-out-bg: #fef2f2;
+		--st-in-text: #16a34a;
+		--st-low-text: #b45309;
+		--st-out-text: #dc2626;
+	}
+
+	:global([data-theme='dark']) .page-container {
+		--st-in-color: #34d399;
+		--st-low-color: #fbbf24;
+		--st-out-color: #f87171;
+		--st-in-bg: rgba(52, 211, 153, 0.08);
+		--st-low-bg: rgba(251, 191, 36, 0.08);
+		--st-out-bg: rgba(248, 113, 113, 0.08);
+		--st-in-text: #34d399;
+		--st-low-text: #fbbf24;
+		--st-out-text: #f87171;
+	}
+
+	/* =============================================
+	   Page layout
+	   ============================================= */
 	.page-container {
 		max-width: 95%;
 		margin: 0 auto;
-		padding: 1rem;
+		padding: 1.25rem;
 		min-height: 100vh;
 		width: 100%;
 	}
 
-	.transactions-section {
+	.tx-section {
 		background: var(--container-bg);
 		border-radius: var(--border-radius);
-		padding: 0;
-		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		box-shadow:
+			0 1px 3px rgba(0, 0, 0, 0.06),
+			0 4px 12px rgba(0, 0, 0, 0.04);
 		border: 1px solid var(--table-border-color);
 		overflow: hidden;
 	}
 
-	.transactions-header {
-		background: var(--table-header-bg);
-		padding: 0.6rem 1.25rem;
+	/* =============================================
+	   Header
+	   ============================================= */
+	.tx-header {
+		padding: 1.5rem 1.75rem 1.25rem;
 		border-bottom: 1px solid var(--table-border-color);
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 0.5rem 1rem;
 	}
 
-	.transactions-title {
+	.tx-title {
 		margin: 0;
-		font-size: 1.05rem;
+		font-size: 1.4rem;
 		font-weight: 700;
 		color: var(--text-color);
 		letter-spacing: -0.025em;
+		line-height: 1.2;
 	}
 
-	.transactions-stats {
+	.tx-subtitle {
+		margin: 0.25rem 0 0;
+		font-size: 0.88rem;
+		color: var(--text-color-dimmed);
+		line-height: 1.4;
+	}
+
+	.tx-stats {
+		display: flex;
+		align-items: stretch;
+		gap: 0.625rem;
+		margin-top: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.stat-card {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.1rem;
+		padding: 0.6rem 1rem;
+		min-width: 5rem;
+		background: var(--hover-bg-color);
+		border: 1px solid var(--table-border-color);
+		border-radius: var(--border-radius);
+		white-space: nowrap;
+	}
+
+	.stat-number {
+		font-size: 1.2rem;
+		font-weight: 700;
+		color: var(--text-color);
+		line-height: 1.2;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.stat-label {
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--text-color-dimmed);
+		text-transform: lowercase;
+	}
+
+	.stat-card-warn {
+		background: var(--st-low-bg);
+		border-color: color-mix(in srgb, var(--st-low-text) 25%, var(--table-border-color));
+	}
+
+	.stat-card-warn .stat-number {
+		color: var(--st-low-text);
+	}
+
+	.stat-card-warn .stat-label {
+		color: var(--st-low-text);
+		opacity: 0.7;
+	}
+
+	.stat-card-danger {
+		background: var(--st-out-bg);
+		border-color: color-mix(in srgb, var(--st-out-text) 25%, var(--table-border-color));
+	}
+
+	.stat-card-danger .stat-number {
+		color: var(--st-out-text);
+	}
+
+	.stat-card-danger .stat-label {
+		color: var(--st-out-text);
+		opacity: 0.7;
+	}
+
+	/* =============================================
+	   Toolbar
+	   ============================================= */
+	.tx-toolbar {
 		display: flex;
 		align-items: center;
+		gap: 1rem;
+		padding: 1rem 1.75rem;
+		border-bottom: 1px solid var(--table-border-color);
 		flex-wrap: wrap;
+		background: color-mix(in srgb, var(--hover-bg-color) 40%, var(--container-bg));
+	}
+
+	.tx-search {
+		flex: 1;
+		min-width: 14rem;
+	}
+
+	.tx-sort {
+		display: inline-flex;
+		align-items: center;
 		gap: 0.5rem;
 	}
 
-	.stats-text {
-		font-size: 0.8rem;
-		color: var(--text-color-dimmed);
-		font-weight: 500;
-		padding: 0.3rem 0.75rem;
-		background: var(--hover-bg-color);
-		border-radius: var(--border-radius);
-		border: 1px solid var(--table-border-color);
-		white-space: nowrap;
-	}
-
-	.stats-text.total-value {
-		background: var(--add-item-color);
-		color: var(--add-item-on);
+	.sort-label {
+		font-size: 0.72rem;
 		font-weight: 600;
-		border-color: var(--add-item-color);
-	}
-
-	.search-section {
-		padding: 0.75rem 1.25rem;
-		border-bottom: 1px solid var(--table-border-color);
-	}
-
-	.table-section {
-		padding: 0;
-	}
-
-	.table-scroll {
-		width: 100%;
-		overflow-x: auto;
-		overflow-y: auto;
-		max-height: 41.9rem;
-		min-height: 18.8rem;
-		-webkit-overflow-scrolling: touch;
-	}
-
-	.custom-table {
-		width: 100%;
-		border-collapse: separate;
-		border-spacing: 0;
-	}
-
-	.table-header th {
-		position: sticky;
-		top: 0;
-		background-color: var(--table-header-bg);
-		z-index: 10;
-		box-shadow: 0 0.063rem 0.188rem rgba(0, 0, 0, 0.15);
-		color: var(--text-color);
-		font-weight: 700;
-		padding: 0.625rem 1rem;
-		text-align: left;
-		border-bottom: 1px solid var(--table-border-color);
-		font-size: 0.7rem;
-		letter-spacing: 0.04em;
+		letter-spacing: 0.06em;
 		text-transform: uppercase;
-		white-space: nowrap;
-		cursor: pointer;
+		color: var(--text-color-dimmed);
 	}
 
-	.custom-table td {
-		padding: 0.75rem 1rem;
-		text-align: left;
-		border-bottom: 1px solid var(--table-border-color);
+	.sort-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		height: 2rem;
+		padding: 0 0.75rem;
+		font-size: 0.82rem;
+		font-weight: 600;
+		color: var(--text-color-dimmed);
+		background: var(--container-bg);
+		border: 1px solid var(--table-border-color);
+		border-radius: var(--border-radius);
+		cursor: pointer;
+		transition: all 0.15s ease-out;
+	}
+
+	.sort-btn:hover {
+		background: var(--hover-bg-color);
 		color: var(--text-color);
 	}
 
-	.custom-table tbody tr {
-		background-color: var(--container-bg);
-		transition: background-color 0.15s ease-out;
+	.sort-btn.active {
+		border-color: var(--add-item-color);
+		color: var(--add-item-color);
+		background: color-mix(in srgb, var(--add-item-color) 8%, var(--container-bg));
 	}
 
-	.custom-table tbody tr:hover {
-		background-color: var(--table-row-hover-bg);
-	}
-
-	.name-col {
-		width: 34%;
-		white-space: nowrap;
-	}
-	.count-col {
-		width: 16%;
-	}
-	.change-col {
-		width: 18%;
-	}
-	.actions-col {
-		width: 32%;
-	}
-
-	.header {
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-		transition: color 0.15s ease-out;
-	}
-
-	.header-center {
-		justify-content: center;
-	}
-
-	.table-header th:hover .header {
-		color: var(--icon-hover-color);
-	}
-
-	.sort-icon {
-		font-size: 0.8em;
-	}
-
-	.count-cell {
-		text-align: center;
-	}
-
-	.count-anim {
-		position: relative;
-		display: inline-block;
-		width: 100%;
-		height: 1.5rem;
-	}
-
-	.count-value {
-		position: absolute;
-		inset: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-weight: 600;
-	}
-
-	.change-wrap {
-		display: flex;
-		justify-content: center;
-	}
-
-	.act-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		height: 2rem;
-		min-height: 0;
-		padding: 0 0.5rem;
-		font-size: 0.78rem;
-		font-weight: 600;
-		color: #fff;
-		border: none;
-		border-radius: var(--border-radius);
-		cursor: pointer;
-		transition:
-			background-color 0.15s ease-out,
-			transform 0.1s ease;
-	}
-
-	.act-btn:active:not(:disabled) {
-		transform: scale(0.96);
-	}
-
-	.act-btn:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	/* Suppress the global blue button:focus outline on mouse click; keep a themed
-	   keyboard-only ring for accessibility. */
-	.act-btn:focus,
-	.reset-all-btn:focus {
-		outline: none;
-	}
-
-	.act-btn:focus-visible,
-	.reset-all-btn:focus-visible {
+	.sort-btn:focus-visible {
 		outline: 2px solid var(--add-item-color);
 		outline-offset: 2px;
 	}
 
-	.act-add {
-		background-color: #047857;
-	}
-	.act-add:hover:not(:disabled) {
-		background-color: #059669;
-	}
-	.act-remove {
-		background-color: #b91c1c;
-	}
-	.act-remove:hover:not(:disabled) {
-		background-color: #dc2626;
-	}
-	.act-reset {
-		background-color: #d97706;
-	}
-	.act-reset:hover:not(:disabled) {
-		background-color: #f59e0b;
+	.sort-arrow {
+		font-size: 0.65rem;
+		opacity: 0.8;
 	}
 
-	.action-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 0.5rem;
+	/* =============================================
+	   Table
+	   ============================================= */
+	.table-wrap {
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.tx-table {
 		width: 100%;
-		max-width: 20rem;
-		margin: 0 auto;
+		border-collapse: collapse;
+		font-size: 0.9rem;
 	}
 
-	.pagination-section {
-		padding: 0.6rem 1.25rem;
-		border-top: 1px solid var(--table-border-color);
+	.tx-table th {
+		text-align: left;
+		padding: 0.7rem 1.1rem;
+		background: var(--table-header-bg);
+		color: var(--text-color-dimmed);
+		font-weight: 600;
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		border-bottom: 1px solid var(--table-border-color);
+		white-space: nowrap;
+	}
+
+	.th-count {
+		text-align: center;
+		width: 5rem;
+	}
+
+	.tx-table td {
+		padding: 0.75rem 1.1rem;
+		border-bottom: 1px solid var(--table-border-color);
+		color: var(--text-color);
+		vertical-align: middle;
+	}
+
+	.tx-table tbody tr:last-child td {
+		border-bottom: none;
+	}
+
+	.tx-table tbody tr {
+		transition: background-color 0.12s ease-out;
+	}
+
+	.tx-table tbody tr:hover td {
 		background: var(--hover-bg-color);
 	}
 
-	/* Destructive bulk action gets the soft-tint → solid-on-hover treatment used by
-	   the Add button, but in danger red so it reads as distinct and cautionary. */
-	.actions-section {
+	/* Status stripe — left accent */
+	.status-stripe td:first-child {
+		border-left: 4px solid var(--stripe-color);
+		padding-left: calc(1.1rem - 4px + 4px);
+	}
+
+	/* ---- Item column ---- */
+	.item-name {
+		font-weight: 600;
+		color: var(--text-color);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 22rem;
+		display: inline-block;
+	}
+
+	/* ---- Count column ---- */
+	.col-count {
+		text-align: center;
+		width: 5rem;
+		padding-left: 0.75rem;
+		padding-right: 0.75rem;
+	}
+
+	.count-value {
+		font-variant-numeric: tabular-nums;
+		font-weight: 700;
+		font-size: 1.05rem;
+		color: var(--text-color);
+	}
+
+	.count-value.count-out {
+		color: var(--st-out-text);
+	}
+
+	.count-value.count-warn {
+		color: var(--st-low-text);
+	}
+
+	/* =============================================
+	   Storage pills — muted, secondary feel
+	   ============================================= */
+	.storage-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.2rem 0.6rem;
+		border-radius: 6px;
+		font-size: 0.78rem;
+		font-weight: 500;
+		white-space: nowrap;
+		background: var(--hover-bg-color);
+		color: var(--text-color-dimmed);
+		border: 1px solid var(--table-border-color);
+	}
+
+	.storage-pill[data-storage='freezer'] {
+		background: color-mix(in srgb, #3b82f6 10%, transparent);
+		color: #3b82f6;
+		border-color: color-mix(in srgb, #3b82f6 20%, var(--table-border-color));
+	}
+
+	.storage-pill[data-storage='refrigerator'] {
+		background: color-mix(in srgb, #10b981 10%, transparent);
+		color: #10b981;
+		border-color: color-mix(in srgb, #10b981 20%, var(--table-border-color));
+	}
+
+	.storage-pill[data-storage='dry-storage'] {
+		background: color-mix(in srgb, #f59e0b 10%, transparent);
+		color: #d97706;
+		border-color: color-mix(in srgb, #f59e0b 20%, var(--table-border-color));
+	}
+
+	:global([data-theme='dark']) .storage-pill[data-storage='freezer'] {
+		background: color-mix(in srgb, #60a5fa 10%, transparent);
+		color: #60a5fa;
+		border-color: color-mix(in srgb, #60a5fa 20%, var(--table-border-color));
+	}
+
+	:global([data-theme='dark']) .storage-pill[data-storage='refrigerator'] {
+		background: color-mix(in srgb, #34d399 10%, transparent);
+		color: #34d399;
+		border-color: color-mix(in srgb, #34d399 20%, var(--table-border-color));
+	}
+
+	:global([data-theme='dark']) .storage-pill[data-storage='dry-storage'] {
+		background: color-mix(in srgb, #fbbf24 10%, transparent);
+		color: #fbbf24;
+		border-color: color-mix(in srgb, #fbbf24 20%, var(--table-border-color));
+	}
+
+	/* =============================================
+	   Status badges — clear, self-contained
+	   ============================================= */
+	.status-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.2rem 0.65rem;
+		border-radius: 999px;
+		font-size: 0.78rem;
+		font-weight: 600;
+		white-space: nowrap;
+	}
+
+	.status-dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+
+	.status-badge-in {
+		background: var(--st-in-bg);
+		color: var(--st-in-text);
+	}
+
+	.status-badge-in .status-dot {
+		background: var(--st-in-color);
+	}
+
+	.status-badge-low {
+		background: var(--st-low-bg);
+		color: var(--st-low-text);
+	}
+
+	.status-badge-low .status-dot {
+		background: var(--st-low-color);
+	}
+
+	.status-badge-out {
+		background: var(--st-out-bg);
+		color: var(--st-out-text);
+	}
+
+	.status-badge-out .status-dot {
+		background: var(--st-out-color);
+	}
+
+	/* =============================================
+	   Adjuster — larger touch targets
+	   ============================================= */
+	.adjuster {
+		display: inline-flex;
+		align-items: center;
+		border: 1px solid var(--table-border-color);
+		border-radius: 999px;
+		overflow: hidden;
+		background: var(--hover-bg-color);
+	}
+
+	.adj-btn {
+		width: 34px;
+		height: 34px;
+		border: none;
+		background: transparent;
+		color: var(--text-color);
+		font-size: 1rem;
+		cursor: pointer;
 		display: flex;
+		align-items: center;
 		justify-content: center;
-		padding: 0.85rem 1.25rem;
+		transition:
+			background-color 0.12s ease-out,
+			color 0.12s ease-out;
+	}
+
+	.adj-btn:hover:not(:disabled) {
+		background: var(--table-border-color);
+		color: var(--add-item-color);
+	}
+
+	.adj-btn:disabled {
+		opacity: 0.25;
+		cursor: not-allowed;
+	}
+
+	.adj-input {
+		width: 36px;
+		height: 34px;
+		min-height: 0;
+		text-align: center;
+		font-size: 0.88rem;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		color: var(--text-color);
+		background: transparent;
+		border: none;
+		border-left: 1px solid var(--table-border-color);
+		border-right: 1px solid var(--table-border-color);
+		-moz-appearance: textfield;
+		outline: none;
+	}
+
+	.adj-input::-webkit-outer-spin-button,
+	.adj-input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+
+	.adj-input::placeholder {
+		color: var(--text-color-dimmed);
+		font-weight: 400;
+	}
+
+	.adj-input:focus {
+		background: color-mix(in srgb, var(--add-item-color) 6%, var(--hover-bg-color));
+	}
+
+	/* =============================================
+	   Reset button
+	   ============================================= */
+	.reset-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2rem;
+		height: 2rem;
+		padding: 0;
+		color: var(--text-color-dimmed);
+		background: transparent;
+		border: none;
+		border-radius: var(--border-radius);
+		cursor: pointer;
+		transition: all 0.15s ease-out;
+	}
+
+	.reset-btn i {
+		font-size: 1rem;
+	}
+
+	.reset-btn:hover:not(:disabled) {
+		background: var(--st-out-bg);
+		color: var(--st-out-text);
+	}
+
+	.reset-btn:disabled {
+		opacity: 0.15;
+		cursor: not-allowed;
+	}
+
+	.reset-btn:focus-visible {
+		outline: 2px solid var(--add-item-color);
+		outline-offset: 2px;
+	}
+
+	/* =============================================
+	   Footer
+	   ============================================= */
+	.tx-footer {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem 1.25rem;
+		flex-wrap: wrap;
+		padding: 0.85rem 1.75rem;
 		border-top: 1px solid var(--table-border-color);
+		background: color-mix(in srgb, var(--hover-bg-color) 40%, var(--container-bg));
+	}
+
+	.footer-pagination {
+		flex: 1;
+		min-width: 0;
 	}
 
 	.reset-all-btn {
 		display: inline-flex;
 		align-items: center;
-		justify-content: center;
-		min-width: 14rem;
-		padding: 0.6rem 1.5rem;
-		background: color-mix(in srgb, #ef4444 16%, transparent);
-		color: #ef4444;
-		border: none;
-		border-radius: 8px;
-		font-size: 0.85rem;
+		gap: 0.4rem;
+		padding: 0.45rem 0.85rem;
+		font-size: 0.82rem;
 		font-weight: 600;
+		color: var(--st-out-text);
+		background: transparent;
+		border: 1px solid transparent;
+		border-radius: var(--border-radius);
 		cursor: pointer;
-		transition:
-			background-color 0.15s ease-out,
-			color 0.15s ease-out;
+		white-space: nowrap;
+		transition: all 0.15s ease-out;
 	}
 
-	.reset-all-btn:hover,
-	.reset-all-btn:active {
-		background: #ef4444;
-		color: #fff;
+	.reset-all-btn i {
+		font-size: 0.9rem;
 	}
 
+	.reset-all-btn:hover {
+		background: var(--st-out-bg);
+		border-color: color-mix(in srgb, var(--st-out-text) 20%, transparent);
+	}
+
+	/* =============================================
+	   Notification
+	   ============================================= */
 	.notification {
 		position: fixed;
 		bottom: 20px;
@@ -617,157 +961,127 @@
 		border-radius: 0.5rem;
 		z-index: 1000;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+		font-weight: 500;
 	}
 
 	.notification.success {
-		background-color: var(--add-item-color); /* Green */
+		background-color: var(--add-item-color);
 	}
 
 	.notification.error {
-		background-color: #dc3545; /* Red */
+		background-color: #dc3545;
 	}
 
 	.notification.warning {
-		background-color: #ffc107; /* Yellow */
-		color: #333; /* Dark text for contrast */
+		background-color: #ffc107;
+		color: #333;
 	}
 
 	.notification.info {
-		background-color: #17a2b8; /* Blue */
+		background-color: var(--nav-logo-color);
 	}
 
-	.change-amount-input {
-		width: 4rem;
-		height: 2rem;
-		min-height: 0;
-		text-align: center;
-		font-size: 0.85rem;
-		border-radius: var(--border-radius);
-		background-color: var(--input-bg);
-		color: var(--input-text);
-		border: 1px solid var(--input-border-color);
-		transition:
-			background-color 0.15s ease-out,
-			border-color 0.15s ease-out,
-			box-shadow 0.15s ease-out;
-		/* Hide number input spinner arrows */
-		-moz-appearance: textfield;
-	}
-
-	.change-amount-input::-webkit-outer-spin-button,
-	.change-amount-input::-webkit-inner-spin-button {
-		-webkit-appearance: none;
-		margin: 0;
-	}
-
-	.change-amount-input::placeholder {
-		text-align: center;
-		color: var(--placeholder-text);
-	}
-
-	.change-amount-input:hover {
-		background-color: var(--input-hover-bg);
-		border-color: var(--input-hover-border-color);
-	}
-
-	.change-amount-input:focus {
-		border-color: var(--add-item-color);
-		box-shadow: 0 0 0 2px color-mix(in srgb, var(--add-item-color) 30%, transparent);
-		outline: none;
-	}
-
-	/* Header stacks like manageItems on small screens. */
+	/* =============================================
+	   Responsive
+	   ============================================= */
 	@media (max-width: 640px) {
-		.transactions-header {
-			flex-direction: column;
-			align-items: stretch;
+		.page-container {
+			padding: 0.75rem;
 		}
 
-		.transactions-stats {
-			width: 100%;
+		.tx-header {
+			padding: 1.25rem 1.25rem 1rem;
 		}
 
-		.stats-text {
+		.tx-title {
+			font-size: 1.2rem;
+		}
+
+		.tx-subtitle {
+			font-size: 0.82rem;
+		}
+
+		.tx-stats {
+			gap: 0.5rem;
+		}
+
+		.stat-card {
 			flex: 1;
-			text-align: center;
-			padding: 0.5rem 0.75rem;
-		}
-	}
-
-	/* Table rows collapse into stacked cards on mobile. */
-	@media (max-width: 768px) {
-		.custom-table thead {
-			display: none;
+			min-width: 0;
+			padding: 0.5rem 0.5rem;
 		}
 
-		.custom-table,
-		.custom-table tbody,
-		.custom-table tr,
-		.custom-table td {
-			display: block;
+		.stat-number {
+			font-size: 1.05rem;
+		}
+
+		.stat-label {
+			font-size: 0.7rem;
+		}
+
+		.tx-toolbar {
+			padding: 0.75rem 1.25rem;
+			gap: 0.75rem;
+		}
+
+		.tx-search {
+			min-width: 100%;
+		}
+
+		.tx-sort {
 			width: 100%;
+			justify-content: flex-end;
 		}
 
-		.custom-table tr {
-			display: flex;
-			flex-direction: column;
-			margin-bottom: 1rem;
-			border: 1px solid var(--table-border-color);
-			border-radius: 8px;
-			overflow: hidden;
-			background-color: var(--container-bg);
+		.tx-table {
+			font-size: 0.85rem;
 		}
 
-		.custom-table td {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			padding: 0.75rem 1rem;
-			text-align: right;
-			border-bottom: 1px solid var(--table-border-color);
+		.tx-table th {
+			padding: 0.6rem 0.75rem;
+			font-size: 0.7rem;
 		}
 
-		.custom-table td:last-child {
-			border-bottom: none;
+		.tx-table td {
+			padding: 0.6rem 0.75rem;
 		}
 
-		.custom-table td::before {
-			content: attr(data-label);
-			font-weight: 700;
-			text-align: left;
-			white-space: nowrap;
-		}
-
-		.name-col {
-			white-space: normal;
-		}
-
-		.count-cell {
-			text-align: right;
-		}
-
-		.count-anim {
-			position: static;
-			display: inline-flex;
-			width: auto;
-			height: auto;
+		.item-name {
+			max-width: 10rem;
 		}
 
 		.count-value {
-			position: static;
-			justify-content: flex-end;
+			font-size: 0.95rem;
 		}
 
-		.change-wrap {
-			justify-content: flex-end;
+		.storage-pill,
+		.status-badge {
+			font-size: 0.72rem;
 		}
 
-		.actions-col {
-			justify-content: center;
-			padding: 1rem;
+		.adj-btn {
+			width: 32px;
+			height: 32px;
 		}
 
-		.actions-col::before {
+		.adj-input {
+			width: 32px;
+			height: 32px;
+			font-size: 0.82rem;
+		}
+
+		.tx-footer {
+			padding: 0.75rem 1.25rem;
+		}
+
+		/* Hide less important columns on mobile */
+		.col-storage,
+		.col-status {
+			display: none;
+		}
+
+		.th-storage,
+		.th-status {
 			display: none;
 		}
 	}
@@ -785,24 +1099,16 @@
 			padding: 2rem;
 		}
 
-		.transactions-header {
-			padding: 0.7rem 2rem;
+		.tx-header {
+			padding: 1.75rem 2.25rem 1.5rem;
 		}
 
-		.search-section {
-			padding: 0.85rem 2rem;
+		.tx-toolbar {
+			padding: 1rem 2.25rem;
 		}
 
-		.pagination-section {
-			padding: 0.7rem 2rem;
-		}
-
-		.actions-section {
-			padding: 1rem 2rem;
-		}
-
-		.transactions-title {
-			font-size: 1.1rem;
+		.tx-footer {
+			padding: 1rem 2.25rem;
 		}
 	}
 
