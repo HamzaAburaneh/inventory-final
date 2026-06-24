@@ -2,7 +2,6 @@
 	import { fade, fly, slide } from 'svelte/transition';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { tick } from 'svelte';
-	import Swal from 'sweetalert2';
 
 	let { onAdd, collapsed = $bindable(true) } = $props();
 
@@ -126,23 +125,10 @@
 		validateField(field, value);
 	};
 
-	const handleAdd = async () => {
+	const handleAdd = () => {
 		if (formData.name.trim() === '') {
-			const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
-
-			await Swal.fire({
-				icon: 'error',
-				title: 'Empty Item Name',
-				text: 'Item name cannot be empty.',
-				background: 'var(--container-bg)',
-				color: 'var(--text-color)',
-				scrollbarPadding: false,
-				heightAuto: false
-			});
-
-			setTimeout(() => {
-				window.scrollTo(0, scrollPos);
-			}, 50);
+			// Surface the problem inline in the field's error slot rather than a dialog.
+			errors.name = 'Item name cannot be empty';
 			return;
 		}
 
