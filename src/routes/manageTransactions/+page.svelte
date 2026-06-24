@@ -1,15 +1,15 @@
 <script>
 	import { fade, fly } from 'svelte/transition';
 	import { elasticOut } from 'svelte/easing';
-	import Swal from 'sweetalert2';
 	import SearchBar from '../../components/SearchBar.svelte';
+	import TableSkeleton from '../../components/TableSkeleton.svelte';
+	import ConfirmModal from '../../components/ConfirmModal.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { itemStore } from '../../stores/itemStore';
 	import { createSearchState } from '../../lib/runes/search.svelte.js';
 	import { notificationStore } from '../../stores/notificationStore';
 	import { applySorting } from '../../lib/items';
-	import { themeStore } from '../../stores/themes.js';
 	import { addTransaction } from '../../lib/transactions';
 	import { authStore } from '../../stores/authStore';
 	import { onMount } from 'svelte';
@@ -27,7 +27,6 @@
 	const items = $derived($itemStore);
 	const searchTermValue = $derived(search.term);
 	const notification = $derived($notificationStore.at(-1) ?? null);
-	const currentTheme = $derived($themeStore);
 	const authUser = $derived($authStore);
 
 	const filteredItemsList = $derived.by(() => {
@@ -53,8 +52,8 @@
 		return sortedItems.slice(startIndex, endIndex);
 	});
 
-	const filterLegend = $derived(
-		`${filteredItemsList.length} results of ${items.length} total items.`
+	const totalUnits = $derived(
+		filteredItemsList.reduce((sum, item) => sum + (parseInt(item.count, 10) || 0), 0)
 	);
 
 	onMount(async () => {
@@ -99,64 +98,62 @@
 		notificationStore.showNotification(`Count for "${item.name}" updated successfully!`, 'success');
 	};
 
-	const resetCount = async (item) => {
-		const result = await Swal.fire({
-			title: 'Are you sure?',
-			text: `This will reset the count for "${item.name}" to 0.`,
-			icon: 'warning',
-			showCancelButton: true,
-			confirmButtonColor: '#D97706',
-			cancelButtonColor: '#6B7280',
-			confirmButtonText: 'Yes, reset it!',
-			background: currentTheme === 'dark' ? '#1F2937' : '#FFFFFF',
-			color: currentTheme === 'dark' ? '#FFFFFF' : '#000000'
-		});
+	// Confirmation modal state. `kind` selects which action runs on confirm; `item`
+	// holds the row being reset for the single-item case.
+	let confirm = $state({ open: false, kind: null, item: null });
 
-		if (result.isConfirmed) {
-			const previousCount = item.count;
-			await itemStore.resetItemCount(item.id);
+	const askResetCount = (item) => {
+		confirm = { open: true, kind: 'reset', item };
+	};
+
+	const askResetAll = () => {
+		confirm = { open: true, kind: 'resetAll', item: null };
+	};
+
+	const cancelConfirm = () => {
+		confirm = { open: false, kind: null, item: null };
+	};
+
+	const handleConfirm = async () => {
+		const { kind, item } = confirm;
+		cancelConfirm();
+		if (kind === 'reset') {
+			await doResetCount(item);
+		} else if (kind === 'resetAll') {
+			await doResetAll();
+		}
+	};
+
+	const doResetCount = async (item) => {
+		const previousCount = item.count;
+		await itemStore.resetItemCount(item.id);
+		await addTransaction({
+			itemId: item.id,
+			itemName: item.name,
+			type: 'remove',
+			previousCount: previousCount,
+			newCount: 0,
+			user: getCurrentUser()
+		});
+		// Reset the input field after operation
+		itemStore.setChangeAmount(item.id, 0);
+		notificationStore.showNotification(`Count for "${item.name}" reset successfully!`, 'success');
+	};
+
+	const doResetAll = async () => {
+		const itemsToReset = items.filter((item) => item.count !== 0);
+		await itemStore.resetAllCounts();
+		for (const item of itemsToReset) {
 			await addTransaction({
 				itemId: item.id,
 				itemName: item.name,
 				type: 'remove',
-				previousCount: previousCount,
+				previousCount: item.count,
 				newCount: 0,
 				user: getCurrentUser()
 			});
-			// Reset the input field after operation
-			itemStore.setChangeAmount(item.id, 0);
-			notificationStore.showNotification(`Count for "${item.name}" reset successfully!`, 'success');
 		}
-	};
-
-	const resetAll = async () => {
-		const result = await Swal.fire({
-			title: 'Are you sure?',
-			html: `This will reset the count for <strong style="color: #DC2626;">ALL</strong> items to 0.`,
-			icon: 'warning',
-			showCancelButton: true,
-			confirmButtonColor: '#D97706',
-			cancelButtonColor: '#6B7280',
-			confirmButtonText: 'Yes, reset all!',
-			background: currentTheme === 'dark' ? '#1F2937' : '#FFFFFF',
-			color: currentTheme === 'dark' ? '#FFFFFF' : '#000000'
-		});
-
-		if (result.isConfirmed) {
-			const itemsToReset = items.filter((item) => item.count !== 0);
-			await itemStore.resetAllCounts();
-			for (const item of itemsToReset) {
-				await addTransaction({
-					itemId: item.id,
-					itemName: item.name,
-					type: 'remove',
-					previousCount: item.count,
-					newCount: 0,
-					user: getCurrentUser()
-				});
-			}
-			notificationStore.showNotification('All counts have been reset successfully!', 'success');
-		}
+		notificationStore.showNotification('All counts have been reset successfully!', 'success');
 	};
 
 	const handleChangeAmountInput = (item, event) => {
@@ -175,129 +172,150 @@
 </script>
 
 {#if itemsLoaded}
-	<div class="container mx-auto p-4 sm:p-6 rounded-lg shadow-md bg-container mt-4">
-		<SearchBar
-			searchValue={searchTermValue}
-			onSearch={handleSearch}
-			onClear={() => search.clear()}
-		/>
+	<div class="page-container">
+		<div class="transactions-section">
+			<div class="transactions-header">
+				<h2 class="transactions-title">Adjust Stock</h2>
+				<div class="transactions-stats">
+					<span class="stats-text">{filteredItemsList.length} of {items.length} items</span>
+					<span class="stats-text total-value">{totalUnits} units in stock</span>
+				</div>
+			</div>
 
-		<div class="filter-legend text-white mb-4">
-			{filterLegend}
-		</div>
+			<div class="search-section">
+				<SearchBar
+					searchValue={searchTermValue}
+					onSearch={handleSearch}
+					onClear={() => search.clear()}
+				/>
+			</div>
 
-		<div class="table-container overflow-x-auto">
-			<table class="custom-table w-full">
-				<thead>
-					<tr>
-						<th class="w-1/3 px-6 py-3" onclick={() => sortBy('name')} data-label="Item Name">
-							<div class="header flex items-center cursor-pointer">
-								Item Name
-								<i
-									class="fas fa-sort ml-2 {currentSortColumn === 'name'
-										? sortAscending
-											? 'fa-sort-up'
-											: 'fa-sort-down'
-										: ''}"
-								></i>
-							</div>
-						</th>
-						<th class="w-1/6 px-6 py-3" onclick={() => sortBy('count')} data-label="Count">
-							<div class="header flex items-center justify-center cursor-pointer">
-								Count
-								<i
-									class="fas fa-sort ml-2 {currentSortColumn === 'count'
-										? sortAscending
-											? 'fa-sort-up'
-											: 'fa-sort-down'
-										: ''}"
-								></i>
-							</div>
-						</th>
-						<th class="w-1/6 px-6 py-3" data-label="Change Amount">
-							<div class="flex items-center justify-center">Change Amount</div>
-						</th>
-						<th class="w-1/3 px-6 py-3" data-label="Actions">
-							<div class="flex items-center justify-center">Actions</div>
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each paginatedItemsList as item (item.id)}
-						<tr class="border-b border-zinc-800" in:fade={{ duration: 200 }}>
-							<td class="px-6 py-4 whitespace-nowrap" data-label="Item Name">{item.name}</td>
-							<td class="px-6 py-4 text-center" data-label="Count">
-								<div class="relative inline-block w-full h-6">
-									{#key item.count}
-										<span
-											class="absolute inset-0 flex items-center justify-end"
-											transition:fly={{ y: -20, duration: 300, easing: elasticOut }}
-										>
-											{item.count}
-										</span>
-									{/key}
-								</div>
-							</td>
-							<td class="px-6 py-4" data-label="Change Amount">
-								<div class="flex justify-end">
-									<input
-										type="number"
-										inputmode="numeric"
-										pattern="[0-9]*"
-										placeholder="0"
-										value={item.changeAmount === 0 ? '' : item.changeAmount}
-										oninput={(e) => handleChangeAmountInput(item, e)}
-										class="change-amount-input w-16 h-8 rounded-md shadow-xs sm:text-sm text-center"
-									/>
-								</div>
-							</td>
-							<td class="px-6 py-4" data-label="Actions">
-								<div class="grid grid-cols-3 gap-2 w-full max-w-xs mx-auto">
-									<button
-										class="flex justify-center items-center h-8 bg-emerald-700 text-white text-xs font-medium rounded-md shadow-xs hover:bg-emerald-600 active:bg-emerald-800 transition-colors"
-										onclick={() => changeCount(item, +item.changeAmount)}
-										disabled={item.changeAmount === 0}
-									>
-										+
-									</button>
-									<button
-										class="flex justify-center items-center h-8 bg-red-700 text-white text-xs font-medium rounded-md shadow-xs hover:bg-red-600 active:bg-red-800 transition-colors"
-										onclick={() => changeCount(item, -item.changeAmount)}
-										disabled={item.changeAmount === 0}
-									>
-										−
-									</button>
-									<button
-										class="flex justify-center items-center h-8 bg-amber-600 text-white text-xs font-medium rounded-md shadow-xs hover:bg-amber-500 active:bg-amber-700 transition-colors text-center"
-										onclick={() => resetCount(item)}
-										disabled={item.count === 0}
-									>
-										Reset
-									</button>
-								</div>
-							</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
+			<div class="table-section">
+				<div class="table-scroll">
+					<table class="custom-table">
+						<thead>
+							<tr class="table-header">
+								<th class="name-col" onclick={() => sortBy('name')} data-label="Item Name">
+									<div class="header">
+										<span>Item Name</span>
+										<i
+											class="fas fa-sort sort-icon {currentSortColumn === 'name'
+												? sortAscending
+													? 'fa-sort-up'
+													: 'fa-sort-down'
+												: ''}"
+										></i>
+									</div>
+								</th>
+								<th class="count-col" onclick={() => sortBy('count')} data-label="Count">
+									<div class="header header-center">
+										<span>Count</span>
+										<i
+											class="fas fa-sort sort-icon {currentSortColumn === 'count'
+												? sortAscending
+													? 'fa-sort-up'
+													: 'fa-sort-down'
+												: ''}"
+										></i>
+									</div>
+								</th>
+								<th class="change-col" data-label="Change Amount">
+									<div class="header header-center">Change Amount</div>
+								</th>
+								<th class="actions-col" data-label="Actions">
+									<div class="header header-center">Actions</div>
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each paginatedItemsList as item (item.id)}
+								<tr in:fade={{ duration: 200 }}>
+									<td class="name-col" data-label="Item Name">{item.name}</td>
+									<td class="count-col count-cell" data-label="Count">
+										<div class="count-anim">
+											{#key item.count}
+												<span
+													class="count-value"
+													transition:fly={{ y: -20, duration: 300, easing: elasticOut }}
+												>
+													{item.count}
+												</span>
+											{/key}
+										</div>
+									</td>
+									<td class="change-col" data-label="Change Amount">
+										<div class="change-wrap">
+											<input
+												type="number"
+												inputmode="numeric"
+												pattern="[0-9]*"
+												placeholder="0"
+												value={item.changeAmount === 0 ? '' : item.changeAmount}
+												oninput={(e) => handleChangeAmountInput(item, e)}
+												class="change-amount-input"
+											/>
+										</div>
+									</td>
+									<td class="actions-col" data-label="Actions">
+										<div class="action-grid">
+											<button
+												class="act-btn act-add"
+												onclick={() => changeCount(item, +item.changeAmount)}
+												disabled={item.changeAmount === 0}
+											>
+												+
+											</button>
+											<button
+												class="act-btn act-remove"
+												onclick={() => changeCount(item, -item.changeAmount)}
+												disabled={item.changeAmount === 0}
+											>
+												−
+											</button>
+											<button
+												class="act-btn act-reset"
+												onclick={() => askResetCount(item)}
+												disabled={item.count === 0}
+											>
+												Reset
+											</button>
+										</div>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			</div>
 
-		<Pagination store={paginationStore} />
+			<div class="pagination-section">
+				<Pagination store={paginationStore} />
+			</div>
 
-		<div class="flex justify-center mt-6">
-			<button
-				class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-500 transition-transform active:scale-95"
-				onclick={resetAll}
-			>
-				Reset All Counts
-			</button>
+			<div class="actions-section">
+				<button class="reset-all-btn" onclick={askResetAll}> Reset All Counts </button>
+			</div>
 		</div>
 	</div>
 {:else}
-	<div class="flex justify-center items-center h-screen">
-		<div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
-	</div>
+	<TableSkeleton />
 {/if}
+
+<ConfirmModal
+	visible={confirm.open}
+	title="Are you sure?"
+	confirmText={confirm.kind === 'resetAll' ? 'Yes, reset all!' : 'Yes, reset it!'}
+	cancelText="Cancel"
+	variant={confirm.kind === 'resetAll' ? 'danger' : 'warning'}
+	onConfirm={handleConfirm}
+	onCancel={cancelConfirm}
+>
+	{#if confirm.kind === 'resetAll'}
+		This will reset the count for <strong class="emphasis">ALL</strong> items to 0.
+	{:else if confirm.item}
+		This will reset the count for <strong>"{confirm.item.name}"</strong> to 0.
+	{/if}
+</ConfirmModal>
 
 {#if notification}
 	<div class="notification {notification.type}" in:fade out:fade>
@@ -306,70 +324,288 @@
 {/if}
 
 <style>
-	.filter-legend {
-		font-size: 0.9rem;
-		color: #949494;
-	}
-
-	.container {
-		margin-top: 20px;
+	.page-container {
+		max-width: 95%;
+		margin: 0 auto;
 		padding: 1rem;
-		max-width: 90%;
-		background-color: var(--container-bg);
-		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-		border-radius: 1rem;
+		min-height: 100vh;
+		width: 100%;
 	}
 
-	.table-container {
-		min-height: 400px;
-		max-height: 70vh;
+	.transactions-section {
+		background: var(--container-bg);
+		border-radius: var(--border-radius);
+		padding: 0;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+		border: 1px solid var(--table-border-color);
+		overflow: hidden;
+	}
+
+	.transactions-header {
+		background: var(--table-header-bg);
+		padding: 0.6rem 1.25rem;
+		border-bottom: 1px solid var(--table-border-color);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
+	}
+
+	.transactions-title {
+		margin: 0;
+		font-size: 1.05rem;
+		font-weight: 700;
+		color: var(--text-color);
+		letter-spacing: -0.025em;
+	}
+
+	.transactions-stats {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.stats-text {
+		font-size: 0.8rem;
+		color: var(--text-color-dimmed);
+		font-weight: 500;
+		padding: 0.3rem 0.75rem;
+		background: var(--hover-bg-color);
+		border-radius: var(--border-radius);
+		border: 1px solid var(--table-border-color);
+		white-space: nowrap;
+	}
+
+	.stats-text.total-value {
+		background: var(--add-item-color);
+		color: var(--add-item-on);
+		font-weight: 600;
+		border-color: var(--add-item-color);
+	}
+
+	.search-section {
+		padding: 0.75rem 1.25rem;
+		border-bottom: 1px solid var(--table-border-color);
+	}
+
+	.table-section {
+		padding: 0;
+	}
+
+	.table-scroll {
+		width: 100%;
+		overflow-x: auto;
 		overflow-y: auto;
-		margin-bottom: 1rem;
+		max-height: 41.9rem;
+		min-height: 18.8rem;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.custom-table {
+		width: 100%;
 		border-collapse: separate;
 		border-spacing: 0;
 	}
 
-	.custom-table th {
+	.table-header th {
 		position: sticky;
 		top: 0;
-		background-color: var(--container-bg);
+		background-color: var(--table-header-bg);
 		z-index: 10;
-		box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
-	}
-
-	.custom-table th,
-	.custom-table td {
-		padding: 0.75rem;
+		box-shadow: 0 0.063rem 0.188rem rgba(0, 0, 0, 0.15);
+		color: var(--text-color);
+		font-weight: 700;
+		padding: 0.625rem 1rem;
 		text-align: left;
 		border-bottom: 1px solid var(--table-border-color);
+		font-size: 0.7rem;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	.custom-table td {
+		padding: 0.75rem 1rem;
+		text-align: left;
+		border-bottom: 1px solid var(--table-border-color);
+		color: var(--text-color);
 	}
 
 	.custom-table tbody tr {
 		background-color: var(--container-bg);
-		transition: background-color 0.3s ease;
+		transition: background-color 0.15s ease-out;
 	}
 
 	.custom-table tbody tr:hover {
 		background-color: var(--table-row-hover-bg);
 	}
 
+	.name-col {
+		width: 34%;
+		white-space: nowrap;
+	}
+	.count-col {
+		width: 16%;
+	}
+	.change-col {
+		width: 18%;
+	}
+	.actions-col {
+		width: 32%;
+	}
+
 	.header {
 		display: flex;
 		align-items: center;
-		cursor: pointer;
+		gap: 0.375rem;
+		transition: color 0.15s ease-out;
 	}
 
-	.header i {
-		margin-left: 0.5rem;
+	.header-center {
+		justify-content: center;
+	}
+
+	.table-header th:hover .header {
+		color: var(--icon-hover-color);
+	}
+
+	.sort-icon {
 		font-size: 0.8em;
 	}
 
-	.header:hover {
-		color: var(--icon-hover-color);
-		transition: color 0.3s ease;
+	.count-cell {
+		text-align: center;
+	}
+
+	.count-anim {
+		position: relative;
+		display: inline-block;
+		width: 100%;
+		height: 1.5rem;
+	}
+
+	.count-value {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-weight: 600;
+	}
+
+	.change-wrap {
+		display: flex;
+		justify-content: center;
+	}
+
+	.act-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 2rem;
+		min-height: 0;
+		padding: 0 0.5rem;
+		font-size: 0.78rem;
+		font-weight: 600;
+		color: #fff;
+		border: none;
+		border-radius: var(--border-radius);
+		cursor: pointer;
+		transition:
+			background-color 0.15s ease-out,
+			transform 0.1s ease;
+	}
+
+	.act-btn:active:not(:disabled) {
+		transform: scale(0.96);
+	}
+
+	.act-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	/* Suppress the global blue button:focus outline on mouse click; keep a themed
+	   keyboard-only ring for accessibility. */
+	.act-btn:focus,
+	.reset-all-btn:focus {
+		outline: none;
+	}
+
+	.act-btn:focus-visible,
+	.reset-all-btn:focus-visible {
+		outline: 2px solid var(--add-item-color);
+		outline-offset: 2px;
+	}
+
+	.act-add {
+		background-color: #047857;
+	}
+	.act-add:hover:not(:disabled) {
+		background-color: #059669;
+	}
+	.act-remove {
+		background-color: #b91c1c;
+	}
+	.act-remove:hover:not(:disabled) {
+		background-color: #dc2626;
+	}
+	.act-reset {
+		background-color: #d97706;
+	}
+	.act-reset:hover:not(:disabled) {
+		background-color: #f59e0b;
+	}
+
+	.action-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.5rem;
+		width: 100%;
+		max-width: 20rem;
+		margin: 0 auto;
+	}
+
+	.pagination-section {
+		padding: 0.6rem 1.25rem;
+		border-top: 1px solid var(--table-border-color);
+		background: var(--hover-bg-color);
+	}
+
+	/* Destructive bulk action gets the soft-tint → solid-on-hover treatment used by
+	   the Add button, but in danger red so it reads as distinct and cautionary. */
+	.actions-section {
+		display: flex;
+		justify-content: center;
+		padding: 0.85rem 1.25rem;
+		border-top: 1px solid var(--table-border-color);
+	}
+
+	.reset-all-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 14rem;
+		padding: 0.6rem 1.5rem;
+		background: color-mix(in srgb, #ef4444 16%, transparent);
+		color: #ef4444;
+		border: none;
+		border-radius: 8px;
+		font-size: 0.85rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition:
+			background-color 0.15s ease-out,
+			color 0.15s ease-out;
+	}
+
+	.reset-all-btn:hover,
+	.reset-all-btn:active {
+		background: #ef4444;
+		color: #fff;
 	}
 
 	.notification {
@@ -400,30 +636,20 @@
 		background-color: #17a2b8; /* Blue */
 	}
 
-	button {
-		transition:
-			background-color 0.3s ease,
-			transform 0.1s ease;
-	}
-
-	button[disabled] {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.relative {
-		height: 1.5em;
-		width: 100%;
-	}
-
 	.change-amount-input {
+		width: 4rem;
+		height: 2rem;
+		min-height: 0;
+		text-align: center;
+		font-size: 0.85rem;
+		border-radius: var(--border-radius);
 		background-color: var(--input-bg);
 		color: var(--input-text);
-		border: 1px solid var(--input-border);
-		transition: all 0.3s ease;
-		display: flex;
-		align-items: center;
-		justify-content: center;
+		border: 1px solid var(--input-border-color);
+		transition:
+			background-color 0.15s ease-out,
+			border-color 0.15s ease-out,
+			box-shadow 0.15s ease-out;
 		/* Hide number input spinner arrows */
 		-moz-appearance: textfield;
 	}
@@ -436,19 +662,39 @@
 
 	.change-amount-input::placeholder {
 		text-align: center;
-		color: var(--input-text);
-		opacity: 0.6;
+		color: var(--placeholder-text);
 	}
 
 	.change-amount-input:hover {
 		background-color: var(--input-hover-bg);
+		border-color: var(--input-hover-border-color);
 	}
 
 	.change-amount-input:focus {
-		border-color: var(--input-focus-border);
+		border-color: var(--add-item-color);
+		box-shadow: 0 0 0 2px color-mix(in srgb, var(--add-item-color) 30%, transparent);
 		outline: none;
 	}
 
+	/* Header stacks like manageItems on small screens. */
+	@media (max-width: 640px) {
+		.transactions-header {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.transactions-stats {
+			width: 100%;
+		}
+
+		.stats-text {
+			flex: 1;
+			text-align: center;
+			padding: 0.5rem 0.75rem;
+		}
+	}
+
+	/* Table rows collapse into stacked cards on mobile. */
 	@media (max-width: 768px) {
 		.custom-table thead {
 			display: none;
@@ -478,54 +724,106 @@
 			align-items: center;
 			padding: 0.75rem 1rem;
 			text-align: right;
-			position: relative;
-			border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+			border-bottom: 1px solid var(--table-border-color);
 		}
 
 		.custom-table td:last-child {
 			border-bottom: none;
 		}
 
-		.custom-table tr:hover td {
-			border-bottom-color: rgba(255, 255, 255, 0.2);
-		}
-
 		.custom-table td::before {
 			content: attr(data-label);
-			font-weight: bold;
+			font-weight: 700;
 			text-align: left;
 			white-space: nowrap;
 		}
 
-		.custom-table td[data-label='Actions'] {
+		.name-col {
+			white-space: normal;
+		}
+
+		.count-cell {
+			text-align: right;
+		}
+
+		.count-anim {
+			position: static;
+			display: inline-flex;
+			width: auto;
+			height: auto;
+		}
+
+		.count-value {
+			position: static;
+			justify-content: flex-end;
+		}
+
+		.change-wrap {
+			justify-content: flex-end;
+		}
+
+		.actions-col {
 			justify-content: center;
 			padding: 1rem;
 		}
 
-		.custom-table td[data-label='Actions']::before {
+		.actions-col::before {
 			display: none;
-		}
-
-		.custom-table td[data-label='Change Amount'] {
-			justify-content: space-between;
-		}
-
-		.custom-table td[data-label='Change Amount'] .flex {
-			justify-content: flex-end;
 		}
 	}
 
 	@media (min-width: 640px) {
-		.container {
+		.page-container {
+			max-width: 98%;
 			padding: 1.5rem;
-			max-width: 95%;
+		}
+	}
+
+	@media (min-width: 768px) {
+		.page-container {
+			max-width: 96%;
+			padding: 2rem;
+		}
+
+		.transactions-header {
+			padding: 0.7rem 2rem;
+		}
+
+		.search-section {
+			padding: 0.85rem 2rem;
+		}
+
+		.pagination-section {
+			padding: 0.7rem 2rem;
+		}
+
+		.actions-section {
+			padding: 1rem 2rem;
+		}
+
+		.transactions-title {
+			font-size: 1.1rem;
 		}
 	}
 
 	@media (min-width: 1024px) {
-		.container {
+		.page-container {
+			max-width: 94%;
 			padding: 2.5rem;
+		}
+	}
+
+	@media (min-width: 1280px) {
+		.page-container {
+			max-width: 92%;
+			padding: 3rem;
+		}
+	}
+
+	@media (min-width: 1536px) {
+		.page-container {
 			max-width: 90%;
+			padding: 3.5rem;
 		}
 	}
 </style>
