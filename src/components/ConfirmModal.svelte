@@ -170,13 +170,12 @@
 	}
 
 	.cancel-btn {
-		background-color: var(--hover-bg-color);
+		background: var(--table-border-color);
 		color: var(--text-color);
-		border: 1px solid var(--table-border-color);
 	}
 
 	.cancel-btn:hover {
-		background-color: var(--table-border-color);
+		background: color-mix(in srgb, var(--table-border-color) 80%, var(--text-color));
 	}
 
 	.confirm-btn {
