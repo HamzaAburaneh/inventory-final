@@ -90,7 +90,6 @@
 	--nav-text-hover-color: #0056b3;
 	--nav-hover-bg: #f8f9fa;
 	--nav-drop-down-text-hover-color: #00aaff;
-	--pagination-arrow-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%231a1a1a' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
 
 	/* === Tech/industrial design tokens (homepage revamp) === */
 	--tech-accent: #0066ff;
@@ -147,7 +146,6 @@
 	--input-focus-border: #4a90e2;
 	--nav-drop-down-text-hover-color: #ffd000;
 	--text-color-dimmed: #727272;
-	--pagination-arrow-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
 
 	/* === Tech/industrial design tokens (homepage revamp) === */
 	--tech-accent: #ffe260;
