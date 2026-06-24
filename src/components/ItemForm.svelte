@@ -469,25 +469,27 @@
 							</label>
 						{/each}
 					</div>
-
-					<button
-						class="add-button transition-all duration-150 ease-out active:scale-[0.98]"
-						onclick={handleAdd}
-					>
-						<svg
-							width="20"
-							height="20"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-						>
-							<line x1="12" y1="5" x2="12" y2="19"></line>
-							<line x1="5" y1="12" x2="19" y2="12"></line>
-						</svg>
-						Add Item
-					</button>
 				</section>
+			</div>
+
+			<div class="form-footer">
+				<button
+					class="add-button transition-all duration-150 ease-out active:scale-[0.98]"
+					onclick={handleAdd}
+				>
+					<svg
+						width="20"
+						height="20"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<line x1="12" y1="5" x2="12" y2="19"></line>
+						<line x1="5" y1="12" x2="19" y2="12"></line>
+					</svg>
+					Add Item
+				</button>
 			</div>
 		</div>
 	{/if}
@@ -991,41 +993,50 @@
 		outline-offset: 2px;
 	}
 
+	/* Action bar: centered, soft-tinted Add button below all three columns. */
+	.form-footer {
+		display: flex;
+		justify-content: center;
+		padding: 0.85rem 1rem;
+		border-top: 1px solid var(--table-border-color);
+	}
+
 	.add-button {
-		margin-top: 0.9rem;
-		width: 100%;
+		width: 280px;
+		max-width: 100%;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		gap: 0.5rem;
 		padding: 0.55rem 1.25rem;
-		background: var(--add-item-color);
-		color: var(--add-item-on);
+		/* Soft tint of the accent rather than a solid fill — keeps the same hue in
+		   both themes; hover just deepens the tint (no brightness/hue shift). */
+		background: color-mix(in srgb, var(--add-item-color) 16%, transparent);
+		color: var(--add-item-color);
 		border: none;
-		border-radius: var(--border-radius);
+		border-radius: 8px;
 		font-size: 0.84rem;
 		font-weight: 600;
 		cursor: pointer;
-		box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
 		letter-spacing: 0.015em;
 		user-select: none;
+		transition:
+			background-color 0.15s ease-out,
+			color 0.15s ease-out;
 		-webkit-tap-highlight-color: transparent;
 	}
 
-	.add-button:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-		filter: brightness(1.25);
+	/* Match the app's themed-button convention: tinted at rest, fills with the
+	   solid accent on hover/press (same hue in both themes, no brightness shift). */
+	.add-button:hover,
+	.add-button:active {
+		background: var(--add-item-color);
+		color: var(--add-item-on);
 	}
 
 	.add-button:focus-visible {
 		outline: 2px solid var(--add-item-color);
 		outline-offset: 3px;
-	}
-
-	.add-button:active {
-		transform: translateY(0);
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 	}
 
 	.add-button svg {
@@ -1055,13 +1066,8 @@
 			border-right: none;
 		}
 
-		/* On wide screens push Add to the bottom so all three columns bottom-align. */
-		.booth-col {
-			justify-content: flex-start;
-		}
-
-		.add-button {
-			margin-top: auto;
+		.form-footer {
+			padding: 1rem 1.25rem;
 		}
 
 		.form-title {
