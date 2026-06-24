@@ -143,7 +143,8 @@
 	--nav-text-hover-color: #ffd000;
 	--nav-hover-bg: #3a3a3a;
 	--input-hover-bg: #3a3a3a;
-	--input-focus-border: #4a90e2;
+	/* Focus outlines/borders track the dark accent (yellow) instead of blue. */
+	--input-focus-border: var(--add-item-color);
 	--nav-drop-down-text-hover-color: #ffd000;
 	--text-color-dimmed: #727272;
 
@@ -278,8 +279,9 @@ input:hover {
 input:focus {
 	border-color: var(--input-focus-border);
 	outline: none;
-	/* Enhanced focus for accessibility */
-	box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+	/* Enhanced focus for accessibility — tracks the theme focus color (blue in
+	   light, yellow in dark) instead of a fixed blue. */
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--input-focus-border) 30%, transparent);
 }
 
 input::placeholder {
