@@ -175,7 +175,7 @@
 		margin-right: 0.25rem;
 	}
 	.highlighted {
-		background-color: rgba(255, 255, 255, 0.05);
+		background-color: color-mix(in srgb, var(--text-color) 6%, transparent);
 		font-weight: bold;
 	}
 	.dimmed-text {
@@ -212,7 +212,7 @@
 			padding: 0.75rem 1rem;
 			text-align: right;
 			position: relative;
-			border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+			border-bottom: 1px solid var(--table-border-color);
 			white-space: normal;
 		}
 
@@ -228,12 +228,12 @@
 		}
 
 		.custom-table tr:hover td {
-			border-bottom-color: rgba(255, 255, 255, 0.2);
+			border-bottom-color: var(--table-border-color);
 		}
 
 		/* Special styling for highlighted cells */
 		.highlighted {
-			background-color: rgba(255, 255, 255, 0.08);
+			background-color: color-mix(in srgb, var(--text-color) 8%, transparent);
 		}
 
 		/* Ensure change amount styling is preserved */

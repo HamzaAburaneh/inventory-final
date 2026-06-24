@@ -339,7 +339,7 @@
 
 	:global(.table-row:hover) .cell-value-btn:hover::after {
 		opacity: 1;
-		color: var(--icon-hover-color);
+		color: var(--add-item-color);
 	}
 
 	/* Storage type — clickable badge */
@@ -523,7 +523,7 @@
 			gap: 0.5rem;
 			padding: 0.25rem 0;
 			border: none;
-			border-bottom: 0.063rem solid rgba(255, 255, 255, 0.1);
+			border-bottom: 0.063rem solid var(--table-border-color);
 			font-size: 0.9rem;
 		}
 

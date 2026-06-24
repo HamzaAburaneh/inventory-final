@@ -381,7 +381,7 @@
 		border: 1px solid rgba(0, 0, 0, 0.1);
 	}
 
-	:global(.dark) .timeframe-selector {
+	:global([data-theme='dark']) .timeframe-selector {
 		background: rgba(255, 255, 255, 0.05);
 		border-color: rgba(255, 255, 255, 0.1);
 	}
@@ -421,7 +421,7 @@
 		border: 1px solid rgba(0, 0, 0, 0.1);
 	}
 
-	:global(.dark) .method-toggle {
+	:global([data-theme='dark']) .method-toggle {
 		background: rgba(255, 255, 255, 0.05);
 		border-color: rgba(255, 255, 255, 0.1);
 	}
@@ -472,26 +472,42 @@
 		flex: 1 1 auto;
 		margin: 0.5rem;
 		padding: 0.5rem;
-		background-color: rgba(255, 255, 255, 0.1);
+		/* Subtle tint that adapts: faint dark wash in light mode, faint light wash
+		   in dark mode (the old fixed white tint vanished on light surfaces). */
+		background-color: color-mix(in srgb, var(--text-color) 7%, transparent);
 		border-radius: 0.25rem;
 	}
 
 	/* Dark mode adjustments for AI insights */
-	:global(.dark) .bg-blue-50 {
+	:global([data-theme='dark']) .bg-blue-50 {
 		background-color: rgba(59, 130, 246, 0.1);
 		border-color: rgba(59, 130, 246, 0.2);
 	}
 
-	:global(.dark) .text-blue-800 {
+	:global([data-theme='dark']) .text-blue-800 {
 		color: #60a5fa;
 	}
 
-	:global(.dark) .text-gray-800 {
+	:global([data-theme='dark']) .text-gray-800 {
 		color: #e5e7eb;
 	}
 
-	:global(.dark) .border-blue-200 {
+	:global([data-theme='dark']) .border-blue-200 {
 		border-color: rgba(59, 130, 246, 0.3);
+	}
+
+	/* Light-only grays that sit on the (now dark) cards need lighter text in dark
+	   mode; skeleton bars need a darker fill. */
+	:global([data-theme='dark']) .text-gray-600 {
+		color: #9ca3af;
+	}
+
+	:global([data-theme='dark']) .text-blue-600 {
+		color: #60a5fa;
+	}
+
+	:global([data-theme='dark']) .bg-gray-200 {
+		background-color: #2c2c2c;
 	}
 
 	@keyframes pulse {
