@@ -4,6 +4,7 @@
 	import Table from '../../components/Table.svelte';
 	import TableSkeleton from '../../components/TableSkeleton.svelte';
 	import Pagination from '../../components/Pagination.svelte';
+	import StorageSelect from '../../components/StorageSelect.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { itemStore } from '../../stores/itemStore';
 	import { createSearchState } from '../../lib/runes/search.svelte.js';
@@ -18,6 +19,16 @@
 	let isEditingInProgress = $state(false);
 	let showEditModal = $state(false);
 	let editData = $state({ id: null, field: '', value: '', title: '' });
+
+	// Field label shown above the input in the edit modal.
+	const fieldLabels = {
+		name: 'Item Name',
+		count: 'Count',
+		lowCount: 'Low Alert',
+		cost: 'Unit Cost ($)',
+		storageType: 'Storage Type',
+		booths: 'Booths'
+	};
 
 	const paginationStore = getPaginationStore('manageItems');
 	const { currentPage, itemsPerPage, setTotalItems } = paginationStore;
@@ -288,6 +299,48 @@
 	</div>
 {/if}
 
+{#snippet fieldIcon(field)}
+	{#if field === 'name'}
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"
+			></path>
+			<line x1="7" y1="7" x2="7.01" y2="7"></line>
+		</svg>
+	{:else if field === 'count'}
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+			<polyline points="2 17 12 22 22 17"></polyline>
+			<polyline points="2 12 12 17 22 12"></polyline>
+		</svg>
+	{:else if field === 'lowCount'}
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<path
+				d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+			></path>
+			<line x1="12" y1="9" x2="12" y2="13"></line>
+			<line x1="12" y1="17" x2="12.01" y2="17"></line>
+		</svg>
+	{:else if field === 'cost'}
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<line x1="12" y1="1" x2="12" y2="23"></line>
+			<path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+		</svg>
+	{:else if field === 'storageType'}
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<path
+				d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+			></path>
+			<polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+			<line x1="12" y1="22.08" x2="12" y2="12"></line>
+		</svg>
+	{:else}
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+			<circle cx="12" cy="10" r="3"></circle>
+		</svg>
+	{/if}
+{/snippet}
+
 {#if showEditModal}
 	<div
 		class="modal-backdrop"
@@ -299,15 +352,15 @@
 	></div>
 	<div class="modal-overlay" in:fly={{ y: 30, duration: 200 }} out:fade={{ duration: 150 }}>
 		<form class="edit-modal" onsubmit={confirmEdit}>
-			<h3>{editData.title}</h3>
-			{#if editData.field === 'storageType'}
-				<select bind:value={editData.value} class="edit-input" required>
-					<option value="Dry Storage">Dry Storage</option>
-					<option value="Refrigerator">Refrigerator</option>
-					<option value="Freezer">Freezer</option>
-				</select>
-			{:else if editData.field === 'booths'}
-				<div class="booths-edit-container">
+			<div class="modal-head">
+				<span class="modal-icon" aria-hidden="true">{@render fieldIcon(editData.field)}</span>
+				<h3>{editData.title}</h3>
+			</div>
+			<div class="modal-body">
+				<span class="modal-label">{fieldLabels[editData.field] ?? 'Value'}</span>
+				{#if editData.field === 'storageType'}
+					<StorageSelect bind:value={editData.value} />
+				{:else if editData.field === 'booths'}
 					<div class="booths-container">
 						{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth (booth.value)}
 							<label class="booth-option">
@@ -336,16 +389,16 @@
 							</label>
 						{/each}
 					</div>
-				</div>
-			{:else}
-				<input
-					type="text"
-					bind:value={editData.value}
-					class="edit-input"
-					placeholder="Enter value..."
-					required
-				/>
-			{/if}
+				{:else}
+					<input
+						type="text"
+						bind:value={editData.value}
+						class="edit-input"
+						placeholder="Enter value..."
+						required
+					/>
+				{/if}
+			</div>
 			<div class="modal-buttons">
 				<button type="button" class="cancel-btn" onclick={closeEditModal}> Cancel </button>
 				<button type="submit" class="confirm-btn"> Confirm </button>
@@ -438,17 +491,10 @@
 		border-color: var(--add-item-color);
 	}
 
-	.booths-edit-container {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
 	.booths-container {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-		gap: 0.75rem;
-		margin-top: 0.75rem;
+		gap: 0.5rem;
 	}
 
 	@media (max-width: 640px) {
@@ -663,79 +709,125 @@
 	}
 
 	.edit-modal {
+		display: flex;
+		flex-direction: column;
 		background-color: var(--container-bg);
-		border-radius: var(--border-radius);
-		padding: 2rem;
-		max-width: min(25rem, calc(100vw - 2rem));
-		width: 300px;
+		border-radius: 0.75rem;
+		padding: 1.5rem;
+		max-width: min(24rem, calc(100vw - 2rem));
+		width: 320px;
 		box-shadow: 0 0.625rem 1.875rem rgba(0, 0, 0, 0.4);
-		border: none;
+		border: 1px solid var(--table-border-color);
 		position: relative;
 		z-index: 10001;
-		backdrop-filter: none;
-		-webkit-backdrop-filter: none;
-		animation: none;
+	}
+
+	/* Icon header (field-specific glyph + title). */
+	.modal-head {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		margin-bottom: 1.1rem;
+	}
+
+	.modal-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		width: 2rem;
+		height: 2rem;
+		border-radius: 0.5rem;
+		background: color-mix(in srgb, var(--add-item-color) 18%, transparent);
+		color: var(--add-item-color);
+	}
+
+	.modal-icon svg {
+		width: 1.1rem;
+		height: 1.1rem;
 	}
 
 	.edit-modal h3 {
-		margin: 0 0 1rem 0;
+		margin: 0;
 		color: var(--text-color);
-		font-size: 1.25rem;
+		font-size: 1.15rem;
 		font-weight: 700;
+	}
+
+	.modal-body {
+		margin-bottom: 1.25rem;
+	}
+
+	.modal-label {
+		display: block;
+		margin-bottom: 0.45rem;
+		font-size: 0.78rem;
+		font-weight: 600;
+		color: var(--text-color);
 	}
 
 	.edit-input {
 		width: 100%;
-		padding: 0.75rem 1rem;
-		border: 2px solid var(--input-border-color);
+		padding: 0.6rem 0.85rem;
+		border: 1.5px solid var(--input-border-color);
 		border-radius: var(--border-radius);
 		background-color: var(--input-bg);
 		color: var(--input-text);
-		font-size: 1rem;
-		margin-bottom: 1.5rem;
+		font-size: 0.95rem;
 	}
 
 	.edit-input:focus {
 		outline: none;
-		border-color: var(--focus-border-color);
-		box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+		border-color: var(--add-item-color);
+		box-shadow: 0 0 0 2px color-mix(in srgb, var(--add-item-color) 30%, transparent);
 	}
 
 	.modal-buttons {
 		display: flex;
-		gap: 1rem;
-		margin-top: 1.5rem;
-		margin-bottom: 1rem;
+		gap: 0.75rem;
 	}
 
 	.modal-buttons button {
 		flex: 1;
-		padding: 0.75rem 1rem;
+		padding: 0.6rem 1rem;
 		border: none;
-		border-radius: var(--border-radius);
-		font-size: 1rem;
+		border-radius: 8px;
+		font-size: 0.9rem;
 		font-weight: 600;
 		cursor: pointer;
+		transition:
+			background-color 0.15s ease-out,
+			color 0.15s ease-out;
 	}
 
+	.modal-buttons button:focus {
+		outline: none;
+	}
+
+	.modal-buttons button:focus-visible {
+		outline: 2px solid var(--add-item-color);
+		outline-offset: 2px;
+	}
+
+	/* Outline cancel + soft-tint confirm that fills solid on hover (matches the Add
+	   button and ConfirmModal conventions). */
 	.cancel-btn {
-		background-color: var(--hover-bg-color);
+		background: var(--table-border-color);
 		color: var(--text-color);
-		border: 1px solid var(--table-border-color);
 	}
 
 	.cancel-btn:hover {
-		background-color: var(--table-row-hover-bg);
+		background: color-mix(in srgb, var(--table-border-color) 80%, var(--text-color));
 	}
 
 	.confirm-btn {
-		background: var(--nav-logo-color);
-		color: white;
+		background: color-mix(in srgb, var(--add-item-color) 18%, transparent);
+		color: var(--add-item-color);
 	}
 
 	.confirm-btn:hover {
-		background: var(--nav-logo-hover-color);
-		transform: translateY(-1px);
+		background: var(--add-item-color);
+		color: var(--add-item-on);
 	}
 
 	/* Responsive Design */
