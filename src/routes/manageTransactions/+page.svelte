@@ -18,6 +18,7 @@
 	let currentSortColumn = $state('name');
 	let sortAscending = $state(true);
 	let itemsLoaded = $state(false);
+	let statusFilter = $state('all');
 
 	const paginationStore = getPaginationStore('manageTransactions');
 	const { currentPage, itemsPerPage, setTotalItems } = paginationStore;
@@ -29,12 +30,29 @@
 	const notification = $derived($notificationStore.at(-1) ?? null);
 	const authUser = $derived($authStore);
 
-	const filteredItemsList = $derived.by(() => {
+	const searchedItemsList = $derived.by(() => {
 		if (!searchTermValue) {
 			return items;
 		}
 		const lowerCaseSearchTerm = searchTermValue.toLowerCase();
 		return items.filter((item) => item.name.toLowerCase().includes(lowerCaseSearchTerm));
+	});
+
+	const totalUnits = $derived(
+		searchedItemsList.reduce((sum, item) => sum + (parseInt(item.count, 10) || 0), 0)
+	);
+	const lowStockCount = $derived(
+		searchedItemsList.filter((item) => stockStatus(item) === 'low').length
+	);
+	const outOfStockCount = $derived(
+		searchedItemsList.filter((item) => stockStatus(item) === 'out').length
+	);
+
+	const filteredItemsList = $derived.by(() => {
+		if (statusFilter === 'all') {
+			return searchedItemsList;
+		}
+		return searchedItemsList.filter((item) => stockStatus(item) === statusFilter);
 	});
 
 	$effect(() => {
@@ -51,17 +69,6 @@
 		const endIndex = startIndex + $itemsPerPage;
 		return sortedItems.slice(startIndex, endIndex);
 	});
-
-	const totalUnits = $derived(
-		filteredItemsList.reduce((sum, item) => sum + (parseInt(item.count, 10) || 0), 0)
-	);
-
-	const lowStockCount = $derived(
-		filteredItemsList.filter((item) => stockStatus(item) === 'low').length
-	);
-	const outOfStockCount = $derived(
-		filteredItemsList.filter((item) => stockStatus(item) === 'out').length
-	);
 
 	onMount(async () => {
 		await itemStore.loadItems();
@@ -82,6 +89,11 @@
 		paginationStore.setCurrentPage(1);
 	};
 
+	const toggleStatusFilter = (status) => {
+		statusFilter = statusFilter === status ? 'all' : status;
+		paginationStore.setCurrentPage(1);
+	};
+
 	const getCurrentUser = () => {
 		return authUser?.email || 'Unknown';
 	};
@@ -95,14 +107,14 @@
 
 	const statusLabel = { in: 'In stock', low: 'Low stock', out: 'Out of stock' };
 
-	const storageChip = (item) => {
+	const storageTag = (item) => {
 		switch ((item.storageType || '').toLowerCase()) {
 			case 'freezer':
-				return { icon: 'ti-snowflake', label: 'Freezer', color: 'freezer' };
+				return { icon: 'ti-snowflake', label: 'Freezer' };
 			case 'refrigerator':
-				return { icon: 'ti-temperature', label: 'Refrigerator', color: 'refrigerator' };
+				return { icon: 'ti-temperature', label: 'Fridge' };
 			case 'dry storage':
-				return { icon: 'ti-box', label: 'Dry Storage', color: 'dry-storage' };
+				return { icon: 'ti-box', label: 'Dry' };
 			default:
 				return null;
 		}
@@ -205,26 +217,31 @@
 					<h2 class="tx-title">Adjust Stock</h2>
 					<p class="tx-subtitle">Manage and adjust inventory counts</p>
 				</div>
-				<div class="tx-stats">
-					<div class="stat-card">
-						<span class="stat-number">{filteredItemsList.length}</span>
-						<span class="stat-label">items</span>
-					</div>
-					<div class="stat-card">
-						<span class="stat-number">{totalUnits}</span>
-						<span class="stat-label">units</span>
-					</div>
+				<div class="tx-summary">
+					<span class="sum-item"><strong>{searchedItemsList.length}</strong> items</span>
+					<span class="sum-sep">·</span>
+					<span class="sum-item"><strong>{totalUnits}</strong> units</span>
 					{#if lowStockCount > 0}
-						<div class="stat-card stat-card-warn">
-							<span class="stat-number">{lowStockCount}</span>
-							<span class="stat-label">low</span>
-						</div>
+						<button
+							class="sum-chip sum-chip-low"
+							class:active={statusFilter === 'low'}
+							onclick={() => toggleStatusFilter('low')}
+							aria-pressed={statusFilter === 'low'}
+						>
+							<span class="sum-chip-dot"></span>
+							<strong>{lowStockCount}</strong> low
+						</button>
 					{/if}
 					{#if outOfStockCount > 0}
-						<div class="stat-card stat-card-danger">
-							<span class="stat-number">{outOfStockCount}</span>
-							<span class="stat-label">out</span>
-						</div>
+						<button
+							class="sum-chip sum-chip-out"
+							class:active={statusFilter === 'out'}
+							onclick={() => toggleStatusFilter('out')}
+							aria-pressed={statusFilter === 'out'}
+						>
+							<span class="sum-chip-dot"></span>
+							<strong>{outOfStockCount}</strong> out
+						</button>
 					{/if}
 				</div>
 			</div>
@@ -263,102 +280,118 @@
 				</div>
 			</div>
 
-			<!-- Table -->
-			<div class="table-wrap">
-				<table class="tx-table">
-					<thead>
-						<tr>
-							<th class="th-item">Item</th>
-							<th class="th-count">Count</th>
-							<th class="th-storage">Storage</th>
-							<th class="th-status">Status</th>
-							<th class="th-adjust">Adjust</th>
-							<th class="th-reset"></th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each paginatedItemsList as item (item.id)}
-							{@const status = stockStatus(item)}
-							{@const storage = storageChip(item)}
-							<tr
-								class="status-stripe"
-								style="--stripe-color: var(--st-{status}-color)"
-								in:fade={{ duration: 150 }}
-							>
-								<td class="col-item">
-									<span class="item-name">{item.name}</span>
-								</td>
-								<td class="col-count">
-									{#key item.count}
-										<span
-											class="count-value"
-											class:count-out={status === 'out'}
-											class:count-warn={status === 'low'}
-											transition:fly={{ y: -12, duration: 200, easing: elasticOut }}
-										>
-											{item.count}
-										</span>
-									{/key}
-								</td>
-								<td class="col-storage">
-									{#if storage}
-										<span class="storage-pill" data-storage={storage.color}>
-											<i class="ti {storage.icon}"></i>
-											{storage.label}
-										</span>
-									{/if}
-								</td>
-								<td class="col-status">
-									<span class="status-badge status-badge-{status}">
-										<span class="status-dot"></span>
-										{statusLabel[status]}
+			<!-- List -->
+			<div class="tx-list">
+				<div class="tx-list-head" aria-hidden="true">
+					<span class="h-item">Item</span>
+					<span class="h-storage">Storage</span>
+					<span class="h-status">Status</span>
+					<span class="h-count">Count</span>
+					<span class="h-adjust">Adjust</span>
+					<span class="h-reset"></span>
+				</div>
+
+				{#if paginatedItemsList.length === 0}
+					<div class="tx-empty" in:fade={{ duration: 150 }}>
+						<i class="ti ti-package-off"></i>
+						<p class="empty-title">No items to show</p>
+						<p class="empty-hint">
+							{#if statusFilter !== 'all'}
+								No {statusFilter === 'low' ? 'low' : 'out-of-stock'} items match the current view.
+							{:else if searchTermValue}
+								Nothing matches “{searchTermValue}”.
+							{:else}
+								Add some items to start adjusting stock.
+							{/if}
+						</p>
+						{#if statusFilter !== 'all'}
+							<button class="empty-action" onclick={() => toggleStatusFilter(statusFilter)}>
+								Clear filter
+							</button>
+						{/if}
+					</div>
+				{:else}
+					{#each paginatedItemsList as item (item.id)}
+						{@const status = stockStatus(item)}
+						{@const storage = storageTag(item)}
+						<div
+							class="tx-row"
+							style="--stripe-color: var(--st-{status}-color)"
+							in:fade={{ duration: 150 }}
+						>
+							<div class="col-item">
+								<span class="item-name">{item.name}</span>
+							</div>
+							<div class="col-storage">
+								{#if storage}
+									<span class="storage-tag">
+										<i class="ti {storage.icon}"></i>
+										{storage.label}
 									</span>
-								</td>
-								<td class="col-adjust">
-									<div class="adjuster">
-										<button
-											class="adj-btn"
-											onclick={() => changeCount(item, -item.changeAmount)}
-											disabled={item.changeAmount === 0}
-											aria-label="Remove {item.changeAmount || ''} from {item.name}"
-										>
-											−
-										</button>
-										<input
-											type="number"
-											inputmode="numeric"
-											pattern="[0-9]*"
-											placeholder="0"
-											value={item.changeAmount === 0 ? '' : item.changeAmount}
-											oninput={(e) => handleChangeAmountInput(item, e)}
-											class="adj-input"
-											aria-label="Change amount for {item.name}"
-										/>
-										<button
-											class="adj-btn"
-											onclick={() => changeCount(item, +item.changeAmount)}
-											disabled={item.changeAmount === 0}
-											aria-label="Add {item.changeAmount || ''} to {item.name}"
-										>
-											+
-										</button>
-									</div>
-								</td>
-								<td class="col-reset">
-									<button
-										class="reset-btn"
-										onclick={() => askResetCount(item)}
-										disabled={item.count === 0}
-										aria-label="Reset {item.name} to 0"
-										title="Reset to 0"
+								{/if}
+							</div>
+							<div class="col-status">
+								<span class="status-badge status-badge-{status}">
+									<span class="status-dot"></span>
+									{statusLabel[status]}
+								</span>
+							</div>
+							<div class="col-count">
+								{#key item.count}
+									<span
+										class="count-value"
+										class:count-out={status === 'out'}
+										class:count-warn={status === 'low'}
+										transition:fly={{ y: -12, duration: 200, easing: elasticOut }}
 									>
-										<i class="ti ti-rotate-clockwise"></i>
+										{item.count}
+									</span>
+								{/key}
+							</div>
+							<div class="col-adjust">
+								<div class="adjuster">
+									<button
+										class="adj-btn adj-minus"
+										onclick={() => changeCount(item, -item.changeAmount)}
+										disabled={item.changeAmount === 0}
+										aria-label="Remove {item.changeAmount || ''} from {item.name}"
+									>
+										−
 									</button>
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
+									<input
+										type="number"
+										inputmode="numeric"
+										pattern="[0-9]*"
+										placeholder="0"
+										value={item.changeAmount === 0 ? '' : item.changeAmount}
+										oninput={(e) => handleChangeAmountInput(item, e)}
+										class="adj-input"
+										aria-label="Change amount for {item.name}"
+									/>
+									<button
+										class="adj-btn adj-plus"
+										onclick={() => changeCount(item, +item.changeAmount)}
+										disabled={item.changeAmount === 0}
+										aria-label="Add {item.changeAmount || ''} to {item.name}"
+									>
+										+
+									</button>
+								</div>
+							</div>
+							<div class="col-reset">
+								<button
+									class="reset-btn"
+									onclick={() => askResetCount(item)}
+									disabled={item.count === 0}
+									aria-label="Reset {item.name} to 0"
+									title="Reset to 0"
+								>
+									<i class="ti ti-rotate-clockwise"></i>
+								</button>
+							</div>
+						</div>
+					{/each}
+				{/if}
 			</div>
 
 			<!-- Footer -->
@@ -401,28 +434,28 @@
 
 <style>
 	/* =============================================
-	   Status stripe colours (light)
+	   Status colours (light) — bold & punchy
 	   ============================================= */
 	.page-container {
 		--st-in-color: #16a34a;
 		--st-low-color: #d97706;
 		--st-out-color: #dc2626;
-		--st-in-bg: #f0fdf4;
-		--st-low-bg: #fffbeb;
-		--st-out-bg: #fef2f2;
-		--st-in-text: #16a34a;
+		--st-in-bg: #dcfce7;
+		--st-low-bg: #fef3c7;
+		--st-out-bg: #fee2e2;
+		--st-in-text: #15803d;
 		--st-low-text: #b45309;
-		--st-out-text: #dc2626;
+		--st-out-text: #b91c1c;
 	}
 
 	:global([data-theme='dark']) .page-container {
 		--st-in-color: #34d399;
 		--st-low-color: #fbbf24;
 		--st-out-color: #f87171;
-		--st-in-bg: rgba(52, 211, 153, 0.08);
-		--st-low-bg: rgba(251, 191, 36, 0.08);
-		--st-out-bg: rgba(248, 113, 113, 0.08);
-		--st-in-text: #34d399;
+		--st-in-bg: rgba(52, 211, 153, 0.14);
+		--st-low-bg: rgba(251, 191, 36, 0.14);
+		--st-out-bg: rgba(248, 113, 113, 0.14);
+		--st-in-text: #4ade80;
 		--st-low-text: #fbbf24;
 		--st-out-text: #f87171;
 	}
@@ -452,89 +485,109 @@
 	   Header
 	   ============================================= */
 	.tx-header {
-		padding: 1.5rem 1.75rem 1.25rem;
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 1rem 1.5rem;
+		flex-wrap: wrap;
+		padding: 1.25rem 1.75rem 1.1rem;
 		border-bottom: 1px solid var(--table-border-color);
 	}
 
 	.tx-title {
 		margin: 0;
-		font-size: 1.4rem;
-		font-weight: 700;
+		font-size: 1.5rem;
+		font-weight: 800;
 		color: var(--text-color);
-		letter-spacing: -0.025em;
-		line-height: 1.2;
+		letter-spacing: -0.03em;
+		line-height: 1.15;
 	}
 
 	.tx-subtitle {
-		margin: 0.25rem 0 0;
-		font-size: 0.88rem;
+		margin: 0.2rem 0 0;
+		font-size: 0.85rem;
 		color: var(--text-color-dimmed);
 		line-height: 1.4;
 	}
 
-	.tx-stats {
+	/* Slim inline summary bar */
+	.tx-summary {
 		display: flex;
-		align-items: stretch;
-		gap: 0.625rem;
-		margin-top: 1rem;
-		flex-wrap: wrap;
-	}
-
-	.stat-card {
-		display: flex;
-		flex-direction: column;
 		align-items: center;
-		justify-content: center;
-		gap: 0.1rem;
-		padding: 0.6rem 1rem;
-		min-width: 5rem;
-		background: var(--hover-bg-color);
-		border: 1px solid var(--table-border-color);
-		border-radius: var(--border-radius);
-		white-space: nowrap;
+		gap: 0.6rem;
+		flex-wrap: wrap;
+		font-size: 0.88rem;
+		color: var(--text-color-dimmed);
 	}
 
-	.stat-number {
-		font-size: 1.2rem;
-		font-weight: 700;
+	.sum-item strong {
 		color: var(--text-color);
-		line-height: 1.2;
+		font-weight: 800;
 		font-variant-numeric: tabular-nums;
 	}
 
-	.stat-label {
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--text-color-dimmed);
-		text-transform: lowercase;
+	.sum-sep {
+		opacity: 0.4;
 	}
 
-	.stat-card-warn {
+	.sum-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.2rem 0.6rem;
+		font-size: 0.82rem;
+		font-weight: 600;
+		border-radius: 999px;
+		border: 1.5px solid transparent;
+		cursor: pointer;
+		transition: all 0.15s ease-out;
+	}
+
+	.sum-chip strong {
+		font-weight: 800;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.sum-chip-dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+
+	.sum-chip-low {
 		background: var(--st-low-bg);
-		border-color: color-mix(in srgb, var(--st-low-text) 25%, var(--table-border-color));
-	}
-
-	.stat-card-warn .stat-number {
 		color: var(--st-low-text);
 	}
 
-	.stat-card-warn .stat-label {
-		color: var(--st-low-text);
-		opacity: 0.7;
+	.sum-chip-low .sum-chip-dot {
+		background: var(--st-low-color);
 	}
 
-	.stat-card-danger {
+	.sum-chip-out {
 		background: var(--st-out-bg);
-		border-color: color-mix(in srgb, var(--st-out-text) 25%, var(--table-border-color));
-	}
-
-	.stat-card-danger .stat-number {
 		color: var(--st-out-text);
 	}
 
-	.stat-card-danger .stat-label {
-		color: var(--st-out-text);
-		opacity: 0.7;
+	.sum-chip-out .sum-chip-dot {
+		background: var(--st-out-color);
+	}
+
+	.sum-chip:hover {
+		transform: translateY(-1px);
+	}
+
+	.sum-chip-low.active {
+		border-color: var(--st-low-color);
+	}
+
+	.sum-chip-out.active {
+		border-color: var(--st-out-color);
+	}
+
+	.sum-chip:focus-visible {
+		outline: 2px solid var(--add-item-color);
+		outline-offset: 2px;
 	}
 
 	/* =============================================
@@ -544,7 +597,7 @@
 		display: flex;
 		align-items: center;
 		gap: 1rem;
-		padding: 1rem 1.75rem;
+		padding: 0.85rem 1.75rem;
 		border-bottom: 1px solid var(--table-border-color);
 		flex-wrap: wrap;
 		background: color-mix(in srgb, var(--hover-bg-color) 40%, var(--container-bg));
@@ -563,7 +616,7 @@
 
 	.sort-label {
 		font-size: 0.72rem;
-		font-weight: 600;
+		font-weight: 700;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
 		color: var(--text-color-dimmed);
@@ -576,10 +629,10 @@
 		height: 2rem;
 		padding: 0 0.75rem;
 		font-size: 0.82rem;
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--text-color-dimmed);
 		background: var(--container-bg);
-		border: 1px solid var(--table-border-color);
+		border: 1.5px solid var(--table-border-color);
 		border-radius: var(--border-radius);
 		cursor: pointer;
 		transition: all 0.15s ease-out;
@@ -593,7 +646,7 @@
 	.sort-btn.active {
 		border-color: var(--add-item-color);
 		color: var(--add-item-color);
-		background: color-mix(in srgb, var(--add-item-color) 8%, var(--container-bg));
+		background: color-mix(in srgb, var(--add-item-color) 10%, var(--container-bg));
 	}
 
 	.sort-btn:focus-visible {
@@ -607,160 +660,97 @@
 	}
 
 	/* =============================================
-	   Table
+	   List — hybrid grid rows
 	   ============================================= */
-	.table-wrap {
-		overflow-x: auto;
-		-webkit-overflow-scrolling: touch;
+	.tx-list {
+		display: flex;
+		flex-direction: column;
 	}
 
-	.tx-table {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: 0.9rem;
+	.tx-row,
+	.tx-list-head {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 6.5rem 7rem 4.5rem 8.25rem 2.25rem;
+		align-items: center;
+		gap: 0.85rem;
+		padding: 0.55rem 1.5rem 0.55rem 1.25rem;
 	}
 
-	.tx-table th {
-		text-align: left;
-		padding: 0.7rem 1.1rem;
+	.tx-list-head {
+		padding-top: 0.55rem;
+		padding-bottom: 0.55rem;
 		background: var(--table-header-bg);
-		color: var(--text-color-dimmed);
-		font-weight: 600;
-		font-size: 0.75rem;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
 		border-bottom: 1px solid var(--table-border-color);
+	}
+
+	.tx-list-head span {
+		font-size: 0.7rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.07em;
+		color: var(--text-color-dimmed);
 		white-space: nowrap;
 	}
 
-	.th-count {
+	.h-count {
 		text-align: center;
-		width: 5rem;
 	}
 
-	.tx-table td {
-		padding: 0.75rem 1.1rem;
+	.tx-row {
+		position: relative;
+		border-left: 4px solid var(--stripe-color);
 		border-bottom: 1px solid var(--table-border-color);
-		color: var(--text-color);
-		vertical-align: middle;
-	}
-
-	.tx-table tbody tr:last-child td {
-		border-bottom: none;
-	}
-
-	.tx-table tbody tr {
 		transition: background-color 0.12s ease-out;
 	}
 
-	.tx-table tbody tr:hover td {
-		background: var(--hover-bg-color);
+	.tx-row:last-child {
+		border-bottom: none;
 	}
 
-	/* Status stripe — left accent */
-	.status-stripe td:first-child {
-		border-left: 4px solid var(--stripe-color);
-		padding-left: calc(1.1rem - 4px + 4px);
+	.tx-row:hover {
+		background: var(--hover-bg-color);
 	}
 
 	/* ---- Item column ---- */
 	.item-name {
-		font-weight: 600;
+		font-weight: 700;
+		font-size: 0.95rem;
 		color: var(--text-color);
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		max-width: 22rem;
-		display: inline-block;
+		display: block;
 	}
 
-	/* ---- Count column ---- */
-	.col-count {
-		text-align: center;
-		width: 5rem;
-		padding-left: 0.75rem;
-		padding-right: 0.75rem;
+	/* ---- Storage tag — subtle, monochrome ---- */
+	.col-storage {
+		min-width: 0;
 	}
 
-	.count-value {
-		font-variant-numeric: tabular-nums;
-		font-weight: 700;
-		font-size: 1.05rem;
-		color: var(--text-color);
-	}
-
-	.count-value.count-out {
-		color: var(--st-out-text);
-	}
-
-	.count-value.count-warn {
-		color: var(--st-low-text);
-	}
-
-	/* =============================================
-	   Storage pills — muted, secondary feel
-	   ============================================= */
-	.storage-pill {
+	.storage-tag {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.35rem;
-		padding: 0.2rem 0.6rem;
-		border-radius: 6px;
-		font-size: 0.78rem;
-		font-weight: 500;
-		white-space: nowrap;
-		background: var(--hover-bg-color);
+		gap: 0.3rem;
+		font-size: 0.76rem;
+		font-weight: 600;
 		color: var(--text-color-dimmed);
-		border: 1px solid var(--table-border-color);
+		white-space: nowrap;
 	}
 
-	.storage-pill[data-storage='freezer'] {
-		background: color-mix(in srgb, #3b82f6 10%, transparent);
-		color: #3b82f6;
-		border-color: color-mix(in srgb, #3b82f6 20%, var(--table-border-color));
+	.storage-tag i {
+		font-size: 0.9rem;
+		opacity: 0.85;
 	}
 
-	.storage-pill[data-storage='refrigerator'] {
-		background: color-mix(in srgb, #10b981 10%, transparent);
-		color: #10b981;
-		border-color: color-mix(in srgb, #10b981 20%, var(--table-border-color));
-	}
-
-	.storage-pill[data-storage='dry-storage'] {
-		background: color-mix(in srgb, #f59e0b 10%, transparent);
-		color: #d97706;
-		border-color: color-mix(in srgb, #f59e0b 20%, var(--table-border-color));
-	}
-
-	:global([data-theme='dark']) .storage-pill[data-storage='freezer'] {
-		background: color-mix(in srgb, #60a5fa 10%, transparent);
-		color: #60a5fa;
-		border-color: color-mix(in srgb, #60a5fa 20%, var(--table-border-color));
-	}
-
-	:global([data-theme='dark']) .storage-pill[data-storage='refrigerator'] {
-		background: color-mix(in srgb, #34d399 10%, transparent);
-		color: #34d399;
-		border-color: color-mix(in srgb, #34d399 20%, var(--table-border-color));
-	}
-
-	:global([data-theme='dark']) .storage-pill[data-storage='dry-storage'] {
-		background: color-mix(in srgb, #fbbf24 10%, transparent);
-		color: #fbbf24;
-		border-color: color-mix(in srgb, #fbbf24 20%, var(--table-border-color));
-	}
-
-	/* =============================================
-	   Status badges — clear, self-contained
-	   ============================================= */
+	/* ---- Status badge ---- */
 	.status-badge {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.4rem;
-		padding: 0.2rem 0.65rem;
+		padding: 0.18rem 0.6rem;
 		border-radius: 999px;
-		font-size: 0.78rem;
-		font-weight: 600;
+		font-size: 0.76rem;
+		font-weight: 700;
 		white-space: nowrap;
 	}
 
@@ -798,25 +788,49 @@
 		background: var(--st-out-color);
 	}
 
+	/* ---- Count column ---- */
+	.col-count {
+		text-align: center;
+	}
+
+	.count-value {
+		display: inline-block;
+		font-variant-numeric: tabular-nums;
+		font-weight: 800;
+		font-size: 1.2rem;
+		letter-spacing: -0.02em;
+		color: var(--text-color);
+	}
+
+	.count-value.count-out {
+		color: var(--st-out-text);
+	}
+
+	.count-value.count-warn {
+		color: var(--st-low-text);
+	}
+
 	/* =============================================
-	   Adjuster — larger touch targets
+	   Adjuster — prominent
 	   ============================================= */
 	.adjuster {
 		display: inline-flex;
 		align-items: center;
-		border: 1px solid var(--table-border-color);
+		border: 1.5px solid var(--table-border-color);
 		border-radius: 999px;
 		overflow: hidden;
 		background: var(--hover-bg-color);
 	}
 
 	.adj-btn {
-		width: 34px;
-		height: 34px;
+		width: 40px;
+		height: 40px;
 		border: none;
 		background: transparent;
 		color: var(--text-color);
-		font-size: 1rem;
+		font-size: 1.35rem;
+		font-weight: 700;
+		line-height: 1;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
@@ -826,9 +840,14 @@
 			color 0.12s ease-out;
 	}
 
-	.adj-btn:hover:not(:disabled) {
-		background: var(--table-border-color);
-		color: var(--add-item-color);
+	.adj-minus:hover:not(:disabled) {
+		background: var(--st-out-bg);
+		color: var(--st-out-text);
+	}
+
+	.adj-plus:hover:not(:disabled) {
+		background: var(--st-in-bg);
+		color: var(--st-in-text);
 	}
 
 	.adj-btn:disabled {
@@ -837,18 +856,18 @@
 	}
 
 	.adj-input {
-		width: 36px;
-		height: 34px;
+		width: 44px;
+		height: 40px;
 		min-height: 0;
 		text-align: center;
-		font-size: 0.88rem;
-		font-weight: 600;
+		font-size: 0.95rem;
+		font-weight: 700;
 		font-variant-numeric: tabular-nums;
 		color: var(--text-color);
 		background: transparent;
 		border: none;
-		border-left: 1px solid var(--table-border-color);
-		border-right: 1px solid var(--table-border-color);
+		border-left: 1.5px solid var(--table-border-color);
+		border-right: 1.5px solid var(--table-border-color);
 		-moz-appearance: textfield;
 		outline: none;
 	}
@@ -865,12 +884,17 @@
 	}
 
 	.adj-input:focus {
-		background: color-mix(in srgb, var(--add-item-color) 6%, var(--hover-bg-color));
+		background: color-mix(in srgb, var(--add-item-color) 8%, var(--hover-bg-color));
 	}
 
 	/* =============================================
 	   Reset button
 	   ============================================= */
+	.col-reset {
+		display: flex;
+		justify-content: center;
+	}
+
 	.reset-btn {
 		display: inline-flex;
 		align-items: center;
@@ -906,6 +930,56 @@
 	}
 
 	/* =============================================
+	   Empty state
+	   ============================================= */
+	.tx-empty {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.3rem;
+		padding: 3rem 1.5rem;
+		text-align: center;
+	}
+
+	.tx-empty i {
+		font-size: 2.25rem;
+		color: var(--text-color-dimmed);
+		opacity: 0.6;
+		margin-bottom: 0.4rem;
+	}
+
+	.empty-title {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 700;
+		color: var(--text-color);
+	}
+
+	.empty-hint {
+		margin: 0;
+		font-size: 0.85rem;
+		color: var(--text-color-dimmed);
+	}
+
+	.empty-action {
+		margin-top: 0.75rem;
+		padding: 0.4rem 0.9rem;
+		font-size: 0.82rem;
+		font-weight: 700;
+		color: var(--add-item-color);
+		background: color-mix(in srgb, var(--add-item-color) 10%, transparent);
+		border: 1.5px solid color-mix(in srgb, var(--add-item-color) 30%, transparent);
+		border-radius: var(--border-radius);
+		cursor: pointer;
+		transition: all 0.15s ease-out;
+	}
+
+	.empty-action:hover {
+		background: color-mix(in srgb, var(--add-item-color) 18%, transparent);
+	}
+
+	/* =============================================
 	   Footer
 	   ============================================= */
 	.tx-footer {
@@ -930,10 +1004,10 @@
 		gap: 0.4rem;
 		padding: 0.45rem 0.85rem;
 		font-size: 0.82rem;
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--st-out-text);
 		background: transparent;
-		border: 1px solid transparent;
+		border: 1.5px solid transparent;
 		border-radius: var(--border-radius);
 		cursor: pointer;
 		white-space: nowrap;
@@ -946,7 +1020,7 @@
 
 	.reset-all-btn:hover {
 		background: var(--st-out-bg);
-		border-color: color-mix(in srgb, var(--st-out-text) 20%, transparent);
+		border-color: color-mix(in srgb, var(--st-out-text) 25%, transparent);
 	}
 
 	/* =============================================
@@ -982,7 +1056,7 @@
 	}
 
 	/* =============================================
-	   Responsive
+	   Responsive — keep condensed rows on mobile
 	   ============================================= */
 	@media (max-width: 640px) {
 		.page-container {
@@ -990,37 +1064,19 @@
 		}
 
 		.tx-header {
-			padding: 1.25rem 1.25rem 1rem;
+			padding: 1.1rem 1.1rem 0.9rem;
 		}
 
 		.tx-title {
-			font-size: 1.2rem;
+			font-size: 1.25rem;
 		}
 
 		.tx-subtitle {
-			font-size: 0.82rem;
-		}
-
-		.tx-stats {
-			gap: 0.5rem;
-		}
-
-		.stat-card {
-			flex: 1;
-			min-width: 0;
-			padding: 0.5rem 0.5rem;
-		}
-
-		.stat-number {
-			font-size: 1.05rem;
-		}
-
-		.stat-label {
-			font-size: 0.7rem;
+			font-size: 0.8rem;
 		}
 
 		.tx-toolbar {
-			padding: 0.75rem 1.25rem;
+			padding: 0.75rem 1.1rem;
 			gap: 0.75rem;
 		}
 
@@ -1033,56 +1089,43 @@
 			justify-content: flex-end;
 		}
 
-		.tx-table {
-			font-size: 0.85rem;
+		/* Condensed rows: drop storage + status, keep name / count / adjuster / reset */
+		.tx-row,
+		.tx-list-head {
+			grid-template-columns: minmax(0, 1fr) 2.75rem 7.25rem 2rem;
+			gap: 0.6rem;
+			padding: 0.5rem 1rem 0.5rem 0.85rem;
 		}
 
-		.tx-table th {
-			padding: 0.6rem 0.75rem;
-			font-size: 0.7rem;
-		}
-
-		.tx-table td {
-			padding: 0.6rem 0.75rem;
+		.col-storage,
+		.col-status,
+		.h-storage,
+		.h-status {
+			display: none;
 		}
 
 		.item-name {
-			max-width: 10rem;
+			font-size: 0.9rem;
 		}
 
 		.count-value {
-			font-size: 0.95rem;
-		}
-
-		.storage-pill,
-		.status-badge {
-			font-size: 0.72rem;
+			font-size: 1.05rem;
 		}
 
 		.adj-btn {
-			width: 32px;
-			height: 32px;
+			width: 36px;
+			height: 36px;
+			font-size: 1.25rem;
 		}
 
 		.adj-input {
-			width: 32px;
-			height: 32px;
-			font-size: 0.82rem;
+			width: 38px;
+			height: 36px;
+			font-size: 0.9rem;
 		}
 
 		.tx-footer {
-			padding: 0.75rem 1.25rem;
-		}
-
-		/* Hide less important columns on mobile */
-		.col-storage,
-		.col-status {
-			display: none;
-		}
-
-		.th-storage,
-		.th-status {
-			display: none;
+			padding: 0.75rem 1.1rem;
 		}
 	}
 
@@ -1100,11 +1143,17 @@
 		}
 
 		.tx-header {
-			padding: 1.75rem 2.25rem 1.5rem;
+			padding: 1.5rem 2.25rem 1.25rem;
 		}
 
 		.tx-toolbar {
-			padding: 1rem 2.25rem;
+			padding: 0.85rem 2.25rem;
+		}
+
+		.tx-row,
+		.tx-list-head {
+			padding-left: 1.75rem;
+			padding-right: 2.25rem;
 		}
 
 		.tx-footer {
