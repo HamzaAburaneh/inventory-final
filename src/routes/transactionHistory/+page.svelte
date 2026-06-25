@@ -1,7 +1,7 @@
 <script>
 	import { db } from '../../firebase';
 	import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-	import TransactionTable from '../../components/TransactionTable.svelte';
+	import TransactionTimeline from '../../components/TransactionTimeline.svelte';
 	import TableSkeleton from '../../components/TableSkeleton.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
@@ -15,26 +15,50 @@
 	// the empty state only shows after real data has come back, not during the wait.
 	let ready = $state(false);
 	let received = $state(false);
-	let currentSortColumn = $state('timestamp');
-	let sortAscending = $state(false);
+	// The timeline is inherently chronological, so sorting collapses to a single
+	// newest/oldest toggle on the transaction timestamp.
+	let sortNewest = $state(true);
+	// Type filter: '' (all) | 'add' | 'remove'.
+	let typeFilter = $state('');
 	let unsubscribeFromTransactions = null;
 
 	const paginationStore = getPaginationStore('transactionHistory');
 	const { currentPage, itemsPerPage, setTotalItems, setCurrentPage } = paginationStore;
 
 	const search = createSearchState();
-
-	// Reactive store views ($store auto-subscription)
 	const searchTermValue = $derived(search.term);
 
+	const typeFilters = [
+		{ value: '', label: 'All' },
+		{ value: 'add', label: 'Added' },
+		{ value: 'remove', label: 'Removed' }
+	];
+
 	const filteredTransactions = $derived.by(() => {
+		let result = allTransactions;
+		if (typeFilter) {
+			result = result.filter((transaction) => transaction.type === typeFilter);
+		}
 		if (searchTermValue) {
 			const lowerSearchTerm = searchTermValue.toLowerCase();
-			return allTransactions.filter((transaction) =>
+			result = result.filter((transaction) =>
 				transaction.itemName.toLowerCase().includes(lowerSearchTerm)
 			);
 		}
-		return allTransactions;
+		return result;
+	});
+
+	// Summary figures shown in the stat cards, computed over the filtered set so they
+	// stay in sync with the active search / type filter.
+	const stats = $derived.by(() => {
+		let added = 0;
+		let removed = 0;
+		for (const transaction of filteredTransactions) {
+			const delta = transaction.newCount - transaction.previousCount;
+			if (delta > 0) added += delta;
+			else removed += delta;
+		}
+		return { total: filteredTransactions.length, net: added + removed, added, removed };
 	});
 
 	$effect(() => {
@@ -42,8 +66,11 @@
 	});
 
 	const sortedTransactions = $derived(
-		sortTransactions(filteredTransactions, currentSortColumn, sortAscending)
+		[...filteredTransactions].sort((a, b) =>
+			sortNewest ? b.timestamp - a.timestamp : a.timestamp - b.timestamp
+		)
 	);
+
 	const paginatedTransactions = $derived.by(() => {
 		if ($itemsPerPage === 'all') {
 			return sortedTransactions;
@@ -52,22 +79,6 @@
 		const endIndex = startIndex + $itemsPerPage;
 		return sortedTransactions.slice(startIndex, endIndex);
 	});
-
-	function sortTransactions(transactions, column, ascending) {
-		return [...transactions].sort((a, b) => {
-			let aValue, bValue;
-			if (column === 'changedAmount') {
-				aValue = a.newCount - a.previousCount;
-				bValue = b.newCount - b.previousCount;
-			} else {
-				aValue = a[column];
-				bValue = b[column];
-			}
-			if (aValue < bValue) return ascending ? -1 : 1;
-			if (aValue > bValue) return ascending ? 1 : -1;
-			return 0;
-		});
-	}
 
 	function subscribeToTransactions() {
 		const transactionsRef = collection(db, 'transactions');
@@ -125,13 +136,41 @@
 		setCurrentPage(1);
 	}
 
-	function handleSort(column) {
-		if (currentSortColumn === column) {
-			sortAscending = !sortAscending;
-		} else {
-			currentSortColumn = column;
-			sortAscending = true;
-		}
+	function setTypeFilter(value) {
+		typeFilter = value;
+		setCurrentPage(1);
+	}
+
+	function formatSigned(value) {
+		const sign = value > 0 ? '+' : value < 0 ? '−' : '';
+		return `${sign}${Math.abs(value).toLocaleString()}`;
+	}
+
+	function escapeCsv(value) {
+		const str = String(value ?? '');
+		return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+	}
+
+	// Export the full filtered/sorted set (not just the current page) as CSV.
+	function exportCsv() {
+		const header = ['Item', 'Type', 'Previous', 'New', 'Change', 'Timestamp', 'User'];
+		const rows = sortedTransactions.map((transaction) => [
+			transaction.itemName,
+			transaction.type,
+			transaction.previousCount,
+			transaction.newCount,
+			transaction.newCount - transaction.previousCount,
+			new Date(transaction.timestamp).toISOString(),
+			transaction.user
+		]);
+		const csv = [header, ...rows].map((row) => row.map(escapeCsv).join(',')).join('\n');
+		const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = `transaction-history-${new Date().toISOString().slice(0, 10)}.csv`;
+		link.click();
+		URL.revokeObjectURL(url);
 	}
 </script>
 
@@ -145,29 +184,75 @@
 	<div class="page-container">
 		<div class="history-section">
 			<div class="history-header">
-				<h2 class="history-title">Transaction History</h2>
-				<div class="history-stats">
-					<span class="stats-text"
-						>{filteredTransactions.length} of {allTransactions.length} transactions</span
-					>
-					<span class="stats-text total-value">{paginatedTransactions.length} on this page</span>
+				<div class="history-heading">
+					<h2 class="history-title">Transaction history</h2>
+					<p class="history-sub">
+						{filteredTransactions.length.toLocaleString()} of {allTransactions.length.toLocaleString()}
+						records
+					</p>
+				</div>
+				<button
+					class="export-button"
+					onclick={exportCsv}
+					disabled={sortedTransactions.length === 0}
+				>
+					<i class="fas fa-download"></i>
+					<span>Export</span>
+				</button>
+			</div>
+
+			<div class="stats-grid">
+				<div class="stat-card">
+					<div class="stat-label"><i class="fas fa-clock-rotate-left"></i> Total</div>
+					<div class="stat-value">{stats.total.toLocaleString()}</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-label"><i class="fas fa-arrow-trend-up"></i> Net change</div>
+					<div class="stat-value" class:pos={stats.net > 0} class:neg={stats.net < 0}>
+						{formatSigned(stats.net)}
+					</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-label"><i class="fas fa-arrow-up"></i> Added</div>
+					<div class="stat-value pos">{formatSigned(stats.added)}</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-label"><i class="fas fa-arrow-down"></i> Removed</div>
+					<div class="stat-value neg">{formatSigned(stats.removed)}</div>
 				</div>
 			</div>
 
-			<div class="search-section">
-				<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClear} />
+			<div class="toolbar">
+				<div class="toolbar-search">
+					<SearchBar searchValue={searchTermValue} onSearch={handleSearch} onClear={handleClear} />
+				</div>
+				<div class="segmented" role="group" aria-label="Filter by change type">
+					{#each typeFilters as option (option.value)}
+						<button
+							class="segment"
+							class:active={typeFilter === option.value}
+							aria-pressed={typeFilter === option.value}
+							onclick={() => setTypeFilter(option.value)}
+						>
+							{option.label}
+						</button>
+					{/each}
+				</div>
+				<button
+					class="sort-button"
+					onclick={() => (sortNewest = !sortNewest)}
+					aria-label="Toggle sort order"
+				>
+					<i class="fas {sortNewest ? 'fa-arrow-down-wide-short' : 'fa-arrow-up-wide-short'}"></i>
+					<span>{sortNewest ? 'Newest' : 'Oldest'}</span>
+				</button>
 			</div>
 
-			<div class="table-section">
+			<div class="timeline-section">
 				{#if received && filteredTransactions.length === 0}
 					<p class="empty-state">No transactions found.</p>
 				{:else}
-					<TransactionTable
-						paginatedItems={paginatedTransactions}
-						sortBy={handleSort}
-						{currentSortColumn}
-						{sortAscending}
-					/>
+					<TransactionTimeline transactions={paginatedTransactions} />
 				{/if}
 			</div>
 
@@ -198,7 +283,7 @@
 
 	.history-header {
 		background: var(--table-header-bg);
-		padding: 0.6rem 1.25rem;
+		padding: 0.85rem 1.25rem;
 		border-bottom: 1px solid var(--table-border-color);
 		display: flex;
 		justify-content: space-between;
@@ -215,37 +300,156 @@
 		letter-spacing: -0.025em;
 	}
 
-	.history-stats {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-	}
-
-	.stats-text {
-		font-size: 0.8rem;
+	.history-sub {
+		margin: 0.15rem 0 0;
+		font-size: 0.78rem;
 		color: var(--text-color-dimmed);
+	}
+
+	.export-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		font-size: 0.82rem;
 		font-weight: 500;
-		padding: 0.3rem 0.75rem;
-		background: var(--hover-bg-color);
-		border-radius: var(--border-radius);
+		color: var(--text-color);
+		background: var(--container-bg);
 		border: 1px solid var(--table-border-color);
-		white-space: nowrap;
+		padding: 0.45rem 0.8rem;
+		border-radius: var(--border-radius);
+		min-height: 0;
+		transition:
+			background-color 0.15s ease-out,
+			border-color 0.15s ease-out;
 	}
 
-	.stats-text.total-value {
-		background: var(--add-item-color);
-		color: var(--add-item-on);
-		font-weight: 600;
-		border-color: var(--add-item-color);
+	.export-button:hover:not(:disabled) {
+		background: var(--hover-bg-color);
+		border-color: var(--hover-border-color);
 	}
 
-	.search-section {
-		padding: 0.75rem 1.25rem;
+	.export-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.stats-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 0.625rem;
+		padding: 1rem 1.25rem;
 		border-bottom: 1px solid var(--table-border-color);
 	}
 
-	.table-section {
+	.stat-card {
+		background: var(--table-header-bg);
+		border: 1px solid var(--table-border-color);
+		border-radius: 10px;
+		padding: 0.7rem 0.8rem;
+	}
+
+	.stat-label {
+		font-size: 0.72rem;
+		font-weight: 500;
+		color: var(--text-color-dimmed);
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+	}
+
+	.stat-value {
+		font-size: 1.35rem;
+		font-weight: 700;
+		margin-top: 0.25rem;
+		letter-spacing: -0.02em;
+		color: var(--text-color);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.stat-value.pos {
+		color: #1f9d4d;
+	}
+
+	.stat-value.neg {
+		color: #d83a32;
+	}
+
+	:global([data-theme='dark']) .stat-value.pos {
+		color: #5bcf7e;
+	}
+
+	:global([data-theme='dark']) .stat-value.neg {
+		color: #f06a62;
+	}
+
+	.toolbar {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		padding: 0.75rem 1.25rem;
+		border-bottom: 1px solid var(--table-border-color);
+		flex-wrap: wrap;
+	}
+
+	.toolbar-search {
+		flex: 1;
+		min-width: 180px;
+	}
+
+	.segmented {
+		display: flex;
+		background: var(--hover-bg-color);
+		border-radius: var(--border-radius);
+		padding: 3px;
+		gap: 2px;
+	}
+
+	.segment {
+		font-size: 0.78rem;
+		font-weight: 500;
+		color: var(--text-color-dimmed);
+		background: transparent;
+		border: none;
+		padding: 0.4rem 0.85rem;
+		border-radius: calc(var(--border-radius) - 2px);
+		min-height: 0;
+		transition:
+			background-color 0.15s ease-out,
+			color 0.15s ease-out;
+	}
+
+	.segment:hover:not(.active) {
+		color: var(--text-color);
+	}
+
+	.segment.active {
+		background: var(--add-item-color);
+		color: var(--add-item-on);
+	}
+
+	.sort-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		font-size: 0.78rem;
+		font-weight: 500;
+		color: var(--text-color);
+		background: var(--container-bg);
+		border: 1px solid var(--table-border-color);
+		padding: 0.45rem 0.8rem;
+		border-radius: var(--border-radius);
+		min-height: 0;
+		transition:
+			background-color 0.15s ease-out,
+			border-color 0.15s ease-out;
+	}
+
+	.sort-button:hover {
+		background: var(--hover-bg-color);
+		border-color: var(--hover-border-color);
+	}
+
+	.timeline-section {
 		padding: 0;
 	}
 
@@ -264,20 +468,21 @@
 	}
 
 	@media (max-width: 640px) {
-		.history-header {
-			flex-direction: column;
-			align-items: stretch;
+		.stats-grid {
+			grid-template-columns: repeat(2, 1fr);
 		}
 
-		.history-stats {
-			width: 100%;
+		.toolbar-search {
+			flex-basis: 100%;
 		}
 
-		.stats-text {
+		.segmented {
+			flex: 1;
+		}
+
+		.segment {
 			flex: 1;
 			text-align: center;
-			padding: 0.5rem 0.75rem;
-			font-size: 0.8rem;
 		}
 	}
 
@@ -294,16 +499,12 @@
 			padding: 2rem;
 		}
 
-		.history-header {
-			padding: 0.7rem 2rem;
-		}
-
-		.search-section {
-			padding: 0.85rem 2rem;
-		}
-
+		.history-header,
+		.stats-grid,
+		.toolbar,
 		.pagination-section {
-			padding: 0.7rem 2rem;
+			padding-left: 2rem;
+			padding-right: 2rem;
 		}
 
 		.history-title {
