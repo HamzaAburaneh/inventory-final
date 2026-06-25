@@ -412,17 +412,21 @@
 
 <ConfirmModal
 	visible={confirm.open}
-	title="Are you sure?"
-	confirmText={confirm.kind === 'resetAll' ? 'Yes, reset all!' : 'Yes, reset it!'}
+	title={confirm.kind === 'resetAll' ? 'Reset all counts?' : 'Reset item count?'}
+	confirmText={confirm.kind === 'resetAll' ? 'Reset all' : 'Reset'}
 	cancelText="Cancel"
 	variant={confirm.kind === 'resetAll' ? 'danger' : 'warning'}
+	chipIcon={confirm.kind === 'resetAll' ? 'ti-stack-2' : 'ti-cube'}
+	chipLabel={confirm.kind === 'resetAll' ? 'All items' : confirm.item?.name}
+	chipFrom={confirm.kind === 'resetAll' ? items.length : (confirm.item?.count ?? null)}
+	chipTo={0}
 	onConfirm={handleConfirm}
 	onCancel={cancelConfirm}
 >
 	{#if confirm.kind === 'resetAll'}
-		This will reset the count for <strong class="emphasis">ALL</strong> items to 0.
+		This resets every item back to 0:
 	{:else if confirm.item}
-		This will reset the count for <strong>"{confirm.item.name}"</strong> to 0.
+		You're about to reset:
 	{/if}
 </ConfirmModal>
 
