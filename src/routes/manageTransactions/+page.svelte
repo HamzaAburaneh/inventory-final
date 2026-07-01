@@ -1,6 +1,8 @@
 <script>
 	import { fade, fly } from 'svelte/transition';
-	import { elasticOut } from 'svelte/easing';
+	import { flip } from 'svelte/animate';
+	import { elasticOut, cubicOut } from 'svelte/easing';
+	import { prefersReducedMotion } from 'svelte/motion';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import TableSkeleton from '../../components/TableSkeleton.svelte';
 	import ConfirmModal from '../../components/ConfirmModal.svelte';
@@ -13,11 +15,14 @@
 	import { isLowStock } from '../../lib/tableUtils.js';
 	import { addTransaction } from '../../lib/transactions';
 	import { authStore } from '../../stores/authStore';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 
 	let currentSortColumn = $state('name');
 	let sortAscending = $state(true);
 	let itemsLoaded = $state(false);
+	// True once the first list render is done, so the staggered entrance plays only
+	// on initial load — not on every search/filter change (which looked jittery).
+	let listReady = $state(false);
 	let statusFilter = $state('all');
 
 	const paginationStore = getPaginationStore('manageTransactions');
@@ -29,6 +34,9 @@
 	const searchTermValue = $derived(search.term);
 	const notification = $derived($notificationStore.at(-1) ?? null);
 	const authUser = $derived($authStore);
+
+	// Respect the user's reduced-motion setting for every transition/animation below.
+	const reduceMotion = $derived(prefersReducedMotion.current);
 
 	const searchedItemsList = $derived.by(() => {
 		if (!searchTermValue) {
@@ -73,6 +81,8 @@
 	onMount(async () => {
 		await itemStore.loadItems();
 		itemsLoaded = true;
+		await tick();
+		listReady = true;
 	});
 
 	const sortBy = (column) => {
@@ -292,7 +302,10 @@
 				</div>
 
 				{#if paginatedItemsList.length === 0}
-					<div class="tx-empty" in:fade={{ duration: 150 }}>
+					<div
+						class="tx-empty"
+						in:fly={{ y: 8, duration: reduceMotion ? 0 : 320, easing: cubicOut }}
+					>
 						<i class="ti ti-package-off"></i>
 						<p class="empty-title">No items to show</p>
 						<p class="empty-hint">
@@ -311,13 +324,19 @@
 						{/if}
 					</div>
 				{:else}
-					{#each paginatedItemsList as item (item.id)}
+					{#each paginatedItemsList as item, i (item.id)}
 						{@const status = stockStatus(item)}
 						{@const storage = storageTag(item)}
 						<div
 							class="tx-row"
 							style="--stripe-color: var(--st-{status}-color)"
-							in:fade={{ duration: 150 }}
+							in:fly={{
+								y: 8,
+								duration: reduceMotion ? 0 : 320,
+								delay: reduceMotion || listReady ? 0 : Math.min(i * 45, 450),
+								easing: cubicOut
+							}}
+							animate:flip={{ duration: reduceMotion ? 0 : 400, easing: cubicOut }}
 						>
 							<div class="col-item">
 								<span class="item-name">{item.name}</span>
@@ -342,7 +361,11 @@
 										class="count-value"
 										class:count-out={status === 'out'}
 										class:count-warn={status === 'low'}
-										transition:fly={{ y: -12, duration: 200, easing: elasticOut }}
+										transition:fly={{
+											y: -12,
+											duration: reduceMotion ? 0 : 380,
+											easing: elasticOut
+										}}
 									>
 										{item.count}
 									</span>
@@ -351,7 +374,7 @@
 							<div class="col-adjust">
 								<div class="adjuster">
 									<button
-										class="adj-btn adj-minus"
+										class="adj-btn adj-minus motion-safe:active:scale-90"
 										onclick={() => changeCount(item, -item.changeAmount)}
 										disabled={item.changeAmount === 0}
 										aria-label="Remove {item.changeAmount || ''} from {item.name}"
@@ -369,7 +392,7 @@
 										aria-label="Change amount for {item.name}"
 									/>
 									<button
-										class="adj-btn adj-plus"
+										class="adj-btn adj-plus motion-safe:active:scale-90"
 										onclick={() => changeCount(item, +item.changeAmount)}
 										disabled={item.changeAmount === 0}
 										aria-label="Add {item.changeAmount || ''} to {item.name}"
@@ -380,7 +403,7 @@
 							</div>
 							<div class="col-reset">
 								<button
-									class="reset-btn"
+									class="reset-btn motion-safe:active:scale-90"
 									onclick={() => askResetCount(item)}
 									disabled={item.count === 0}
 									aria-label="Reset {item.name} to 0"
@@ -399,7 +422,7 @@
 				<div class="footer-pagination">
 					<Pagination store={paginationStore} />
 				</div>
-				<button class="reset-all-btn" onclick={askResetAll}>
+				<button class="reset-all-btn motion-safe:active:scale-95" onclick={askResetAll}>
 					<i class="ti ti-rotate-clockwise"></i>
 					Reset all counts
 				</button>
@@ -702,6 +725,7 @@
 
 	.tx-row {
 		position: relative;
+		background: var(--container-bg);
 		border-left: 4px solid var(--stripe-color);
 		border-bottom: 1px solid var(--table-border-color);
 		transition: background-color 0.12s ease-out;
@@ -841,7 +865,8 @@
 		justify-content: center;
 		transition:
 			background-color 0.12s ease-out,
-			color 0.12s ease-out;
+			color 0.12s ease-out,
+			transform 0.15s ease-out;
 	}
 
 	.adj-minus:hover:not(:disabled) {
@@ -995,6 +1020,8 @@
 		padding: 0.85rem 1.75rem;
 		border-top: 1px solid var(--table-border-color);
 		background: color-mix(in srgb, var(--hover-bg-color) 40%, var(--container-bg));
+		position: relative;
+		z-index: 1;
 	}
 
 	.footer-pagination {

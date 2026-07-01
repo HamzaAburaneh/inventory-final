@@ -1,7 +1,8 @@
 <script>
-	import { fade } from 'svelte/transition';
+	import { onMount } from 'svelte';
+	import { fly } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
-	import { sineOut } from 'svelte/easing';
+	import { cubicIn, cubicOut } from 'svelte/easing';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { motionDuration, rowExitDuration, isLowStock } from '../lib/tableUtils.js';
 	import TableHeader from './TableHeader.svelte';
@@ -28,6 +29,13 @@
 	let tooltipX = $state(0);
 	let tooltipY = $state(0);
 	let showTooltip = $state(false);
+
+	// Stagger the entrance only on the initial mount; on search/sort rebuilds the
+	// rows fade in together (see the {#each} comment), so that behavior is unchanged.
+	let mounted = $state(false);
+	onMount(() => {
+		mounted = true;
+	});
 
 	function handleTooltipShow(event) {
 		const button = event.currentTarget;
@@ -87,26 +95,35 @@
 					search both removes non-matching rows and reorders kept ones; to FLIP the
 					kept rows, Svelte pins the outroing rows with position: absolute, which
 					blockifies the <tr> and collapses its columns for the animation's
-					duration. Sort and delete keep the same key, so their flip/fade stay.
+					duration. Sort and delete keep the same key, so their flip/exit stay.
 
-					The result set fades in as one unit: a single, fast, opacity-only fade on
-					every row (no per-row stagger, no movement) reads as one container
-					crossfade and keeps the layout perfectly stable — restrained motion that
-					avoids the "many competing animations" mess. |global is required so the
-					fade plays when the parent {#key} rebuilds (a local transition stays silent
-					on a parent's re-creation). Sorting keeps the same key, so it animates via
-					flip, not this fade.
+					Motion system: "soft rise" — rows enter by fading while rising 10px into
+					place, ease-out. The initial mount staggers rows 45ms apart (capped at
+					450ms); search rebuilds rise together as one unit (no stagger) so the
+					result set reads as a single calm change. Deletes reverse the entrance
+					(sink + fade, ease-in). |global is required so the enter plays when the
+					parent {#key} rebuilds (a local transition stays silent on a parent's
+					re-creation). Sorting keeps the same key, so it animates via flip, not
+					this transition.
 				-->
 				{#key searchKey}
-					{#each visibleItems as item (item.id)}
+					{#each visibleItems as item, i (item.id)}
 						<tr
 							class="table-row"
 							class:is-low={isLowStock(item)}
-							in:fade|global={{ duration: motionDuration(300, prefersReducedMotion.current) }}
-							out:fade={{ duration: rowExitDuration(isDeleting, prefersReducedMotion.current) }}
+							in:fly|global={{
+								y: 10,
+								duration: motionDuration(260, prefersReducedMotion.current),
+								delay: mounted || prefersReducedMotion.current ? 0 : Math.min(i * 45, 450)
+							}}
+							out:fly={{
+								y: 10,
+								duration: rowExitDuration(isDeleting, prefersReducedMotion.current),
+								easing: cubicIn
+							}}
 							animate:flip={{
-								duration: motionDuration(250, prefersReducedMotion.current),
-								easing: sineOut
+								duration: motionDuration(400, prefersReducedMotion.current),
+								easing: cubicOut
 							}}
 						>
 							<TableCell

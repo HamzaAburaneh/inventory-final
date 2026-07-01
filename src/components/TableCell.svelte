@@ -308,7 +308,9 @@
 		font-size: inherit;
 		line-height: inherit;
 		min-height: 0;
-		transition: background-color 0.15s ease-out;
+		transition:
+			background-color 0.15s ease-out,
+			transform 0.12s ease-out;
 		flex-shrink: 1;
 		min-width: 0;
 		overflow: hidden;
@@ -320,6 +322,10 @@
 
 	.cell-value-btn:hover {
 		background-color: var(--hover-bg-color);
+	}
+
+	.cell-value-btn:active {
+		transform: scale(0.97);
 	}
 
 	.cell-value-btn::after {
@@ -359,7 +365,7 @@
 		font-size: 0.75rem;
 		font-weight: 600;
 		transition:
-			transform 0.1s ease-out,
+			transform 0.12s ease-out,
 			filter 0.15s ease-out;
 		white-space: nowrap;
 		width: fit-content;
@@ -408,6 +414,10 @@
 		transform: scale(1.05);
 	}
 
+	.storage-type-btn:active .storage-type {
+		transform: scale(0.96);
+	}
+
 	/* Booth tags — clickable pills */
 	.booths-container {
 		display: flex;
@@ -426,11 +436,15 @@
 		cursor: pointer;
 		min-height: 0;
 		display: inline-block;
-		transition: transform 0.1s ease-out;
+		transition: transform 0.12s ease-out;
 	}
 
 	.booth-tag-btn:hover {
 		transform: scale(1.08);
+	}
+
+	.booth-tag-btn:active {
+		transform: scale(0.95);
 	}
 
 	.booth-tag {
@@ -466,7 +480,7 @@
 		opacity: 0;
 		transition:
 			opacity 0.15s ease-out,
-			transform 0.1s ease-out,
+			transform 0.12s ease-out,
 			color 0.15s ease-out;
 		will-change: opacity, transform;
 		flex-shrink: 0;
@@ -490,6 +504,10 @@
 		color: #ff0000;
 		background-color: color-mix(in srgb, #ef4444 15%, transparent);
 		transform: scale(1.12);
+	}
+
+	.delete-button:active {
+		transform: scale(0.94);
 	}
 
 	.action-col {
@@ -641,6 +659,19 @@
 			font-size: 0.65rem;
 			padding: 0.25rem 0.4rem;
 			border-radius: 0.375rem;
+		}
+	}
+
+	/* Disable the tactile press/hover scaling for reduced-motion users. */
+	@media (prefers-reduced-motion: reduce) {
+		.cell-value-btn:active,
+		.storage-type-btn:hover .storage-type,
+		.storage-type-btn:active .storage-type,
+		.booth-tag-btn:hover,
+		.booth-tag-btn:active,
+		.delete-button:hover,
+		.delete-button:active {
+			transform: none;
 		}
 	}
 </style>

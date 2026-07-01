@@ -10,6 +10,8 @@
 	import { createSearchState } from '../../lib/runes/search.svelte.js';
 	import { notificationStore } from '../../stores/notificationStore';
 	import { fade, fly } from 'svelte/transition';
+	import { cubicIn } from 'svelte/easing';
+	import { prefersReducedMotion } from 'svelte/motion';
 	import { applySorting } from '../../lib/items';
 	import { onMount } from 'svelte';
 
@@ -39,6 +41,7 @@
 	const items = $derived($itemStore);
 	const searchTermValue = $derived(search.term);
 	const notification = $derived($notificationStore.at(-1) ?? null);
+	const reduceMotion = $derived(prefersReducedMotion.current);
 
 	// Global scroll preservation
 	let lastScrollPosition = 0;
@@ -294,7 +297,11 @@
 	<TableSkeleton />
 {/if}
 {#if notification}
-	<div class="notification {notification.type}" in:fade out:fade>
+	<div
+		class="notification {notification.type}"
+		in:fly={{ y: 10, duration: reduceMotion ? 0 : 240 }}
+		out:fly={{ y: 10, duration: reduceMotion ? 0 : 160, easing: cubicIn }}
+	>
 		{notification.message}
 	</div>
 {/if}
@@ -347,10 +354,14 @@
 		role="presentation"
 		onclick={closeEditModal}
 		onkeydown={(e) => e.key === 'Escape' && closeEditModal()}
-		in:fade={{ duration: 200 }}
-		out:fade={{ duration: 150 }}
+		in:fade={{ duration: reduceMotion ? 0 : 240 }}
+		out:fade={{ duration: reduceMotion ? 0 : 160 }}
 	></div>
-	<div class="modal-overlay" in:fly={{ y: 30, duration: 200 }} out:fade={{ duration: 150 }}>
+	<div
+		class="modal-overlay"
+		in:fly={{ y: 14, duration: reduceMotion ? 0 : 240 }}
+		out:fly={{ y: 14, duration: reduceMotion ? 0 : 160, easing: cubicIn }}
+	>
 		<form class="edit-modal" onsubmit={confirmEdit}>
 			<div class="modal-head">
 				<span class="modal-icon" aria-hidden="true">{@render fieldIcon(editData.field)}</span>
@@ -797,7 +808,18 @@
 		cursor: pointer;
 		transition:
 			background-color 0.15s ease-out,
-			color 0.15s ease-out;
+			color 0.15s ease-out,
+			transform 0.12s ease-out;
+	}
+
+	.modal-buttons button:active {
+		transform: scale(0.97);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.modal-buttons button:active {
+			transform: none;
+		}
 	}
 
 	.modal-buttons button:focus {
