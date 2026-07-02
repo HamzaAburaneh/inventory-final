@@ -962,8 +962,13 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 34px;
-		height: 34px;
+		width: 40px;
+		height: 40px;
+		/* Override global button touch-target rules (min-height 44px + big
+		   padding) that otherwise crush the icon's content box to 0 width. */
+		padding: 0;
+		min-height: 0;
+		min-width: 0;
 		border-radius: 8px;
 		border: 1px solid var(--nb-border);
 		background: transparent;
@@ -975,9 +980,19 @@
 			border-color 0.18s ease;
 	}
 
-	.burger:hover {
-		background: var(--nb-hover-bg);
-		border-color: color-mix(in srgb, var(--nb-accent) 35%, var(--nb-border));
+	/* Global button:focus draws a ring on every tap; keep the ring for
+	   keyboard focus only. */
+	.burger:focus {
+		outline: none;
+	}
+
+	/* Hover-capable devices only — on touch, :hover sticks after a tap and
+	   leaves the button with a stuck accent border. */
+	@media (hover: hover) {
+		.burger:hover {
+			background: var(--nb-hover-bg);
+			border-color: color-mix(in srgb, var(--nb-accent) 35%, var(--nb-border));
+		}
 	}
 
 	.burger:focus-visible {
@@ -994,24 +1009,22 @@
 		position: relative;
 	}
 
+	/* 2px bars at ~75% text color so they stay crisp and visible on
+	   high-DPR phone screens (1.5px muted bars read as a single faint dash). */
 	.burger-bars span {
 		display: block;
-		height: 1.5px;
-		background: var(--nb-muted);
+		height: 2px;
+		width: 100%;
+		background: color-mix(in srgb, var(--nb-text) 75%, transparent);
 		border-radius: 2px;
 		transition: all 0.22s ease;
 		transform-origin: center;
 	}
 
-	/* Third bar is shorter — gives a "stack" feel */
-	.burger-bars span:nth-child(3) {
-		width: 10px;
-		align-self: flex-end;
-	}
-
+	/* Open state: outer bars translate to the middle FIRST, then rotate into a
+	   symmetric X (translate-before-rotate keeps the math exact). */
 	.burger-bars.open span:nth-child(1) {
-		transform: rotate(45deg) translate(4px, 4px);
-		width: 15px;
+		transform: translateY(4.5px) rotate(45deg);
 	}
 
 	.burger-bars.open span:nth-child(2) {
@@ -1020,8 +1033,7 @@
 	}
 
 	.burger-bars.open span:nth-child(3) {
-		width: 15px;
-		transform: rotate(-45deg) translate(4px, -4px);
+		transform: translateY(-4.5px) rotate(-45deg);
 	}
 
 	/* ── Mobile panel ──────────────────────────── */
