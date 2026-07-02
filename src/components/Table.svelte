@@ -16,8 +16,7 @@
 		onDelete,
 		sortBy,
 		currentSortColumn,
-		sortAscending,
-		searchKey = ''
+		sortAscending
 	} = $props();
 
 	let deletingItemId = $state(null);
@@ -30,8 +29,9 @@
 	let tooltipY = $state(0);
 	let showTooltip = $state(false);
 
-	// Stagger the entrance only on the initial mount; on search/sort rebuilds the
-	// rows fade in together (see the {#each} comment), so that behavior is unchanged.
+	// Stagger the 10px-rise entrance only on the initial mount; rows entering
+	// later (search matches, page flips) crossfade in place instead (see the
+	// {#each} comment).
 	let mounted = $state(false);
 	onMount(() => {
 		mounted = true;
@@ -90,117 +90,117 @@
 			<TableHeader {sortBy} {currentSortColumn} {sortAscending} />
 			<tbody>
 				<!--
-					Keying on the search term rebuilds the each wholesale when the filter
-					changes, so animate:flip never runs across a search. Without this, a
-					search both removes non-matching rows and reorders kept ones; to FLIP the
-					kept rows, Svelte pins the outroing rows with position: absolute, which
-					blockifies the <tr> and collapses its columns for the animation's
-					duration. Sort and delete keep the same key, so their flip/exit stay.
+					Rows persist across searches — the each is keyed by item id only, so a
+					row that keeps matching never re-renders or re-animates while you type:
+					it either stays perfectly still or glides to its new position via
+					animate:flip. Rows that stop matching leave in 0ms (rowExitDuration —
+					a visible exit would make Svelte pin the outroing <tr> with
+					position: absolute, blockifying it and collapsing its columns mid-flip)
+					and new matches fade in place. Sorting reorders via the same flip.
+					Deletes are the only animated exit (sink + fade, ease-in).
 
-					Motion system: "soft rise" — rows enter by fading while rising 10px into
-					place, ease-out. The initial mount staggers rows 45ms apart (capped at
-					450ms); search rebuilds rise together as one unit (no stagger) so the
-					result set reads as a single calm change. Deletes reverse the entrance
-					(sink + fade, ease-in). |global is required so the enter plays when the
-					parent {#key} rebuilds (a local transition stays silent on a parent's
-					re-creation). Sorting keeps the same key, so it animates via flip, not
-					this transition.
+					Motion system: "soft rise" — on first load rows fade in while rising
+					10px into place (ease-out), staggered 45ms apart (capped at 450ms).
+					After mount, entering rows crossfade in place (y: 0, 150ms) so each
+					keystroke reads as a calm incremental change. |global is required so
+					the entrance plays on initial load, when the rows are created together
+					with the parent {#if itemsLoaded} block (a local transition stays
+					silent on a parent's creation).
 				-->
-				{#key searchKey}
-					{#each visibleItems as item, i (item.id)}
-						<tr
-							class="table-row"
-							class:is-low={isLowStock(item)}
-							in:fly|global={{
-								y: 10,
-								duration: motionDuration(260, prefersReducedMotion.current),
-								delay: mounted || prefersReducedMotion.current ? 0 : Math.min(i * 45, 450)
-							}}
-							out:fly={{
-								y: 10,
-								duration: rowExitDuration(isDeleting, prefersReducedMotion.current),
-								easing: cubicIn
-							}}
-							animate:flip={{
-								duration: motionDuration(400, prefersReducedMotion.current),
-								easing: cubicOut
-							}}
-						>
-							<TableCell
-								type="name"
-								value={item.name}
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-							<TableCell
-								type="count"
-								value={item.count}
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-							<TableCell
-								type="lowCount"
-								value={item.lowCount}
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-							<TableCell
-								type="cost"
-								value={item.cost}
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-							<TableCell
-								type="totalValue"
-								value={item.totalValue}
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-							<TableCell
-								type="storageType"
-								value={item.storageType}
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-							<TableCell
-								type="booths"
-								value={item.booths}
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-							<TableCell
-								type="action"
-								value=""
-								{item}
-								onEdit={handleEdit}
-								onDelete={handleDelete}
-								onTooltipShow={handleTooltipShow}
-								onTooltipHide={handleTooltipHide}
-							/>
-						</tr>
-					{/each}
-				{/key}
+				{#each visibleItems as item, i (item.id)}
+					<tr
+						class="table-row"
+						class:is-low={isLowStock(item)}
+						in:fly|global={{
+							y: mounted ? 0 : 10,
+							duration: motionDuration(mounted ? 150 : 260, prefersReducedMotion.current),
+							delay: mounted || prefersReducedMotion.current ? 0 : Math.min(i * 45, 450)
+						}}
+						out:fly={{
+							y: 10,
+							duration: rowExitDuration(isDeleting, prefersReducedMotion.current),
+							easing: cubicIn
+						}}
+						animate:flip={{
+							duration: (d) =>
+								prefersReducedMotion.current ? 0 : Math.min(Math.sqrt(d) * 30, 300),
+							easing: cubicOut
+						}}
+					>
+						<TableCell
+							type="name"
+							value={item.name}
+							{item}
+							onEdit={handleEdit}
+							onDelete={handleDelete}
+							onTooltipShow={handleTooltipShow}
+							onTooltipHide={handleTooltipHide}
+						/>
+						<TableCell
+							type="count"
+							value={item.count}
+							{item}
+							onEdit={handleEdit}
+							onDelete={handleDelete}
+							onTooltipShow={handleTooltipShow}
+							onTooltipHide={handleTooltipHide}
+						/>
+						<TableCell
+							type="lowCount"
+							value={item.lowCount}
+							{item}
+							onEdit={handleEdit}
+							onDelete={handleDelete}
+							onTooltipShow={handleTooltipShow}
+							onTooltipHide={handleTooltipHide}
+						/>
+						<TableCell
+							type="cost"
+							value={item.cost}
+							{item}
+							onEdit={handleEdit}
+							onDelete={handleDelete}
+							onTooltipShow={handleTooltipShow}
+							onTooltipHide={handleTooltipHide}
+						/>
+						<TableCell
+							type="totalValue"
+							value={item.totalValue}
+							{item}
+							onEdit={handleEdit}
+							onDelete={handleDelete}
+							onTooltipShow={handleTooltipShow}
+							onTooltipHide={handleTooltipHide}
+						/>
+						<TableCell
+							type="storageType"
+							value={item.storageType}
+							{item}
+							onEdit={handleEdit}
+							onDelete={handleDelete}
+							onTooltipShow={handleTooltipShow}
+							onTooltipHide={handleTooltipHide}
+						/>
+						<TableCell
+							type="booths"
+							value={item.booths}
+							{item}
+							onEdit={handleEdit}
+							onDelete={handleDelete}
+							onTooltipShow={handleTooltipShow}
+							onTooltipHide={handleTooltipHide}
+						/>
+						<TableCell
+							type="action"
+							value=""
+							{item}
+							onEdit={handleEdit}
+							onDelete={handleDelete}
+							onTooltipShow={handleTooltipShow}
+							onTooltipHide={handleTooltipHide}
+						/>
+					</tr>
+				{/each}
 			</tbody>
 		</table>
 	</div>
@@ -230,6 +230,8 @@
 		min-height: 18.8rem;
 		will-change: scroll-position;
 		transform: translateZ(0);
+		/* Keep row-glide repaints contained to the scroller instead of the page. */
+		contain: paint;
 		-webkit-overflow-scrolling: touch;
 		padding-right: 0;
 	}

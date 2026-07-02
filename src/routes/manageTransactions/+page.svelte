@@ -1,7 +1,7 @@
 <script>
 	import { fade, fly } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
-	import { elasticOut, cubicOut } from 'svelte/easing';
+	import { cubicIn, cubicOut, elasticOut } from 'svelte/easing';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import TableSkeleton from '../../components/TableSkeleton.svelte';
@@ -20,8 +20,9 @@
 	let currentSortColumn = $state('name');
 	let sortAscending = $state(true);
 	let itemsLoaded = $state(false);
-	// True once the first list render is done, so the staggered entrance plays only
-	// on initial load — not on every search/filter change (which looked jittery).
+	// True once the first list render is done: the staggered 8px-rise entrance
+	// plays only on initial load; rows appearing later (search matches, filter
+	// toggles, page flips) crossfade quickly in place instead.
 	let listReady = $state(false);
 	let statusFilter = $state('all');
 
@@ -302,10 +303,7 @@
 				</div>
 
 				{#if paginatedItemsList.length === 0}
-					<div
-						class="tx-empty"
-						in:fly={{ y: 8, duration: reduceMotion ? 0 : 320, easing: cubicOut }}
-					>
+					<div class="tx-empty" in:fade={{ duration: reduceMotion ? 0 : 150 }}>
 						<i class="ti ti-package-off"></i>
 						<p class="empty-title">No items to show</p>
 						<p class="empty-hint">
@@ -331,12 +329,15 @@
 							class="tx-row"
 							style="--stripe-color: var(--st-{status}-color)"
 							in:fly={{
-								y: 8,
-								duration: reduceMotion ? 0 : 320,
+								y: listReady ? 0 : 8,
+								duration: reduceMotion ? 0 : listReady ? 150 : 320,
 								delay: reduceMotion || listReady ? 0 : Math.min(i * 45, 450),
 								easing: cubicOut
 							}}
-							animate:flip={{ duration: reduceMotion ? 0 : 400, easing: cubicOut }}
+							animate:flip={{
+								duration: (d) => (reduceMotion ? 0 : Math.min(Math.sqrt(d) * 30, 300)),
+								easing: cubicOut
+							}}
 						>
 							<div class="col-item">
 								<span class="item-name">{item.name}</span>
@@ -454,7 +455,11 @@
 </ConfirmModal>
 
 {#if notification}
-	<div class="notification {notification.type}" in:fade out:fade>
+	<div
+		class="notification {notification.type}"
+		in:fly={{ y: 10, duration: reduceMotion ? 0 : 240 }}
+		out:fly={{ y: 10, duration: reduceMotion ? 0 : 160, easing: cubicIn }}
+	>
 		{notification.message}
 	</div>
 {/if}
@@ -506,6 +511,8 @@
 			0 4px 12px rgba(0, 0, 0, 0.04);
 		border: 1px solid var(--table-border-color);
 		overflow: hidden;
+		/* Keep row-glide repaints contained to this card instead of the page. */
+		contain: paint;
 	}
 
 	/* =============================================

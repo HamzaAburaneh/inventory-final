@@ -226,17 +226,16 @@
 		setTimeout(restoreScroll, 100);
 	};
 
+	// No scroll juggling here: the table keeps a min-height, so filtering can't
+	// shift the page — and a per-keystroke scrollTo fights the browser and
+	// reads as input lag.
 	const handleSearch = (value) => {
-		preserveScroll();
 		search.setTerm(value);
 		paginationStore.setCurrentPage(1);
-		setTimeout(restoreScroll, 50);
 	};
 
 	const handleClearSearch = () => {
-		preserveScroll();
 		search.clear();
-		setTimeout(restoreScroll, 50);
 	};
 
 	const sortBy = (column) => {
@@ -284,7 +283,6 @@
 					{sortBy}
 					{currentSortColumn}
 					{sortAscending}
-					searchKey={searchTermValue}
 				/>
 			</div>
 

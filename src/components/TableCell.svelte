@@ -370,8 +370,6 @@
 		white-space: nowrap;
 		width: fit-content;
 		text-align: center;
-		will-change: transform;
-		transform: translateZ(0);
 	}
 
 	/* Soft-tint palette — light (default) + dark via [data-theme]. */
@@ -482,7 +480,6 @@
 			opacity 0.15s ease-out,
 			transform 0.12s ease-out,
 			color 0.15s ease-out;
-		will-change: opacity, transform;
 		flex-shrink: 0;
 		padding: 0.3rem;
 		border-radius: 6px;
