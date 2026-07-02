@@ -190,7 +190,11 @@ body {
 	color: var(--text-color);
 	margin: 0;
 	padding: 0;
-	overflow-x: hidden;
+	/* `clip` (not `hidden`) prevents horizontal scroll WITHOUT turning <body> into
+	   a scroll container. `hidden` here forces overflow-y to `auto`, which makes
+	   <body> its own scroller and breaks the sticky navbar (it sticks to a
+	   non-scrolling <body> instead of the viewport, so it scrolls away on mobile). */
+	overflow-x: clip;
 	font-size: 16px;
 	line-height: 1.6;
 	font-family:
