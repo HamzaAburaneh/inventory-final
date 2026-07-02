@@ -61,5 +61,10 @@
 		/>
 		<path d="m3.3 7 8.7 5 8.7-5" />
 		<path d="M12 22V12" />
+	{:else if name === 'pencil'}
+		<path d="M12 20h9" />
+		<path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+	{:else if name === 'chevron'}
+		<polyline points="9 18 15 12 9 6" />
 	{/if}
 </svg>

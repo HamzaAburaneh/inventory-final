@@ -7,6 +7,7 @@
 	import { motionDuration, rowExitDuration, isLowStock } from '../lib/tableUtils.js';
 	import TableHeader from './TableHeader.svelte';
 	import TableCell from './TableCell.svelte';
+	import ItemCardMobile from './ItemCardMobile.svelte';
 	import DeleteModal from './DeleteModal.svelte';
 	import Tooltip from './Tooltip.svelte';
 
@@ -38,6 +39,9 @@
 	});
 
 	function handleTooltipShow(event) {
+		// Hover tooltips don't make sense on touch screens — mouseenter fires on
+		// tap but mouseleave never comes, leaving the tooltip stuck on screen.
+		if (window.matchMedia('(hover: none)').matches) return;
 		const button = event.currentTarget;
 		const rect = button.getBoundingClientRect();
 		const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
@@ -204,6 +208,36 @@
 			</tbody>
 		</table>
 	</div>
+
+	<!--
+		Mobile card list (shown below the 48rem breakpoint; the table above is
+		hidden there). Same keyed `visibleItems` and motion system as the desktop
+		rows — soft rise on first mount, crossfade for later matches, flip on
+		reorder, animated sink only on delete.
+	-->
+	<div class="mobile-cards">
+		{#each visibleItems as item, i (item.id)}
+			<div
+				class="mobile-card-wrap"
+				in:fly|global={{
+					y: mounted ? 0 : 10,
+					duration: motionDuration(mounted ? 150 : 260, prefersReducedMotion.current),
+					delay: mounted || prefersReducedMotion.current ? 0 : Math.min(i * 45, 450)
+				}}
+				out:fly={{
+					y: 10,
+					duration: rowExitDuration(isDeleting, prefersReducedMotion.current),
+					easing: cubicIn
+				}}
+				animate:flip={{
+					duration: (d) => (prefersReducedMotion.current ? 0 : Math.min(Math.sqrt(d) * 30, 300)),
+					easing: cubicOut
+				}}
+			>
+				<ItemCardMobile {item} onEdit={handleEdit} onDelete={handleDelete} />
+			</div>
+		{/each}
+	</div>
 </div>
 
 <Tooltip text={tooltipText} x={tooltipX} y={tooltipY} visible={showTooltip} />
@@ -266,49 +300,21 @@
 		box-shadow: inset 3px 0 0 #ef4444;
 	}
 
+	/* Mobile card list — hidden on desktop, where the table above is used. */
+	.mobile-cards {
+		display: none;
+	}
+
 	@media (max-width: 48rem) {
 		.table-scroll {
-			padding-right: 0;
-		}
-
-		.custom-table {
-			min-width: auto;
-		}
-
-		.custom-table :global(thead) {
 			display: none;
 		}
 
-		.custom-table,
-		.custom-table :global(tbody),
-		.custom-table :global(tr),
-		.custom-table :global(td) {
-			width: 100%;
-		}
-
-		.custom-table :global(tr) {
+		.mobile-cards {
 			display: flex;
 			flex-direction: column;
-			margin-bottom: 1rem;
-			border: 0.063rem solid var(--table-border-color);
-			border-radius: 0.5rem;
-			overflow: hidden;
+			gap: 0.75rem;
 			padding: 0.75rem;
-			gap: 0.5rem;
-			background-color: var(--container-bg);
-		}
-
-		.custom-table :global(td:last-child) {
-			border-bottom: none;
-		}
-
-		/* Low-stock card: left accent border instead of the desktop inset shadow. */
-		.custom-table tbody tr.is-low {
-			border-left: 3px solid #ef4444;
-		}
-
-		.custom-table tbody tr.is-low :global(td:first-child) {
-			box-shadow: none;
 		}
 	}
 </style>
