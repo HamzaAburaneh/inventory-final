@@ -1,37 +1,68 @@
 import { json } from '@sveltejs/kit';
-import { getHistoricalTransactions } from '$lib/transactions';
 import { predictStockLevels } from '$lib/stockPrediction';
 import { predictStockLevelsWithAI } from '$lib/aiStockPrediction';
-import { db } from '$lib/../firebase';
-import { collection, getDocs } from 'firebase/firestore';
 
-async function getItems() {
+// This route deliberately does NOT read Firestore. The server has no
+// authenticated Firebase user, so once the security rules (firestore.rules,
+// `request.auth != null`) are deployed, any server-side read would be denied.
+// Instead the signed-in client reads its own data and POSTs it here (see
+// src/lib/predictionsClient.js); the server verifies the caller's Firebase ID
+// token and runs the prediction models on the posted data.
+
+/**
+ * Verifies a Firebase ID token using the Identity Toolkit REST API.
+ * Uses the public Firebase web API key — no admin SDK dependency needed.
+ * @param {string} idToken - The Firebase ID token from the client.
+ * @returns {Promise<boolean>} True if the token belongs to a valid user.
+ */
+async function verifyIdToken(idToken) {
+	const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+	if (!apiKey || !idToken) {
+		return false;
+	}
 	try {
-		const querySnapshot = await getDocs(collection(db, 'items'));
-		const items = [];
-		querySnapshot.forEach((doc) => {
-			items.push({
-				id: doc.id,
-				...doc.data()
-			});
-		});
-		return items;
+		const response = await fetch(
+			`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
+			{
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ idToken })
+			}
+		);
+		if (!response.ok) {
+			return false;
+		}
+		const data = await response.json();
+		return Array.isArray(data.users) && data.users.length > 0;
 	} catch (error) {
-		console.error('Error loading items:', error);
-		return [];
+		console.error('Error verifying ID token:', error);
+		return false;
 	}
 }
 
-export const GET = async ({ url }) => {
+export const POST = async ({ request }) => {
 	try {
-		const timeframe = parseInt(url.searchParams.get('timeframe') || '14', 10);
-		const useAI = url.searchParams.get('ai') === 'true';
+		const authHeader = request.headers.get('authorization') || '';
+		const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : '';
+		if (!(await verifyIdToken(idToken))) {
+			return json({ error: 'Unauthorized' }, { status: 401 });
+		}
 
-		const transactions = await getHistoricalTransactions();
+		let body;
+		try {
+			body = await request.json();
+		} catch {
+			return json({ error: 'Invalid JSON body' }, { status: 400 });
+		}
 
-		if (useAI) {
-			// Use AI-enhanced predictions
-			const items = await getItems();
+		const { transactions, items, forecastDays, useAI } = body ?? {};
+		if (!Array.isArray(transactions) || !Array.isArray(items)) {
+			return json({ error: 'transactions and items must be arrays' }, { status: 400 });
+		}
+		const timeframe = parseInt(forecastDays, 10) || 14;
+
+		if (useAI === true) {
+			// AI-enhanced predictions (falls back to ARIMA internally on failure)
 			const enhancedPredictions = await predictStockLevelsWithAI(transactions, items, timeframe);
 
 			// Convert enhanced predictions to the expected format for the frontend
@@ -48,7 +79,7 @@ export const GET = async ({ url }) => {
 
 			return json(predictions);
 		} else {
-			// Use traditional ARIMA predictions
+			// Traditional ARIMA predictions
 			const predictions = predictStockLevels(transactions, timeframe);
 
 			// Convert to enhanced format for consistency

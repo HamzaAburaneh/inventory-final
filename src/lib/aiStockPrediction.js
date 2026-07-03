@@ -3,6 +3,7 @@
  * Combines traditional ARIMA models with AI analysis for better predictions
  */
 
+import { env } from '$env/dynamic/private';
 import { predictStockLevels as arimaPredict } from './stockPrediction.js';
 
 /**
@@ -26,7 +27,10 @@ import { predictStockLevels as arimaPredict } from './stockPrediction.js';
  * @property {string[]} factors
  */
 
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
+// Server-only secret ($env/dynamic/private): never use a VITE_ prefix here —
+// that would expose the key in the client bundle. Importing this module from
+// client code is a build error, which is exactly the guard we want.
+const OPENROUTER_API_KEY = env.OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
 /**
@@ -184,10 +188,12 @@ function prepareHistoricalSales(transactions, itemId) {
 		date.setHours(0, 0, 0, 0);
 		const dateKey = date.toISOString().split('T')[0];
 
+		// Only removals count as demand — 'add' transactions are restocks, not
+		// sales (see groupTransactionsByItem in stockPrediction.js).
 		const change =
-			transaction.type === 'add'
-				? transaction.newCount - transaction.previousCount
-				: transaction.previousCount - transaction.newCount;
+			transaction.type === 'remove'
+				? Math.max(0, transaction.previousCount - transaction.newCount)
+				: 0;
 
 		dailySales[dateKey] = (dailySales[dateKey] || 0) + change;
 	});

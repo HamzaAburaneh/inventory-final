@@ -3,6 +3,7 @@
 	import { fade, slide, scale } from 'svelte/transition';
 	import { notificationStore } from '../stores/notificationStore.js';
 	import { createSearchState } from '../lib/runes/search.svelte.js';
+	import { fetchStockPredictions } from '../lib/predictionsClient.js';
 	import SearchBar from './SearchBar.svelte';
 	import { onMount } from 'svelte';
 
@@ -21,11 +22,7 @@
 	async function fetchPredictions(timeframe, ai) {
 		try {
 			loading = true;
-			const response = await fetch(`/api/stockPredictions?timeframe=${timeframe}&ai=${ai}`);
-			if (!response.ok) {
-				throw new Error('Failed to fetch stock predictions');
-			}
-			predictions = await response.json();
+			predictions = await fetchStockPredictions({ forecastDays: timeframe, useAI: ai });
 			error = '';
 		} catch (err) {
 			console.error('Error fetching stock predictions:', err);

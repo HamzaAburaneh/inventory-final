@@ -4,6 +4,7 @@
 	import { notificationStore } from '../../stores/notificationStore.js';
 	import { Chart, registerables } from 'chart.js';
 	import { itemStore } from '../../stores/itemStore.js';
+	import { fetchStockPredictions } from '../../lib/predictionsClient.js';
 	import { onMount } from 'svelte';
 
 	let overviewChart = $state();
@@ -43,11 +44,7 @@
 
 	async function fetchPredictions() {
 		try {
-			const response = await fetch('/api/stockPredictions?timeframe=14&ai=false');
-			if (!response.ok) {
-				throw new Error('Failed to fetch stock predictions');
-			}
-			predictions = await response.json();
+			predictions = await fetchStockPredictions({ forecastDays: 14, useAI: false });
 		} catch (err) {
 			console.error('Error fetching stock predictions:', err);
 			notificationStore.showNotification('Failed to load stock predictions.', 'error');
