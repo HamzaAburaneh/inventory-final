@@ -13,6 +13,7 @@ import {
 	writeBatch
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { markQueued, markSynced } from './syncQueue';
 
 /**
  * @typedef {import('../types').Item} Item
@@ -73,7 +74,17 @@ function ledgerRecord(itemId, itemName, type, previousCount, newCount, user) {
  */
 function commitBatch(batch) {
 	if (isOffline()) {
-		batch.commit().catch((error) => console.error('Error syncing queued write:', error));
+		// Track the write as queued now and as synced once Firestore acks it on
+		// reconnect (the commit promise resolves then). Resolve immediately so
+		// the UI updates from the local cache without waiting for a network.
+		markQueued();
+		batch
+			.commit()
+			.then(() => markSynced())
+			.catch((error) => {
+				markSynced();
+				console.error('Error syncing queued write:', error);
+			});
 		return Promise.resolve();
 	}
 	return batch.commit();

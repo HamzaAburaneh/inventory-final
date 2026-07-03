@@ -1,5 +1,6 @@
 <script>
 	import Navbar from '../components/Navbar.svelte';
+	import OfflineIndicator from '../components/OfflineIndicator.svelte';
 	import '../styles/global.css';
 	import { authStore, authReady } from '../stores/authStore.js';
 	import { onMount } from 'svelte';
@@ -90,6 +91,7 @@
 </script>
 
 <Navbar user={navUser} />
+<OfflineIndicator />
 
 <main class="main-container">
 	<!-- Keyed on the route so the wrapper is recreated on every client-side
