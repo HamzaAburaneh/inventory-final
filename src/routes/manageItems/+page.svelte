@@ -475,10 +475,13 @@
 
 		.inventory-stats {
 			width: 100%;
+			flex-direction: column;
+			align-items: stretch;
 		}
 
 		.stats-text {
-			flex: 1;
+			flex: none;
+			width: 100%;
 			text-align: center;
 			padding: 0.5rem 0.75rem;
 			font-size: 0.8rem;

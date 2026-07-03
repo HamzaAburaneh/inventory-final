@@ -21,7 +21,10 @@ export function formatTotalValue(count, cost) {
 	const numericCost = parseFloat(cost);
 	if (isNaN(numericCount) || isNaN(numericCost)) return '';
 	const totalValue = numericCount * numericCost;
-	return `$ ${totalValue.toFixed(2)}`;
+	return `$ ${totalValue.toLocaleString('en-US', {
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2
+	})}`;
 }
 
 export function formatBooths(booths) {
