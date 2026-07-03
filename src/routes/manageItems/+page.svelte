@@ -2,6 +2,7 @@
 	import ItemForm from '../../components/ItemForm.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Table from '../../components/Table.svelte';
+	import Notification from '../../components/Notification.svelte';
 	import TableSkeleton from '../../components/TableSkeleton.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import StorageSelect from '../../components/StorageSelect.svelte';
@@ -40,7 +41,6 @@
 
 	const items = $derived($itemStore);
 	const searchTermValue = $derived(search.term);
-	const notification = $derived($notificationStore.at(-1) ?? null);
 	const reduceMotion = $derived(prefersReducedMotion.current);
 
 	// Global scroll preservation
@@ -294,15 +294,7 @@
 {:else}
 	<TableSkeleton />
 {/if}
-{#if notification}
-	<div
-		class="notification {notification.type}"
-		in:fly={{ y: 10, duration: reduceMotion ? 0 : 240 }}
-		out:fly={{ y: 10, duration: reduceMotion ? 0 : 160, easing: cubicIn }}
-	>
-		{notification.message}
-	</div>
-{/if}
+<Notification />
 
 {#snippet fieldIcon(field)}
 	{#if field === 'name'}
@@ -667,35 +659,6 @@
 		padding: 0.6rem 1.25rem;
 		border-top: 1px solid var(--table-border-color);
 		background: var(--hover-bg-color);
-	}
-
-	.notification {
-		position: fixed;
-		bottom: 20px;
-		right: 20px;
-		color: white;
-		padding: 1rem 2rem;
-		border-radius: var(--border-radius);
-		z-index: 1000;
-		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-		font-weight: 500;
-	}
-
-	.notification.success {
-		background: var(--add-item-color);
-	}
-
-	.notification.error {
-		background: #dc3545;
-	}
-
-	.notification.warning {
-		background: #ffc107;
-		color: #333;
-	}
-
-	.notification.info {
-		background: var(--nav-logo-color);
 	}
 
 	/* Edit modal */

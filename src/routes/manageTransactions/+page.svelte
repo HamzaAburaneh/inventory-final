@@ -1,12 +1,13 @@
 <script>
 	import { fade, fly } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
-	import { cubicIn, cubicOut, elasticOut } from 'svelte/easing';
+	import { cubicOut } from 'svelte/easing';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import TableSkeleton from '../../components/TableSkeleton.svelte';
 	import ConfirmModal from '../../components/ConfirmModal.svelte';
 	import Pagination from '../../components/Pagination.svelte';
+	import Notification from '../../components/Notification.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { itemStore } from '../../stores/itemStore';
 	import { createSearchState } from '../../lib/runes/search.svelte.js';
@@ -33,7 +34,6 @@
 
 	const items = $derived($itemStore);
 	const searchTermValue = $derived(search.term);
-	const notification = $derived($notificationStore.at(-1) ?? null);
 	const authUser = $derived($authStore);
 
 	// Respect the user's reduced-motion setting for every transition/animation below.
@@ -299,7 +299,6 @@
 					<span class="h-status">Status</span>
 					<span class="h-count">Count</span>
 					<span class="h-adjust">Adjust</span>
-					<span class="h-reset"></span>
 				</div>
 
 				{#if paginatedItemsList.length === 0}
@@ -340,9 +339,9 @@
 							}}
 						>
 							<div class="col-item">
-								<span class="item-name">{item.name}</span>
+								<span class="item-name" title={item.name}>{item.name}</span>
 							</div>
-							<div class="col-storage">
+							<div class="col-storage" class:storage-empty={!storage}>
 								{#if storage}
 									<span class="storage-tag">
 										<i class="ti {storage.icon}"></i>
@@ -357,20 +356,13 @@
 								</span>
 							</div>
 							<div class="col-count">
-								{#key item.count}
-									<span
-										class="count-value"
-										class:count-out={status === 'out'}
-										class:count-warn={status === 'low'}
-										transition:fly={{
-											y: -12,
-											duration: reduceMotion ? 0 : 380,
-											easing: elasticOut
-										}}
-									>
-										{item.count}
-									</span>
-								{/key}
+								<span
+									class="count-value"
+									class:count-out={status === 'out'}
+									class:count-warn={status === 'low'}
+								>
+									{item.count}
+								</span>
 							</div>
 							<div class="col-adjust">
 								<div class="adjuster">
@@ -400,18 +392,16 @@
 									>
 										+
 									</button>
+									<button
+										class="adj-btn adj-reset motion-safe:active:scale-90"
+										onclick={() => askResetCount(item)}
+										disabled={item.count === 0}
+										aria-label="Reset {item.name} to 0"
+										title="Reset to 0"
+									>
+										<i class="ti ti-rotate-clockwise"></i>
+									</button>
 								</div>
-							</div>
-							<div class="col-reset">
-								<button
-									class="reset-btn motion-safe:active:scale-90"
-									onclick={() => askResetCount(item)}
-									disabled={item.count === 0}
-									aria-label="Reset {item.name} to 0"
-									title="Reset to 0"
-								>
-									<i class="ti ti-rotate-clockwise"></i>
-								</button>
 							</div>
 						</div>
 					{/each}
@@ -421,7 +411,7 @@
 			<!-- Footer -->
 			<div class="tx-footer">
 				<div class="footer-pagination">
-					<Pagination store={paginationStore} />
+					<Pagination store={paginationStore} compact />
 				</div>
 				<button class="reset-all-btn motion-safe:active:scale-95" onclick={askResetAll}>
 					<i class="ti ti-rotate-clockwise"></i>
@@ -454,15 +444,7 @@
 	{/if}
 </ConfirmModal>
 
-{#if notification}
-	<div
-		class="notification {notification.type}"
-		in:fly={{ y: 10, duration: reduceMotion ? 0 : 240 }}
-		out:fly={{ y: 10, duration: reduceMotion ? 0 : 160, easing: cubicIn }}
-	>
-		{notification.message}
-	</div>
-{/if}
+<Notification />
 
 <style>
 	/* =============================================
@@ -704,7 +686,7 @@
 	.tx-row,
 	.tx-list-head {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) 6.5rem 7rem 4.5rem 8.25rem 2.25rem;
+		grid-template-columns: minmax(0, 1fr) 6.5rem 7rem 4.5rem 10.75rem;
 		align-items: center;
 		gap: 0.85rem;
 		padding: 0.55rem 1.5rem 0.55rem 1.25rem;
@@ -743,7 +725,11 @@
 	}
 
 	.tx-row:hover {
-		background: var(--hover-bg-color);
+		/* Active/editing row picks up a faint wash of its own status stripe colour
+		   (green/amber/red) instead of a flat grey, which read as "disabled" in
+		   light mode. --stripe-color and --container-bg both flip per theme, so the
+		   tint stays subtle in light and dark. */
+		background: color-mix(in srgb, var(--stripe-color) 9%, var(--container-bg));
 	}
 
 	/* ---- Item column ---- */
@@ -924,45 +910,30 @@
 	}
 
 	/* =============================================
-	   Reset button
+	   Reset — a segment inside the adjuster pill
 	   ============================================= */
-	.col-reset {
-		display: flex;
-		justify-content: center;
-	}
-
-	.reset-btn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 2rem;
-		height: 2rem;
-		padding: 0;
+	.adj-reset {
+		border-left: 1.5px solid var(--table-border-color);
 		color: var(--text-color-dimmed);
-		background: transparent;
-		border: none;
-		border-radius: var(--border-radius);
-		cursor: pointer;
-		transition: all 0.15s ease-out;
 	}
 
-	.reset-btn i {
+	.adj-reset i {
 		font-size: 1rem;
 	}
 
-	.reset-btn:hover:not(:disabled) {
+	.adj-reset:hover:not(:disabled) {
 		background: var(--st-out-bg);
 		color: var(--st-out-text);
 	}
 
-	.reset-btn:disabled {
-		opacity: 0.15;
+	.adj-reset:disabled {
+		opacity: 0.3;
 		cursor: not-allowed;
 	}
 
-	.reset-btn:focus-visible {
+	.adj-reset:focus-visible {
 		outline: 2px solid var(--add-item-color);
-		outline-offset: 2px;
+		outline-offset: -2px;
 	}
 
 	/* =============================================
@@ -1062,38 +1033,6 @@
 	}
 
 	/* =============================================
-	   Notification
-	   ============================================= */
-	.notification {
-		position: fixed;
-		bottom: 20px;
-		right: 20px;
-		color: white;
-		padding: 1rem 2rem;
-		border-radius: 0.5rem;
-		z-index: 1000;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-		font-weight: 500;
-	}
-
-	.notification.success {
-		background-color: var(--add-item-color);
-	}
-
-	.notification.error {
-		background-color: #dc3545;
-	}
-
-	.notification.warning {
-		background-color: #ffc107;
-		color: #333;
-	}
-
-	.notification.info {
-		background-color: var(--nav-logo-color);
-	}
-
-	/* =============================================
 	   Responsive — keep condensed rows on mobile
 	   ============================================= */
 	@media (max-width: 640px) {
@@ -1127,43 +1066,100 @@
 			justify-content: flex-end;
 		}
 
-		/* Condensed rows: drop storage + status, keep name / count / adjuster / reset */
-		.tx-row,
+		/* Stacked card rows: the grid header makes no sense here, so hide it and
+		   lay each row out as name / storage+status+count meta / full-width
+		   adjuster. This gives the name the whole width (no more clipping) and
+		   turns the adjuster into big, thumb-friendly targets. */
 		.tx-list-head {
-			grid-template-columns: minmax(0, 1fr) 2.75rem 7.25rem 2rem;
-			gap: 0.6rem;
-			padding: 0.5rem 1rem 0.5rem 0.85rem;
+			display: none;
+		}
+
+		.tx-row {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 0.55rem;
+			padding: 0.7rem 0.9rem;
+		}
+
+		.col-item {
+			flex: 0 0 100%;
+			min-width: 0;
 		}
 
 		.col-storage,
 		.col-status,
-		.h-storage,
-		.h-status {
+		.col-count {
+			flex: 0 0 auto;
+		}
+
+		/* No storage type → don't leave a gap at the start of the meta row. */
+		.col-storage.storage-empty {
 			display: none;
 		}
 
+		.col-adjust {
+			flex: 0 0 100%;
+		}
+
+		/* Name owns the full width, so it wraps instead of clipping. */
 		.item-name {
-			font-size: 0.9rem;
+			font-size: 0.95rem;
+			white-space: normal;
+			overflow-wrap: anywhere;
 		}
 
 		.count-value {
 			font-size: 1.05rem;
 		}
 
+		/* Full-width adjuster — four equal segments (− · amount · + · reset).
+		   Grid with `minmax(0, 1fr)` columns forces exactly-equal widths; flex
+		   left the <input> segment narrower than the buttons on mobile browsers
+		   (form controls resist flex shrink/grow inconsistently). */
+		.col-adjust .adjuster {
+			display: grid;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			width: 100%;
+		}
+
+		.adj-btn,
+		.adj-input {
+			min-width: 0;
+			width: auto;
+			height: 38px;
+		}
+
 		.adj-btn {
-			width: 36px;
-			height: 36px;
-			font-size: 1.25rem;
+			font-size: 1.3rem;
 		}
 
 		.adj-input {
-			width: 38px;
-			height: 36px;
-			font-size: 0.9rem;
+			width: 100%;
+			padding: 0;
+			font-size: 0.95rem;
 		}
 
+		/* Footer 3: compact pager + per-page on one row, then a full-width
+		   outlined-red "Reset all" separated by a divider. */
 		.tx-footer {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0.75rem;
 			padding: 0.75rem 1.1rem;
+		}
+
+		.footer-pagination {
+			padding-bottom: 0.75rem;
+			border-bottom: 1px solid var(--table-border-color);
+		}
+
+		.reset-all-btn {
+			width: 100%;
+			justify-content: center;
+			padding: 0.6rem;
+			background: var(--st-out-bg);
+			border-color: color-mix(in srgb, var(--st-out-text) 40%, transparent);
 		}
 	}
 

@@ -3,7 +3,9 @@
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { tick } from 'svelte';
 
-	let { store } = $props();
+	// `compact` renders a condensed single-row pager ("1 / 11" + inline per-page)
+	// that never stacks on mobile — used by the Adjust Stock footer.
+	let { store, compact = false } = $props();
 
 	// The pagination store is created once per page (`getPaginationStore(key)`) and its
 	// identity never changes, so capturing the initial value is intentional. Destructuring
@@ -105,7 +107,7 @@
 	}
 </script>
 
-<div class="pagination-controls">
+<div class="pagination-controls" class:compact>
 	<div class="pagination-buttons">
 		<button
 			class="pagination-button"
@@ -115,7 +117,9 @@
 		>
 			<i class="fas fa-chevron-left"></i>
 		</button>
-		<span class="pagination-info">Page {$currentPage} of {$totalPages}</span>
+		<span class="pagination-info">
+			{#if compact}{$currentPage} / {$totalPages}{:else}Page {$currentPage} of {$totalPages}{/if}
+		</span>
 		<button
 			class="pagination-button"
 			onclick={() => goToPage($currentPage + 1)}
@@ -373,6 +377,31 @@
 		display: block;
 	}
 
+	/* Compact variant — condensed single row that stays inline on mobile. */
+	.pagination-controls.compact {
+		flex-wrap: nowrap;
+		gap: 0.75rem;
+	}
+
+	.pagination-controls.compact .pagination-info {
+		padding: 0 0.4rem;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+
+	/* Keep the per-page control's accessible name, but drop the visible label. */
+	.pagination-controls.compact .items-per-page-label {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
 	@media (max-width: 640px) {
 		.pagination-controls {
 			flex-direction: column;
@@ -382,6 +411,12 @@
 		.pagination-buttons,
 		.items-per-page {
 			justify-content: center;
+		}
+
+		/* Compact overrides the mobile stack: pager left, per-page right. */
+		.pagination-controls.compact {
+			flex-direction: row;
+			align-items: center;
 		}
 	}
 </style>

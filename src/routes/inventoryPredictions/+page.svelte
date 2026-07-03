@@ -1,6 +1,6 @@
 <script>
 	import StockPredictions from '../../components/StockPredictions.svelte';
-	import { fade, fly } from 'svelte/transition';
+	import Notification from '../../components/Notification.svelte';
 	import { notificationStore } from '../../stores/notificationStore.js';
 	import { Chart, registerables } from 'chart.js';
 	import { itemStore } from '../../stores/itemStore.js';
@@ -12,7 +12,6 @@
 
 	// Reactive store views ($store auto-subscription)
 	const items = $derived($itemStore);
-	const notification = $derived($notificationStore.at(-1) ?? null);
 
 	const totalItems = $derived(items.length);
 	const itemsNeedingRestock = $derived(
@@ -157,17 +156,9 @@
 		</p>
 		<StockPredictions />
 	</div>
-
-	{#if notification}
-		<div
-			class="notification {notification.type}"
-			in:fly={{ y: -50, duration: 300 }}
-			out:fade={{ duration: 200 }}
-		>
-			{notification.message}
-		</div>
-	{/if}
 </div>
+
+<Notification />
 
 <style>
 	/* Scope Roboto to this page only — do NOT leak it onto :global(body), or it
@@ -192,35 +183,6 @@
 	.container:hover {
 		transform: translateY(-5px);
 		box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-	}
-
-	.notification {
-		position: fixed;
-		bottom: 20px;
-		right: 20px;
-		color: white;
-		padding: 1rem 2rem;
-		border-radius: 0.5rem;
-		z-index: 1000;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-		font-weight: bold;
-	}
-
-	.notification.success {
-		background-color: var(--add-item-color); /* Green */
-	}
-
-	.notification.error {
-		background-color: #dc3545; /* Red */
-	}
-
-	.notification.warning {
-		background-color: #ffc107; /* Yellow */
-		color: #333; /* Dark text for contrast */
-	}
-
-	.notification.info {
-		background-color: #17a2b8; /* Blue */
 	}
 
 	h1 {
