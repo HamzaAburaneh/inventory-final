@@ -157,8 +157,11 @@
 		const ctx = document.getElementById('dailyTrendChart');
 		if (!ctx?.getContext) return;
 
-		dailyTrendChart = destroyChart(dailyTrendChart);
-
+		// Destroy whatever chart Chart.js has registered for THIS canvas, not
+		// just the one our variable tracks. Resize/rAF races can leave the
+		// variable stale, and a stale canvas registration makes `new Chart`
+		// throw "Canvas is already in use" — which froze this page's charts.
+		Chart.getChart(ctx)?.destroy();
 		dailyTrendChart = new Chart(ctx.getContext('2d'), {
 			type: 'line',
 			data: {
@@ -216,7 +219,7 @@
 		const ctx = document.getElementById('hourlyHeatmapChart');
 		if (!ctx?.getContext) return;
 
-		hourlyHeatmapChart = destroyChart(hourlyHeatmapChart);
+		Chart.getChart(ctx)?.destroy();
 
 		const maxCount = Math.max(...hourlyActivity.map((h) => h.transactionCount)) || 1;
 
@@ -266,7 +269,7 @@
 		const ctx = document.getElementById('topMoversChart');
 		if (!ctx?.getContext) return;
 
-		topMoversChart = destroyChart(topMoversChart);
+		Chart.getChart(ctx)?.destroy();
 
 		topMoversChart = new Chart(ctx.getContext('2d'), {
 			type: 'bar',
@@ -309,7 +312,7 @@
 		const ctx = document.getElementById('transactionTypeChart');
 		if (!ctx?.getContext) return;
 
-		transactionTypeChart = destroyChart(transactionTypeChart);
+		Chart.getChart(ctx)?.destroy();
 
 		transactionTypeChart = new Chart(ctx.getContext('2d'), {
 			type: 'doughnut',
