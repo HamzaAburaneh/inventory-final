@@ -21,8 +21,11 @@
  * @property {'add' | 'remove'} type
  * @property {number} previousCount
  * @property {number} newCount
- * @property {Date} timestamp
+ * @property {Date} timestamp - When the change happened (device clock offline, server clock online).
  * @property {string} user
+ * @property {Date | null} [syncedAt] - Audit field: server clock when the write landed.
+ *   Equals timestamp for online writes; for offline writes it's the reconnect time,
+ *   so a far gap from timestamp flags a wrong device clock. Null until synced / on legacy rows.
  */
 
 /**

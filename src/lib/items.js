@@ -72,7 +72,20 @@ function isUnavailable(error) {
  * @returns {object} The ledger document data.
  */
 function ledgerRecord(itemId, itemName, type, previousCount, newCount, user, timestamp) {
-	return { itemId, itemName, type, previousCount, newCount, user, timestamp };
+	return {
+		itemId,
+		itemName,
+		type,
+		previousCount,
+		newCount,
+		user,
+		timestamp,
+		// Audit field: the server clock when this write actually lands. For an
+		// online write it matches `timestamp`; for a queued offline write it's
+		// the reconnect time, so a device with a wrong clock is detectable
+		// (its `timestamp` will be far from `syncedAt`). Always a serverTimestamp.
+		syncedAt: serverTimestamp()
+	};
 }
 
 /**

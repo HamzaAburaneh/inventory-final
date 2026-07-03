@@ -81,7 +81,9 @@ describe('adjustItemCount', () => {
 			previousCount: 10,
 			newCount: 6,
 			user: 'hamza@example.com',
-			timestamp: 'SERVER_TIMESTAMP'
+			timestamp: 'SERVER_TIMESTAMP',
+			// Audit field present on every record; online it equals the timestamp.
+			syncedAt: 'SERVER_TIMESTAMP'
 		});
 	});
 
@@ -283,9 +285,11 @@ describe('offline mode', () => {
 			type: 'remove',
 			previousCount: 10,
 			newCount: 6,
-			// Offline records carry the device time, not a reconnect-time
-			// server timestamp.
-			timestamp: 'CLIENT_TIMESTAMP'
+			// Offline records carry the device time on `timestamp`, but `syncedAt`
+			// is still a server timestamp — so a wrong device clock is auditable
+			// (its timestamp lands far from syncedAt).
+			timestamp: 'CLIENT_TIMESTAMP',
+			syncedAt: 'SERVER_TIMESTAMP'
 		});
 	});
 

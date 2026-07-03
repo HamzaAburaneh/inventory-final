@@ -28,14 +28,19 @@ export async function getHistoricalTransactions(days = 90) {
 
 		const querySnapshot = await getDocs(q);
 
-		return querySnapshot.docs.map((doc) => ({
-			id: doc.id,
-			...doc.data(),
-			// A write queued offline carries a serverTimestamp that reads back as
-			// null in the local cache until it syncs; fall back to now so consumers
-			// that expect a Date don't crash on `.toDate()`.
-			timestamp: doc.data().timestamp ? doc.data().timestamp.toDate() : new Date()
-		}));
+		return querySnapshot.docs.map((doc) => {
+			const data = doc.data();
+			return {
+				id: doc.id,
+				...data,
+				// A write queued offline carries a serverTimestamp that reads back as
+				// null in the local cache until it syncs; fall back to now so consumers
+				// that expect a Date don't crash on `.toDate()`.
+				timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
+				// Audit field — null on legacy rows and on offline writes not yet synced.
+				syncedAt: data.syncedAt ? data.syncedAt.toDate() : null
+			};
+		});
 	} catch (error) {
 		console.error('Error fetching historical transactions: ', error);
 		throw error;
