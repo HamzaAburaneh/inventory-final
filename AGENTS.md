@@ -81,6 +81,7 @@ Escape hatch: `git commit --no-verify` / `git push --no-verify` skips the hooks 
 - `node_modules` is installed for Windows; don't run installs/builds from a Linux sandbox against it.
 - `arima` package has inconsistent exports — `stockPrediction.js` already handles fallbacks; don't simplify that import.
 - `src/scripts/` has its own `package.json`; its scripts are run standalone, not part of the app build.
+- **PWA/offline**: the service worker (`src/service-worker.js`) only registers in production builds — test offline behavior via `npm run build && npm run preview` (or `tests/offline-pwa.test.js`), never `npm run dev`. Firestore uses `persistentLocalCache` in the browser (`src/firebase.js`); count changes made offline go through a queued-batch path in `src/lib/items.js` (`queueCountChange`) that reads the device cache — `runTransaction` requires a connection, so never route offline writes through it.
 
 ## Svelte MCP server
 

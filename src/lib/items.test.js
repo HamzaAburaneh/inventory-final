@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock Firestore so we can assert that every count mutation pairs the count
 // write with its ledger record inside the SAME transaction/batch (goal #1:
@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
 	runTransaction: vi.fn(),
 	writeBatch: vi.fn(),
 	getDocs: vi.fn(),
+	getDocFromCache: vi.fn(),
 	updateDoc: vi.fn()
 }));
 
@@ -19,11 +20,13 @@ vi.mock('firebase/firestore', () => ({
 			? { kind: 'doc', collection: first.name, id: 'auto-id' }
 			: { kind: 'doc', collection: name, id }
 	),
+	getDocFromCache: mocks.getDocFromCache,
 	getDocs: mocks.getDocs,
 	onSnapshot: vi.fn(),
 	query: vi.fn((...args) => args),
 	runTransaction: mocks.runTransaction,
 	serverTimestamp: vi.fn(() => 'SERVER_TIMESTAMP'),
+	Timestamp: { now: vi.fn(() => 'CLIENT_TIMESTAMP') },
 	updateDoc: mocks.updateDoc,
 	where: vi.fn(),
 	writeBatch: mocks.writeBatch
@@ -242,6 +245,100 @@ describe('deleteItemWithTransaction', () => {
 
 		expect(txn.set).not.toHaveBeenCalled();
 		expect(txn.delete).not.toHaveBeenCalled();
+	});
+});
+
+describe('offline mode', () => {
+	function goOffline() {
+		vi.stubGlobal('navigator', { onLine: false });
+	}
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('queues the count change and its ledger record in one batch from the cached count', async () => {
+		goOffline();
+		mocks.getDocFromCache.mockResolvedValue({
+			exists: () => true,
+			data: () => ({ name: 'Fries', count: 10 })
+		});
+		const batch = fakeBatch();
+		// Simulate a queued commit that will not resolve until reconnect —
+		// the adjust call must still resolve immediately.
+		batch.commit = vi.fn(() => new Promise(() => {}));
+		mocks.writeBatch.mockReturnValue(batch);
+
+		const result = await adjustItemCount('item1', -4, 'user');
+
+		expect(result).toEqual({ previousCount: 10, newCount: 6 });
+		expect(mocks.runTransaction).not.toHaveBeenCalled();
+		expect(batch.update).toHaveBeenCalledWith(
+			expect.objectContaining({ collection: 'items', id: 'item1' }),
+			{ count: 6 }
+		);
+		expect(batch.set).toHaveBeenCalledTimes(1);
+		expect(batch.set.mock.calls[0][1]).toMatchObject({
+			itemId: 'item1',
+			type: 'remove',
+			previousCount: 10,
+			newCount: 6,
+			// Offline records carry the device time, not a reconnect-time
+			// server timestamp.
+			timestamp: 'CLIENT_TIMESTAMP'
+		});
+	});
+
+	it('setItemCount also uses the queued path offline', async () => {
+		goOffline();
+		mocks.getDocFromCache.mockResolvedValue({
+			exists: () => true,
+			data: () => ({ name: 'Buns', count: 7 })
+		});
+		const batch = fakeBatch();
+		batch.commit = vi.fn(() => new Promise(() => {}));
+		mocks.writeBatch.mockReturnValue(batch);
+
+		const result = await setItemCount('item2', 0, 'user');
+
+		expect(result).toEqual({ previousCount: 7, newCount: 0 });
+		expect(mocks.runTransaction).not.toHaveBeenCalled();
+		expect(batch.update).toHaveBeenCalledWith(expect.objectContaining({ id: 'item2' }), {
+			count: 0
+		});
+		expect(batch.set).toHaveBeenCalledTimes(1);
+	});
+
+	it('throws a friendly error when the item is not in the offline cache', async () => {
+		goOffline();
+		mocks.getDocFromCache.mockRejectedValue(new Error('unavailable'));
+
+		await expect(adjustItemCount('item1', 1, 'user')).rejects.toThrow(
+			'Item not available in the offline cache'
+		);
+	});
+
+	it('deletes via a queued batch pairing the final remove record', async () => {
+		goOffline();
+		mocks.getDocFromCache.mockResolvedValue({
+			exists: () => true,
+			data: () => ({ name: 'Fries', count: 7 })
+		});
+		const batch = fakeBatch();
+		batch.commit = vi.fn(() => new Promise(() => {}));
+		mocks.writeBatch.mockReturnValue(batch);
+
+		await deleteItemWithTransaction('item1', 'user');
+
+		expect(mocks.runTransaction).not.toHaveBeenCalled();
+		expect(batch.set.mock.calls[0][1]).toMatchObject({
+			type: 'remove',
+			previousCount: 7,
+			newCount: 0
+		});
+		expect(batch.delete).toHaveBeenCalledWith(
+			expect.objectContaining({ collection: 'items', id: 'item1' })
+		);
 	});
 });
 

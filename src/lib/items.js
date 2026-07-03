@@ -1,11 +1,13 @@
 import {
 	collection,
 	doc,
+	getDocFromCache,
 	getDocs,
 	onSnapshot,
 	query,
 	runTransaction,
 	serverTimestamp,
+	Timestamp,
 	updateDoc,
 	where,
 	writeBatch
@@ -27,14 +29,27 @@ import { db } from '../firebase';
 // ————————————————————————————————————————————————————————————————————————
 
 /**
+ * True when the browser reports no network connection. Only an explicit
+ * `false` counts — on the server (and in tests) `navigator.onLine` is
+ * undefined and we must take the online code path.
+ * @returns {boolean} Whether the client is known to be offline.
+ */
+function isOffline() {
+	return typeof navigator !== 'undefined' && navigator.onLine === false;
+}
+
+/**
  * Builds a `transactions` ledger document for a count change.
+ * Online, the timestamp is a server timestamp; offline we stamp the device
+ * clock instead — a queued write may sync hours later, and the ledger should
+ * record when the count actually happened, not when the signal came back.
  * @param {string} itemId - The ID of the item whose count changed.
  * @param {string} itemName - The item's name at the time of the change.
  * @param {'add' | 'remove'} type - The direction of the change.
  * @param {number} previousCount - The count before the change.
  * @param {number} newCount - The count after the change.
  * @param {string} user - The user who made the change.
- * @returns {object} The ledger document data (timestamp is a server timestamp).
+ * @returns {object} The ledger document data.
  */
 function ledgerRecord(itemId, itemName, type, previousCount, newCount, user) {
 	return {
@@ -44,8 +59,69 @@ function ledgerRecord(itemId, itemName, type, previousCount, newCount, user) {
 		previousCount,
 		newCount,
 		user,
-		timestamp: serverTimestamp()
+		timestamp: isOffline() ? Timestamp.now() : serverTimestamp()
 	};
+}
+
+/**
+ * Commits a batch, awaiting the server ack only when online. Offline,
+ * Firestore applies the batch to the local cache immediately and syncs it on
+ * reconnect — awaiting commit() would block until then, so we let it settle
+ * in the background and resolve right away (the UI reads the local cache).
+ * @param {import('firebase/firestore').WriteBatch} batch - The batch to commit.
+ * @returns {Promise<void>}
+ */
+function commitBatch(batch) {
+	if (isOffline()) {
+		batch.commit().catch((error) => console.error('Error syncing queued write:', error));
+		return Promise.resolve();
+	}
+	return batch.commit();
+}
+
+/**
+ * Offline path for count changes: reads the item from the device's local
+ * cache and queues the count write + its ledger record in one batch (still
+ * atomic — Firestore syncs the batch as a unit). The previousCount comes
+ * from this device's cache, so if two devices change the same item while
+ * offline, the last one to sync wins — the documented offline trade-off.
+ * @param {string} id - The ID of the item to change.
+ * @param {function(number): number} computeNewCount - Maps current → target count.
+ * @param {string} user - The user making the change.
+ * @returns {Promise<{previousCount: number, newCount: number}>} The counts around the change.
+ */
+async function queueCountChange(id, computeNewCount, user) {
+	const itemRef = doc(db, 'items', id);
+	let snapshot;
+	try {
+		snapshot = await getDocFromCache(itemRef);
+	} catch {
+		throw new Error('Item not available in the offline cache');
+	}
+	if (!snapshot.exists()) {
+		throw new Error('Item not found');
+	}
+	const item = snapshot.data();
+	const previousCount = parseInt(item.count, 10) || 0;
+	const newCount = Math.max(0, computeNewCount(previousCount));
+	if (newCount === previousCount) {
+		return { previousCount, newCount };
+	}
+	const batch = writeBatch(db);
+	batch.update(itemRef, { count: newCount });
+	batch.set(
+		doc(collection(db, 'transactions')),
+		ledgerRecord(
+			id,
+			item.name,
+			newCount > previousCount ? 'add' : 'remove',
+			previousCount,
+			newCount,
+			user
+		)
+	);
+	await commitBatch(batch);
+	return { previousCount, newCount };
 }
 
 /**
@@ -58,6 +134,9 @@ function ledgerRecord(itemId, itemName, type, previousCount, newCount, user) {
  * @returns {Promise<{previousCount: number, newCount: number}>} The counts around the change.
  */
 export async function adjustItemCount(id, delta, user) {
+	if (isOffline()) {
+		return queueCountChange(id, (current) => current + (parseInt(delta, 10) || 0), user);
+	}
 	const itemRef = doc(db, 'items', id);
 	return runTransaction(db, async (txn) => {
 		const snapshot = await txn.get(itemRef);
@@ -89,6 +168,9 @@ export async function adjustItemCount(id, delta, user) {
  * @returns {Promise<{previousCount: number, newCount: number}>} The counts around the change.
  */
 export async function setItemCount(id, count, user) {
+	if (isOffline()) {
+		return queueCountChange(id, () => parseInt(count, 10) || 0, user);
+	}
 	const itemRef = doc(db, 'items', id);
 	return runTransaction(db, async (txn) => {
 		const snapshot = await txn.get(itemRef);
@@ -145,7 +227,7 @@ export async function resetAllItemCounts(user) {
 				ledgerRecord(docSnapshot.id, item.name, 'remove', previousCount, 0, user)
 			);
 		}
-		await batch.commit();
+		await commitBatch(batch);
 	}
 
 	return toReset.length;
@@ -173,7 +255,7 @@ export async function addItemWithTransaction(item, user) {
 		doc(collection(db, 'transactions')),
 		ledgerRecord(itemRef.id, item.name, 'add', 0, parseInt(item.count, 10) || 0, user)
 	);
-	await batch.commit();
+	await commitBatch(batch);
 
 	return { id: itemRef.id, ...item };
 }
@@ -187,6 +269,27 @@ export async function addItemWithTransaction(item, user) {
  */
 export async function deleteItemWithTransaction(id, user) {
 	const itemRef = doc(db, 'items', id);
+	if (isOffline()) {
+		let snapshot;
+		try {
+			snapshot = await getDocFromCache(itemRef);
+		} catch {
+			throw new Error('Item not available in the offline cache');
+		}
+		if (!snapshot.exists()) {
+			return;
+		}
+		const item = snapshot.data();
+		const previousCount = parseInt(item.count, 10) || 0;
+		const batch = writeBatch(db);
+		batch.set(
+			doc(collection(db, 'transactions')),
+			ledgerRecord(id, item.name, 'remove', previousCount, 0, user)
+		);
+		batch.delete(itemRef);
+		await commitBatch(batch);
+		return;
+	}
 	await runTransaction(db, async (txn) => {
 		const snapshot = await txn.get(itemRef);
 		if (!snapshot.exists()) {

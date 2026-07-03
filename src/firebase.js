@@ -1,6 +1,12 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import {
+	getFirestore,
+	initializeFirestore,
+	persistentLocalCache,
+	persistentMultipleTabManager
+} from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { browser } from '$app/environment';
 
 const firebaseConfig = {
 	apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -19,10 +25,19 @@ try {
 	let app;
 	if (!getApps().length) {
 		app = initializeApp(firebaseConfig);
+		// Offline-first: in the browser, persist Firestore data to IndexedDB so
+		// items/transactions stay readable (and writes queue) without a network.
+		// Multi-tab manager keeps several open tabs sharing one cache. On the
+		// server (SSR) IndexedDB doesn't exist, so use the plain instance.
+		db = browser
+			? initializeFirestore(app, {
+					localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+				})
+			: getFirestore(app);
 	} else {
 		app = getApp(); // if already initialized, use that app
+		db = getFirestore(app);
 	}
-	db = getFirestore(app);
 	auth = getAuth(app);
 } catch (error) {
 	console.error('Error initializing Firebase:', error);
