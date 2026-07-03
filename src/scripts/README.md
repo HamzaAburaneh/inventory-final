@@ -2,6 +2,30 @@
 
 This directory contains scripts for managing inventory items.
 
+## Audit Timestamps Script
+
+`audit-timestamps.js` scans the `transactions` collection for clock anomalies —
+entries whose device `timestamp` is implausible against the trusted server
+`syncedAt` clock (a change recorded in the "future" relative to when it synced,
+or one recorded suspiciously long before it synced). It only reads; it never
+writes. The detection rules live in `src/lib/transactionAudit.js`.
+
+```bash
+cd src/scripts
+npm install            # first time only
+npm run audit-timestamps
+```
+
+Because the Firestore rules require an authenticated user, add these to the
+project-root `.env` (alongside the `VITE_FIREBASE_*` config):
+
+```
+AUDIT_EMAIL=you@example.com
+AUDIT_PASSWORD=your_password
+# optional — days-before-sync gap that counts as "stale" (default 2):
+AUDIT_STALE_DAYS=2
+```
+
 ## Add Unique Items Script
 
 The `add-unique-items.js` script reads items from `unique-items.txt` and adds them to your Firebase database with appropriate storage types based on the rules defined in `storage-rules.js`.

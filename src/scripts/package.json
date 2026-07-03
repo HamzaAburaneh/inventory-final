@@ -5,6 +5,7 @@
 	"description": "Scripts for inventory management",
 	"scripts": {
 		"add-items": "node add-unique-items.js",
+		"audit-timestamps": "node audit-timestamps.js",
 		"test": "node test-items.js"
 	},
 	"dependencies": {
