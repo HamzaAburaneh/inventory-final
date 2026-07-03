@@ -201,9 +201,12 @@
 				throw new Error('Item not found');
 			}
 
-			// Convert value to appropriate type based on field
+			// Convert value to appropriate type based on field.
+			// Note: 'count' is intentionally not editable here — count changes must
+			// go through the Ledger (itemStore.changeCount) so the transaction
+			// record is written atomically; itemStore.updateItem rejects it.
 			let processedValue = value;
-			if (field === 'count' || field === 'lowCount') {
+			if (field === 'lowCount') {
 				processedValue = parseInt(value, 10) || 0;
 			} else if (field === 'cost') {
 				processedValue = parseFloat(value) || 0;

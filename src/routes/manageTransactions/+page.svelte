@@ -14,8 +14,6 @@
 	import { notificationStore } from '../../stores/notificationStore';
 	import { applySorting } from '../../lib/items';
 	import { isLowStock } from '../../lib/tableUtils.js';
-	import { addTransaction } from '../../lib/transactions';
-	import { authStore } from '../../stores/authStore';
 	import { onMount, tick } from 'svelte';
 
 	let currentSortColumn = $state('name');
@@ -34,7 +32,6 @@
 
 	const items = $derived($itemStore);
 	const searchTermValue = $derived(search.term);
-	const authUser = $derived($authStore);
 
 	// Respect the user's reduced-motion setting for every transition/animation below.
 	const reduceMotion = $derived(prefersReducedMotion.current);
@@ -105,10 +102,6 @@
 		paginationStore.setCurrentPage(1);
 	};
 
-	const getCurrentUser = () => {
-		return authUser?.email || 'Unknown';
-	};
-
 	const stockStatus = (item) => {
 		if ((parseInt(item.count, 10) || 0) === 0) {
 			return 'out';
@@ -132,19 +125,9 @@
 	};
 
 	const changeCount = async (item, amount) => {
-		const previousCount = item.count;
+		// The count write and its ledger record are committed atomically inside
+		// itemStore.changeCount — no separate addTransaction call needed here.
 		await itemStore.changeCount(item.id, amount);
-		const updatedItem = items.find((i) => i.id === item.id);
-		if (updatedItem) {
-			await addTransaction({
-				itemId: item.id,
-				itemName: item.name,
-				type: amount > 0 ? 'add' : 'remove',
-				previousCount: previousCount,
-				newCount: updatedItem.count,
-				user: getCurrentUser()
-			});
-		}
 		itemStore.setChangeAmount(item.id, 0);
 		notificationStore.showNotification(`Count for "${item.name}" updated successfully!`, 'success');
 	};
@@ -174,33 +157,15 @@
 	};
 
 	const doResetCount = async (item) => {
-		const previousCount = item.count;
 		await itemStore.resetItemCount(item.id);
-		await addTransaction({
-			itemId: item.id,
-			itemName: item.name,
-			type: 'remove',
-			previousCount: previousCount,
-			newCount: 0,
-			user: getCurrentUser()
-		});
 		itemStore.setChangeAmount(item.id, 0);
 		notificationStore.showNotification(`Count for "${item.name}" reset successfully!`, 'success');
 	};
 
 	const doResetAll = async () => {
-		const itemsToReset = items.filter((item) => item.count !== 0);
+		// Each item's count reset and its ledger record are paired in the same
+		// atomic batch by the data layer.
 		await itemStore.resetAllCounts();
-		for (const item of itemsToReset) {
-			await addTransaction({
-				itemId: item.id,
-				itemName: item.name,
-				type: 'remove',
-				previousCount: item.count,
-				newCount: 0,
-				user: getCurrentUser()
-			});
-		}
 		notificationStore.showNotification('All counts have been reset successfully!', 'success');
 	};
 

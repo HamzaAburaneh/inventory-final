@@ -1,36 +1,13 @@
 import { db } from '../firebase';
-import {
-	collection,
-	addDoc,
-	serverTimestamp,
-	getDocs,
-	query,
-	orderBy,
-	where,
-	Timestamp
-} from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where, Timestamp } from 'firebase/firestore';
 
 /**
  * @typedef {import('../types').Transaction} Transaction
  */
 
-/**
- * Adds a new transaction to the database.
- * @param {Omit<Transaction, 'id' | 'timestamp'>} transaction - The transaction object to add, excluding ID and timestamp.
- * @returns {Promise<string>} A promise that resolves to the ID of the new transaction.
- */
-export async function addTransaction(transaction) {
-	try {
-		const docRef = await addDoc(collection(db, 'transactions'), {
-			...transaction,
-			timestamp: serverTimestamp()
-		});
-		return docRef.id;
-	} catch (error) {
-		console.error('Error adding transaction: ', error);
-		throw error;
-	}
-}
+// NOTE: there is intentionally no standalone addTransaction here. Ledger
+// records are only written together with their count change, atomically, by
+// the functions in src/lib/items.js — so the two can never drift apart.
 
 /**
  * Retrieves historical transactions from the database.

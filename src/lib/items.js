@@ -1,14 +1,14 @@
 import {
 	collection,
-	addDoc,
-	deleteDoc,
 	doc,
 	getDocs,
+	onSnapshot,
 	query,
-	where,
+	runTransaction,
+	serverTimestamp,
 	updateDoc,
-	writeBatch,
-	onSnapshot
+	where,
+	writeBatch
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -16,50 +16,220 @@ import { db } from '../firebase';
  * @typedef {import('../types').Item} Item
  */
 
+// ————————————————————————————————————————————————————————————————————————
+// Ledgered mutations
+//
+// Every count change in StockSense must produce a matching `transactions`
+// record with consistent previousCount/newCount (AGENTS.md goal #1). The
+// functions below are the only way the app mutates item counts: each writes
+// the count change and its ledger record in a single atomic Firestore
+// transaction/batch, so one can never be committed without the other.
+// ————————————————————————————————————————————————————————————————————————
+
 /**
- * Updates the count of a specific item.
- * @param {string} id - The ID of the item to update.
- * @param {number} newCount - The new count for the item.
- * @returns {Promise<void>}
+ * Builds a `transactions` ledger document for a count change.
+ * @param {string} itemId - The ID of the item whose count changed.
+ * @param {string} itemName - The item's name at the time of the change.
+ * @param {'add' | 'remove'} type - The direction of the change.
+ * @param {number} previousCount - The count before the change.
+ * @param {number} newCount - The count after the change.
+ * @param {string} user - The user who made the change.
+ * @returns {object} The ledger document data (timestamp is a server timestamp).
  */
-export async function updateItemCount(id, newCount) {
-	const itemDoc = doc(db, 'items', id);
-	await updateDoc(itemDoc, { count: newCount });
+function ledgerRecord(itemId, itemName, type, previousCount, newCount, user) {
+	return {
+		itemId,
+		itemName,
+		type,
+		previousCount,
+		newCount,
+		user,
+		timestamp: serverTimestamp()
+	};
 }
 
 /**
- * Resets the count of a specific item to 0.
- * @param {string} id - The ID of the item to reset.
- * @returns {Promise<void>}
+ * Atomically adjusts an item's count by a delta (clamped at 0) and appends
+ * the matching ledger record in the same Firestore transaction. No-op deltas
+ * (0, or a decrement already clamped away) write nothing — no phantom records.
+ * @param {string} id - The ID of the item to adjust.
+ * @param {number} delta - The signed change amount.
+ * @param {string} user - The user making the change.
+ * @returns {Promise<{previousCount: number, newCount: number}>} The counts around the change.
  */
-export async function resetItemCount(id) {
-	const itemDoc = doc(db, 'items', id);
-	await updateDoc(itemDoc, { count: 0 });
+export async function adjustItemCount(id, delta, user) {
+	const itemRef = doc(db, 'items', id);
+	return runTransaction(db, async (txn) => {
+		const snapshot = await txn.get(itemRef);
+		if (!snapshot.exists()) {
+			throw new Error('Item not found');
+		}
+		const item = snapshot.data();
+		const previousCount = parseInt(item.count, 10) || 0;
+		const newCount = Math.max(0, previousCount + (parseInt(delta, 10) || 0));
+		if (newCount === previousCount) {
+			return { previousCount, newCount };
+		}
+		txn.update(itemRef, { count: newCount });
+		txn.set(
+			doc(collection(db, 'transactions')),
+			ledgerRecord(id, item.name, delta > 0 ? 'add' : 'remove', previousCount, newCount, user)
+		);
+		return { previousCount, newCount };
+	});
 }
 
 /**
- * Resets the count of all items to 0.
- * @returns {Promise<void>}
+ * Atomically sets an item's count to an absolute value (clamped at 0) and
+ * appends the matching ledger record in the same Firestore transaction.
+ * Writes nothing when the count is already at the target value.
+ * @param {string} id - The ID of the item to set.
+ * @param {number} count - The absolute target count.
+ * @param {string} user - The user making the change.
+ * @returns {Promise<{previousCount: number, newCount: number}>} The counts around the change.
  */
-export async function resetAllCounts() {
-	const itemsQuery = collection(db, 'items');
-	const snapshot = await getDocs(itemsQuery);
-	const batch = writeBatch(db);
+export async function setItemCount(id, count, user) {
+	const itemRef = doc(db, 'items', id);
+	return runTransaction(db, async (txn) => {
+		const snapshot = await txn.get(itemRef);
+		if (!snapshot.exists()) {
+			throw new Error('Item not found');
+		}
+		const item = snapshot.data();
+		const previousCount = parseInt(item.count, 10) || 0;
+		const newCount = Math.max(0, parseInt(count, 10) || 0);
+		if (newCount === previousCount) {
+			return { previousCount, newCount };
+		}
+		txn.update(itemRef, { count: newCount });
+		txn.set(
+			doc(collection(db, 'transactions')),
+			ledgerRecord(
+				id,
+				item.name,
+				newCount > previousCount ? 'add' : 'remove',
+				previousCount,
+				newCount,
+				user
+			)
+		);
+		return { previousCount, newCount };
+	});
+}
 
-	snapshot.forEach((docSnapshot) => {
-		batch.update(docSnapshot.ref, { count: 0 });
+/**
+ * Resets every non-zero item count to 0, pairing each count write with its
+ * ledger record in the same batch. Batches are chunked to stay under
+ * Firestore's 500-op limit; each item's count+record pair always lands in the
+ * same batch, so the per-item invariant holds even if a later chunk fails.
+ * @param {string} user - The user making the change.
+ * @returns {Promise<number>} The number of items that were reset.
+ */
+export async function resetAllItemCounts(user) {
+	const snapshot = await getDocs(collection(db, 'items'));
+	const toReset = snapshot.docs.filter((docSnapshot) => {
+		const count = parseInt(docSnapshot.data().count, 10) || 0;
+		return count !== 0;
 	});
 
-	await batch.commit();
+	// 2 ops per item (count update + ledger record) → 200 items per batch.
+	const chunkSize = 200;
+	for (let i = 0; i < toReset.length; i += chunkSize) {
+		const batch = writeBatch(db);
+		for (const docSnapshot of toReset.slice(i, i + chunkSize)) {
+			const item = docSnapshot.data();
+			const previousCount = parseInt(item.count, 10) || 0;
+			batch.update(docSnapshot.ref, { count: 0 });
+			batch.set(
+				doc(collection(db, 'transactions')),
+				ledgerRecord(docSnapshot.id, item.name, 'remove', previousCount, 0, user)
+			);
+		}
+		await batch.commit();
+	}
+
+	return toReset.length;
 }
 
 /**
- * Retrieves all items from the database.
+ * Adds a new item and its initial 'add' ledger record (0 → starting count)
+ * in a single atomic batch. Rejects duplicate names.
+ * @param {Omit<Item, 'id'>} item - The item to add, excluding the ID.
+ * @param {string} user - The user adding the item.
+ * @returns {Promise<Item>} The added item including its new ID.
+ */
+export async function addItemWithTransaction(item, user) {
+	const itemCollection = collection(db, 'items');
+
+	const duplicates = await getDocs(query(itemCollection, where('name', '==', item.name)));
+	if (!duplicates.empty) {
+		throw new Error('Item with this name already exists.');
+	}
+
+	const itemRef = doc(itemCollection);
+	const batch = writeBatch(db);
+	batch.set(itemRef, item);
+	batch.set(
+		doc(collection(db, 'transactions')),
+		ledgerRecord(itemRef.id, item.name, 'add', 0, parseInt(item.count, 10) || 0, user)
+	);
+	await batch.commit();
+
+	return { id: itemRef.id, ...item };
+}
+
+/**
+ * Deletes an item and appends its final 'remove' ledger record (count → 0)
+ * in the same Firestore transaction.
+ * @param {string} id - The ID of the item to delete.
+ * @param {string} user - The user deleting the item.
+ * @returns {Promise<void>}
+ */
+export async function deleteItemWithTransaction(id, user) {
+	const itemRef = doc(db, 'items', id);
+	await runTransaction(db, async (txn) => {
+		const snapshot = await txn.get(itemRef);
+		if (!snapshot.exists()) {
+			return;
+		}
+		const item = snapshot.data();
+		const previousCount = parseInt(item.count, 10) || 0;
+		txn.set(
+			doc(collection(db, 'transactions')),
+			ledgerRecord(id, item.name, 'remove', previousCount, 0, user)
+		);
+		txn.delete(itemRef);
+	});
+}
+
+/**
+ * Updates non-count fields of an item (name, cost, lowCount, storageType,
+ * booths, barcode…). Refuses count changes: those must go through
+ * adjustItemCount/setItemCount so a ledger record is always written.
+ * @param {string} id - The ID of the item to update.
+ * @param {Partial<Item>} updatedFields - The fields to update.
+ * @returns {Promise<void>}
+ */
+export async function updateItemFields(id, updatedFields) {
+	if (Object.prototype.hasOwnProperty.call(updatedFields, 'count')) {
+		throw new Error(
+			'Item counts must be changed through adjustItemCount/setItemCount so a transaction record is written.'
+		);
+	}
+	const itemRef = doc(db, 'items', id);
+	await updateDoc(itemRef, updatedFields);
+}
+
+// ————————————————————————————————————————————————————————————————————————
+// Reads and pure helpers
+// ————————————————————————————————————————————————————————————————————————
+
+/**
+ * Retrieves all items from the database (one-shot read).
  * @returns {Promise<Item[]>} A promise that resolves to an array of Item objects.
  */
 export async function getItems() {
-	const itemsQuery = collection(db, 'items');
-	const snapshot = await getDocs(itemsQuery);
+	const snapshot = await getDocs(collection(db, 'items'));
 	return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
 
@@ -83,115 +253,6 @@ export function subscribeToItems(callback) {
 			console.error('Error in items subscription:', error);
 		}
 	);
-}
-
-/**
- * Adds a new item to the database.
- * @param {Omit<Item, 'id'>} item - The item object to add, excluding the ID.
- * @returns {Promise<Item>} A promise that resolves to the added Item object including its new ID.
- */
-export async function addItem(item) {
-	const itemCollection = collection(db, 'items');
-
-	// Check for duplicates
-	const q = query(itemCollection, where('name', '==', item.name));
-	const querySnapshot = await getDocs(q);
-	if (!querySnapshot.empty) {
-		throw new Error('Item with this name already exists.');
-	}
-
-	const docRef = await addDoc(itemCollection, item);
-	return {
-		id: docRef.id,
-		name: item.name,
-		barcode: item.barcode,
-		count: item.count,
-		lowCount: item.lowCount,
-		cost: item.cost,
-		storageType: item.storageType
-	};
-}
-
-/**
- * Deletes an item from the database.
- * @param {string} id - The ID of the item to delete.
- * @returns {Promise<void>}
- */
-export async function deleteItem(id) {
-	const itemDoc = doc(db, 'items', id);
-	await deleteDoc(itemDoc);
-}
-
-/**
- * Edits the name of an item.
- * @param {string} id - The ID of the item to edit.
- * @param {string} newName - The new name for the item.
- * @returns {Promise<void>}
- */
-export async function editItemName(id, newName) {
-	const itemDoc = doc(db, 'items', id);
-	await updateDoc(itemDoc, { name: newName });
-}
-
-/**
- * Edits the low count threshold of an item.
- * @param {string} id - The ID of the item to edit.
- * @param {number} newLowCount - The new low count threshold.
- * @returns {Promise<void>}
- */
-export async function editItemLowCount(id, newLowCount) {
-	const itemDoc = doc(db, 'items', id);
-	await updateDoc(itemDoc, { lowCount: newLowCount });
-}
-
-/**
- * Edits the cost of an item.
- * @param {string} id - The ID of the item to edit.
- * @param {number} newCost - The new cost for the item.
- * @returns {Promise<void>}
- */
-export async function editItemCost(id, newCost) {
-	const itemDoc = doc(db, 'items', id);
-	await updateDoc(itemDoc, { cost: newCost });
-}
-
-/**
- * Edits the barcode of an item.
- * @param {string} id - The ID of the item to edit.
- * @param {string} newBarcode - The new barcode for the item.
- * @returns {Promise<void>}
- */
-export async function editItemBarcode(id, newBarcode) {
-	const itemDoc = doc(db, 'items', id);
-	await updateDoc(itemDoc, { barcode: newBarcode });
-}
-
-/**
- * Edits the storage type of an item.
- * @param {string} id - The ID of the item to edit.
- * @param {string} newStorageType - The new storage type for the item.
- * @returns {Promise<void>}
- */
-export async function editItemStorageType(id, newStorageType) {
-	const itemDoc = doc(db, 'items', id);
-	await updateDoc(itemDoc, { storageType: newStorageType });
-}
-
-/**
- * Searches for items by name.
- * @param {string} name - The name to search for.
- * @returns {Promise<Item[]>} A promise that resolves to an array of matching Item objects.
- */
-export async function searchItems(name) {
-	const itemsQuery = name
-		? query(
-				collection(db, 'items'),
-				where('name', '>=', name),
-				where('name', '<=', name + '\uf8ff')
-			)
-		: collection(db, 'items');
-	const snapshot = await getDocs(itemsQuery);
-	return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
 
 /**
@@ -243,45 +304,4 @@ export function sortItems(items, column, ascending) {
  */
 export function applySorting(items, column, ascending) {
 	return sortItems(items, column, ascending);
-}
-
-/**
- * Updates an item with partial data.
- * @param {string} id - The ID of the item to update.
- * @param {Partial<Item>} updatedFields - An object containing the fields to update.
- * @returns {Promise<void>}
- */
-export async function updateItem(id, updatedFields) {
-	const itemDoc = doc(db, 'items', id);
-	await updateDoc(itemDoc, updatedFields);
-}
-
-/**
- * Adds a specified number of test items to the database.
- * @param {number} [count=500] - The number of test items to add.
- * @returns {Promise<void>}
- */
-export async function addTestItems(count = 500) {
-	const storageTypes = ['freezer', 'refrigerator', 'dry storage'];
-
-	for (let i = 0; i < count; i++) {
-		/** @type {Omit<Item, 'id'>} */
-		const testItem = {
-			name: `Test Item ${i + 1}`,
-			barcode: `BARCODE${(1000000 + i).toString().padStart(7, '0')}`,
-			count: Math.floor(Math.random() * 100),
-			lowCount: Math.floor(Math.random() * 10),
-			cost: parseFloat((Math.random() * 100).toFixed(2)),
-			storageType: storageTypes[Math.floor(Math.random() * storageTypes.length)]
-		};
-
-		try {
-			await addItem(testItem);
-			console.log(`Added test item ${i + 1}`);
-		} catch (error) {
-			console.error(`Error adding test item ${i + 1}:`, error);
-		}
-	}
-
-	console.log(`Finished adding ${count} test items`);
 }

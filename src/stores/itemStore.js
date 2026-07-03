@@ -1,22 +1,23 @@
 import { writable, get } from 'svelte/store';
-import { db } from '../firebase';
 import {
-	collection,
-	addDoc,
-	getDocs,
-	updateDoc,
-	deleteDoc,
-	doc,
-	query,
-	where
-} from 'firebase/firestore';
-import { subscribeToItems } from '../lib/items';
-import { addTransaction } from '../lib/transactions';
+	subscribeToItems,
+	addItemWithTransaction,
+	deleteItemWithTransaction,
+	adjustItemCount,
+	setItemCount,
+	resetAllItemCounts,
+	updateItemFields
+} from '../lib/items';
 import { authStore } from './authStore';
 
 function createItemStore() {
 	const { subscribe, set, update } = writable([]);
 	let unsubscribeFromItems = null;
+
+	function currentUser() {
+		const authUser = get(authStore);
+		return authUser?.email || 'Unknown';
+	}
 
 	async function loadItems() {
 		try {
@@ -55,44 +56,28 @@ function createItemStore() {
 
 	async function addItem(item) {
 		try {
-			const docRef = await addDoc(collection(db, 'items'), item);
-			const newItem = { id: docRef.id, ...item, changeAmount: 0 };
+			// The item doc and its initial 'add' ledger record are written in one
+			// atomic batch by addItemWithTransaction.
 			// NOTE: do not optimistically append here. The active subscribeToItems
 			// listener (set up in loadItems) re-emits the full collection on every
 			// write, so appending locally races that snapshot and can briefly leave
 			// two rows with the same id in the store — crashing the keyed
 			// {#each item (item.id)} in the items table (each_key_duplicate).
-
-			// Create a transaction for the new item
-			const authUser = get(authStore);
-			const currentUser = authUser?.email || 'Unknown';
-
-			await addTransaction({
-				itemId: docRef.id,
-				itemName: item.name,
-				type: 'add',
-				previousCount: 0,
-				newCount: parseInt(item.count) || 0,
-				user: currentUser
-			});
-
-			return newItem;
+			return await addItemWithTransaction(item, currentUser());
 		} catch (error) {
 			console.error('Error adding item:', error);
 			throw error;
 		}
 	}
 
-	async function updateItem(id, updatedItem) {
+	async function updateItem(id, updatedFields) {
 		try {
-			// Ensure count is always stored as a number in the database
-			if (updatedItem.count !== undefined) {
-				updatedItem.count = parseInt(updatedItem.count, 10) || 0;
-			}
-
-			const itemRef = doc(db, 'items', id);
-			await updateDoc(itemRef, updatedItem);
-			update((items) => items.map((item) => (item.id === id ? { ...item, ...updatedItem } : item)));
+			// Count changes are rejected by updateItemFields — they must go through
+			// changeCount/resetItemCount so the ledger record is written atomically.
+			await updateItemFields(id, updatedFields);
+			update((items) =>
+				items.map((item) => (item.id === id ? { ...item, ...updatedFields } : item))
+			);
 		} catch (error) {
 			console.error('Error updating item:', error);
 			throw error;
@@ -101,26 +86,9 @@ function createItemStore() {
 
 	async function deleteItem(id) {
 		try {
-			// Get the item details before deleting
-			const items = get({ subscribe });
-			const item = items.find((item) => item.id === id);
-
-			if (item) {
-				// Create a transaction record for the deletion
-				const authUser = get(authStore);
-				const currentUser = authUser?.email || 'Unknown';
-
-				await addTransaction({
-					itemId: id,
-					itemName: item.name,
-					type: 'remove',
-					previousCount: item.count || 0,
-					newCount: 0,
-					user: currentUser
-				});
-			}
-
-			await deleteDoc(doc(db, 'items', id));
+			// The item delete and its final 'remove' ledger record are committed in
+			// one atomic Firestore transaction.
+			await deleteItemWithTransaction(id, currentUser());
 			update((items) => items.filter((item) => item.id !== id));
 		} catch (error) {
 			console.error('Error deleting item:', error);
@@ -128,39 +96,16 @@ function createItemStore() {
 		}
 	}
 
-	async function searchItems(searchTerm) {
-		try {
-			const q = query(
-				collection(db, 'items'),
-				where('name', '>=', searchTerm),
-				where('name', '<=', searchTerm + '\uf8ff')
-			);
-			const querySnapshot = await getDocs(q);
-			const items = [];
-			querySnapshot.forEach((doc) => {
-				items.push({ id: doc.id, ...doc.data(), changeAmount: 0 });
-			});
-			return items;
-		} catch (error) {
-			console.error('Error searching items:', error);
-			throw error;
-		}
-	}
-
 	async function changeCount(id, amount) {
 		try {
-			const items = get({ subscribe });
-			const item = items.find((item) => item.id === id);
-			if (!item) {
-				throw new Error('Item not found');
+			const delta = parseInt(amount, 10) || 0;
+			if (delta === 0) {
+				return;
 			}
-
-			// Ensure both values are numbers to prevent string concatenation
-			const currentCount = parseInt(item.count, 10) || 0;
-			const changeAmount = parseInt(amount, 10) || 0;
-			const newCount = Math.max(0, currentCount + changeAmount);
-
-			await updateItem(id, { count: newCount });
+			const { newCount } = await adjustItemCount(id, delta, currentUser());
+			update((items) =>
+				items.map((item) => (item.id === id ? { ...item, count: newCount } : item))
+			);
 		} catch (error) {
 			console.error('Error changing count:', error);
 			throw error;
@@ -169,7 +114,10 @@ function createItemStore() {
 
 	async function resetItemCount(id) {
 		try {
-			await updateItem(id, { count: 0 });
+			const { newCount } = await setItemCount(id, 0, currentUser());
+			update((items) =>
+				items.map((item) => (item.id === id ? { ...item, count: newCount } : item))
+			);
 		} catch (error) {
 			console.error('Error resetting item count:', error);
 			throw error;
@@ -178,12 +126,7 @@ function createItemStore() {
 
 	async function resetAllCounts() {
 		try {
-			const items = get({ subscribe });
-			const updatePromises = items.map((item) =>
-				updateDoc(doc(db, 'items', item.id), { count: 0 })
-			);
-			await Promise.all(updatePromises);
-
+			await resetAllItemCounts(currentUser());
 			update((items) => items.map((item) => ({ ...item, count: 0 })));
 		} catch (error) {
 			console.error('Error resetting all counts:', error);
@@ -206,7 +149,6 @@ function createItemStore() {
 		addItem,
 		updateItem,
 		deleteItem,
-		searchItems,
 		changeCount,
 		resetItemCount,
 		resetAllCounts,
