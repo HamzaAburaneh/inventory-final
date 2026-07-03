@@ -41,10 +41,13 @@ function groupTransactionsByItem(transactions) {
 		const existingEntry = itemSales[itemId].find(
 			(entry) => entry.date.getTime() === date.getTime()
 		);
+		// Only removals count as demand — 'add' transactions are restocks, not
+		// sales, so they contribute 0 (the date entry is still created so
+		// restock-only items produce a zero-demand series instead of nothing).
 		const change =
-			transaction.type === 'add'
-				? transaction.newCount - transaction.previousCount
-				: transaction.previousCount - transaction.newCount;
+			transaction.type === 'remove'
+				? Math.max(0, transaction.previousCount - transaction.newCount)
+				: 0;
 
 		if (existingEntry) {
 			existingEntry.sales += change;
