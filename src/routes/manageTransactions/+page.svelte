@@ -127,9 +127,19 @@
 	const changeCount = async (item, amount) => {
 		// The count write and its ledger record are committed atomically inside
 		// itemStore.changeCount — no separate addTransaction call needed here.
-		await itemStore.changeCount(item.id, amount);
-		itemStore.setChangeAmount(item.id, 0);
-		notificationStore.showNotification(`Count for "${item.name}" updated successfully!`, 'success');
+		try {
+			await itemStore.changeCount(item.id, amount);
+			itemStore.setChangeAmount(item.id, 0);
+			notificationStore.showNotification(
+				`Count for "${item.name}" updated successfully!`,
+				'success'
+			);
+		} catch (error) {
+			notificationStore.showNotification(
+				error instanceof Error ? error.message : 'Could not update the count. Please try again.',
+				'error'
+			);
+		}
 	};
 
 	let confirm = $state({ open: false, kind: null, item: null });
@@ -157,16 +167,30 @@
 	};
 
 	const doResetCount = async (item) => {
-		await itemStore.resetItemCount(item.id);
-		itemStore.setChangeAmount(item.id, 0);
-		notificationStore.showNotification(`Count for "${item.name}" reset successfully!`, 'success');
+		try {
+			await itemStore.resetItemCount(item.id);
+			itemStore.setChangeAmount(item.id, 0);
+			notificationStore.showNotification(`Count for "${item.name}" reset successfully!`, 'success');
+		} catch (error) {
+			notificationStore.showNotification(
+				error instanceof Error ? error.message : 'Could not reset the count. Please try again.',
+				'error'
+			);
+		}
 	};
 
 	const doResetAll = async () => {
 		// Each item's count reset and its ledger record are paired in the same
 		// atomic batch by the data layer.
-		await itemStore.resetAllCounts();
-		notificationStore.showNotification('All counts have been reset successfully!', 'success');
+		try {
+			await itemStore.resetAllCounts();
+			notificationStore.showNotification('All counts have been reset successfully!', 'success');
+		} catch (error) {
+			notificationStore.showNotification(
+				error instanceof Error ? error.message : 'Could not reset all counts. Please try again.',
+				'error'
+			);
+		}
 	};
 
 	const handleChangeAmountInput = (item, event) => {

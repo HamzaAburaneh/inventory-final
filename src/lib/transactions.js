@@ -31,7 +31,10 @@ export async function getHistoricalTransactions(days = 90) {
 		return querySnapshot.docs.map((doc) => ({
 			id: doc.id,
 			...doc.data(),
-			timestamp: doc.data().timestamp.toDate()
+			// A write queued offline carries a serverTimestamp that reads back as
+			// null in the local cache until it syncs; fall back to now so consumers
+			// that expect a Date don't crash on `.toDate()`.
+			timestamp: doc.data().timestamp ? doc.data().timestamp.toDate() : new Date()
 		}));
 	} catch (error) {
 		console.error('Error fetching historical transactions: ', error);

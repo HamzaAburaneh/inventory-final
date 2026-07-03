@@ -32,7 +32,10 @@ import { markQueued, markSynced } from './syncQueue';
 /**
  * True when the browser reports no network connection. Only an explicit
  * `false` counts — on the server (and in tests) `navigator.onLine` is
- * undefined and we must take the online code path.
+ * undefined and we must take the online code path. Note: this is a hint, not
+ * a guarantee — an installed PWA on iOS can report `true` in airplane mode,
+ * which is why the write functions below also fall back to the queued path
+ * when an online attempt fails with an "unavailable" (offline) error.
  * @returns {boolean} Whether the client is known to be offline.
  */
 function isOffline() {
@@ -40,62 +43,89 @@ function isOffline() {
 }
 
 /**
- * Builds a `transactions` ledger document for a count change.
- * Online, the timestamp is a server timestamp; offline we stamp the device
- * clock instead — a queued write may sync hours later, and the ledger should
- * record when the count actually happened, not when the signal came back.
+ * Whether a Firestore error means "no connection" — either the SDK's
+ * `unavailable` code or its offline-get message. These are the errors a write
+ * attempt throws when the device is actually offline despite `navigator.onLine`.
+ * @param {unknown} error - The caught error.
+ * @returns {boolean} True if the failure is a connectivity failure.
+ */
+function isUnavailable(error) {
+	if (!error) return false;
+	const code = /** @type {{code?: string, message?: string}} */ (error).code;
+	const message = /** @type {{code?: string, message?: string}} */ (error).message || '';
+	return code === 'unavailable' || message.toLowerCase().includes('offline');
+}
+
+/**
+ * Builds a `transactions` ledger document for a count change. The caller
+ * passes the timestamp: a server timestamp when the write is going out online,
+ * or a device `Timestamp.now()` for a queued offline write (a server timestamp
+ * reads back as null in the local cache until it syncs, which would break
+ * consumers that call `.toDate()` on it).
  * @param {string} itemId - The ID of the item whose count changed.
  * @param {string} itemName - The item's name at the time of the change.
  * @param {'add' | 'remove'} type - The direction of the change.
  * @param {number} previousCount - The count before the change.
  * @param {number} newCount - The count after the change.
  * @param {string} user - The user who made the change.
+ * @param {*} timestamp - serverTimestamp() (online) or Timestamp.now() (queued).
  * @returns {object} The ledger document data.
  */
-function ledgerRecord(itemId, itemName, type, previousCount, newCount, user) {
-	return {
-		itemId,
-		itemName,
-		type,
-		previousCount,
-		newCount,
-		user,
-		timestamp: isOffline() ? Timestamp.now() : serverTimestamp()
-	};
+function ledgerRecord(itemId, itemName, type, previousCount, newCount, user, timestamp) {
+	return { itemId, itemName, type, previousCount, newCount, user, timestamp };
 }
 
 /**
- * Commits a batch, awaiting the server ack only when online. Offline,
- * Firestore applies the batch to the local cache immediately and syncs it on
- * reconnect — awaiting commit() would block until then, so we let it settle
- * in the background and resolve right away (the UI reads the local cache).
+ * Commits a batch and awaits the server ack. Used for online-first writes
+ * (add item, reset all) where we want to surface a write failure to the caller.
  * @param {import('firebase/firestore').WriteBatch} batch - The batch to commit.
  * @returns {Promise<void>}
  */
 function commitBatch(batch) {
-	if (isOffline()) {
-		// Track the write as queued now and as synced once Firestore acks it on
-		// reconnect (the commit promise resolves then). Resolve immediately so
-		// the UI updates from the local cache without waiting for a network.
-		markQueued();
-		batch
-			.commit()
-			.then(() => markSynced())
-			.catch((error) => {
-				markSynced();
-				console.error('Error syncing queued write:', error);
-			});
-		return Promise.resolve();
-	}
 	return batch.commit();
 }
 
 /**
- * Offline path for count changes: reads the item from the device's local
- * cache and queues the count write + its ledger record in one batch (still
- * atomic — Firestore syncs the batch as a unit). The previousCount comes
- * from this device's cache, so if two devices change the same item while
- * offline, the last one to sync wins — the documented offline trade-off.
+ * Commits a batch without awaiting the server ack. Firestore applies the batch
+ * to the local cache immediately (so the UI updates at once) and syncs it on
+ * reconnect; awaiting would block until the network returns. The write is
+ * tracked as queued now and synced when its commit promise resolves, driving
+ * the offline indicator's count. Used for every offline / queued write.
+ * @param {import('firebase/firestore').WriteBatch} batch - The batch to commit.
+ * @returns {void}
+ */
+function commitDetached(batch) {
+	markQueued();
+	batch
+		.commit()
+		.then(() => markSynced())
+		.catch((error) => {
+			markSynced();
+			console.error('Error syncing queued write:', error);
+		});
+}
+
+/**
+ * Reads an item, preferring the server but falling back to the local cache
+ * when offline. `getDoc` already does this, but we surface a clearer error if
+ * the item isn't cached and there's no network.
+ * @param {import('firebase/firestore').DocumentReference} itemRef - The item ref.
+ * @returns {Promise<import('firebase/firestore').DocumentSnapshot>} The snapshot.
+ */
+async function readItem(itemRef) {
+	try {
+		return await getDocFromCache(itemRef);
+	} catch {
+		throw new Error('Item not available on this device yet — open it once while online.');
+	}
+}
+
+/**
+ * Queues a count change offline: reads the item from the device cache and
+ * writes the count update + its ledger record in one batch (Firestore syncs
+ * the batch as an atomic unit on reconnect). The previousCount comes from this
+ * device's cache, so if two devices change the same item while offline, the
+ * last one to sync wins — the documented offline trade-off.
  * @param {string} id - The ID of the item to change.
  * @param {function(number): number} computeNewCount - Maps current → target count.
  * @param {string} user - The user making the change.
@@ -103,12 +133,7 @@ function commitBatch(batch) {
  */
 async function queueCountChange(id, computeNewCount, user) {
 	const itemRef = doc(db, 'items', id);
-	let snapshot;
-	try {
-		snapshot = await getDocFromCache(itemRef);
-	} catch {
-		throw new Error('Item not available in the offline cache');
-	}
+	const snapshot = await readItem(itemRef);
 	if (!snapshot.exists()) {
 		throw new Error('Item not found');
 	}
@@ -128,10 +153,11 @@ async function queueCountChange(id, computeNewCount, user) {
 			newCount > previousCount ? 'add' : 'remove',
 			previousCount,
 			newCount,
-			user
+			user,
+			Timestamp.now()
 		)
 	);
-	await commitBatch(batch);
+	commitDetached(batch);
 	return { previousCount, newCount };
 }
 
@@ -145,28 +171,46 @@ async function queueCountChange(id, computeNewCount, user) {
  * @returns {Promise<{previousCount: number, newCount: number}>} The counts around the change.
  */
 export async function adjustItemCount(id, delta, user) {
+	const compute = (current) => current + (parseInt(delta, 10) || 0);
 	if (isOffline()) {
-		return queueCountChange(id, (current) => current + (parseInt(delta, 10) || 0), user);
+		return queueCountChange(id, compute, user);
 	}
 	const itemRef = doc(db, 'items', id);
-	return runTransaction(db, async (txn) => {
-		const snapshot = await txn.get(itemRef);
-		if (!snapshot.exists()) {
-			throw new Error('Item not found');
-		}
-		const item = snapshot.data();
-		const previousCount = parseInt(item.count, 10) || 0;
-		const newCount = Math.max(0, previousCount + (parseInt(delta, 10) || 0));
-		if (newCount === previousCount) {
+	try {
+		return await runTransaction(db, async (txn) => {
+			const snapshot = await txn.get(itemRef);
+			if (!snapshot.exists()) {
+				throw new Error('Item not found');
+			}
+			const item = snapshot.data();
+			const previousCount = parseInt(item.count, 10) || 0;
+			const newCount = Math.max(0, previousCount + (parseInt(delta, 10) || 0));
+			if (newCount === previousCount) {
+				return { previousCount, newCount };
+			}
+			txn.update(itemRef, { count: newCount });
+			txn.set(
+				doc(collection(db, 'transactions')),
+				ledgerRecord(
+					id,
+					item.name,
+					delta > 0 ? 'add' : 'remove',
+					previousCount,
+					newCount,
+					user,
+					serverTimestamp()
+				)
+			);
 			return { previousCount, newCount };
+		});
+	} catch (error) {
+		// navigator.onLine can lie (iOS PWA in airplane mode). If the online
+		// transaction failed only because we're actually offline, queue it.
+		if (isUnavailable(error)) {
+			return queueCountChange(id, compute, user);
 		}
-		txn.update(itemRef, { count: newCount });
-		txn.set(
-			doc(collection(db, 'transactions')),
-			ledgerRecord(id, item.name, delta > 0 ? 'add' : 'remove', previousCount, newCount, user)
-		);
-		return { previousCount, newCount };
-	});
+		throw error;
+	}
 }
 
 /**
@@ -179,35 +223,44 @@ export async function adjustItemCount(id, delta, user) {
  * @returns {Promise<{previousCount: number, newCount: number}>} The counts around the change.
  */
 export async function setItemCount(id, count, user) {
+	const compute = () => parseInt(count, 10) || 0;
 	if (isOffline()) {
-		return queueCountChange(id, () => parseInt(count, 10) || 0, user);
+		return queueCountChange(id, compute, user);
 	}
 	const itemRef = doc(db, 'items', id);
-	return runTransaction(db, async (txn) => {
-		const snapshot = await txn.get(itemRef);
-		if (!snapshot.exists()) {
-			throw new Error('Item not found');
-		}
-		const item = snapshot.data();
-		const previousCount = parseInt(item.count, 10) || 0;
-		const newCount = Math.max(0, parseInt(count, 10) || 0);
-		if (newCount === previousCount) {
+	try {
+		return await runTransaction(db, async (txn) => {
+			const snapshot = await txn.get(itemRef);
+			if (!snapshot.exists()) {
+				throw new Error('Item not found');
+			}
+			const item = snapshot.data();
+			const previousCount = parseInt(item.count, 10) || 0;
+			const newCount = Math.max(0, parseInt(count, 10) || 0);
+			if (newCount === previousCount) {
+				return { previousCount, newCount };
+			}
+			txn.update(itemRef, { count: newCount });
+			txn.set(
+				doc(collection(db, 'transactions')),
+				ledgerRecord(
+					id,
+					item.name,
+					newCount > previousCount ? 'add' : 'remove',
+					previousCount,
+					newCount,
+					user,
+					serverTimestamp()
+				)
+			);
 			return { previousCount, newCount };
+		});
+	} catch (error) {
+		if (isUnavailable(error)) {
+			return queueCountChange(id, compute, user);
 		}
-		txn.update(itemRef, { count: newCount });
-		txn.set(
-			doc(collection(db, 'transactions')),
-			ledgerRecord(
-				id,
-				item.name,
-				newCount > previousCount ? 'add' : 'remove',
-				previousCount,
-				newCount,
-				user
-			)
-		);
-		return { previousCount, newCount };
-	});
+		throw error;
+	}
 }
 
 /**
@@ -225,6 +278,9 @@ export async function resetAllItemCounts(user) {
 		return count !== 0;
 	});
 
+	const offline = isOffline();
+	const timestamp = offline ? Timestamp.now() : serverTimestamp();
+
 	// 2 ops per item (count update + ledger record) → 200 items per batch.
 	const chunkSize = 200;
 	for (let i = 0; i < toReset.length; i += chunkSize) {
@@ -235,10 +291,14 @@ export async function resetAllItemCounts(user) {
 			batch.update(docSnapshot.ref, { count: 0 });
 			batch.set(
 				doc(collection(db, 'transactions')),
-				ledgerRecord(docSnapshot.id, item.name, 'remove', previousCount, 0, user)
+				ledgerRecord(docSnapshot.id, item.name, 'remove', previousCount, 0, user, timestamp)
 			);
 		}
-		await commitBatch(batch);
+		if (offline) {
+			commitDetached(batch);
+		} else {
+			await commitBatch(batch);
+		}
 	}
 
 	return toReset.length;
@@ -259,14 +319,27 @@ export async function addItemWithTransaction(item, user) {
 		throw new Error('Item with this name already exists.');
 	}
 
+	const offline = isOffline();
 	const itemRef = doc(itemCollection);
 	const batch = writeBatch(db);
 	batch.set(itemRef, item);
 	batch.set(
 		doc(collection(db, 'transactions')),
-		ledgerRecord(itemRef.id, item.name, 'add', 0, parseInt(item.count, 10) || 0, user)
+		ledgerRecord(
+			itemRef.id,
+			item.name,
+			'add',
+			0,
+			parseInt(item.count, 10) || 0,
+			user,
+			offline ? Timestamp.now() : serverTimestamp()
+		)
 	);
-	await commitBatch(batch);
+	if (offline) {
+		commitDetached(batch);
+	} else {
+		await commitBatch(batch);
+	}
 
 	return { id: itemRef.id, ...item };
 }
@@ -281,39 +354,52 @@ export async function addItemWithTransaction(item, user) {
 export async function deleteItemWithTransaction(id, user) {
 	const itemRef = doc(db, 'items', id);
 	if (isOffline()) {
-		let snapshot;
-		try {
-			snapshot = await getDocFromCache(itemRef);
-		} catch {
-			throw new Error('Item not available in the offline cache');
+		return queueDelete(itemRef, id, user);
+	}
+	try {
+		await runTransaction(db, async (txn) => {
+			const snapshot = await txn.get(itemRef);
+			if (!snapshot.exists()) {
+				return;
+			}
+			const item = snapshot.data();
+			const previousCount = parseInt(item.count, 10) || 0;
+			txn.set(
+				doc(collection(db, 'transactions')),
+				ledgerRecord(id, item.name, 'remove', previousCount, 0, user, serverTimestamp())
+			);
+			txn.delete(itemRef);
+		});
+	} catch (error) {
+		if (isUnavailable(error)) {
+			return queueDelete(itemRef, id, user);
 		}
-		if (!snapshot.exists()) {
-			return;
-		}
-		const item = snapshot.data();
-		const previousCount = parseInt(item.count, 10) || 0;
-		const batch = writeBatch(db);
-		batch.set(
-			doc(collection(db, 'transactions')),
-			ledgerRecord(id, item.name, 'remove', previousCount, 0, user)
-		);
-		batch.delete(itemRef);
-		await commitBatch(batch);
+		throw error;
+	}
+}
+
+/**
+ * Queues an item deletion offline: writes the final 'remove' ledger record and
+ * the delete in one batch, read from the device cache.
+ * @param {import('firebase/firestore').DocumentReference} itemRef - The item ref.
+ * @param {string} id - The item ID.
+ * @param {string} user - The user deleting the item.
+ * @returns {Promise<void>}
+ */
+async function queueDelete(itemRef, id, user) {
+	const snapshot = await readItem(itemRef);
+	if (!snapshot.exists()) {
 		return;
 	}
-	await runTransaction(db, async (txn) => {
-		const snapshot = await txn.get(itemRef);
-		if (!snapshot.exists()) {
-			return;
-		}
-		const item = snapshot.data();
-		const previousCount = parseInt(item.count, 10) || 0;
-		txn.set(
-			doc(collection(db, 'transactions')),
-			ledgerRecord(id, item.name, 'remove', previousCount, 0, user)
-		);
-		txn.delete(itemRef);
-	});
+	const item = snapshot.data();
+	const previousCount = parseInt(item.count, 10) || 0;
+	const batch = writeBatch(db);
+	batch.set(
+		doc(collection(db, 'transactions')),
+		ledgerRecord(id, item.name, 'remove', previousCount, 0, user, Timestamp.now())
+	);
+	batch.delete(itemRef);
+	commitDetached(batch);
 }
 
 /**

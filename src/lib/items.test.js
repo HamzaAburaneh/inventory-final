@@ -313,9 +313,7 @@ describe('offline mode', () => {
 		goOffline();
 		mocks.getDocFromCache.mockRejectedValue(new Error('unavailable'));
 
-		await expect(adjustItemCount('item1', 1, 'user')).rejects.toThrow(
-			'Item not available in the offline cache'
-		);
+		await expect(adjustItemCount('item1', 1, 'user')).rejects.toThrow('open it once while online');
 	});
 
 	it('deletes via a queued batch pairing the final remove record', async () => {
@@ -339,6 +337,64 @@ describe('offline mode', () => {
 		expect(batch.delete).toHaveBeenCalledWith(
 			expect.objectContaining({ collection: 'items', id: 'item1' })
 		);
+	});
+});
+
+describe('offline fallback when navigator.onLine lies (iOS PWA in airplane mode)', () => {
+	// navigator.onLine is undefined in the test env → the online path runs; we
+	// make runTransaction fail as "unavailable" to simulate a device that claims
+	// to be online but has no connection.
+	function unavailable() {
+		return Object.assign(new Error('Failed to get document because the client is offline.'), {
+			code: 'unavailable'
+		});
+	}
+
+	it('adjustItemCount falls back to a queued batch', async () => {
+		mocks.runTransaction.mockRejectedValue(unavailable());
+		mocks.getDocFromCache.mockResolvedValue({
+			exists: () => true,
+			data: () => ({ name: 'Fries', count: 10 })
+		});
+		const batch = fakeBatch();
+		batch.commit = vi.fn(() => new Promise(() => {}));
+		mocks.writeBatch.mockReturnValue(batch);
+
+		const result = await adjustItemCount('item1', 5, 'user');
+
+		expect(result).toEqual({ previousCount: 10, newCount: 15 });
+		expect(batch.update).toHaveBeenCalledWith(expect.objectContaining({ id: 'item1' }), {
+			count: 15
+		});
+		expect(batch.set.mock.calls[0][1]).toMatchObject({
+			type: 'add',
+			previousCount: 10,
+			newCount: 15,
+			timestamp: 'CLIENT_TIMESTAMP'
+		});
+	});
+
+	it('deleteItemWithTransaction falls back to a queued batch', async () => {
+		mocks.runTransaction.mockRejectedValue(unavailable());
+		mocks.getDocFromCache.mockResolvedValue({
+			exists: () => true,
+			data: () => ({ name: 'Fries', count: 7 })
+		});
+		const batch = fakeBatch();
+		batch.commit = vi.fn(() => new Promise(() => {}));
+		mocks.writeBatch.mockReturnValue(batch);
+
+		await deleteItemWithTransaction('item1', 'user');
+
+		expect(batch.delete).toHaveBeenCalledWith(expect.objectContaining({ id: 'item1' }));
+		expect(batch.set.mock.calls[0][1]).toMatchObject({ type: 'remove', previousCount: 7 });
+	});
+
+	it('re-throws non-connectivity errors instead of queuing', async () => {
+		mocks.runTransaction.mockRejectedValue(new Error('permission-denied'));
+
+		await expect(adjustItemCount('item1', 5, 'user')).rejects.toThrow('permission-denied');
+		expect(mocks.writeBatch).not.toHaveBeenCalled();
 	});
 });
 
