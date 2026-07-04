@@ -65,3 +65,48 @@
  * @property {number} netChange
  * @property {number} volatility - Standard deviation of daily changes
  */
+
+/**
+ * A contiguous CNE fair run derived from the transaction ledger by gap
+ * segmentation (see cneCalendar.js). Off-season days between runs are excluded.
+ * @typedef {object} FairRun
+ * @property {Date} start - First active day of the run (local midnight)
+ * @property {Date} end - Last active day of the run (local midnight)
+ * @property {number} totalDays - Inclusive day span of the run
+ */
+
+/**
+ * Data-grounded forecast confidence: a level plus the plain-English basis it
+ * rests on, instead of a fabricated percent.
+ * @typedef {object} Confidence
+ * @property {number} score - 0..1 blended score
+ * @property {'high' | 'medium' | 'low'} level
+ * @property {string} basis - What the confidence is based on, in words
+ */
+
+/**
+ * A day an order-planning walk lands on within the forecast horizon.
+ * @typedef {object} PlanDay
+ * @property {string} date - ISO day key (YYYY-MM-DD)
+ * @property {number} dayIndex - 0-based offset into the forecast horizon
+ * @property {boolean} [immediate] - Reorder-by only: already at/below threshold
+ */
+
+/**
+ * One item's forecast as returned by the stockPredictions API. `prediction` is
+ * the per-day case demand over `forecastDates`; both the deterministic and AI
+ * paths return this shape.
+ * @typedef {object} PredictionResult
+ * @property {number[]} prediction - Per-day predicted demand (cases)
+ * @property {string} reasoning - Short human explanation of the drivers
+ * @property {Confidence} confidence
+ * @property {string[]} factors - Key factor tags
+ * @property {string} method - e.g. 'AI Enhanced', 'ARIMA', 'CNE Baseline', 'No Data'
+ * @property {string | null} model - OpenRouter model slug when AI produced it, else null
+ * @property {number[]} baseline - Deterministic CNE baseline, for comparison
+ * @property {string} baselineSource - 'cross-year+calendar' | 'cross-year' | 'calendar' | 'none'
+ * @property {number[] | null} arima - ARIMA reference for the horizon, if computed
+ * @property {string[]} forecastDates - ISO day keys aligned with `prediction`
+ * @property {PlanDay | null} stockOut - Predicted run-out day within the horizon
+ * @property {PlanDay | null} reorderBy - Day to place the next order
+ */

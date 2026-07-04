@@ -1,6 +1,6 @@
 <script>
 	import { itemStore } from '../stores/itemStore.js';
-	import { fade, slide, scale } from 'svelte/transition';
+	import { fade, slide, fly } from 'svelte/transition';
 	import { notificationStore } from '../stores/notificationStore.js';
 	import { createSearchState } from '../lib/runes/search.svelte.js';
 	import { fetchStockPredictions } from '../lib/predictionsClient.js';
@@ -58,6 +58,55 @@
 		return () => clearTimeout(debounceTimer);
 	});
 
+	const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+	const MONTHS = [
+		'Jan',
+		'Feb',
+		'Mar',
+		'Apr',
+		'May',
+		'Jun',
+		'Jul',
+		'Aug',
+		'Sep',
+		'Oct',
+		'Nov',
+		'Dec'
+	];
+
+	// Parse a YYYY-MM-DD key as a LOCAL date (never `new Date(key)`, which is UTC
+	// and shifts the weekday in Toronto's negative offset).
+	function dayFromKey(key) {
+		if (typeof key !== 'string') return null;
+		const [y, m, d] = key.split('-').map(Number);
+		if (!y || !m || !d) return null;
+		return new Date(y, m - 1, d);
+	}
+
+	// e.g. "Fri Aug 21" — the label operators actually reason about.
+	function formatDayKey(key) {
+		const d = dayFromKey(key);
+		if (!d) return key ?? '';
+		return `${WEEKDAYS[d.getDay()]} ${MONTHS[d.getMonth()]} ${d.getDate()}`;
+	}
+
+	// Confidence now arrives as { score, level, basis }; tolerate a bare legacy
+	// number just in case an old response is cached.
+	function normalizeConfidence(raw) {
+		if (raw && typeof raw === 'object' && raw.level) return raw;
+		if (typeof raw === 'number') {
+			const level = raw >= 0.65 ? 'high' : raw >= 0.4 ? 'medium' : 'low';
+			return { score: raw, level, basis: '' };
+		}
+		return { score: 0, level: 'low', basis: '' };
+	}
+
+	const CONFIDENCE_META = {
+		high: { label: 'High confidence', cls: 'conf-high' },
+		medium: { label: 'Medium confidence', cls: 'conf-medium' },
+		low: { label: 'Low confidence', cls: 'conf-low' }
+	};
+
 	// Derived state for items with predictions
 	const itemsWithPredictions = $derived(
 		Object.entries(predictions)
@@ -68,28 +117,47 @@
 				}
 				const currentCount = item.count !== undefined ? item.count : 0;
 
-				// Handle both old format (array) and new format (object with prediction array)
+				// Handle both old format (bare array) and the enriched object.
 				const prediction = Array.isArray(predictionData)
 					? predictionData
 					: predictionData.prediction;
-				// Ensure prediction is an array before calling reduce
-				const totalPrediction = Array.isArray(prediction)
-					? prediction.reduce((sum, daily) => sum + daily, 0)
-					: 0;
+				const dailies = Array.isArray(prediction) ? prediction : [];
+				const totalPrediction = dailies.reduce((sum, daily) => sum + (Number(daily) || 0), 0);
 				const recommendedOrder = Math.max(0, totalPrediction - currentCount);
+
+				const baseline = Array.isArray(predictionData.baseline) ? predictionData.baseline : null;
+				const baselineTotal = baseline ? baseline.reduce((s, v) => s + (Number(v) || 0), 0) : 0;
+				const method = predictionData.method || 'ARIMA';
+				const isAI = method.startsWith('AI');
+				// Divergence between the shown AI numbers and the deterministic
+				// baseline — an honesty signal, only meaningful for the AI path.
+				const divergence =
+					isAI && baseline
+						? Math.abs(totalPrediction - baselineTotal) / Math.max(baselineTotal, 1)
+						: null;
+
+				const forecastDates = Array.isArray(predictionData.forecastDates)
+					? predictionData.forecastDates
+					: [];
 
 				return {
 					id: itemId,
 					name: item.name,
 					currentCount,
-					prediction,
+					prediction: dailies,
+					forecastDates,
 					totalPrediction,
 					recommendedOrder,
-					// Enhanced data from AI analysis
-					reasoning: predictionData.reasoning || 'ARIMA time series analysis',
-					confidence: predictionData.confidence || 0.7,
-					factors: predictionData.factors || ['Historical sales patterns'],
-					method: predictionData.method || 'ARIMA'
+					reasoning: predictionData.reasoning || '',
+					confidence: normalizeConfidence(predictionData.confidence),
+					factors: predictionData.factors || [],
+					method,
+					isAI,
+					model: predictionData.model || null,
+					baselineTotal,
+					divergence,
+					stockOut: predictionData.stockOut || null,
+					reorderBy: predictionData.reorderBy || null
 				};
 			})
 			.filter(
@@ -171,20 +239,22 @@
 				<div class="method-toggle" role="group" aria-labelledby="method-label">
 					<button class="method-btn {!useAI ? 'active' : ''}" onclick={() => (useAI = false)}>
 						<i class="fas fa-chart-line mr-2"></i>
-						ARIMA Model
+						CNE Baseline
 					</button>
 					<button class="method-btn {useAI ? 'active' : ''}" onclick={() => (useAI = true)}>
 						<i class="fas fa-brain mr-2"></i>
-						GPT-4o Enhanced
+						AI Enhanced
 					</button>
 				</div>
 			</div>
 		</div>
 		<p class="text-sm mb-2">
 			{#if useAI}
-				GPT-4o enhanced predictions combining AI analysis with traditional time series modeling
+				AI-enhanced daily forecasts anchored on last CNE's demand and this fair's crowd pattern,
+				with an ARIMA/baseline fallback.
 			{:else}
-				Based on a 7-day moving average of sales data using ARIMA model
+				CNE-aware forecasts: last year's same-fair-day demand and the fair's weekday/day-of-fair
+				crowd pattern, with ARIMA once enough of this fair's data exists.
 			{/if}
 		</p>
 		<div class="flex flex-wrap justify-between mt-4">
@@ -223,102 +293,133 @@
 				No predictions available or no items match your search.
 			</p>
 		{:else}
-			{#each itemsWithPredictions as { id, name, currentCount, prediction, totalPrediction, recommendedOrder, reasoning, confidence, factors, method } (id)}
+			{#each itemsWithPredictions as item (item.id)}
 				<div
 					class="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
-					in:scale={{ duration: 300, delay: 150 }}
+					in:fly={{ y: 12, duration: 300, delay: 150 }}
 				>
 					<div class="flex justify-between items-start mb-2">
-						<h3 class="text-lg font-semibold">{name}</h3>
-						<div class="flex items-center space-x-2">
-							<span
-								class="px-2 py-1 text-xs rounded-full {method.includes('GPT-4o')
-									? 'bg-blue-100 text-blue-800'
-									: 'bg-gray-100 text-gray-800'}"
+						<h3 class="text-lg font-semibold">{item.name}</h3>
+						<div class="flex items-center gap-2 flex-wrap justify-end">
+							<span class="method-badge {item.isAI ? 'method-ai' : 'method-model'}"
+								>{item.method}</span
 							>
-								{method}
+							<span
+								class="conf-badge {CONFIDENCE_META[item.confidence.level].cls}"
+								title={item.confidence.basis}
+							>
+								{CONFIDENCE_META[item.confidence.level].label}
 							</span>
-							{#if confidence}
-								<span
-									class="px-2 py-1 text-xs rounded-full {confidence > 0.8
-										? 'bg-green-100 text-green-800'
-										: confidence > 0.6
-											? 'bg-yellow-100 text-yellow-800'
-											: 'bg-red-100 text-red-800'}"
-								>
-									{Math.round(confidence * 100)}% confidence
-								</span>
-							{/if}
 						</div>
 					</div>
 
 					<p class="mb-1">
 						<i class="fas fa-box inline-block mr-1"></i>
-						Current Stock: <strong>{currentCount}</strong>
+						Current Stock: <strong>{item.currentCount}</strong>
 					</p>
 					<p class="mb-1">
 						<i class="fas fa-chart-line inline-block mr-1"></i>
-						Predicted Need ({timeframeValue} days):
-						<strong
-							>{typeof totalPrediction === 'number' ? totalPrediction.toFixed(2) : '0.00'}</strong
-						>
+						Predicted Need ({item.prediction.length}
+						{item.prediction.length === 1 ? 'day' : 'days'}):
+						<strong>{item.totalPrediction.toFixed(1)}</strong> cases
 					</p>
 					<p class="mb-2">
 						<i class="fas fa-cart-plus inline-block mr-1"></i>
-						Recommended Order:
-						<strong
-							>{typeof recommendedOrder === 'number' ? recommendedOrder.toFixed(2) : '0.00'}</strong
-						>
+						Recommended Order: <strong>{item.recommendedOrder.toFixed(1)}</strong> cases
 					</p>
 
 					<p
-						class={`text-lg ${getStatusColor(currentCount, totalPrediction)} flex items-center mb-2`}
+						class={`text-lg ${getStatusColor(item.currentCount, item.totalPrediction)} flex items-center mb-2`}
 					>
-						<i class="fas {getStatusIcon(currentCount, totalPrediction)} inline-block mr-2"></i>
+						<i
+							class="fas {getStatusIcon(item.currentCount, item.totalPrediction)} inline-block mr-2"
+						></i>
 						Status:
-						{#if currentCount < totalPrediction * 0.5}
+						{#if item.currentCount < item.totalPrediction * 0.5}
 							Urgent restock needed
-						{:else if currentCount < totalPrediction}
+						{:else if item.currentCount < item.totalPrediction}
 							Restock recommended
-						{:else if currentCount > totalPrediction * 1.5}
+						{:else if item.currentCount > item.totalPrediction * 1.5}
 							Potential overstock
 						{:else}
 							Stock level optimal
 						{/if}
 					</p>
 
-					{#if reasoning && reasoning !== 'ARIMA time series analysis'}
-						<div class="mb-2 p-3 bg-blue-50 rounded-lg text-sm border border-blue-200">
-							<i class="fas fa-lightbulb inline-block mr-2 text-blue-600"></i>
-							<strong class="text-blue-800">AI Insight:</strong>
-							<span class="text-gray-800 ml-1">{reasoning}</span>
+					<!-- The two questions operators actually ask: when do I run out, and
+					     by when must I reorder. -->
+					<div class="order-plan mb-2">
+						<div class="order-plan-row">
+							<span><i class="fas fa-hourglass-half mr-1"></i>Runs out</span>
+							<strong>
+								{#if item.stockOut}
+									{formatDayKey(item.stockOut.date)}
+								{:else}
+									Not within {item.prediction.length}
+									{item.prediction.length === 1 ? 'day' : 'days'}
+								{/if}
+							</strong>
+						</div>
+						<div class="order-plan-row">
+							<span><i class="fas fa-truck mr-1"></i>Reorder by</span>
+							<strong>
+								{#if item.reorderBy && item.reorderBy.immediate}
+									Now — at/below low stock
+								{:else if item.reorderBy}
+									{formatDayKey(item.reorderBy.date)}
+								{:else}
+									No reorder needed
+								{/if}
+							</strong>
+						</div>
+					</div>
+
+					{#if item.reasoning}
+						<div class="insight mb-2">
+							<i class="fas fa-lightbulb mr-2"></i>
+							<strong>{item.isAI ? 'AI insight' : 'Why'}:</strong>
+							<span class="ml-1">{item.reasoning}</span>
 						</div>
 					{/if}
 
-					{#if factors && factors.length > 1}
+					{#if item.isAI && item.divergence !== null}
+						<p class="text-xs divergence mb-2">
+							{#if item.divergence <= 0.15}
+								AI agrees with the CNE baseline (within {Math.round(item.divergence * 100)}%).
+							{:else}
+								AI differs from the CNE baseline by {Math.round(item.divergence * 100)}% ({item.baselineTotal.toFixed(
+									1
+								)} cases baseline).
+							{/if}
+						</p>
+					{/if}
+
+					{#if item.factors && item.factors.length > 0}
 						<div class="mb-2">
-							<p class="text-xs text-gray-600 mb-1">Key factors considered:</p>
 							<div class="flex flex-wrap gap-1">
-								{#each factors as factor (factor)}
-									<span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">{factor}</span>
+								{#each item.factors as factor (factor)}
+									<span class="factor-chip">{factor}</span>
 								{/each}
 							</div>
 						</div>
 					{/if}
 
 					<details class="mt-2">
-						<summary class="cursor-pointer text-sm text-gray-600 hover:text-gray-800"
-							>Daily Breakdown</summary
-						>
-						<ul class="mt-2 text-sm">
-							{#each Array.isArray(prediction) ? prediction : [] as dailyPrediction, index (index)}
-								<li>
-									Day {index + 1}: {typeof dailyPrediction === 'number'
-										? dailyPrediction.toFixed(2)
-										: '0.00'}
-								</li>
-							{/each}
-						</ul>
+						<summary class="day-summary">Per-day order plan</summary>
+						<table class="day-table mt-2">
+							<tbody>
+								{#each item.prediction as dailyPrediction, index (index)}
+									<tr>
+										<td class="day-label">
+											{item.forecastDates[index]
+												? formatDayKey(item.forecastDates[index])
+												: `Day ${index + 1}`}
+										</td>
+										<td class="day-qty">{(Number(dailyPrediction) || 0).toFixed(1)}</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
 					</details>
 				</div>
 			{/each}
@@ -473,6 +574,151 @@
 		   in dark mode (the old fixed white tint vanished on light surfaces). */
 		background-color: color-mix(in srgb, var(--text-color) 7%, transparent);
 		border-radius: 0.25rem;
+	}
+
+	/* --- Prediction card: badges, order plan, insight, per-day table ---
+	   All theme-driven (var(--text-color) tints + color-mix) so a single rule
+	   set works in light and dark; no hardcoded surface colors. */
+	.method-badge,
+	.conf-badge {
+		padding: 0.15rem 0.5rem;
+		font-size: 0.7rem;
+		font-weight: 600;
+		border-radius: 9999px;
+		white-space: nowrap;
+	}
+
+	.method-ai {
+		background: rgba(59, 130, 246, 0.15);
+		color: #1d4ed8;
+	}
+
+	.method-model {
+		background: color-mix(in srgb, var(--text-color) 12%, transparent);
+		color: var(--text-color);
+	}
+
+	:global([data-theme='dark']) .method-ai {
+		color: #93c5fd;
+	}
+
+	/* Confidence levels read the same way in both themes: green/amber/red tints
+	   over the card surface, text lightened in dark mode. */
+	.conf-high {
+		background: rgba(34, 197, 94, 0.16);
+		color: #15803d;
+	}
+
+	.conf-medium {
+		background: rgba(234, 179, 8, 0.18);
+		color: #a16207;
+	}
+
+	.conf-low {
+		background: rgba(239, 68, 68, 0.16);
+		color: #b91c1c;
+	}
+
+	:global([data-theme='dark']) .conf-high {
+		color: #4ade80;
+	}
+
+	:global([data-theme='dark']) .conf-medium {
+		color: #facc15;
+	}
+
+	:global([data-theme='dark']) .conf-low {
+		color: #f87171;
+	}
+
+	.conf-badge {
+		cursor: help;
+	}
+
+	.order-plan {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		padding: 0.5rem 0.75rem;
+		border-radius: 0.5rem;
+		background-color: color-mix(in srgb, var(--text-color) 6%, transparent);
+		border: 1px solid color-mix(in srgb, var(--text-color) 12%, transparent);
+	}
+
+	.order-plan-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-size: 0.875rem;
+	}
+
+	.order-plan-row span {
+		opacity: 0.8;
+	}
+
+	.insight {
+		display: block;
+		padding: 0.75rem;
+		border-radius: 0.5rem;
+		font-size: 0.875rem;
+		background: rgba(59, 130, 246, 0.1);
+		border: 1px solid rgba(59, 130, 246, 0.2);
+		color: var(--text-color);
+	}
+
+	.insight strong {
+		color: #1d4ed8;
+	}
+
+	:global([data-theme='dark']) .insight strong {
+		color: #60a5fa;
+	}
+
+	.insight i {
+		color: #2563eb;
+	}
+
+	:global([data-theme='dark']) .insight i {
+		color: #60a5fa;
+	}
+
+	.divergence {
+		opacity: 0.75;
+	}
+
+	.factor-chip {
+		padding: 0.15rem 0.5rem;
+		font-size: 0.7rem;
+		border-radius: 0.25rem;
+		background-color: color-mix(in srgb, var(--text-color) 9%, transparent);
+		color: var(--text-color);
+	}
+
+	.day-summary {
+		cursor: pointer;
+		font-size: 0.875rem;
+		opacity: 0.75;
+	}
+
+	.day-summary:hover {
+		opacity: 1;
+	}
+
+	.day-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.85rem;
+	}
+
+	.day-table td {
+		padding: 0.2rem 0;
+		border-bottom: 1px solid color-mix(in srgb, var(--text-color) 8%, transparent);
+	}
+
+	.day-qty {
+		text-align: right;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
 	}
 
 	/* Dark mode adjustments for AI insights */

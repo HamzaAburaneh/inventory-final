@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
-import { predictStockLevels } from '$lib/stockPrediction';
-import { predictStockLevelsWithAI } from '$lib/aiStockPrediction';
+import { predictStockLevelsDeterministic, predictStockLevelsWithAI } from '$lib/aiStockPrediction';
+import { runPredictionBacktest } from '$lib/predictionBacktest';
 
 // This route deliberately does NOT read Firestore. The server has no
 // authenticated Firebase user, so once the security rules (firestore.rules,
@@ -55,47 +55,43 @@ export const POST = async ({ request }) => {
 			return json({ error: 'Invalid JSON body' }, { status: 400 });
 		}
 
-		const { transactions, items, forecastDays, useAI } = body ?? {};
+		const {
+			transactions,
+			items,
+			forecastDays,
+			useAI,
+			mode,
+			holdoutDays,
+			sampleItemIds,
+			includeLegacyAI
+		} = body ?? {};
 		if (!Array.isArray(transactions) || !Array.isArray(items)) {
 			return json({ error: 'transactions and items must be arrays' }, { status: 400 });
 		}
 		const timeframe = parseInt(forecastDays, 10) || 14;
 
-		if (useAI === true) {
-			// AI-enhanced predictions (falls back to ARIMA internally on failure)
-			const enhancedPredictions = await predictStockLevelsWithAI(transactions, items, timeframe);
-
-			// Convert enhanced predictions to the expected format for the frontend
-			const predictions = {};
-			for (const [itemId, analysis] of Object.entries(enhancedPredictions)) {
-				predictions[itemId] = {
-					prediction: analysis.prediction,
-					reasoning: analysis.reasoning,
-					confidence: analysis.confidence,
-					factors: analysis.factors,
-					method: analysis.method
-				};
-			}
-
-			return json(predictions);
-		} else {
-			// Traditional ARIMA predictions
-			const predictions = predictStockLevels(transactions, timeframe);
-
-			// Convert to enhanced format for consistency
-			const enhancedFormat = {};
-			for (const [itemId, prediction] of Object.entries(predictions)) {
-				enhancedFormat[itemId] = {
-					prediction,
-					reasoning: 'ARIMA time series analysis',
-					confidence: 0.7,
-					factors: ['Historical sales patterns'],
-					method: 'ARIMA'
-				};
-			}
-
-			return json(enhancedFormat);
+		// Backtest mode: hold out the tail of the most recent fair run and score
+		// every prediction method against what actually happened. AI contestants
+		// only run when explicitly requested (they cost OpenRouter credits).
+		if (mode === 'backtest') {
+			const report = await runPredictionBacktest(transactions, items, {
+				holdoutDays,
+				sampleItemIds,
+				useAI: useAI === true,
+				includeLegacyAI: includeLegacyAI === true
+			});
+			return json(report);
 		}
+
+		// Both paths return the same enriched shape: prediction, reasoning,
+		// confidence {score, level, basis}, factors, method, baseline, arima,
+		// forecastDates, stockOut, reorderBy. Every AI failure falls back to the
+		// deterministic result inside predictStockLevelsWithAI.
+		const predictions =
+			useAI === true
+				? await predictStockLevelsWithAI(transactions, items, timeframe)
+				: predictStockLevelsDeterministic(transactions, items, timeframe);
+		return json(predictions);
 	} catch (error) {
 		console.error('Error fetching stock predictions:', error);
 		return json({ error: 'Failed to fetch stock predictions' }, { status: 500 });
