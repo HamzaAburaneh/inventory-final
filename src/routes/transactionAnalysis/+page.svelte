@@ -14,6 +14,13 @@
 		cne: '#FF6B35'
 	};
 
+	// Neutral chart chrome — #727272 (matches --text-color-dimmed) is legible on
+	// both the light (#fff) and dark (#121212) tile surfaces, so ticks/legend stay
+	// readable without rebuilding charts on theme toggle. Gridlines are a faint,
+	// theme-agnostic grey.
+	const AXIS_TEXT = '#8a8a8a';
+	const GRID_COLOR = 'rgba(128, 128, 128, 0.14)';
+
 	const CNE_DATES = {
 		2022: { start: new Date(2022, 7, 19), end: new Date(2022, 8, 5, 23, 59, 59) },
 		2023: { start: new Date(2023, 7, 18), end: new Date(2023, 8, 4, 23, 59, 59) },
@@ -21,23 +28,42 @@
 		2025: { start: new Date(2025, 7, 13), end: new Date(2025, 8, 1, 23, 59, 59) }
 	};
 
+	// The app is only used during the CNE, so open on the most recent CNE that has
+	// already started (the current one while it's running, otherwise last year's).
+	// Returns null before any CNE exists so we can fall back to a rolling window.
+	function getDefaultCneYear() {
+		const now = new Date();
+		const started = Object.keys(CNE_DATES)
+			.map(Number)
+			.filter((year) => CNE_DATES[year].start <= now);
+		return started.length ? Math.max(...started) : null;
+	}
+
+	const defaultCneYear = getDefaultCneYear();
+
 	// State variables
 	let loading = $state(true); // full-page spinner — first load only
 	let refreshing = $state(false); // in-place refresh — keeps charts mounted
-	let dateRange = $state({
-		start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-		end: new Date()
-	});
+	let dateRange = $state(
+		defaultCneYear
+			? {
+					start: new Date(CNE_DATES[defaultCneYear].start),
+					end: new Date(CNE_DATES[defaultCneYear].end)
+				}
+			: {
+					start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+					end: new Date()
+				}
+	);
 	let dailyAnalysis = $state([]);
 	let hourlyActivity = $state([]);
 	let topMovers = $state([]);
 	let summaryStats = $state(null);
-	let activeFilter = $state(30);
+	let activeFilter = $state(defaultCneYear ? `cne${defaultCneYear}` : 30);
 
 	// Chart instances — plain let; never read by template or $derived
 	let dailyTrendChart = null;
 	let hourlyHeatmapChart = null;
-	let topMoversChart = null;
 	let transactionTypeChart = null;
 
 	// Computed values
@@ -48,30 +74,6 @@
 	);
 
 	// Utility functions
-	function formatDateRange() {
-		const start = dateRange.start;
-		const end = dateRange.end;
-		const today = new Date();
-		const yesterday = new Date(today);
-		yesterday.setDate(yesterday.getDate() - 1);
-
-		if (
-			start.toDateString() === today.toDateString() &&
-			end.toDateString() === today.toDateString()
-		) {
-			return 'Today';
-		} else if (
-			start.toDateString() === yesterday.toDateString() &&
-			end.toDateString() === yesterday.toDateString()
-		) {
-			return 'Yesterday';
-		} else if (daysDifference === 1) {
-			return start.toLocaleDateString();
-		} else {
-			return `Last ${daysDifference} Days`;
-		}
-	}
-
 	function formatHourLabel(hour) {
 		if (hour === 0) return '12 AM';
 		if (hour === 12) return '12 PM';
@@ -97,7 +99,6 @@
 	function destroyAllCharts() {
 		dailyTrendChart = destroyChart(dailyTrendChart);
 		hourlyHeatmapChart = destroyChart(hourlyHeatmapChart);
-		topMoversChart = destroyChart(topMoversChart);
 		transactionTypeChart = destroyChart(transactionTypeChart);
 	}
 
@@ -172,43 +173,67 @@
 						data: dailyAnalysis.map((d) => d.totalAdded),
 						borderColor: CHART_COLORS.stockIn,
 						backgroundColor: `${CHART_COLORS.stockIn}1A`,
-						tension: 0.1
+						borderWidth: 2,
+						tension: 0,
+						pointRadius: 0,
+						pointHoverRadius: 5,
+						fill: false
 					},
 					{
 						label: 'Stock Out',
 						data: dailyAnalysis.map((d) => d.totalRemoved),
 						borderColor: CHART_COLORS.stockOut,
 						backgroundColor: `${CHART_COLORS.stockOut}1A`,
-						tension: 0.1
+						borderWidth: 2,
+						tension: 0,
+						pointRadius: 0,
+						pointHoverRadius: 5,
+						fill: false
 					},
 					{
 						label: 'Net Change',
 						data: dailyAnalysis.map((d) => d.netChange),
 						borderColor: CHART_COLORS.netChange,
 						backgroundColor: `${CHART_COLORS.netChange}1A`,
-						tension: 0.1
+						borderWidth: 2,
+						tension: 0,
+						pointRadius: 0,
+						pointHoverRadius: 5,
+						fill: false
 					}
 				]
 			},
 			options: {
 				responsive: true,
 				maintainAspectRatio: false,
+				interaction: {
+					mode: 'index',
+					intersect: false
+				},
 				plugins: {
 					title: {
-						display: true,
-						text: 'Daily Transaction Trends'
+						display: false
 					},
 					legend: {
-						position: 'top'
+						position: 'top',
+						labels: {
+							usePointStyle: true,
+							pointStyle: 'circle',
+							boxWidth: 8,
+							boxHeight: 8,
+							padding: 16
+						}
 					}
 				},
 				scales: {
+					x: {
+						grid: { display: false },
+						border: { display: false }
+					},
 					y: {
 						beginAtZero: true,
-						title: {
-							display: true,
-							text: 'Quantity'
-						}
+						grid: { color: GRID_COLOR },
+						border: { display: false }
 					}
 				}
 			}
@@ -236,7 +261,9 @@
 							return `${CHART_COLORS.netChange}${Math.round((0.2 + intensity * 0.8) * 255)
 								.toString(16)
 								.padStart(2, '0')}`;
-						})
+						}),
+						borderRadius: 4,
+						maxBarThickness: 22
 					}
 				]
 			},
@@ -245,61 +272,21 @@
 				maintainAspectRatio: false,
 				plugins: {
 					title: {
-						display: true,
-						text: `Hourly Activity Pattern (${formatDateRange()})`
+						display: false
 					},
 					legend: {
 						display: false
 					}
 				},
 				scales: {
+					x: {
+						grid: { display: false },
+						border: { display: false }
+					},
 					y: {
 						beginAtZero: true,
-						title: {
-							display: true,
-							text: 'Number of Transactions'
-						}
-					}
-				}
-			}
-		});
-	}
-
-	function createTopMoversChart() {
-		const ctx = document.getElementById('topMoversChart');
-		if (!ctx?.getContext) return;
-
-		Chart.getChart(ctx)?.destroy();
-
-		topMoversChart = new Chart(ctx.getContext('2d'), {
-			type: 'bar',
-			data: {
-				labels: topMovers.map((m) => m.itemName),
-				datasets: [
-					{
-						label: 'Total Transactions',
-						data: topMovers.map((m) => m.totalTransactions),
-						backgroundColor: CHART_COLORS.activity
-					}
-				]
-			},
-			options: {
-				responsive: true,
-				maintainAspectRatio: false,
-				indexAxis: 'y',
-				plugins: {
-					title: {
-						display: true,
-						text: `Top 10 Most Active Items (${formatDateRange()})`
-					}
-				},
-				scales: {
-					x: {
-						beginAtZero: true,
-						title: {
-							display: true,
-							text: 'Number of Transactions'
-						}
+						grid: { color: GRID_COLOR },
+						border: { display: false }
 					}
 				}
 			}
@@ -321,17 +308,30 @@
 				datasets: [
 					{
 						data: [summaryStats.totalAdded, summaryStats.totalRemoved],
-						backgroundColor: [CHART_COLORS.stockIn, CHART_COLORS.stockOut]
+						backgroundColor: [CHART_COLORS.stockIn, CHART_COLORS.stockOut],
+						borderWidth: 0,
+						hoverOffset: 6
 					}
 				]
 			},
 			options: {
 				responsive: true,
 				maintainAspectRatio: false,
+				cutout: '68%',
+				layout: { padding: 8 },
 				plugins: {
 					title: {
-						display: true,
-						text: 'Transaction Type Distribution'
+						display: false
+					},
+					legend: {
+						position: 'bottom',
+						labels: {
+							usePointStyle: true,
+							pointStyle: 'circle',
+							boxWidth: 8,
+							boxHeight: 8,
+							padding: 16
+						}
 					}
 				}
 			}
@@ -342,7 +342,6 @@
 		requestAnimationFrame(() => {
 			createDailyTrendChart();
 			createHourlyActivityChart();
-			createTopMoversChart();
 			createTransactionTypeChart();
 		});
 	}
@@ -430,6 +429,11 @@
 	onMount(() => {
 		Chart.register(...registerables);
 
+		// App-matching chart chrome so charts read like the rest of the UI.
+		Chart.defaults.color = AXIS_TEXT;
+		Chart.defaults.font.family =
+			"'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
 		loadAnalysisData();
 
 		let resizeTimer;
@@ -466,163 +470,183 @@
 </svelte:head>
 
 <div class="analysis-page">
-	<!-- Summary Cards -->
-	<div class="summary-section">
-		<h1 class="text-3xl font-bold mb-6">
-			<i class="fas fa-chart-line mr-2"></i>
-			Transaction Analysis
-		</h1>
-
-		{#if summaryStats}
-			<div class="summary-grid" in:fade={{ duration: 200 }}>
-				<div class="summary-card">
-					<i class="fas fa-exchange-alt"></i>
-					<h3>Total Transactions</h3>
-					<p>{summaryStats.totalTransactions.toLocaleString()}</p>
-				</div>
-				<div class="summary-card positive">
-					<i class="fas fa-plus-circle"></i>
-					<h3>Stock In</h3>
-					<p>+{summaryStats.totalAdded.toLocaleString()}</p>
-					<small>Total units added</small>
-				</div>
-				<div class="summary-card negative">
-					<i class="fas fa-minus-circle"></i>
-					<h3>Stock Out</h3>
-					<p>
-						{summaryStats.totalRemoved > 0 ? '-' : ''}{summaryStats.totalRemoved.toLocaleString()}
-					</p>
-					<small>Total units removed</small>
-				</div>
-				<div class="summary-card {summaryStats.netChange >= 0 ? 'positive' : 'negative'}">
-					<i class="fas fa-balance-scale"></i>
-					<h3>Net Change</h3>
-					<p>{summaryStats.netChange >= 0 ? '+' : ''}{summaryStats.netChange.toLocaleString()}</p>
-				</div>
-				<div class="summary-card">
-					<i class="fas fa-boxes"></i>
-					<h3>Active Items</h3>
-					<p>{summaryStats.uniqueItems.toLocaleString()}</p>
-					<small>Items with transactions in period</small>
-				</div>
-				<div class="summary-card inactive">
-					<i class="fas fa-archive"></i>
-					<h3>Inactive Items</h3>
-					<p>{summaryStats.inactiveItems.toLocaleString()}</p>
-					<small>Items with no transactions in period</small>
-				</div>
-				<div class="summary-card new-items">
-					<i class="fas fa-plus-square"></i>
-					<h3>New Items Created</h3>
-					<p>{summaryStats.newItemsCreated.toLocaleString()}</p>
-					<small>Items added to inventory</small>
-				</div>
-				<div class="summary-card deleted-items">
-					<i class="fas fa-trash"></i>
-					<h3>Items Deleted</h3>
-					<p>{summaryStats.itemsDeleted.toLocaleString()}</p>
-					<small>Items removed from inventory</small>
-				</div>
-			</div>
-		{:else}
-			<div class="summary-grid">
-				{#each Array(8) as _unused, i (i)}
-					<div class="summary-card skeleton"></div>
-				{/each}
-			</div>
-		{/if}
-	</div>
-
-	<!-- Date Range Controls -->
-	<div class="controls-section">
-		<div class="date-controls">
-			<div class="date-inputs">
-				<label>
-					Start Date:
-					<input
-						type="date"
-						value={startDateStr}
-						max={endDateStr}
-						onchange={(e) => handleDateChange('start', e.target.value)}
-					/>
-				</label>
-				<label>
-					End Date:
-					<input
-						type="date"
-						value={endDateStr}
-						min={startDateStr}
-						max={new Date().toISOString().split('T')[0]}
-						onchange={(e) => handleDateChange('end', e.target.value)}
-					/>
-				</label>
-			</div>
-			<div class="quick-ranges">
-				<button onclick={() => setQuickRange(0)} class="quick-btn" class:active={activeFilter === 0}
-					>Today</button
-				>
-				<button onclick={() => setQuickRange(1)} class="quick-btn" class:active={activeFilter === 1}
-					>Yesterday</button
-				>
-				<button onclick={() => setQuickRange(3)} class="quick-btn" class:active={activeFilter === 3}
-					>Last 3 Days</button
-				>
-				<button onclick={() => setQuickRange(7)} class="quick-btn" class:active={activeFilter === 7}
-					>Last 7 Days</button
-				>
-				<button
-					onclick={() => setQuickRange(14)}
-					class="quick-btn"
-					class:active={activeFilter === 14}>Last 14 Days</button
-				>
-				<button
-					onclick={() => setQuickRange(21)}
-					class="quick-btn"
-					class:active={activeFilter === 21}>Last 21 Days</button
-				>
-				<button
-					onclick={() => setQuickRange(30)}
-					class="quick-btn"
-					class:active={activeFilter === 30}>Last 30 Days</button
-				>
-			</div>
-			<div class="cne-ranges">
-				<span class="filter-label">CNE Periods:</span>
-				<button
-					onclick={() => setCNERange(2022)}
-					class="quick-btn cne-btn"
-					class:active={activeFilter === 'cne2022'}>CNE 2022</button
-				>
-				<button
-					onclick={() => setCNERange(2023)}
-					class="quick-btn cne-btn"
-					class:active={activeFilter === 'cne2023'}>CNE 2023</button
-				>
-				<button
-					onclick={() => setCNERange(2024)}
-					class="quick-btn cne-btn"
-					class:active={activeFilter === 'cne2024'}>CNE 2024</button
-				>
-				<button
-					onclick={() => setCNERange(2025)}
-					class="quick-btn cne-btn"
-					class:active={activeFilter === 'cne2025'}>CNE 2025</button
-				>
-			</div>
-			<button onclick={exportToCSV} class="export-btn">
-				<i class="fas fa-download mr-2"></i>
-				Export CSV
-			</button>
+	<!-- Page header -->
+	<header class="page-head">
+		<div class="brand-badge"><i class="fas fa-chart-line"></i></div>
+		<div class="titles">
+			<h1>Transaction Analysis</h1>
+			<p class="range-sub">{startDateStr} → {endDateStr} · {daysDifference} day window</p>
 		</div>
+	</header>
+
+	<!-- Toolbar -->
+	<div class="toolbar">
+		<div class="date-fields">
+			<label class="date-field">
+				<span>Start</span>
+				<input
+					type="date"
+					value={startDateStr}
+					max={endDateStr}
+					onchange={(e) => handleDateChange('start', e.target.value)}
+				/>
+			</label>
+			<label class="date-field">
+				<span>End</span>
+				<input
+					type="date"
+					value={endDateStr}
+					min={startDateStr}
+					max={new Date().toISOString().split('T')[0]}
+					onchange={(e) => handleDateChange('end', e.target.value)}
+				/>
+			</label>
+		</div>
+
+		<div class="pill-set">
+			<button class="pill" class:on={activeFilter === 0} onclick={() => setQuickRange(0)}
+				>Today</button
+			>
+			<button class="pill" class:on={activeFilter === 1} onclick={() => setQuickRange(1)}
+				>Yesterday</button
+			>
+			<button class="pill" class:on={activeFilter === 3} onclick={() => setQuickRange(3)}
+				>3 Days</button
+			>
+			<button class="pill" class:on={activeFilter === 7} onclick={() => setQuickRange(7)}
+				>7 Days</button
+			>
+			<button class="pill" class:on={activeFilter === 14} onclick={() => setQuickRange(14)}
+				>14 Days</button
+			>
+			<button class="pill" class:on={activeFilter === 21} onclick={() => setQuickRange(21)}
+				>21 Days</button
+			>
+			<button class="pill" class:on={activeFilter === 30} onclick={() => setQuickRange(30)}
+				>30 Days</button
+			>
+		</div>
+
+		<div class="pill-set cne">
+			<span class="set-label">CNE</span>
+			<button
+				class="pill cne-pill"
+				class:on={activeFilter === 'cne2022'}
+				onclick={() => setCNERange(2022)}>2022</button
+			>
+			<button
+				class="pill cne-pill"
+				class:on={activeFilter === 'cne2023'}
+				onclick={() => setCNERange(2023)}>2023</button
+			>
+			<button
+				class="pill cne-pill"
+				class:on={activeFilter === 'cne2024'}
+				onclick={() => setCNERange(2024)}>2024</button
+			>
+			<button
+				class="pill cne-pill"
+				class:on={activeFilter === 'cne2025'}
+				onclick={() => setCNERange(2025)}>2025</button
+			>
+		</div>
+
+		<button class="export" onclick={exportToCSV}>
+			<i class="fas fa-download"></i>
+			Export CSV
+		</button>
 	</div>
 
-	<!-- Charts Section -->
+	<!-- KPI bento -->
+	{#if summaryStats}
+		<div class="bento-kpis" in:fade={{ duration: 200 }}>
+			<div class="tile kpi">
+				<div class="t-top">
+					<span class="t-lab">Transactions</span>
+					<span class="badge accent"><i class="fas fa-exchange-alt"></i></span>
+				</div>
+				<div class="t-val">{summaryStats.totalTransactions.toLocaleString()}</div>
+				<div class="t-note">total recorded</div>
+			</div>
+			<div class="tile kpi">
+				<div class="t-top">
+					<span class="t-lab">Stock In</span>
+					<span class="badge in"><i class="fas fa-plus-circle"></i></span>
+				</div>
+				<div class="t-val pos">+{summaryStats.totalAdded.toLocaleString()}</div>
+				<div class="t-note">total units added</div>
+			</div>
+			<div class="tile kpi">
+				<div class="t-top">
+					<span class="t-lab">Stock Out</span>
+					<span class="badge out"><i class="fas fa-minus-circle"></i></span>
+				</div>
+				<div class="t-val neg">
+					{summaryStats.totalRemoved > 0 ? '-' : ''}{summaryStats.totalRemoved.toLocaleString()}
+				</div>
+				<div class="t-note">total units removed</div>
+			</div>
+			<div class="tile kpi">
+				<div class="t-top">
+					<span class="t-lab">Net Change</span>
+					<span class="badge {summaryStats.netChange >= 0 ? 'in' : 'out'}">
+						<i class="fas fa-balance-scale"></i>
+					</span>
+				</div>
+				<div class="t-val {summaryStats.netChange >= 0 ? 'pos' : 'neg'}">
+					{summaryStats.netChange >= 0 ? '+' : ''}{summaryStats.netChange.toLocaleString()}
+				</div>
+				<div class="t-note">net movement</div>
+			</div>
+
+			<div class="tile kpi mini">
+				<div class="t-top">
+					<span class="t-lab">Active Items</span>
+					<span class="badge accent"><i class="fas fa-boxes"></i></span>
+				</div>
+				<div class="t-val">{summaryStats.uniqueItems.toLocaleString()}</div>
+				<div class="t-note">had transactions</div>
+			</div>
+			<div class="tile kpi mini">
+				<div class="t-top">
+					<span class="t-lab">Inactive Items</span>
+					<span class="badge warn"><i class="fas fa-archive"></i></span>
+				</div>
+				<div class="t-val">{summaryStats.inactiveItems.toLocaleString()}</div>
+				<div class="t-note">no activity</div>
+			</div>
+			<div class="tile kpi mini">
+				<div class="t-top">
+					<span class="t-lab">New Items</span>
+					<span class="badge net"><i class="fas fa-plus-square"></i></span>
+				</div>
+				<div class="t-val">{summaryStats.newItemsCreated.toLocaleString()}</div>
+				<div class="t-note">added to inventory</div>
+			</div>
+			<div class="tile kpi mini">
+				<div class="t-top">
+					<span class="t-lab">Items Deleted</span>
+					<span class="badge activity"><i class="fas fa-trash"></i></span>
+				</div>
+				<div class="t-val">{summaryStats.itemsDeleted.toLocaleString()}</div>
+				<div class="t-note">removed</div>
+			</div>
+		</div>
+	{:else}
+		<div class="bento-kpis">
+			{#each Array(8) as _unused, i (i)}
+				<div class="tile kpi skeleton"></div>
+			{/each}
+		</div>
+	{/if}
+
+	<!-- Charts + table bento -->
 	{#if loading}
-		<div class="charts-grid" aria-busy="true">
-			<div class="chart-container full-width skeleton"></div>
-			<div class="chart-container skeleton"></div>
-			<div class="chart-container skeleton"></div>
-			<div class="chart-container full-width skeleton"></div>
+		<div class="bento-charts" aria-busy="true">
+			<div class="tile chart-tile col-4 skeleton" style="min-height: 440px"></div>
+			<div class="tile chart-tile col-2 skeleton"></div>
+			<div class="tile chart-tile col-2 skeleton"></div>
+			<div class="tile col-4 skeleton" style="min-height: 240px"></div>
 		</div>
 	{:else}
 		<div class="content-wrap" class:refreshing aria-busy={refreshing} in:fade={{ duration: 200 }}>
@@ -633,58 +657,56 @@
 					></div>
 				</div>
 			{/if}
-			<div class="charts-grid">
-				<!-- Daily Trend Chart -->
-				<div class="chart-container full-width">
-					<canvas id="dailyTrendChart"></canvas>
+			<div class="bento-charts">
+				<div class="tile chart-tile col-4">
+					<h3>Daily Transaction Trends</h3>
+					<p class="h-sub">Stock in / out / net across the window</p>
+					<div class="canvas-wrap tall"><canvas id="dailyTrendChart"></canvas></div>
 				</div>
 
-				<!-- Hourly Activity Pattern -->
-				<div class="chart-container">
-					<canvas id="hourlyHeatmapChart"></canvas>
+				<div class="tile chart-tile col-2">
+					<h3>Transaction Type</h3>
+					<p class="h-sub">Distribution of stock movement</p>
+					<div class="canvas-wrap"><canvas id="transactionTypeChart"></canvas></div>
 				</div>
 
-				<!-- Transaction Type Distribution -->
-				<div class="chart-container">
-					<canvas id="transactionTypeChart"></canvas>
+				<div class="tile chart-tile col-2">
+					<h3>Hourly Activity Pattern</h3>
+					<p class="h-sub">Transactions by hour of day</p>
+					<div class="canvas-wrap"><canvas id="hourlyHeatmapChart"></canvas></div>
 				</div>
 
-				<!-- Top Movers -->
-				<div class="chart-container full-width">
-					<canvas id="topMoversChart"></canvas>
-				</div>
-			</div>
-
-			<!-- Top Movers Table -->
-			<div class="table-section">
-				<h2 class="text-2xl font-bold mb-4">Top Moving Items Details</h2>
-				<div class="table-wrapper">
-					<table class="data-table">
-						<thead>
-							<tr>
-								<th>Item Name</th>
-								<th>Total Transactions</th>
-								<th>Stock In</th>
-								<th>Stock Out</th>
-								<th>Net Change</th>
-								<th>Volatility</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each topMovers as mover (mover.itemId)}
+				<div class="tile col-4 table-tile">
+					<h3>Top Moving Items</h3>
+					<p class="h-sub">Ranked by transaction count &amp; volatility</p>
+					<div class="table-wrapper">
+						<table class="data-table">
+							<thead>
 								<tr>
-									<td>{mover.itemName}</td>
-									<td>{mover.totalTransactions}</td>
-									<td class="positive">+{mover.totalAdded}</td>
-									<td class="negative">-{mover.totalRemoved}</td>
-									<td class={mover.netChange >= 0 ? 'positive' : 'negative'}>
-										{mover.netChange >= 0 ? '+' : ''}{mover.netChange}
-									</td>
-									<td>{mover.volatility}</td>
+									<th>Item</th>
+									<th>Txns</th>
+									<th>Stock In</th>
+									<th>Stock Out</th>
+									<th>Net</th>
+									<th>Volatility</th>
 								</tr>
-							{/each}
-						</tbody>
-					</table>
+							</thead>
+							<tbody>
+								{#each topMovers as mover (mover.itemId)}
+									<tr>
+										<td class="item-name">{mover.itemName}</td>
+										<td><span class="chip-num">{mover.totalTransactions}</span></td>
+										<td class="pos">+{mover.totalAdded}</td>
+										<td class="neg">-{mover.totalRemoved}</td>
+										<td class={mover.netChange >= 0 ? 'pos' : 'neg'}>
+											{mover.netChange >= 0 ? '+' : ''}{mover.netChange}
+										</td>
+										<td>{mover.volatility}</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -692,232 +714,352 @@
 </div>
 
 <style>
+	/* Local semantic tokens — accent uses the app's theme-aware pair
+	   (--add-item-color / --add-item-on: blue+white in light, gold+black in dark). */
 	.analysis-page {
+		--pos: #2e9e57;
+		--neg: #e0483b;
 		padding: 2rem;
-		max-width: 1400px;
+		max-width: 1440px;
 		margin: 0 auto;
 		width: 100%;
 		overflow-x: hidden;
 	}
 
-	.summary-section {
-		background-color: var(--container-bg);
-		border-radius: 1rem;
-		padding: 2rem;
-		margin-bottom: 2rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	:global([data-theme='dark']) .analysis-page {
+		--pos: #4caf50;
+		--neg: #f44336;
 	}
 
-	.summary-grid {
+	/* ===== Header ===== */
+	.page-head {
+		display: flex;
+		align-items: center;
+		gap: 0.9rem;
+		margin-bottom: 1.25rem;
+	}
+
+	.brand-badge {
+		width: 2.75rem;
+		height: 2.75rem;
+		border-radius: 0.85rem;
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(150px, 45%), 1fr));
-		gap: 1.5rem;
-		margin-top: 1.5rem;
+		place-items: center;
+		font-size: 1.15rem;
+		background: var(--add-item-color);
+		color: var(--add-item-on);
+		flex-shrink: 0;
 	}
 
-	.summary-card {
-		background-color: var(--background-color);
-		border-radius: 0.5rem;
-		padding: 1.5rem;
-		text-align: center;
-		transition: transform 0.3s ease;
-	}
-
-	.summary-card:hover {
-		transform: translateY(-5px);
-	}
-
-	.summary-card i {
-		font-size: 2rem;
-		margin-bottom: 0.5rem;
-		display: block;
-	}
-
-	.summary-card h3 {
-		font-size: 0.9rem;
-		font-weight: 500;
-		margin-bottom: 0.5rem;
-		color: var(--text-color-dimmed);
-	}
-
-	.summary-card p {
-		font-size: 1.5rem;
+	.titles h1 {
+		font-size: 1.7rem;
 		font-weight: 700;
-		margin-bottom: 0.25rem;
+		letter-spacing: -0.02em;
+		line-height: 1.1;
 	}
 
-	.summary-card small {
-		font-size: 0.75rem;
+	.range-sub {
+		font-size: 0.82rem;
 		color: var(--text-color-dimmed);
-		font-weight: 400;
+		margin-top: 0.15rem;
 	}
 
-	.summary-card.positive {
-		color: #4caf50;
-	}
-
-	.summary-card.negative {
-		color: #f44336;
-	}
-
-	.summary-card.inactive {
-		color: #ff9800;
-	}
-
-	.summary-card.new-items {
-		color: #2196f3;
-	}
-
-	.summary-card.deleted-items {
-		color: #9c27b0;
-	}
-
-	.controls-section {
-		background-color: var(--container-bg);
+	/* ===== Toolbar ===== */
+	.toolbar {
+		background: var(--container-bg);
+		border: 1px solid var(--table-border-color);
 		border-radius: 1rem;
-		padding: 1.5rem;
-		margin-bottom: 2rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-	}
-
-	.date-controls {
+		padding: 0.85rem 1rem;
 		display: flex;
 		flex-wrap: wrap;
+		gap: 0.6rem;
+		align-items: center;
+		margin-bottom: 1.25rem;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+	}
+
+	.date-fields {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.date-field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+	}
+
+	.date-field span {
+		font-size: 0.62rem;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--text-color-dimmed);
+	}
+
+	.date-field input {
+		background: var(--background-color);
+		border: 1px solid var(--table-border-color);
+		border-radius: 0.5rem;
+		color: var(--text-color);
+		padding: 0.4rem 0.55rem;
+		font-size: 0.8rem;
+		font-family: inherit;
+	}
+
+	.pill-set {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 0.3rem;
+		align-items: center;
+		background: var(--background-color);
+		border-radius: 0.7rem;
+		padding: 0.25rem;
+	}
+
+	.set-label {
+		font-size: 0.65rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--text-color-dimmed);
+		padding: 0 0.35rem;
+	}
+
+	.pill {
+		border: none;
+		background: transparent;
+		color: var(--text-color-dimmed);
+		padding: 0.4rem 0.7rem;
+		font-size: 0.78rem;
+		font-weight: 500;
+		border-radius: 0.5rem;
+		cursor: pointer;
+		font-family: inherit;
+		transition: all 0.18s ease;
+		white-space: nowrap;
+	}
+
+	.pill:hover {
+		color: var(--text-color);
+	}
+
+	.pill.on {
+		background: var(--add-item-color);
+		color: var(--add-item-on);
+		font-weight: 600;
+	}
+
+	.cne-pill.on {
+		background: #ff6b35;
+		color: #fff;
+	}
+
+	.export {
+		margin-left: auto;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: var(--add-item-color);
+		color: var(--add-item-on);
+		border: none;
+		border-radius: 0.6rem;
+		padding: 0.55rem 1rem;
+		font-size: 0.82rem;
+		font-weight: 600;
+		cursor: pointer;
+		font-family: inherit;
+		transition: transform 0.2s ease;
+	}
+
+	.export:hover {
+		transform: translateY(-1px);
+	}
+
+	/* ===== Bento grids ===== */
+	.bento-kpis,
+	.bento-charts {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
 		gap: 1rem;
+	}
+
+	.bento-kpis {
+		margin-bottom: 1rem;
+	}
+
+	.col-2 {
+		grid-column: span 2;
+	}
+
+	.col-4 {
+		grid-column: span 4;
+	}
+
+	/* ===== Tile base ===== */
+	.tile {
+		background: var(--container-bg);
+		border: 1px solid var(--table-border-color);
+		border-radius: 1rem;
+		padding: 1.25rem 1.35rem;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* ===== KPI tiles ===== */
+	.t-top {
+		display: flex;
 		align-items: center;
 		justify-content: space-between;
 	}
 
-	.date-inputs {
-		display: flex;
-		gap: 1rem;
-		flex-wrap: wrap;
-	}
-
-	.date-inputs label {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-		font-size: 0.9rem;
-	}
-
-	.date-inputs input {
-		padding: 0.5rem;
-		border: 1px solid var(--table-border-color);
-		border-radius: 0.25rem;
-		background-color: var(--background-color);
-		color: var(--text-color);
-	}
-
-	.quick-ranges {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-	}
-
-	.cne-ranges {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-		align-items: center;
-		margin-top: 0.75rem;
-		padding-top: 0.75rem;
-		border-top: 1px solid var(--table-border-color);
-	}
-
-	.filter-label {
-		font-size: 0.875rem;
+	.t-lab {
+		font-size: 0.72rem;
 		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
 		color: var(--text-color-dimmed);
-		margin-right: 0.5rem;
 	}
 
-	.quick-btn {
-		padding: 0.4rem 0.8rem;
-		border: 1px solid var(--table-border-color);
-		border-radius: 0.25rem;
-		background-color: var(--background-color);
-		color: var(--text-color);
-		cursor: pointer;
-		transition: all 0.3s ease;
-		font-size: 0.875rem;
-		white-space: nowrap;
+	.badge {
+		width: 2rem;
+		height: 2rem;
+		border-radius: 0.6rem;
+		display: grid;
+		place-items: center;
+		font-size: 0.9rem;
+		flex-shrink: 0;
 	}
 
-	.quick-btn:hover {
-		background-color: var(--primary-color);
-		color: white;
-		border-color: var(--primary-color);
+	.badge.accent {
+		background: var(--background-color);
+		color: var(--add-item-color);
+	}
+	.badge.in {
+		background: rgba(76, 175, 80, 0.14);
+		color: var(--pos);
+	}
+	.badge.out {
+		background: rgba(244, 67, 54, 0.14);
+		color: var(--neg);
+	}
+	.badge.warn {
+		background: rgba(239, 138, 23, 0.14);
+		color: #ef8a17;
+	}
+	.badge.net {
+		background: rgba(33, 150, 243, 0.14);
+		color: #2196f3;
+	}
+	.badge.activity {
+		background: rgba(156, 39, 176, 0.14);
+		color: #9c27b0;
 	}
 
-	.quick-btn.active {
-		background-color: var(--primary-color);
-		color: white;
-		border-color: var(--primary-color);
+	.t-val {
+		font-size: 1.9rem;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+		margin-top: 0.75rem;
+		line-height: 1;
+		word-break: break-word;
+	}
+
+	.kpi.mini .t-val {
+		font-size: 1.5rem;
+	}
+
+	.t-note {
+		font-size: 0.72rem;
+		color: var(--text-color-dimmed);
+		margin-top: 0.4rem;
+	}
+
+	.pos {
+		color: var(--pos);
+	}
+
+	.neg {
+		color: var(--neg);
+	}
+
+	/* ===== Chart tiles ===== */
+	.chart-tile h3,
+	.table-tile h3 {
+		font-size: 0.95rem;
 		font-weight: 600;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-		transform: translateY(-1px);
 	}
 
-	.cne-btn {
-		background-color: #ff6b35;
-		border-color: #ff6b35;
-		color: white;
+	.h-sub {
+		font-size: 0.75rem;
+		color: var(--text-color-dimmed);
+		margin: 0.15rem 0 0.9rem;
 	}
 
-	.cne-btn:hover {
-		background-color: #e55a2b;
-		border-color: #e55a2b;
-	}
-
-	.cne-btn.active {
-		background-color: #d14a1f;
-		border-color: #d14a1f;
-		box-shadow: 0 2px 4px rgba(255, 107, 53, 0.4);
-	}
-
-	.export-btn {
-		padding: 0.5rem 1.5rem;
-		background-color: var(--primary-color);
-		color: white;
-		border: none;
-		border-radius: 0.25rem;
-		cursor: pointer;
-		transition: all 0.3s ease;
-		display: flex;
-		align-items: center;
-	}
-
-	.export-btn:hover {
-		background-color: var(--primary-hover-color);
-		transform: translateY(-2px);
-	}
-
-	.skeleton {
+	.canvas-wrap {
 		position: relative;
-		overflow: hidden;
-		background-color: var(--background-color);
+		height: 320px;
 	}
 
-	.summary-card.skeleton {
-		min-height: 10rem;
+	.canvas-wrap.tall {
+		height: 380px;
 	}
 
-	.skeleton::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		transform: translateX(-100%);
-		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
-		animation: shimmer 1.4s ease-in-out infinite;
+	/* ===== Table ===== */
+	.table-wrapper {
+		overflow-x: auto;
 	}
 
-	@keyframes shimmer {
-		100% {
-			transform: translateX(100%);
-		}
+	.data-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.85rem;
 	}
 
+	.data-table th {
+		text-align: left;
+		font-size: 0.68rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--text-color-dimmed);
+		padding: 0.6rem 0.7rem;
+		border-bottom: 1px solid var(--table-border-color);
+	}
+
+	.data-table th:not(:first-child),
+	.data-table td:not(:first-child) {
+		text-align: right;
+	}
+
+	.data-table td {
+		padding: 0.7rem;
+		border-bottom: 1px solid var(--table-border-color);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.data-table tbody tr:last-child td {
+		border-bottom: none;
+	}
+
+	.data-table tbody tr:hover {
+		background: var(--table-row-hover-bg);
+	}
+
+	.item-name {
+		font-weight: 500;
+	}
+
+	.chip-num {
+		display: inline-block;
+		min-width: 1.4rem;
+		text-align: center;
+		background: var(--background-color);
+		border-radius: 0.4rem;
+		padding: 0.15rem 0.4rem;
+		font-weight: 600;
+		font-size: 0.78rem;
+	}
+
+	/* ===== Refresh + skeleton states ===== */
 	.content-wrap {
 		position: relative;
 		transition: opacity 0.2s ease;
@@ -938,271 +1080,38 @@
 		z-index: 5;
 	}
 
-	.charts-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(500px, 100%), 1fr));
-		gap: 2rem;
-		margin-bottom: 2rem;
-	}
-
-	.chart-container {
-		background-color: var(--container-bg);
-		border-radius: 1rem;
-		padding: 1.5rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-		height: 400px;
+	.skeleton {
 		position: relative;
+		overflow: hidden;
+		background: var(--background-color);
+		border-color: transparent;
 	}
 
-	.chart-container.full-width {
-		grid-column: 1 / -1;
+	.tile.kpi.skeleton {
+		min-height: 8.5rem;
 	}
 
-	.table-section {
-		background-color: var(--container-bg);
-		border-radius: 1rem;
-		padding: 2rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	.chart-tile.skeleton {
+		min-height: 400px;
 	}
 
-	.table-wrapper {
-		overflow-x: auto;
+	.skeleton::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		transform: translateX(-100%);
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+		animation: shimmer 1.4s ease-in-out infinite;
 	}
 
-	.data-table {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: 0.95rem;
-	}
-
-	.data-table th,
-	.data-table td {
-		padding: 0.75rem;
-		text-align: left;
-		border-bottom: 1px solid var(--table-border-color);
-	}
-
-	.data-table th {
-		font-weight: 600;
-		text-transform: uppercase;
-		font-size: 0.85rem;
-		color: var(--text-color-dimmed);
-	}
-
-	.data-table tbody tr:hover {
-		background-color: var(--table-row-hover-bg);
-	}
-
-	.positive {
-		color: #4caf50;
-		font-weight: 500;
-	}
-
-	.negative {
-		color: #f44336;
-		font-weight: 500;
-	}
-
-	@media (max-width: 768px) {
-		.analysis-page {
-			padding: 0.5rem;
-		}
-
-		.summary-section {
-			padding: 1rem;
-			margin-bottom: 1rem;
-		}
-
-		.summary-section h1 {
-			font-size: 1.5rem;
-			margin-bottom: 1rem;
-		}
-
-		.summary-grid {
-			grid-template-columns: repeat(2, 1fr);
-			gap: 0.5rem;
-			margin-top: 1rem;
-		}
-
-		.summary-card {
-			padding: 0.5rem;
-			border-radius: 0.375rem;
-			min-width: 0;
-			overflow: hidden;
-		}
-
-		.summary-card i {
-			font-size: 1rem;
-			margin-bottom: 0.25rem;
-		}
-
-		.summary-card h3 {
-			font-size: 0.65rem;
-			margin-bottom: 0.25rem;
-			line-height: 1.1;
-		}
-
-		.summary-card p {
-			font-size: 0.9rem;
-			margin-bottom: 0.125rem;
-			word-break: break-all;
-		}
-
-		.summary-card small {
-			font-size: 0.55rem;
-			line-height: 1.1;
-			display: block;
-			word-wrap: break-word;
-		}
-
-		.controls-section {
-			padding: 1rem;
-			margin-bottom: 1rem;
-		}
-
-		.charts-grid {
-			grid-template-columns: 1fr;
-			gap: 1rem;
-			margin-bottom: 1rem;
-		}
-
-		.chart-container {
-			padding: 1rem;
-			height: 300px;
-		}
-
-		.date-controls {
-			flex-direction: column;
-			align-items: stretch;
-			gap: 0.75rem;
-		}
-
-		.date-inputs {
-			flex-direction: column;
-			gap: 0.5rem;
-		}
-
-		.quick-ranges {
-			justify-content: center;
-			gap: 0.25rem;
-		}
-
-		.cne-ranges {
-			margin-top: 0.5rem;
-			padding-top: 0.5rem;
-			justify-content: center;
-			gap: 0.25rem;
-		}
-
-		.filter-label {
-			width: 100%;
-			text-align: center;
-			margin-bottom: 0.25rem;
-			margin-right: 0;
-		}
-
-		.quick-btn {
-			padding: 0.375rem 0.5rem;
-			font-size: 0.75rem;
-		}
-
-		.export-btn {
-			width: 100%;
-			justify-content: center;
-			padding: 0.75rem;
-		}
-
-		.table-section {
-			padding: 1rem;
-		}
-
-		.table-section h2 {
-			font-size: 1.25rem;
-			margin-bottom: 1rem;
-		}
-
-		/* Make table responsive */
-		.data-table {
-			font-size: 0.75rem;
-		}
-
-		.data-table th,
-		.data-table td {
-			padding: 0.5rem 0.25rem;
-		}
-
-		.data-table th {
-			font-size: 0.7rem;
-		}
-
-		/* Hide less important columns on very small screens */
-		.data-table th:nth-child(6),
-		.data-table td:nth-child(6) {
-			display: none;
-		}
-	}
-
-	@media (max-width: 480px) {
-		.analysis-page {
-			padding: 0.25rem;
-		}
-
-		.summary-section {
-			padding: 0.75rem;
-		}
-
-		.summary-grid {
-			grid-template-columns: 1fr 1fr;
-			gap: 0.25rem;
-		}
-
-		.summary-card {
-			padding: 0.375rem;
-		}
-
-		.summary-card h3 {
-			font-size: 0.6rem;
-		}
-
-		.summary-card p {
-			font-size: 0.8rem;
-		}
-
-		.summary-card small {
-			font-size: 0.5rem;
-		}
-
-		.quick-ranges {
-			flex-direction: column;
-		}
-
-		.cne-ranges {
-			flex-direction: column;
-			margin-top: 0.5rem;
-			padding-top: 0.5rem;
-		}
-
-		.quick-btn {
-			width: 100%;
-		}
-
-		/* Hide even more columns on very small screens */
-		.data-table th:nth-child(3),
-		.data-table td:nth-child(3),
-		.data-table th:nth-child(4),
-		.data-table td:nth-child(4) {
-			display: none;
+	@keyframes shimmer {
+		100% {
+			transform: translateX(100%);
 		}
 	}
 
 	.animate-spin {
 		animation: spin 1s linear infinite;
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.skeleton::after {
-			animation: none;
-		}
 	}
 
 	@keyframes spin {
@@ -1211,6 +1120,84 @@
 		}
 		to {
 			transform: rotate(360deg);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.skeleton::after {
+			animation: none;
+		}
+	}
+
+	/* ===== Responsive ===== */
+	@media (max-width: 1080px) {
+		.bento-kpis,
+		.bento-charts {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.col-2,
+		.col-4 {
+			grid-column: span 2;
+		}
+	}
+
+	@media (max-width: 768px) {
+		.analysis-page {
+			padding: 0.75rem;
+		}
+
+		.toolbar {
+			padding: 0.75rem;
+		}
+
+		.titles h1 {
+			font-size: 1.35rem;
+		}
+
+		.canvas-wrap {
+			height: 260px;
+		}
+	}
+
+	@media (max-width: 620px) {
+		.bento-kpis,
+		.bento-charts {
+			grid-template-columns: 1fr;
+		}
+
+		.col-2,
+		.col-4 {
+			grid-column: span 1;
+		}
+
+		.export {
+			margin-left: 0;
+			width: 100%;
+			justify-content: center;
+		}
+
+		.pill-set {
+			width: 100%;
+			justify-content: center;
+		}
+
+		.data-table th:nth-child(6),
+		.data-table td:nth-child(6) {
+			display: none;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.bento-kpis {
+			grid-template-columns: 1fr 1fr;
+		}
+
+		.data-table th:nth-child(3),
+		.data-table td:nth-child(3),
+		.data-table th:nth-child(4),
+		.data-table td:nth-child(4) {
+			display: none;
 		}
 	}
 </style>
