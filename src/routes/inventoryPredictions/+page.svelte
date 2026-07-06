@@ -217,7 +217,7 @@
 	.metric-card p {
 		font-size: 1.5rem;
 		font-weight: 700;
-		color: var(--primary-color);
+		color: var(--value-color);
 	}
 
 	@media (max-width: 768px) {

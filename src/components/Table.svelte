@@ -300,6 +300,18 @@
 		box-shadow: inset 3px 0 0 #ef4444;
 	}
 
+	:global([data-theme='dark']) .custom-table tbody tr.is-low {
+		background-color: color-mix(in srgb, #f87171 7%, var(--container-bg));
+	}
+
+	:global([data-theme='dark']) .custom-table tbody tr.is-low:hover {
+		background-color: color-mix(in srgb, #f87171 12%, var(--container-bg));
+	}
+
+	:global([data-theme='dark']) .custom-table tbody tr.is-low :global(td:first-child) {
+		box-shadow: inset 3px 0 0 #f87171;
+	}
+
 	/* Mobile card list — hidden on desktop, where the table above is used. */
 	.mobile-cards {
 		display: none;

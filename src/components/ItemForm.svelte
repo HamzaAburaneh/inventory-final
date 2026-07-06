@@ -524,6 +524,11 @@
 		box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
 	}
 
+	:global([data-theme='dark']) .form-input.error {
+		border-color: #f87171;
+		box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.25);
+	}
+
 	/* Reserved slot under each validated field: the error renders here without
 	   shifting the layout or covering the field below. */
 	.error-slot {

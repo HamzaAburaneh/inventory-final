@@ -132,6 +132,11 @@
 		background: color-mix(in srgb, #ef4444 18%, transparent);
 	}
 
+	:global([data-theme='dark']) .modal-icon {
+		color: #f87171;
+		background: color-mix(in srgb, #f87171 18%, transparent);
+	}
+
 	.modal-icon svg {
 		width: 1.1rem;
 		height: 1.1rem;
@@ -162,6 +167,10 @@
 
 	.modal-message :global(.emphasis) {
 		color: #ef4444;
+	}
+
+	:global([data-theme='dark']) .modal-message :global(.emphasis) {
+		color: #f87171;
 	}
 
 	/* Item summary chip with a before → after count badge. */
@@ -216,6 +225,7 @@
 
 	:global([data-theme='dark']) .modal-chip-change {
 		color: #f87171;
+		background: color-mix(in srgb, #f87171 18%, var(--container-bg));
 	}
 
 	.modal-buttons {
@@ -264,6 +274,16 @@
 
 	.confirm-btn.warning:hover {
 		background: #ef4444;
+		color: #fff;
+	}
+
+	:global([data-theme='dark']) .confirm-btn.warning {
+		background: color-mix(in srgb, #f87171 18%, transparent);
+		color: #f87171;
+	}
+
+	:global([data-theme='dark']) .confirm-btn.warning:hover {
+		background: #f87171;
 		color: #fff;
 	}
 

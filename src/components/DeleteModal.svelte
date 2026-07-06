@@ -84,6 +84,10 @@
 		font-size: 0.9rem;
 	}
 
+	:global([data-theme='dark']) .delete-modal .warning {
+		color: #f87171;
+	}
+
 	.modal-buttons {
 		display: flex;
 		gap: 1rem;

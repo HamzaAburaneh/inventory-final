@@ -93,7 +93,7 @@
 	.search-input:focus {
 		outline: none;
 		border-color: var(--icon-hover-color);
-		box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--icon-hover-color) 25%, transparent);
 	}
 
 	.search-input::placeholder {

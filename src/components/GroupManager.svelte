@@ -316,6 +316,16 @@
 		border-color: rgba(224, 72, 59, 0.6);
 	}
 
+	:global([data-theme='dark']) .chip.danger {
+		color: #f87171;
+		border-color: rgba(248, 113, 113, 0.4);
+	}
+
+	:global([data-theme='dark']) .chip.danger:hover:not(:disabled) {
+		background: rgba(248, 113, 113, 0.12);
+		border-color: rgba(248, 113, 113, 0.6);
+	}
+
 	.member-list {
 		list-style: none;
 		margin: 0;

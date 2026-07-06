@@ -290,4 +290,10 @@
 		color: #e0483b;
 		font-size: 0.85rem;
 	}
+
+	:global([data-theme='dark']) .error {
+		background: rgba(248, 113, 113, 0.14);
+		border-color: rgba(248, 113, 113, 0.4);
+		color: #f87171;
+	}
 </style>

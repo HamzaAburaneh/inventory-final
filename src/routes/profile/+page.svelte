@@ -570,6 +570,16 @@
 		background: rgba(217, 119, 6, 0.14);
 	}
 
+	:global([data-theme='dark']) .meta-pill.verified {
+		color: #4ade80;
+		background: rgba(74, 222, 128, 0.14);
+	}
+
+	:global([data-theme='dark']) .meta-pill.unverified {
+		color: #fbbf24;
+		background: rgba(251, 191, 36, 0.14);
+	}
+
 	.verify-actions {
 		display: flex;
 		align-items: center;
@@ -592,6 +602,14 @@
 
 	.verify-link:hover:not(:disabled) {
 		color: #b45309;
+	}
+
+	:global([data-theme='dark']) .verify-link {
+		color: #fbbf24;
+	}
+
+	:global([data-theme='dark']) .verify-link:hover:not(:disabled) {
+		color: #fcd34d;
 	}
 
 	.verify-link:disabled {
@@ -813,6 +831,16 @@
 	.btn-danger:hover:not(:disabled) {
 		background: rgba(239, 68, 68, 0.08);
 		border-color: rgba(239, 68, 68, 0.6);
+	}
+
+	:global([data-theme='dark']) .btn-danger {
+		color: #f87171;
+		border-color: rgba(248, 113, 113, 0.4);
+	}
+
+	:global([data-theme='dark']) .btn-danger:hover:not(:disabled) {
+		background: rgba(248, 113, 113, 0.12);
+		border-color: rgba(248, 113, 113, 0.6);
 	}
 
 	/* Spinner border — `animate-spin` Tailwind utility drives the rotation.

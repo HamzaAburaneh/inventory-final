@@ -957,6 +957,11 @@
 		color: #ef4444;
 	}
 
+	:global([data-theme='dark']) .drop-signout:hover {
+		background: rgba(248, 113, 113, 0.12);
+		color: #f87171;
+	}
+
 	/* ── Burger ────────────────────────────────── */
 	.burger {
 		display: flex;
@@ -1123,6 +1128,11 @@
 	.mob-signout:hover {
 		background: rgba(239, 68, 68, 0.08);
 		color: #ef4444;
+	}
+
+	:global([data-theme='dark']) .mob-signout:hover {
+		background: rgba(248, 113, 113, 0.12);
+		color: #f87171;
 	}
 
 	.mob-footer {

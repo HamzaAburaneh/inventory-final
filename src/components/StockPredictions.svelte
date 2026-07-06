@@ -510,6 +510,12 @@
 		box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 	}
 
+	:global([data-theme='dark']) .timeframe-btn.active {
+		background: #60a5fa;
+		color: #0f172a;
+		box-shadow: 0 2px 8px rgba(96, 165, 250, 0.35);
+	}
+
 	.method-toggle {
 		display: flex;
 		background: rgba(0, 0, 0, 0.05);
@@ -551,6 +557,12 @@
 		color: white;
 		opacity: 1;
 		box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+	}
+
+	:global([data-theme='dark']) .method-btn.active {
+		background: #60a5fa;
+		color: #0f172a;
+		box-shadow: 0 2px 8px rgba(96, 165, 250, 0.35);
 	}
 
 	@media (min-width: 768px) {

@@ -171,6 +171,13 @@
 		font-weight: bold;
 	}
 
+	:global([data-theme='dark']) .positive-change {
+		color: #66bb6a;
+	}
+	:global([data-theme='dark']) .negative-change {
+		color: #f87171;
+	}
+
 	.mr-1 {
 		margin-right: 0.25rem;
 	}

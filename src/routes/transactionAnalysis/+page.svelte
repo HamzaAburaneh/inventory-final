@@ -719,6 +719,9 @@
 	.analysis-page {
 		--pos: #2e9e57;
 		--neg: #e0483b;
+		--warn: #ef8a17;
+		--net: #2196f3;
+		--activity: #9c27b0;
 		padding: 2rem;
 		max-width: 1440px;
 		margin: 0 auto;
@@ -729,6 +732,9 @@
 	:global([data-theme='dark']) .analysis-page {
 		--pos: #4caf50;
 		--neg: #f44336;
+		--warn: #fbbf24;
+		--net: #64b5f6;
+		--activity: #ce93d8;
 	}
 
 	/* ===== Header ===== */
@@ -944,15 +950,15 @@
 	}
 	.badge.warn {
 		background: rgba(239, 138, 23, 0.14);
-		color: #ef8a17;
+		color: var(--warn);
 	}
 	.badge.net {
 		background: rgba(33, 150, 243, 0.14);
-		color: #2196f3;
+		color: var(--net);
 	}
 	.badge.activity {
 		background: rgba(156, 39, 176, 0.14);
-		color: #9c27b0;
+		color: var(--activity);
 	}
 
 	.t-val {

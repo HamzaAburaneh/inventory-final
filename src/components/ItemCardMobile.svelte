@@ -176,7 +176,7 @@
 	}
 
 	.item-card.is-low {
-		border-left: 3px solid #ef4444;
+		border-left: 3px solid var(--mc-del-border);
 	}
 
 	/* Header — item name doubles as the "edit name" control. */
@@ -221,8 +221,8 @@
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		line-height: 1.4;
-		color: #ef4444;
-		background: color-mix(in srgb, #ef4444 14%, transparent);
+		color: var(--mc-del-border);
+		background: color-mix(in srgb, var(--mc-del-border) 14%, transparent);
 	}
 
 	/* Read-only stat tiles. */

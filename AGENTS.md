@@ -8,7 +8,7 @@ StockSense is an intelligent inventory management web app: item tracking, transa
 - **Vite 8**, **Tailwind 4** (via `@tailwindcss/vite` plugin — no `tailwind.config` or PostCSS config; Tailwind is imported with `@import 'tailwindcss'` in `src/styles/global.css`) + vanilla CSS custom properties, **JavaScript with JSDoc types** (no TypeScript — keep it that way, types live in `src/types.js`).
 - **Firebase**: Auth + Firestore (`src/firebase.js`, config from `.env` `VITE_FIREBASE_*` vars). Collections: `items`, `transactions`.
 - **Predictions**: ARIMA (`src/lib/stockPrediction.js`) + AI-enhanced layer via OpenRouter (`src/lib/aiStockPrediction.js`), served at `src/routes/api/stockPredictions/+server.js`.
-- UI extras: Chart.js, Three.js (`ThreeScene.svelte` — treat as stable, don't modify casually), sweetalert2, custom theme store (themes: light/dark/blue/green in `src/stores/themes.js`).
+- UI extras: Chart.js, Three.js (`ThreeScene.svelte` — treat as stable, don't modify casually), sweetalert2, custom theme store (only `light`/`dark` are reachable from the UI toggle — `src/stores/themes.js`).
 
 ## Structure
 
@@ -59,6 +59,7 @@ When proposing a visual/design change (colors, badges, icons, button/pill styles
 3. **Reliable predictions** — ARIMA fallback must keep working when the AI layer or OpenRouter is unavailable.
 4. **Stay in stack** — no new frameworks, no TypeScript migration, no rewrites of working components (especially `ThreeScene.svelte`, `Navbar.svelte`).
 5. **Scroll direction always matches user intent** — on the landing page's section pager (`src/routes/+page.svelte`), a wheel/trackpad gesture moves exactly one section in the gesture's direction; scrolling up must never move the page down (and vice versa), and trailing trackpad inertia must never re-trigger a page turn. The direction/inertia rules are pure functions in `src/lib/sectionPager.js`, guarded by `src/lib/sectionPager.test.js` (unit) and `tests/home-scroll.test.js` (Playwright). Rules for any change: derive direction from the sign of the current gesture (never from a signed accumulator that can mix opposite-direction deltas), re-arm gesture state on direction flips, and pick targets as "next snap point strictly above/below the current scroll position" — keep this logic in `sectionPager.js`, not inline in the page.
+6. **No cross-theme color leaks, anywhere** — no element, in any state, should ever show a color from the _other_ theme. This is a full-surface rule, not limited to a specific list of controls: it covers backgrounds, text, borders, outlines, box-shadows, focus rings, hover/active states, placeholders, scrollbars, autofill backgrounds, SVG fills/strokes, chart colors, and any browser-default UI that wasn't explicitly restyled. Every color on every element must resolve through a theme CSS variable and be checked in both themes (light/dark) — hardcoded hex/rgb/named colors or unstyled user-agent defaults are bugs. When auditing or touching styling, check base, hover, focus, active, and disabled states, not just the resting state.
 
 ## Verification workflow
 

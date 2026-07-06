@@ -255,6 +255,11 @@
 		background: color-mix(in srgb, #ef4444 14%, transparent);
 	}
 
+	:global([data-theme='dark']) .low-pill {
+		color: #f87171;
+		background: color-mix(in srgb, #f87171 14%, transparent);
+	}
+
 	.booths-col {
 		white-space: normal !important;
 		overflow: visible;
@@ -488,6 +493,10 @@
 		min-height: 0;
 	}
 
+	:global([data-theme='dark']) .delete-button {
+		color: #f87171;
+	}
+
 	.delete-button svg {
 		width: 1.05rem;
 		height: 1.05rem;
@@ -501,6 +510,11 @@
 		color: #ff0000;
 		background-color: color-mix(in srgb, #ef4444 15%, transparent);
 		transform: scale(1.12);
+	}
+
+	:global([data-theme='dark']) .delete-button:hover {
+		color: #ff6b6b;
+		background-color: color-mix(in srgb, #f87171 15%, transparent);
 	}
 
 	.delete-button:active {
