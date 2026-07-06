@@ -29,6 +29,26 @@
  */
 
 /**
+ * A workspace that owns an isolated inventory. Every item and transaction lives
+ * under `groups/{id}/…`; users join via `inviteCode`.
+ * @typedef {object} Group
+ * @property {string} name
+ * @property {string} ownerId - uid of the creator/owner
+ * @property {string} [inviteCode] - Current active invite code for the group
+ * @property {Date} [createdAt]
+ */
+
+/**
+ * A user's membership row within a group (`groups/{gid}/members/{uid}`).
+ * @typedef {object} GroupMember
+ * @property {'owner' | 'member'} role
+ * @property {string} displayName - Captured at join for member-list display
+ * @property {string} email - Captured at join for member-list display
+ * @property {string} [inviteCode] - Code used to join (members only)
+ * @property {Date} [joinedAt]
+ */
+
+/**
  * @typedef {object} DailyAnalysis
  * @property {string} date - ISO date string (YYYY-MM-DD)
  * @property {number} totalAdded

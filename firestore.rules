@@ -5,30 +5,83 @@ rules_version = '2';
 // Deploy with:  firebase deploy --only firestore:rules
 // (run `firebase login` first; project is pinned in .firebaserc)
 //
-// Model: single-tenant inventory. Every signed-in user shares the `items`
-// and `transactions` collections; each user owns only their own
-// `userProfiles/{uid}` document. Unauthenticated access is denied.
+// Model: multi-tenant by group. Inventory data lives under
+// `groups/{gid}/items` and `groups/{gid}/transactions`; a user may only touch
+// a group they are a member of (groups/{gid}/members/{uid}). Each user owns
+// their own `userProfiles/{uid}` document, which records their groupId.
+//
+// Joining a group uses an invite code: a random, hard-to-guess string that
+// acts as a bearer token. `inviteCodes/{code}` maps a code to its group and is
+// readable by any signed-in user, so an invitee can resolve the code to a
+// groupId and then self-add a member document that rules validate against it.
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Shared inventory — any signed-in user may read/write.
-    match /items/{itemId} {
-      allow read, write: if request.auth != null;
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    // Shared transaction ledger — any signed-in user may read/write.
-    // To make the ledger append-only instead, swap the line above for:
-    //   allow read, create: if request.auth != null;
-    //   allow update, delete: if false;
-    // (note: that also blocks deleting transactions from the client.)
-    match /transactions/{txId} {
-      allow read, write: if request.auth != null;
+    function memberPath(gid, uid) {
+      return /databases/$(database)/documents/groups/$(gid)/members/$(uid);
     }
 
-    // Per-user profile (phone number etc.) — only the owner.
+    function isMember(gid) {
+      return isSignedIn() && exists(memberPath(gid, request.auth.uid));
+    }
+
+    function isOwner(gid) {
+      return isMember(gid) && get(memberPath(gid, request.auth.uid)).data.role == 'owner';
+    }
+
+    // Invite-code lookup. A code is a secret bearer token; any signed-in user
+    // may read one to resolve its group when joining. Created alongside a group
+    // by its owner; only the group owner may rotate (delete) it.
+    match /inviteCodes/{code} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow delete: if isSignedIn() && isOwner(resource.data.groupId);
+      allow update: if false;
+    }
+
+    match /groups/{gid} {
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow read: if isMember(gid);
+      allow update, delete: if isOwner(gid);
+
+      // Membership. Owner rows are created as part of group creation; member
+      // rows are self-added by presenting a valid invite code for THIS group.
+      match /members/{uid} {
+        allow read: if isMember(gid);
+        allow create: if isSignedIn() && request.auth.uid == uid && (
+          (
+            request.resource.data.role == 'owner'
+            && get(/databases/$(database)/documents/groups/$(gid)).data.ownerId == request.auth.uid
+          ) || (
+            request.resource.data.role == 'member'
+            && exists(/databases/$(database)/documents/inviteCodes/$(request.resource.data.inviteCode))
+            && get(/databases/$(database)/documents/inviteCodes/$(request.resource.data.inviteCode)).data.groupId == gid
+          )
+        );
+        // Owner may remove anyone; a member may remove themselves (leave).
+        allow delete: if isSignedIn() && (request.auth.uid == uid || isOwner(gid));
+        allow update: if isOwner(gid);
+      }
+
+      // Group-scoped inventory — any member may read/write.
+      match /items/{itemId} {
+        allow read, write: if isMember(gid);
+      }
+
+      // Group-scoped transaction ledger — any member may read/write.
+      match /transactions/{txId} {
+        allow read, write: if isMember(gid);
+      }
+    }
+
+    // Per-user profile (groupId, phone number, etc.) — only the owner.
     match /userProfiles/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
     }
 
     // Deny everything not explicitly matched above.
