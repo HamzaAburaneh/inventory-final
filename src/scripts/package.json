@@ -6,10 +6,13 @@
 	"scripts": {
 		"add-items": "node add-unique-items.js",
 		"audit-timestamps": "node audit-timestamps.js",
+		"migrate-to-groups": "node migrate-to-groups.js",
+		"add-members-to-group": "node add-members-to-group.js",
 		"test": "node test-items.js"
 	},
 	"dependencies": {
 		"firebase": "^10.0.0",
+		"firebase-admin": "^12.0.0",
 		"dotenv": "^16.0.0"
 	}
 }
