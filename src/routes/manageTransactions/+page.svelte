@@ -7,7 +7,6 @@
 	import TableSkeleton from '../../components/TableSkeleton.svelte';
 	import ConfirmModal from '../../components/ConfirmModal.svelte';
 	import Pagination from '../../components/Pagination.svelte';
-	import Notification from '../../components/Notification.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { itemStore } from '../../stores/itemStore';
 	import { createSearchState } from '../../lib/runes/search.svelte.js';
@@ -432,8 +431,6 @@
 		You're about to reset:
 	{/if}
 </ConfirmModal>
-
-<Notification />
 
 <style>
 	/* =============================================

@@ -6,6 +6,7 @@
 	import { fly, fade } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import { notificationStore } from '../../stores/notificationStore.js';
+	import { sendVerificationEmail } from '../../lib/auth.js';
 	import GroupManager from '../../components/GroupManager.svelte';
 
 	const user = $derived($authStore);
@@ -16,6 +17,8 @@
 	let isUpdating = $state(false);
 	let initialName = $state('');
 	let initialPhone = $state('');
+	let verifySending = $state(false);
+	let verifyChecking = $state(false);
 
 	// Derived: true when the form differs from the persisted baseline.
 	const dirty = $derived(name !== initialName || phone !== initialPhone);
@@ -104,6 +107,35 @@
 		phone = initialPhone;
 	}
 
+	async function resendVerification() {
+		if (verifySending) return;
+		verifySending = true;
+		try {
+			await sendVerificationEmail();
+			notificationStore.success('Verification email sent — check your inbox (and spam)');
+		} catch (error) {
+			console.error('Resend verification failed:', error);
+			notificationStore.error('Could not send the email — try again shortly');
+		} finally {
+			verifySending = false;
+		}
+	}
+
+	async function recheckVerification() {
+		if (verifyChecking) return;
+		verifyChecking = true;
+		try {
+			await authStore.refresh();
+			if (user?.emailVerified) {
+				notificationStore.success('Email verified — thanks!');
+			} else {
+				notificationStore.warning('Not verified yet — click the link in the email, then recheck');
+			}
+		} finally {
+			verifyChecking = false;
+		}
+	}
+
 	async function handleSignOut() {
 		try {
 			await authStore.logout();
@@ -165,6 +197,17 @@
 							<span class="meta-dot animate-pulse" aria-hidden="true"></span>
 							{user.emailVerified ? 'Verified' : 'Unverified'}
 						</span>
+						{#if !user.emailVerified}
+							<div class="verify-actions">
+								<button class="verify-link" onclick={resendVerification} disabled={verifySending}>
+									{verifySending ? 'Sending…' : 'Resend email'}
+								</button>
+								<span class="verify-sep" aria-hidden="true">·</span>
+								<button class="verify-link" onclick={recheckVerification} disabled={verifyChecking}>
+									{verifyChecking ? 'Checking…' : "I've verified"}
+								</button>
+							</div>
+						{/if}
 					</div>
 				</div>
 			</section>
@@ -525,6 +568,41 @@
 	.meta-pill.unverified {
 		color: #d97706;
 		background: rgba(217, 119, 6, 0.14);
+	}
+
+	.verify-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		margin-top: 0.4rem;
+	}
+
+	.verify-link {
+		border: none;
+		background: transparent;
+		color: #d97706;
+		font-size: 0.75rem;
+		font-weight: 600;
+		padding: 0;
+		cursor: pointer;
+		font-family: inherit;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+
+	.verify-link:hover:not(:disabled) {
+		color: #b45309;
+	}
+
+	.verify-link:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+		text-decoration: none;
+	}
+
+	.verify-sep {
+		color: var(--text-color-dimmed);
+		font-size: 0.75rem;
 	}
 
 	.meta-dot {

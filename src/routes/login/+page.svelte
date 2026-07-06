@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { fadeAndSlide } from '$lib/transitions';
 	import { fade } from 'svelte/transition';
-	import { createUserWithEmailAndPassword } from 'firebase/auth';
+	import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 	import { auth } from '../../firebase';
 	import ThreeScene from '../../components/ThreeScene.svelte';
 
@@ -26,7 +26,12 @@
 		loading = true;
 		try {
 			if (isRegistering) {
-				await createUserWithEmailAndPassword(auth, email, password);
+				const credential = await createUserWithEmailAndPassword(auth, email, password);
+				// Kick off email verification, but don't block sign-up if it fails
+				// (e.g. rate-limited) — the banner offers a resend.
+				sendEmailVerification(credential.user).catch((err) =>
+					console.error('Could not send verification email:', err)
+				);
 				goto('/manageItems');
 			} else {
 				await authStore.login(email, password);

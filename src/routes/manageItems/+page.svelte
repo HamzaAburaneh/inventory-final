@@ -2,7 +2,6 @@
 	import ItemForm from '../../components/ItemForm.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
 	import Table from '../../components/Table.svelte';
-	import Notification from '../../components/Notification.svelte';
 	import TableSkeleton from '../../components/TableSkeleton.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import StorageSelect from '../../components/StorageSelect.svelte';
@@ -297,7 +296,6 @@
 {:else}
 	<TableSkeleton />
 {/if}
-<Notification />
 
 {#snippet fieldIcon(field)}
 	{#if field === 'name'}

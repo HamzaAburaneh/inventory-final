@@ -1,6 +1,8 @@
 <script>
 	import Navbar from '../components/Navbar.svelte';
 	import OfflineIndicator from '../components/OfflineIndicator.svelte';
+	import VerifyEmailBanner from '../components/VerifyEmailBanner.svelte';
+	import Notification from '../components/Notification.svelte';
 	import '../styles/global.css';
 	import { authStore, authReady } from '../stores/authStore.js';
 	import { groupStore } from '../stores/groupStore.js';
@@ -112,6 +114,10 @@
 
 <Navbar user={navUser} />
 <OfflineIndicator />
+<Notification />
+{#if ready}
+	<VerifyEmailBanner />
+{/if}
 
 <main class="main-container">
 	<!-- Keyed on the route so the wrapper is recreated on every client-side

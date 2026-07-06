@@ -5,8 +5,22 @@ import {
 	signOut,
 	updateProfile,
 	sendPasswordResetEmail,
+	sendEmailVerification,
 	onAuthStateChanged
 } from 'firebase/auth';
+
+/**
+ * Send (or resend) the email-verification message to the current user.
+ * Firebase delivers it from its own mail service — no email server needed.
+ * @returns {Promise<void>}
+ */
+export async function sendVerificationEmail() {
+	const currentUser = auth.currentUser;
+	if (!currentUser) {
+		throw new Error('No user logged in');
+	}
+	await sendEmailVerification(currentUser);
+}
 
 export async function login(email, password) {
 	try {

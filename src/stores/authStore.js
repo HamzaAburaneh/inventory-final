@@ -89,6 +89,17 @@ function createAuthStore() {
 		}
 	}
 
+	// Re-fetch the current user from Firebase and re-publish it. Used after the
+	// user verifies their email in another tab: reload() refreshes emailVerified
+	// on the user object, and re-setting the store (objects always notify) makes
+	// the UI react to the new status.
+	async function refresh() {
+		if (!auth.currentUser) return;
+		await auth.currentUser.reload();
+		set(auth.currentUser);
+		writeAuthHint(auth.currentUser);
+	}
+
 	async function updateUserProfile(displayName, phoneNumber) {
 		const currentUser = auth.currentUser;
 		if (!currentUser) throw new Error('No user logged in');
@@ -123,6 +134,7 @@ function createAuthStore() {
 		subscribe,
 		login,
 		logout,
+		refresh,
 		updateProfile: updateUserProfile,
 		init
 	};

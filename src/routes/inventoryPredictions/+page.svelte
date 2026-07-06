@@ -1,6 +1,5 @@
 <script>
 	import StockPredictions from '../../components/StockPredictions.svelte';
-	import Notification from '../../components/Notification.svelte';
 	import { notificationStore } from '../../stores/notificationStore.js';
 	import { Chart, registerables } from 'chart.js';
 	import { itemStore } from '../../stores/itemStore.js';
@@ -154,8 +153,6 @@
 		<StockPredictions />
 	</div>
 </div>
-
-<Notification />
 
 <style>
 	/* Scope Roboto to this page only — do NOT leak it onto :global(body), or it
