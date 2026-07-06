@@ -6,6 +6,7 @@
 	import { fly, fade } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import { notificationStore } from '../../stores/notificationStore.js';
+	import GroupManager from '../../components/GroupManager.svelte';
 
 	const user = $derived($authStore);
 
@@ -321,10 +322,15 @@
 				</form>
 			</section>
 
+			<!-- ── Group management ──────────────────────────────────────── -->
+			<div in:fly={{ y: 14, duration: 360, easing: cubicOut, delay: 200 }}>
+				<GroupManager {user} />
+			</div>
+
 			<!-- ── Sign out card ─────────────────────────────────────────── -->
 			<section
 				class="danger-card"
-				in:fly={{ y: 14, duration: 360, easing: cubicOut, delay: 200 }}
+				in:fly={{ y: 14, duration: 360, easing: cubicOut, delay: 260 }}
 				aria-label="Session"
 			>
 				<div class="danger-copy">

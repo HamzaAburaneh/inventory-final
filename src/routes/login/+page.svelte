@@ -17,7 +17,7 @@
 	// Redirect to home page if already logged in
 	$effect(() => {
 		if ($authStore) {
-			goto('/');
+			goto('/manageItems');
 		}
 	});
 
@@ -27,10 +27,10 @@
 		try {
 			if (isRegistering) {
 				await createUserWithEmailAndPassword(auth, email, password);
-				goto('/');
+				goto('/manageItems');
 			} else {
 				await authStore.login(email, password);
-				goto('/');
+				goto('/manageItems');
 			}
 		} catch {
 			error = isRegistering

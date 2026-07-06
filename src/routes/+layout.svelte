@@ -3,6 +3,7 @@
 	import OfflineIndicator from '../components/OfflineIndicator.svelte';
 	import '../styles/global.css';
 	import { authStore, authReady } from '../stores/authStore.js';
+	import { groupStore } from '../stores/groupStore.js';
 	import { onMount } from 'svelte';
 	import { onNavigate, goto } from '$app/navigation';
 	import { page } from '$app/stores';
@@ -10,6 +11,7 @@
 	let { children, data } = $props();
 	const user = $derived($authStore);
 	const ready = $derived($authReady);
+	const group = $derived($groupStore);
 	const pathname = $derived($page.url.pathname);
 
 	// Until Firebase confirms the session (authReady), drive the navbar from the
@@ -33,10 +35,28 @@
 	const isProtected = $derived(
 		PROTECTED.some((p) => pathname === p || pathname.startsWith(p + '/'))
 	);
-	const showContent = $derived(!isProtected || (ready && !!user));
+
+	// Resolve the signed-in user's group once Firebase reports auth state. This
+	// sets the active-group singleton the data layer reads (and clears it on
+	// logout), so protected pages have a group before they query Firestore.
+	$effect(() => {
+		if (!ready) return;
+		groupStore.resolve(user);
+	});
+
+	// A protected page must not mount until its group is resolved, or its
+	// group-scoped Firestore reads would throw for lack of an active group.
+	const showContent = $derived(!isProtected || (ready && !!user && group.status === 'ready'));
 
 	$effect(() => {
-		if (isProtected && ready && !user) goto('/login');
+		if (!ready) return;
+		if (isProtected && !user) {
+			goto('/login');
+		} else if (isProtected && user && group.status === 'none') {
+			// Signed in but not in a group yet — send them to onboarding to
+			// create or join one before any inventory page can load.
+			goto('/onboarding');
+		}
 	});
 
 	// Enter animation runs only after the first client-side navigation — never on
