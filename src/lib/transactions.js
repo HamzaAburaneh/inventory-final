@@ -1,5 +1,14 @@
 import { db } from '../firebase';
-import { collection, getDocs, query, orderBy, where, Timestamp } from 'firebase/firestore';
+import {
+	collection,
+	getDocs,
+	onSnapshot,
+	query,
+	orderBy,
+	where,
+	Timestamp
+} from 'firebase/firestore';
+import { requireActiveGroupId } from './activeGroup';
 
 /**
  * @typedef {import('../types').Transaction} Transaction
@@ -16,7 +25,7 @@ import { collection, getDocs, query, orderBy, where, Timestamp } from 'firebase/
  */
 export async function getHistoricalTransactions(days = 90) {
 	try {
-		const transactionsRef = collection(db, 'transactions');
+		const transactionsRef = collection(db, 'groups', requireActiveGroupId(), 'transactions');
 		const startDate = new Date();
 		startDate.setDate(startDate.getDate() - days);
 
@@ -45,4 +54,41 @@ export async function getHistoricalTransactions(days = 90) {
 		console.error('Error fetching historical transactions: ', error);
 		throw error;
 	}
+}
+
+/**
+ * Subscribes to the active group's transaction ledger in real time, newest
+ * first. Firestore Timestamps are normalized to JS Dates (an offline write
+ * reads back null until it syncs, so fall back to now).
+ * @param {function(Transaction[]): void} onData - Called with each snapshot.
+ * @param {function(unknown): void} [onError] - Called on subscription error.
+ * @returns {function(): void} Unsubscribe function.
+ */
+export function subscribeToTransactions(onData, onError) {
+	const transactionsRef = collection(db, 'groups', requireActiveGroupId(), 'transactions');
+	const q = query(transactionsRef, orderBy('timestamp', 'desc'));
+	return onSnapshot(
+		q,
+		(querySnapshot) => {
+			onData(
+				querySnapshot.docs.map((docSnap) => {
+					const data = docSnap.data();
+					return {
+						id: docSnap.id,
+						itemId: data.itemId,
+						itemName: data.itemName,
+						type: data.type,
+						previousCount: data.previousCount,
+						newCount: data.newCount,
+						timestamp: data.timestamp?.toDate() || new Date(),
+						user: data.user
+					};
+				})
+			);
+		},
+		(error) => {
+			console.error('Error in transactions subscription:', error);
+			if (onError) onError(error);
+		}
+	);
 }

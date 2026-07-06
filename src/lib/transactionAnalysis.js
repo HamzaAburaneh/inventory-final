@@ -1,5 +1,16 @@
 import { db } from '../firebase';
 import { collection, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import { requireActiveGroupId } from './activeGroup';
+
+/** @returns {import('firebase/firestore').CollectionReference} The active group's items collection. */
+function itemsCol() {
+	return collection(db, 'groups', requireActiveGroupId(), 'items');
+}
+
+/** @returns {import('firebase/firestore').CollectionReference} The active group's transactions collection. */
+function txCol() {
+	return collection(db, 'groups', requireActiveGroupId(), 'transactions');
+}
 
 /**
  * @typedef {import('../types').Transaction} Transaction
@@ -22,7 +33,7 @@ import { collection, getDocs, query, where, orderBy, Timestamp } from 'firebase/
  * @returns {Promise<Transaction[]>}
  */
 export async function fetchTransactionsInRange(startDate, endDate) {
-	const transactionsRef = collection(db, 'transactions');
+	const transactionsRef = txCol();
 	const q = query(
 		transactionsRef,
 		where('timestamp', '>=', Timestamp.fromDate(startDate)),
@@ -66,7 +77,7 @@ export async function getTotalItemCount() {
 	if (isBrowser && itemCountCache !== null) {
 		return itemCountCache;
 	}
-	const snapshot = await getDocs(collection(db, 'items'));
+	const snapshot = await getDocs(itemsCol());
 	const count = snapshot.size;
 	if (isBrowser) {
 		itemCountCache = count;
@@ -468,7 +479,7 @@ export async function getItemDailyStats(itemId, days = 30) {
 		const startDate = new Date();
 		startDate.setDate(startDate.getDate() - days);
 
-		const transactionsRef = collection(db, 'transactions');
+		const transactionsRef = txCol();
 		const q = query(
 			transactionsRef,
 			where('itemId', '==', itemId),

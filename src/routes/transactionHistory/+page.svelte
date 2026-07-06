@@ -1,6 +1,5 @@
 <script>
-	import { db } from '../../firebase';
-	import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+	import { subscribeToTransactions } from '../../lib/transactions';
 	import TransactionTimeline from '../../components/TransactionTimeline.svelte';
 	import TableSkeleton from '../../components/TableSkeleton.svelte';
 	import Pagination from '../../components/Pagination.svelte';
@@ -80,32 +79,14 @@
 		return sortedTransactions.slice(startIndex, endIndex);
 	});
 
-	function subscribeToTransactions() {
-		const transactionsRef = collection(db, 'transactions');
-		let q = query(transactionsRef, orderBy('timestamp', 'desc'));
-
+	function startSubscription() {
 		try {
-			// Set up real-time subscription
-			unsubscribeFromTransactions = onSnapshot(
-				q,
-				(querySnapshot) => {
-					allTransactions = querySnapshot.docs.map((doc) => {
-						const data = doc.data();
-						return {
-							id: doc.id,
-							itemId: data.itemId,
-							itemName: data.itemName,
-							type: data.type,
-							previousCount: data.previousCount,
-							newCount: data.newCount,
-							timestamp: data.timestamp?.toDate() || new Date(),
-							user: data.user
-						};
-					});
+			unsubscribeFromTransactions = subscribeToTransactions(
+				(transactions) => {
+					allTransactions = transactions;
 					received = true;
 				},
-				(error) => {
-					console.error('Error in transactions subscription:', error);
+				() => {
 					received = true;
 				}
 			);
@@ -116,7 +97,7 @@
 	}
 
 	onMount(() => {
-		subscribeToTransactions();
+		startSubscription();
 		ready = true;
 
 		return () => {

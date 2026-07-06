@@ -14,12 +14,21 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../firebase', () => ({ db: {} }));
 
 vi.mock('firebase/firestore', () => ({
-	collection: vi.fn((_db, name) => ({ kind: 'collection', name })),
-	doc: vi.fn((first, name, id) =>
-		first && first.kind === 'collection'
-			? { kind: 'doc', collection: first.name, id: 'auto-id' }
-			: { kind: 'doc', collection: name, id }
-	),
+	// Model Firestore's variadic path API: collection(db, ...segments) and
+	// doc(db, ...segments) — the final segment names the collection / doc id.
+	// Group-scoped paths like `groups/{gid}/items/{id}` therefore resolve to the
+	// item's own collection ('items') and id, not the outer 'groups' segment.
+	collection: vi.fn((_db, ...segments) => {
+		const segs = segments.filter((s) => typeof s === 'string');
+		return { kind: 'collection', name: segs[segs.length - 1] };
+	}),
+	doc: vi.fn((first, ...rest) => {
+		if (first && first.kind === 'collection') {
+			return { kind: 'doc', collection: first.name, id: rest[0] ?? 'auto-id' };
+		}
+		const segs = rest.filter((s) => typeof s === 'string');
+		return { kind: 'doc', collection: segs[segs.length - 2], id: segs[segs.length - 1] };
+	}),
 	getDocFromCache: mocks.getDocFromCache,
 	getDocs: mocks.getDocs,
 	onSnapshot: vi.fn(),
@@ -40,6 +49,7 @@ import {
 	deleteItemWithTransaction,
 	updateItemFields
 } from './items';
+import { setActiveGroupId } from './activeGroup';
 
 function fakeTxn(itemData) {
 	return {
@@ -59,6 +69,9 @@ function fakeBatch() {
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	// The data layer scopes every path to the signed-in user's active group;
+	// tests run without auth, so set one explicitly.
+	setActiveGroupId('test-group');
 });
 
 describe('adjustItemCount', () => {

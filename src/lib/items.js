@@ -14,10 +14,38 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { markQueued, markSynced } from './syncQueue';
+import { requireActiveGroupId } from './activeGroup';
 
 /**
  * @typedef {import('../types').Item} Item
  */
+
+// ————————————————————————————————————————————————————————————————————————
+// Group-scoped path helpers
+//
+// All inventory data lives under `groups/{gid}/…`, where gid is the signed-in
+// user's active group (one group per user; see AGENTS.md). These read the
+// active group at call time and throw if none is set — the route guard sends a
+// group-less user to onboarding before any mutation is reachable.
+// ————————————————————————————————————————————————————————————————————————
+
+/** @returns {import('firebase/firestore').CollectionReference} The active group's items collection. */
+function itemsCol() {
+	return collection(db, 'groups', requireActiveGroupId(), 'items');
+}
+
+/**
+ * @param {string} id - Item id.
+ * @returns {import('firebase/firestore').DocumentReference} The item doc in the active group.
+ */
+function itemDoc(id) {
+	return doc(db, 'groups', requireActiveGroupId(), 'items', id);
+}
+
+/** @returns {import('firebase/firestore').CollectionReference} The active group's transactions collection. */
+function txCol() {
+	return collection(db, 'groups', requireActiveGroupId(), 'transactions');
+}
 
 // ————————————————————————————————————————————————————————————————————————
 // Ledgered mutations
@@ -145,7 +173,7 @@ async function readItem(itemRef) {
  * @returns {Promise<{previousCount: number, newCount: number}>} The counts around the change.
  */
 async function queueCountChange(id, computeNewCount, user) {
-	const itemRef = doc(db, 'items', id);
+	const itemRef = itemDoc(id);
 	const snapshot = await readItem(itemRef);
 	if (!snapshot.exists()) {
 		throw new Error('Item not found');
@@ -159,7 +187,7 @@ async function queueCountChange(id, computeNewCount, user) {
 	const batch = writeBatch(db);
 	batch.update(itemRef, { count: newCount });
 	batch.set(
-		doc(collection(db, 'transactions')),
+		doc(txCol()),
 		ledgerRecord(
 			id,
 			item.name,
@@ -188,7 +216,7 @@ export async function adjustItemCount(id, delta, user) {
 	if (isOffline()) {
 		return queueCountChange(id, compute, user);
 	}
-	const itemRef = doc(db, 'items', id);
+	const itemRef = itemDoc(id);
 	try {
 		return await runTransaction(db, async (txn) => {
 			const snapshot = await txn.get(itemRef);
@@ -203,7 +231,7 @@ export async function adjustItemCount(id, delta, user) {
 			}
 			txn.update(itemRef, { count: newCount });
 			txn.set(
-				doc(collection(db, 'transactions')),
+				doc(txCol()),
 				ledgerRecord(
 					id,
 					item.name,
@@ -240,7 +268,7 @@ export async function setItemCount(id, count, user) {
 	if (isOffline()) {
 		return queueCountChange(id, compute, user);
 	}
-	const itemRef = doc(db, 'items', id);
+	const itemRef = itemDoc(id);
 	try {
 		return await runTransaction(db, async (txn) => {
 			const snapshot = await txn.get(itemRef);
@@ -255,7 +283,7 @@ export async function setItemCount(id, count, user) {
 			}
 			txn.update(itemRef, { count: newCount });
 			txn.set(
-				doc(collection(db, 'transactions')),
+				doc(txCol()),
 				ledgerRecord(
 					id,
 					item.name,
@@ -285,7 +313,7 @@ export async function setItemCount(id, count, user) {
  * @returns {Promise<number>} The number of items that were reset.
  */
 export async function resetAllItemCounts(user) {
-	const snapshot = await getDocs(collection(db, 'items'));
+	const snapshot = await getDocs(itemsCol());
 	const toReset = snapshot.docs.filter((docSnapshot) => {
 		const count = parseInt(docSnapshot.data().count, 10) || 0;
 		return count !== 0;
@@ -303,7 +331,7 @@ export async function resetAllItemCounts(user) {
 			const previousCount = parseInt(item.count, 10) || 0;
 			batch.update(docSnapshot.ref, { count: 0 });
 			batch.set(
-				doc(collection(db, 'transactions')),
+				doc(txCol()),
 				ledgerRecord(docSnapshot.id, item.name, 'remove', previousCount, 0, user, timestamp)
 			);
 		}
@@ -325,7 +353,7 @@ export async function resetAllItemCounts(user) {
  * @returns {Promise<Item>} The added item including its new ID.
  */
 export async function addItemWithTransaction(item, user) {
-	const itemCollection = collection(db, 'items');
+	const itemCollection = itemsCol();
 
 	const duplicates = await getDocs(query(itemCollection, where('name', '==', item.name)));
 	if (!duplicates.empty) {
@@ -337,7 +365,7 @@ export async function addItemWithTransaction(item, user) {
 	const batch = writeBatch(db);
 	batch.set(itemRef, item);
 	batch.set(
-		doc(collection(db, 'transactions')),
+		doc(txCol()),
 		ledgerRecord(
 			itemRef.id,
 			item.name,
@@ -365,7 +393,7 @@ export async function addItemWithTransaction(item, user) {
  * @returns {Promise<void>}
  */
 export async function deleteItemWithTransaction(id, user) {
-	const itemRef = doc(db, 'items', id);
+	const itemRef = itemDoc(id);
 	if (isOffline()) {
 		return queueDelete(itemRef, id, user);
 	}
@@ -378,7 +406,7 @@ export async function deleteItemWithTransaction(id, user) {
 			const item = snapshot.data();
 			const previousCount = parseInt(item.count, 10) || 0;
 			txn.set(
-				doc(collection(db, 'transactions')),
+				doc(txCol()),
 				ledgerRecord(id, item.name, 'remove', previousCount, 0, user, serverTimestamp())
 			);
 			txn.delete(itemRef);
@@ -408,7 +436,7 @@ async function queueDelete(itemRef, id, user) {
 	const previousCount = parseInt(item.count, 10) || 0;
 	const batch = writeBatch(db);
 	batch.set(
-		doc(collection(db, 'transactions')),
+		doc(txCol()),
 		ledgerRecord(id, item.name, 'remove', previousCount, 0, user, Timestamp.now())
 	);
 	batch.delete(itemRef);
@@ -429,7 +457,7 @@ export async function updateItemFields(id, updatedFields) {
 			'Item counts must be changed through adjustItemCount/setItemCount so a transaction record is written.'
 		);
 	}
-	const itemRef = doc(db, 'items', id);
+	const itemRef = itemDoc(id);
 	await updateDoc(itemRef, updatedFields);
 }
 
@@ -442,7 +470,7 @@ export async function updateItemFields(id, updatedFields) {
  * @returns {Promise<Item[]>} A promise that resolves to an array of Item objects.
  */
 export async function getItems() {
-	const snapshot = await getDocs(collection(db, 'items'));
+	const snapshot = await getDocs(itemsCol());
 	return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
 
@@ -452,7 +480,7 @@ export async function getItems() {
  * @returns {function(): void} Unsubscribe function to stop listening.
  */
 export function subscribeToItems(callback) {
-	const itemsQuery = collection(db, 'items');
+	const itemsQuery = itemsCol();
 	return onSnapshot(
 		itemsQuery,
 		(snapshot) => {
