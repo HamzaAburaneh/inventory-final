@@ -11,14 +11,15 @@
 	} from '../lib/tableUtils.js';
 	import Icon from './Icon.svelte';
 
-	let { item, onEdit, onDelete } = $props();
+	let { item, boothsById = {}, onEdit, onDelete } = $props();
 
 	const low = $derived(isLowStock(item));
 	const countIsZero = $derived((parseFloat(item.count) || 0) === 0);
 	const totalIsZero = $derived((parseFloat(item.count) || 0) * (parseFloat(item.cost) || 0) === 0);
 	const costIsZero = $derived(!item.cost || (parseFloat(item.cost) || 0) === 0);
 	const lowIsZero = $derived(!item.lowCount || (parseFloat(item.lowCount) || 0) === 0);
-	const boothList = $derived(formatBooths(item.booths));
+	const rawBooths = $derived(item.booths || []);
+	const boothList = $derived(formatBooths(rawBooths, boothsById));
 
 	function edit(field, value) {
 		onEdit(item.id, field, value);
@@ -87,13 +88,13 @@
 			<span class="row-value">
 				{#if boothList.length}
 					<span class="booths-tags">
-						{#each boothList as booth (booth)}
+						{#each rawBooths as boothId, i (boothId)}
+							{@const style = getBoothStyle(boothId, boothsById)}
 							<span
 								class="booth-tag"
-								style="background-color: {getBoothStyle(booth)
-									.backgroundColor}; color: {getBoothStyle(booth).color};"
+								style="background-color: {style.backgroundColor}; color: {style.color};"
 							>
-								{booth}
+								{boothList[i]}
 							</span>
 						{/each}
 					</span>

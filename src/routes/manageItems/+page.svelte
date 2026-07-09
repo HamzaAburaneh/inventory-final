@@ -13,11 +13,13 @@
 	import { cubicIn } from 'svelte/easing';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { applySorting } from '../../lib/items';
+	import { listBooths } from '../../lib/booths';
 	import { onMount } from 'svelte';
 
 	let currentSortColumn = $state('name');
 	let sortAscending = $state(true);
 	let itemsLoaded = $state(false);
+	let booths = $state([]);
 	let isEditingInProgress = $state(false);
 	let showEditModal = $state(false);
 	let editData = $state({ id: null, field: '', value: '', title: '' });
@@ -39,6 +41,7 @@
 	const search = createSearchState();
 
 	const items = $derived($itemStore);
+	const boothsById = $derived(Object.fromEntries(booths.map((b) => [b.id, b])));
 	const searchTermValue = $derived(search.term);
 	const reduceMotion = $derived(prefersReducedMotion.current);
 
@@ -109,6 +112,11 @@
 	onMount(async () => {
 		await itemStore.loadItems();
 		itemsLoaded = true;
+		try {
+			booths = await listBooths();
+		} catch (error) {
+			console.error('Failed to load booths:', error);
+		}
 	});
 
 	const handleItemAdd = async ({ formData }) => {
@@ -254,7 +262,7 @@
 	<div class="page-container">
 		<!-- Form Section -->
 		<div class="form-section">
-			<ItemForm onAdd={handleItemAdd} />
+			<ItemForm onAdd={handleItemAdd} {booths} />
 		</div>
 
 		<!-- Inventory Section -->
@@ -282,6 +290,7 @@
 					paginatedItems={paginatedItemsList}
 					onEdit={handleEdit}
 					onDelete={handleDelete}
+					{boothsById}
 					{sortBy}
 					{currentSortColumn}
 					{sortAscending}
@@ -364,11 +373,11 @@
 					<StorageSelect bind:value={editData.value} />
 				{:else if editData.field === 'booths'}
 					<div class="booths-container">
-						{#each [{ value: 'freshly', label: 'Freshly', color: '#10B981' }, { value: 'b1', label: 'B1', color: '#3B82F6' }, { value: 'b2', label: 'B2', color: '#8B5CF6' }, { value: 'jakes', label: 'Jakes', color: '#F59E0B' }, { value: 'epic', label: 'Epic', color: '#EF4444' }, { value: 'pulled', label: 'Pulled', color: '#6B7280' }] as booth (booth.value)}
+						{#each booths as booth (booth.id)}
 							<label class="booth-option">
 								<input
 									type="checkbox"
-									value={booth.value}
+									value={booth.id}
 									bind:group={editData.value}
 									class="booth-checkbox"
 								/>

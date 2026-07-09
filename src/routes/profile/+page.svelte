@@ -8,6 +8,7 @@
 	import { notificationStore } from '../../stores/notificationStore.js';
 	import { sendVerificationEmail } from '../../lib/auth.js';
 	import GroupManager from '../../components/GroupManager.svelte';
+	import BoothManager from '../../components/BoothManager.svelte';
 
 	const user = $derived($authStore);
 
@@ -368,6 +369,11 @@
 			<!-- ── Group management ──────────────────────────────────────── -->
 			<div in:fly={{ y: 14, duration: 360, easing: cubicOut, delay: 200 }}>
 				<GroupManager {user} />
+			</div>
+
+			<!-- ── Booth management ───────────────────────────────────────── -->
+			<div in:fly={{ y: 14, duration: 360, easing: cubicOut, delay: 240 }}>
+				<BoothManager />
 			</div>
 
 			<!-- ── Sign out card ─────────────────────────────────────────── -->

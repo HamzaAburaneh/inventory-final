@@ -15,6 +15,7 @@
 		paginatedItems = [],
 		onEdit,
 		onDelete,
+		boothsById = {},
 		sortBy,
 		currentSortColumn,
 		sortAscending
@@ -189,6 +190,7 @@
 							type="booths"
 							value={item.booths}
 							{item}
+							{boothsById}
 							onEdit={handleEdit}
 							onDelete={handleDelete}
 							onTooltipShow={handleTooltipShow}
@@ -234,7 +236,7 @@
 					easing: cubicOut
 				}}
 			>
-				<ItemCardMobile {item} onEdit={handleEdit} onDelete={handleDelete} />
+				<ItemCardMobile {item} {boothsById} onEdit={handleEdit} onDelete={handleDelete} />
 			</div>
 		{/each}
 	</div>

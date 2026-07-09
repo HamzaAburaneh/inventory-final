@@ -3,18 +3,9 @@
 	import { prefersReducedMotion } from 'svelte/motion';
 	import StorageSelect from './StorageSelect.svelte';
 
-	let { onAdd, collapsed = $bindable(true) } = $props();
+	let { onAdd, booths = [], collapsed = $bindable(true) } = $props();
 
 	const slideParams = $derived({ duration: prefersReducedMotion.current ? 0 : 250 });
-
-	const boothOptions = [
-		{ value: 'freshly', label: 'Freshly', color: '#10B981' },
-		{ value: 'b1', label: 'B1', color: '#3B82F6' },
-		{ value: 'b2', label: 'B2', color: '#8B5CF6' },
-		{ value: 'jakes', label: 'Jakes', color: '#F59E0B' },
-		{ value: 'epic', label: 'Epic', color: '#EF4444' },
-		{ value: 'pulled', label: 'Pulled', color: '#6B7280' }
-	];
 
 	let formData = $state({
 		name: '',
@@ -265,11 +256,11 @@
 						<span>Booths</span>
 					</div>
 					<div class="booths-container">
-						{#each boothOptions as booth (booth.value)}
+						{#each booths as booth (booth.id)}
 							<label class="booth-chip-label">
 								<input
 									type="checkbox"
-									value={booth.value}
+									value={booth.id}
 									bind:group={formData.booths}
 									class="booth-checkbox"
 								/>
@@ -283,6 +274,10 @@
 									<span class="booth-chip-name">{booth.label}</span>
 								</span>
 							</label>
+						{:else}
+							<p class="booths-empty">
+								No booths yet — a group owner can add some from the profile page.
+							</p>
 						{/each}
 					</div>
 				</section>
@@ -555,6 +550,12 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.4rem;
+	}
+
+	.booths-empty {
+		margin: 0;
+		font-size: 0.8rem;
+		color: var(--text-color-dimmed);
 	}
 
 	.booth-chip-label {

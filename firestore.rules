@@ -77,6 +77,13 @@ service cloud.firestore {
       match /transactions/{txId} {
         allow read, write: if isMember(gid);
       }
+
+      // Group-scoped booth list — any member may read (to render item tags),
+      // only the owner may add/rename/recolor/delete (workspace configuration).
+      match /booths/{boothId} {
+        allow read: if isMember(gid);
+        allow write: if isOwner(gid);
+      }
     }
 
     // Per-user profile (groupId, phone number, etc.) — only the owner.

@@ -11,7 +11,16 @@
 	} from '../lib/tableUtils.js';
 	import Icon from './Icon.svelte';
 
-	let { type, value, item, onEdit, onDelete, onTooltipShow, onTooltipHide } = $props();
+	let {
+		type,
+		value,
+		item,
+		boothsById = {},
+		onEdit,
+		onDelete,
+		onTooltipShow,
+		onTooltipHide
+	} = $props();
 
 	const low = $derived(isLowStock(item));
 	const totalIsZero = $derived((parseFloat(item.count) || 0) * (parseFloat(item.cost) || 0) === 0);
@@ -136,7 +145,8 @@
 	<td class="booths-col" data-label="Booths">
 		<div class="cell-content">
 			<div class="booths-container">
-				{#each formatBooths(value) as booth (booth)}
+				{#each value || [] as boothId (boothId)}
+					{@const style = getBoothStyle(boothId, boothsById)}
 					<button
 						class="booth-tag-btn"
 						data-tooltip="Edit Booths"
@@ -151,10 +161,9 @@
 					>
 						<span
 							class="booth-tag"
-							style="background-color: {getBoothStyle(booth)
-								.backgroundColor}; color: {getBoothStyle(booth).color};"
+							style="background-color: {style.backgroundColor}; color: {style.color};"
 						>
-							{booth}
+							{formatBooths([boothId], boothsById)[0]}
 						</span>
 					</button>
 				{/each}

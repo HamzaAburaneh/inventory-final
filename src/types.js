@@ -49,6 +49,17 @@
  */
 
 /**
+ * A booth (physical stand/location) items can be tagged with, scoped to a
+ * group (`groups/{gid}/booths/{id}`). The doc id is a slug derived from the
+ * label at creation and never changes, since `Item.booths` arrays reference
+ * it directly — renaming only updates `label`.
+ * @typedef {object} Booth
+ * @property {string} label - Display name (editable)
+ * @property {string} color - Hex color for the booth's chip/tag
+ * @property {Date} [createdAt]
+ */
+
+/**
  * @typedef {object} DailyAnalysis
  * @property {string} date - ISO date string (YYYY-MM-DD)
  * @property {number} totalAdded

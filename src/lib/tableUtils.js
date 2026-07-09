@@ -27,10 +27,22 @@ export function formatTotalValue(count, cost) {
 	})}`;
 }
 
-export function formatBooths(booths) {
+/**
+ * Resolve booth ids to their display labels.
+ * @param {string[] | string} booths - Booth id(s) as stored on an item.
+ * @param {Object.<string, {label: string, color: string}>} [boothsById] - The
+ *   active group's managed booths, keyed by id. Ids not present here are
+ *   "unmanaged" (e.g. a deleted booth still tagged on an old item) and fall
+ *   back to a capitalized version of the raw id.
+ * @returns {string[]} Display labels, in the same order as `booths`.
+ */
+export function formatBooths(booths, boothsById = {}) {
 	if (!booths || booths.length === 0) return [];
 	const boothArray = Array.isArray(booths) ? booths : [booths];
-	return boothArray.map((booth) => booth.charAt(0).toUpperCase() + booth.slice(1).toLowerCase());
+	return boothArray.map(
+		(booth) =>
+			boothsById[booth]?.label ?? booth.charAt(0).toUpperCase() + booth.slice(1).toLowerCase()
+	);
 }
 
 /**
@@ -82,16 +94,21 @@ export function getStorageTypeIcon(storageType) {
 	}
 }
 
-export function getBoothStyle(booth) {
-	const boothColors = {
-		freshly: { backgroundColor: '#10B981', color: '#FFFFFF' },
-		b1: { backgroundColor: '#3B82F6', color: '#FFFFFF' },
-		b2: { backgroundColor: '#8B5CF6', color: '#FFFFFF' },
-		jakes: { backgroundColor: '#F59E0B', color: '#FFFFFF' },
-		epic: { backgroundColor: '#EF4444', color: '#FFFFFF' },
-		pulled: { backgroundColor: '#6B7280', color: '#FFFFFF' }
-	};
-	return boothColors[booth.toLowerCase()] || { backgroundColor: '#374151', color: '#E5E7EB' };
+/**
+ * Resolve a booth id to its chip style.
+ * @param {string} boothId - The raw booth id as stored on an item (NOT the
+ *   formatted display label — see formatBooths).
+ * @param {Object.<string, {label: string, color: string}>} [boothsById] - The
+ *   active group's managed booths, keyed by id.
+ * @returns {{backgroundColor: string, color: string}} Chip background + text color.
+ *   Ids not present in `boothsById` (unmanaged/deleted booths) get a neutral
+ *   grey fallback rather than disappearing.
+ */
+export function getBoothStyle(boothId, boothsById = {}) {
+	const booth = boothsById[boothId];
+	return booth
+		? { backgroundColor: booth.color, color: '#FFFFFF' }
+		: { backgroundColor: '#374151', color: '#E5E7EB' };
 }
 
 export const TABLE_COLUMNS = [
