@@ -44,13 +44,7 @@ src/
 
 ## Proposing design changes
 
-When proposing a visual/design change (colors, badges, icons, button/pill styles, layout treatments, etc.), do NOT just apply one choice — preview options first:
-
-- Render them with the inline preview/visualization widget tool (`show_widget`), never as a static description, so the change can actually be seen before it's built.
-- Always show **10 options** unless the user asks for a different count.
-- Show **light and dark mode side by side** for every option (the app themes via `[data-theme]`; both must be judged), and use the app's real surfaces (`#ffffff`-ish light, `#121212`-ish dark) so the preview matches production.
-- Number/label each option so the user can pick by number or mix-and-match (e.g. "freezer icon from 3, color from 7").
-- Only after the user picks do you implement it in the codebase — then keep theme-dependent colors in CSS variables / `[data-theme]` rules, not hardcoded inline styles, so both themes stay correct.
+See the `design-preview` skill before proposing any visual/design change.
 
 ## Goals
 
@@ -58,7 +52,7 @@ When proposing a visual/design change (colors, badges, icons, button/pill styles
 2. **Polished, responsive UI** — mobile-first; see `MOBILE_RESPONSIVENESS_ANALYSIS.md`. Landing page is a centered, full-viewport-panel design (Japandi-influenced: light type weights, generous space, theme-variable colors only) with a fixed side dot-rail for section navigation; `ThreeScene.svelte` renders an abstract "breathing terrain + horizon sun" background shared with /login. (`HOMEPAGE_REDESIGN_PROMPT.md` describes the previous editorial design and is historical.)
 3. **Reliable predictions** — ARIMA fallback must keep working when the AI layer or OpenRouter is unavailable.
 4. **Stay in stack** — no new frameworks, no TypeScript migration, no rewrites of working components (especially `ThreeScene.svelte`, `Navbar.svelte`).
-5. **Scroll direction always matches user intent** — on the landing page's section pager (`src/routes/+page.svelte`), a wheel/trackpad gesture moves exactly one section in the gesture's direction; scrolling up must never move the page down (and vice versa), and trailing trackpad inertia must never re-trigger a page turn. The direction/inertia rules are pure functions in `src/lib/sectionPager.js`, guarded by `src/lib/sectionPager.test.js` (unit) and `tests/home-scroll.test.js` (Playwright). Rules for any change: derive direction from the sign of the current gesture (never from a signed accumulator that can mix opposite-direction deltas), re-arm gesture state on direction flips, and pick targets as "next snap point strictly above/below the current scroll position" — keep this logic in `sectionPager.js`, not inline in the page.
+5. **Scroll direction always matches user intent** — see `.claude/rules/section-pager.md` (auto-loads when touching the section pager files).
 6. **No cross-theme color leaks, anywhere** — no element, in any state, should ever show a color from the _other_ theme. This is a full-surface rule, not limited to a specific list of controls: it covers backgrounds, text, borders, outlines, box-shadows, focus rings, hover/active states, placeholders, scrollbars, autofill backgrounds, SVG fills/strokes, chart colors, and any browser-default UI that wasn't explicitly restyled. Every color on every element must resolve through a theme CSS variable and be checked in both themes (light/dark) — hardcoded hex/rgb/named colors or unstyled user-agent defaults are bugs. When auditing or touching styling, check base, hover, focus, active, and disabled states, not just the resting state.
 
 ## Verification workflow
@@ -86,24 +80,7 @@ Escape hatch: `git commit --no-verify` / `git push --no-verify` skips the hooks 
 
 ## Svelte MCP server
 
-You are able to use the Svelte MCP server, where you have access to comprehensive Svelte 5 and SvelteKit documentation. Here's how to use the available tools effectively:
-
-### 1. list-sections
-
-Use this FIRST to discover all available documentation sections. Returns a structured list with titles, use_cases, and paths.
-When asked about Svelte or SvelteKit topics, ALWAYS use this tool at the start of the chat to find relevant sections.
-
-### 2. get-documentation
-
-Retrieves full documentation content for specific sections. Accepts single or multiple sections.
-After calling the list-sections tool, you MUST analyze the returned documentation sections (especially the use_cases field) and then use the get-documentation tool to fetch ALL documentation sections that are relevant for the user's task.
-
-### 3. svelte-autofixer
-
-Analyzes Svelte code and returns issues and suggestions.
-You MUST use this tool whenever writing Svelte code before sending it to the user. Keep calling it until no issues or suggestions are returned.
-
-### 4. playground-link
-
-Generates a Svelte Playground link with the provided code.
-After completing the code, ask the user if they want a playground link. Only call this tool after user confirmation and NEVER if code was written to files in their project.
+The Svelte MCP server injects its own usage instructions each session (list-sections,
+get-documentation, svelte-autofixer, playground-link) — no need to duplicate them here.
+The `svelte-code-writer` and `svelte-core-bestpractices` skills already mandate using it
+for any Svelte component/module work.
