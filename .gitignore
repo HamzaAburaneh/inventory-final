@@ -17,3 +17,7 @@ vite.config.ts.timestamp-*
 
 # Claude Code per-developer local settings (machine-local, not shared)
 .claude/settings.local.json
+
+# Codex CLI local config/skills (machine-local, not shared)
+.agents/
+.codex/
