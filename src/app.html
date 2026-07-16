@@ -2,6 +2,7 @@
 <html lang="en" %sveltekit.theme%>
 	<head>
 		<meta charset="utf-8" />
+		<meta id="theme-color" name="theme-color" content="#f8f9fc" />
 		<!--
 			Apply the saved theme before first paint so a dark-mode user never sees a
 			flash of light mode on load/refresh. Mirrors stores/themes.js (light | dark).
@@ -9,8 +10,20 @@
 		<script>
 			(function () {
 				try {
-					var t = localStorage.getItem('theme');
-					document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+					var root = document.documentElement;
+					var meta = document.getElementById('theme-color');
+					var t = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
+					var chromeColors = { light: '#f8f9fc', dark: '#0c0c0e' };
+					var syncChrome = function () {
+						var theme = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+						meta.setAttribute('content', chromeColors[theme]);
+					};
+					root.setAttribute('data-theme', t);
+					syncChrome();
+					new MutationObserver(syncChrome).observe(root, {
+						attributes: true,
+						attributeFilter: ['data-theme']
+					});
 				} catch (e) {}
 			})();
 		</script>
@@ -21,22 +34,34 @@
 			name="viewport"
 			content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover"
 		/>
-		<meta name="description" content="StockSense - Advanced Inventory Management System" />
-		<meta name="theme-color" content="#007bff" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 		<meta name="apple-mobile-web-app-title" content="StockSense" />
 		<meta name="format-detection" content="telephone=no" />
-		<link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+		<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin="anonymous" />
 		<link rel="preconnect" href="https://cdn.jsdelivr.net" />
 		<link
 			rel="stylesheet"
 			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+			media="print"
+			onload="this.media = 'all'"
 		/>
 		<link
 			rel="stylesheet"
 			href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css"
+			media="print"
+			onload="this.media = 'all'"
 		/>
+		<noscript>
+			<link
+				rel="stylesheet"
+				href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+			/>
+			<link
+				rel="stylesheet"
+				href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css"
+			/>
+		</noscript>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover" %sveltekit.theme%>

@@ -49,7 +49,9 @@ export function nextTarget(targetList, scrollY, dir) {
  *   (same direction, no pause) is ignored, even after the scroll animation
  *   ends.
  * - Deltas fed while `blocked` (animating) still advance gesture state, so
- *   inertia stays attached to its consumed gesture.
+ *   inertia stays attached to its consumed gesture. A direction flip is the
+ *   one exception: it is accumulated as fresh intent and may interrupt the
+ *   in-progress page turn once it reaches the threshold.
  * @param {{gestureGapMs?: number, threshold?: number}} [options]
  * @returns {{feed: (delta: number, now: number, blocked?: boolean) => -1|0|1}}
  *   feed returns the page-turn direction, or 0 for no turn
@@ -59,21 +61,25 @@ export function createGestureTracker({ gestureGapMs = 200, threshold = 60 } = {}
 	let lastTime = -Infinity;
 	let dir = 0;
 	let consumed = false;
+	let interrupting = false;
 	return {
 		feed(delta, now, blocked = false) {
 			if (delta === 0) return 0;
 			const fresh = now - lastTime > gestureGapMs;
 			lastTime = now;
 			const sign = delta > 0 ? 1 : -1;
+			const reversed = dir !== 0 && sign !== dir;
 			if (fresh || sign !== dir) {
 				dir = sign;
 				accum = 0;
 				consumed = false;
+				interrupting = blocked && reversed;
 			}
-			if (blocked || consumed) return 0;
+			if ((blocked && !interrupting) || consumed) return 0;
 			accum += delta;
 			if (Math.abs(accum) < threshold) return 0;
 			consumed = true;
+			interrupting = false;
 			accum = 0;
 			return sign;
 		}

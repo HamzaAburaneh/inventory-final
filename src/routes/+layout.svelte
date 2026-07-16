@@ -8,6 +8,7 @@
 	import { groupStore } from '../stores/groupStore.js';
 	import { onMount } from 'svelte';
 	import { onNavigate, goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
 
 	let { children, data } = $props();
@@ -53,11 +54,11 @@
 	$effect(() => {
 		if (!ready) return;
 		if (isProtected && !user) {
-			goto('/login');
+			goto(resolve('/login'));
 		} else if (isProtected && user && group.status === 'none') {
 			// Signed in but not in a group yet — send them to onboarding to
 			// create or join one before any inventory page can load.
-			goto('/onboarding');
+			goto(resolve('/onboarding'));
 		}
 	});
 
@@ -112,6 +113,7 @@
 	});
 </script>
 
+<a class="skip-link" href="#main-content">Skip to main content</a>
 <Navbar user={navUser} />
 <OfflineIndicator />
 <Notification />
@@ -119,7 +121,7 @@
 	<VerifyEmailBanner />
 {/if}
 
-<main class="main-container">
+<main id="main-content" class="main-container" tabindex="-1">
 	<!-- Keyed on the route so the wrapper is recreated on every client-side
 	     navigation, which replays the CSS fade-in below. CSS animations (not
 	     Svelte JS transitions) are used so the fade runs on the compositor rather
@@ -140,6 +142,28 @@
 </main>
 
 <style>
+	.skip-link {
+		position: fixed;
+		top: 0.5rem;
+		left: 0.5rem;
+		z-index: 2000;
+		padding: 0.65rem 1rem;
+		border: 2px solid var(--input-focus-border);
+		border-radius: var(--border-radius);
+		background: var(--container-bg);
+		color: var(--text-color);
+		font-weight: 700;
+		text-decoration: none;
+		transform: translateY(calc(-100% - 1rem));
+		transition: transform 160ms ease;
+	}
+
+	.skip-link:focus-visible {
+		outline: 3px solid var(--input-focus-border);
+		outline-offset: 2px;
+		transform: translateY(0);
+	}
+
 	main {
 		padding: 1rem;
 		display: flex;
@@ -171,8 +195,8 @@
 		width: 2.5rem;
 		height: 2.5rem;
 		border-radius: 50%;
-		border: 3px solid var(--table-border-color, #dee2e6);
-		border-top-color: var(--tech-accent, #007bff);
+		border: 3px solid var(--table-border-color);
+		border-top-color: var(--tech-accent);
 		animation: auth-spin 0.8s linear infinite;
 	}
 

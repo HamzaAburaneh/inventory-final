@@ -43,7 +43,7 @@ function sectionTop(page, id) {
 test.describe('home page section pager', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await page.waitForSelector('#voices');
+		await page.waitForSelector('#closing');
 		// Let mount-time effects (snap offsets, wheel listener) settle
 		await page.waitForTimeout(300);
 	});
@@ -51,12 +51,12 @@ test.describe('home page section pager', () => {
 	test('wheel down from the top moves exactly one section down', async ({ page }) => {
 		await page.mouse.wheel(0, 120);
 		const y = await settledScrollY(page);
-		const featuresTop = await sectionTop(page, 'features');
-		const processTop = await sectionTop(page, 'process');
+		const inventoryTop = await sectionTop(page, 'inventory');
+		const traceabilityTop = await sectionTop(page, 'traceability');
 		expect(y).toBeGreaterThan(0);
-		// Landed at features (within nav-offset tolerance), not past it
-		expect(Math.abs(y - featuresTop)).toBeLessThan(150);
-		expect(y).toBeLessThan(processTop - 100);
+		// Landed at inventory control (within nav-offset tolerance), not past it
+		expect(Math.abs(y - inventoryTop)).toBeLessThan(150);
+		expect(y).toBeLessThan(traceabilityTop - 100);
 	});
 
 	test('wheel up at the top does not move the page down', async ({ page }) => {
@@ -74,9 +74,9 @@ test.describe('home page section pager', () => {
 			await page.waitForTimeout(60);
 		}
 		const y = await settledScrollY(page);
-		const processTop = await sectionTop(page, 'process');
-		// Still on features — the tail must not have paged on to process
-		expect(y).toBeLessThan(processTop - 100);
+		const traceabilityTop = await sectionTop(page, 'traceability');
+		// Still on inventory control; the tail must not have paged on to traceability
+		expect(y).toBeLessThan(traceabilityTop - 100);
 	});
 
 	test('scrolling up after scrolling down always moves the page up', async ({ page }) => {
@@ -93,6 +93,18 @@ test.describe('home page section pager', () => {
 		await page.mouse.wheel(0, -120);
 		const after = await settledScrollY(page);
 		expect(after).toBeLessThan(before);
+	});
+
+	test('an opposite flick reverses a page turn that is still animating', async ({ page }) => {
+		await page.mouse.wheel(0, 120);
+		await expect.poll(async () => page.evaluate(() => window.scrollY)).toBeGreaterThan(10);
+		const beforeReverse = await page.evaluate(() => window.scrollY);
+
+		await page.mouse.wheel(0, -120);
+		const afterReverse = await settledScrollY(page);
+
+		expect(afterReverse).toBeLessThan(beforeReverse);
+		expect(afterReverse).toBeLessThan(5);
 	});
 
 	test('repeated up gestures return to the very top', async ({ page }) => {

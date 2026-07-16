@@ -25,18 +25,18 @@ test.describe('offline PWA shell', () => {
 	test('landing page still renders after going offline', async ({ page, context }) => {
 		// First visit online: installs the service worker and precaches the shell.
 		await page.goto('/');
-		await page.waitForSelector('#voices');
+		await page.waitForSelector('#closing');
 		await page.evaluate(() => navigator.serviceWorker.ready);
 
 		// Reload once while online so the navigation itself is runtime-cached
 		// by the now-active worker.
 		await page.reload();
-		await page.waitForSelector('#voices');
+		await page.waitForSelector('#closing');
 
 		// Dead zone: no network at all. The pocket copy must take over.
 		await context.setOffline(true);
 		await page.reload();
-		await page.waitForSelector('#voices', { timeout: 10000 });
+		await page.waitForSelector('#closing', { timeout: 10000 });
 		expect(await page.title()).toContain('StockSense');
 
 		await context.setOffline(false);

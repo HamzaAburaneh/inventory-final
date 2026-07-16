@@ -1,26 +1,37 @@
 <script>
 	import * as THREE from 'three';
-	import { themeStore } from '../stores/themes.js';
 
 	let canvas = $state(null);
 
-	// Theme palettes: fog matches the page background, accent drives the horizon
-	// glow, terrain is the subtle line color of the breathing landscape.
-	const PALETTES = {
-		light: { accent: 0x0066ff, fog: 0xf4f6fb, terrain: 0xb9c2d4 },
-		dark: { accent: 0xffe260, fog: 0x0c0c0e, terrain: 0x2b2d35 },
-		blue: { accent: 0x2563eb, fog: 0xf3f7fd, terrain: 0xb3c6e0 },
-		green: { accent: 0x16a34a, fog: 0xf4faf6, terrain: 0xb7d4c3 }
-	};
+	function readScenePalette() {
+		const styles = getComputedStyle(document.documentElement);
+		return {
+			accent: styles.getPropertyValue('--scene-accent').trim(),
+			fog: styles.getPropertyValue('--scene-fog').trim(),
+			terrain: styles.getPropertyValue('--scene-terrain').trim(),
+			glowRgb: styles.getPropertyValue('--scene-glow-rgb').trim()
+		};
+	}
 
 	$effect(() => {
 		if (!canvas) return;
 
 		const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		const isMobile = window.innerWidth < 768;
+		const context = canvas.getContext('webgl2', {
+			alpha: true,
+			antialias: false,
+			powerPreference: 'high-performance'
+		});
+		if (!context) {
+			canvas.classList.add('webgl-unavailable');
+			return;
+		}
+		const initialPalette = readScenePalette();
 
 		const renderer = new THREE.WebGLRenderer({
 			canvas,
+			context,
 			alpha: true,
 			antialias: false,
 			powerPreference: 'high-performance'
@@ -29,7 +40,7 @@
 		renderer.setSize(window.innerWidth, window.innerHeight);
 
 		const scene = new THREE.Scene();
-		scene.fog = new THREE.FogExp2(PALETTES.light.fog, 0.022);
+		scene.fog = new THREE.FogExp2(initialPalette.fog, 0.022);
 
 		const camera = new THREE.PerspectiveCamera(
 			50,
@@ -51,7 +62,7 @@
 		const basePos = terrainGeo.attributes.position.array.slice();
 
 		const terrainMat = new THREE.MeshBasicMaterial({
-			color: PALETTES.light.terrain,
+			color: initialPalette.terrain,
 			wireframe: true,
 			transparent: true,
 			opacity: 0.32,
@@ -83,10 +94,10 @@
 		glowCanvas.height = 256;
 		const glowCtx = glowCanvas.getContext('2d');
 		const gradient = glowCtx.createRadialGradient(128, 128, 0, 128, 128, 128);
-		gradient.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
-		gradient.addColorStop(0.35, 'rgba(255, 255, 255, 0.3)');
-		gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.08)');
-		gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+		gradient.addColorStop(0, `rgba(${initialPalette.glowRgb}, 0.85)`);
+		gradient.addColorStop(0.35, `rgba(${initialPalette.glowRgb}, 0.3)`);
+		gradient.addColorStop(0.7, `rgba(${initialPalette.glowRgb}, 0.08)`);
+		gradient.addColorStop(1, `rgba(${initialPalette.glowRgb}, 0)`);
 		glowCtx.fillStyle = gradient;
 		glowCtx.fillRect(0, 0, 256, 256);
 		const glowTex = new THREE.CanvasTexture(glowCanvas);
@@ -94,7 +105,7 @@
 		const sunGeo = new THREE.PlaneGeometry(38, 38);
 		const sunMat = new THREE.MeshBasicMaterial({
 			map: glowTex,
-			color: PALETTES.light.accent,
+			color: initialPalette.accent,
 			transparent: true,
 			opacity: 0.45,
 			depthWrite: false
@@ -116,7 +127,7 @@
 		const moteGeo = new THREE.BufferGeometry();
 		moteGeo.setAttribute('position', new THREE.BufferAttribute(motePos, 3));
 		const moteMat = new THREE.PointsMaterial({
-			color: PALETTES.light.accent,
+			color: initialPalette.accent,
 			size: 0.09,
 			transparent: true,
 			opacity: 0.35,
@@ -137,21 +148,15 @@
 
 		// === Theme transitions (lerped every frame, cheap) ===
 		const current = {
-			accent: new THREE.Color(PALETTES.light.accent),
-			fog: new THREE.Color(PALETTES.light.fog),
-			terrain: new THREE.Color(PALETTES.light.terrain)
+			accent: new THREE.Color(initialPalette.accent),
+			fog: new THREE.Color(initialPalette.fog),
+			terrain: new THREE.Color(initialPalette.terrain)
 		};
 		const target = {
 			accent: current.accent.clone(),
 			fog: current.fog.clone(),
 			terrain: current.terrain.clone()
 		};
-		const unsubscribeTheme = themeStore.subscribe((name) => {
-			const p = PALETTES[name] || PALETTES.light;
-			target.accent.set(p.accent);
-			target.fog.set(p.fog);
-			target.terrain.set(p.terrain);
-		});
 		function applyColors(a = 0.06) {
 			current.accent.lerp(target.accent, a);
 			current.fog.lerp(target.fog, a);
@@ -161,6 +166,20 @@
 			sunMat.color.copy(current.accent);
 			moteMat.color.copy(current.accent);
 		}
+		const themeObserver = new MutationObserver(() => {
+			const palette = readScenePalette();
+			target.accent.set(palette.accent);
+			target.fog.set(palette.fog);
+			target.terrain.set(palette.terrain);
+			if (prefersReducedMotion) {
+				applyColors(1);
+				renderer.render(scene, camera);
+			}
+		});
+		themeObserver.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['data-theme']
+		});
 
 		// === Scroll: gently sink the horizon as content takes over ===
 		function updateScroll() {
@@ -223,18 +242,13 @@
 			applyColors(1);
 			displaceTerrain(0);
 			renderFrame();
-			const unsubStatic = themeStore.subscribe(() => {
-				applyColors(1);
-				renderer.render(scene, camera);
-			});
 			const staticResize = () => {
 				onResize();
 				renderer.render(scene, camera);
 			};
 			window.addEventListener('resize', staticResize);
 			return () => {
-				unsubStatic();
-				unsubscribeTheme();
+				themeObserver.disconnect();
 				window.removeEventListener('resize', staticResize);
 				window.removeEventListener('scroll', onScroll);
 				window.removeEventListener('resize', onResize);
@@ -260,7 +274,7 @@
 			document.removeEventListener('visibilitychange', onVisibility);
 			window.removeEventListener('scroll', onScroll);
 			window.removeEventListener('resize', onResize);
-			unsubscribeTheme();
+			themeObserver.disconnect();
 			disposeAll();
 		};
 	});

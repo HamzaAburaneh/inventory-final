@@ -1,6 +1,8 @@
 <script>
 	import { authStore } from '../../stores/authStore';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { page } from '$app/stores';
 	import { fadeAndSlide } from '$lib/transitions';
 	import { fade } from 'svelte/transition';
 	import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
@@ -10,14 +12,14 @@
 	let email = $state('');
 	let password = $state('');
 	let error = $state('');
-	let isRegistering = $state(false);
+	let isRegistering = $state($page.url.searchParams.get('mode') === 'register');
 	let loading = $state(false);
 	let showPassword = $state(false);
 
 	// Redirect to home page if already logged in
 	$effect(() => {
 		if ($authStore) {
-			goto('/manageItems');
+			goto(resolve('/manageItems'));
 		}
 	});
 
@@ -32,10 +34,10 @@
 				sendEmailVerification(credential.user).catch((err) =>
 					console.error('Could not send verification email:', err)
 				);
-				goto('/manageItems');
+				goto(resolve('/manageItems'));
 			} else {
 				await authStore.login(email, password);
-				goto('/manageItems');
+				goto(resolve('/manageItems'));
 			}
 		} catch {
 			error = isRegistering

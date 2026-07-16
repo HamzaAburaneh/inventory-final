@@ -49,7 +49,7 @@ See the `design-preview` skill before proposing any visual/design change.
 ## Goals
 
 1. **Correctness of inventory data** — every count change must produce a matching Transaction record (previousCount/newCount consistent).
-2. **Polished, responsive UI** — mobile-first; see `MOBILE_RESPONSIVENESS_ANALYSIS.md`. Landing page is a centered, full-viewport-panel design (Japandi-influenced: light type weights, generous space, theme-variable colors only) with a fixed side dot-rail for section navigation; `ThreeScene.svelte` renders an abstract "breathing terrain + horizon sun" background shared with /login. (`HOMEPAGE_REDESIGN_PROMPT.md` describes the previous editorial design and is historical.)
+2. **Polished, responsive UI** — mobile-first; see `MOBILE_RESPONSIVENESS_ANALYSIS.md`. Landing page is a centered, full-viewport-panel design with a fixed side dot-rail for section navigation; `ThreeScene.svelte` renders an abstract "breathing terrain + horizon sun" background shared with /login. (`HOMEPAGE_REDESIGN_PROMPT.md` describes the previous editorial design and is historical.)
 3. **Reliable predictions** — ARIMA fallback must keep working when the AI layer or OpenRouter is unavailable.
 4. **Stay in stack** — no new frameworks, no TypeScript migration, no rewrites of working components (especially `ThreeScene.svelte`, `Navbar.svelte`).
 5. **Scroll direction always matches user intent** — see `.claude/rules/section-pager.md` (auto-loads when touching the section pager files).

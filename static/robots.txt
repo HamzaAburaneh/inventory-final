@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /manageItems
+Disallow: /manageTransactions
+Disallow: /transactionHistory
+Disallow: /transactionAnalysis
+Disallow: /inventoryPredictions
+Disallow: /profile

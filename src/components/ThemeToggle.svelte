@@ -2,9 +2,21 @@
 	import { themeStore } from '../stores/themes.js';
 
 	const currentTheme = $derived($themeStore);
+	let pointerScrollY = null;
 
 	function toggleTheme() {
+		const scrollY = pointerScrollY;
+		pointerScrollY = null;
 		themeStore.setTheme(currentTheme === 'light' ? 'dark' : 'light');
+		if (scrollY !== null) {
+			requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: 'instant' }));
+		}
+	}
+
+	function focusWithoutScroll(event) {
+		pointerScrollY = window.scrollY;
+		event.preventDefault();
+		event.currentTarget.focus({ preventScroll: true });
 	}
 
 	$effect(() => {
@@ -20,6 +32,7 @@
 	aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
 	role="switch"
 	aria-checked={isDark}
+	onpointerdown={focusWithoutScroll}
 >
 	<!-- Sun icon -->
 	<svg
@@ -74,6 +87,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.375rem;
+		min-height: 48px;
 		background: none;
 		border: none;
 		padding: 0;
@@ -124,7 +138,7 @@
 		width: 36px;
 		height: 20px;
 		border-radius: 999px;
-		background: rgba(128, 128, 128, 0.18);
+		background: var(--theme-toggle-track-bg);
 		border: 1px solid var(--nav-border-color);
 		transition:
 			background 0.25s ease,
@@ -133,12 +147,12 @@
 	}
 
 	:global([data-theme='dark']) .track {
-		background: rgba(var(--tech-accent-rgb), 0.15);
-		border-color: rgba(var(--tech-accent-rgb), 0.3);
+		background: var(--theme-toggle-track-bg-active);
+		border-color: var(--theme-toggle-track-border-active);
 	}
 
 	.theme-toggle:hover .track {
-		border-color: rgba(var(--tech-accent-rgb), 0.45);
+		border-color: var(--theme-toggle-track-border-hover);
 	}
 
 	/* ── Thumb ─────────────────────────────────── */
@@ -150,12 +164,20 @@
 		height: 14px;
 		border-radius: 50%;
 		background: var(--nav-text-color);
-		transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+		transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+		box-shadow: var(--theme-toggle-thumb-shadow);
 	}
 
 	:global([data-theme='dark']) .thumb {
 		transform: translateX(16px);
 		background: var(--tech-accent);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.toggle-icon,
+		.track,
+		.thumb {
+			transition: none;
+		}
 	}
 </style>

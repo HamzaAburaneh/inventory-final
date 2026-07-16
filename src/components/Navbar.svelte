@@ -4,6 +4,7 @@
 	import ThemeToggle from './ThemeToggle.svelte';
 	import { authStore } from '../stores/authStore.js';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 
@@ -20,6 +21,7 @@
 	let menuToggleRef = $state();
 	let mobileMenuRef = $state();
 	let isMobile = $state(browser ? window.innerWidth < 768 : false);
+	let pointerScrollY = null;
 
 	const currentPath = $derived($page.url.pathname);
 
@@ -37,7 +39,18 @@
 	);
 
 	function toggleMenu() {
+		const scrollY = pointerScrollY;
+		pointerScrollY = null;
 		isOpen = !isOpen;
+		if (scrollY !== null) {
+			requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: 'instant' }));
+		}
+	}
+
+	function focusWithoutScroll(event) {
+		pointerScrollY = window.scrollY;
+		event.preventDefault();
+		event.currentTarget.focus({ preventScroll: true });
 	}
 
 	function closeMenu() {
@@ -64,13 +77,13 @@
 		await authStore.logout();
 		closeDropdown();
 		closeMenu();
-		goto('/login');
+		goto(resolve('/login'));
 	}
 
 	async function handleProfileClick(event) {
 		event.preventDefault();
 		closeDropdown();
-		await goto('/profile');
+		await goto(resolve('/profile'));
 	}
 
 	function handleClickOutside(node) {
@@ -139,7 +152,7 @@
 <nav class="navbar" aria-label="Main navigation">
 	<div class="nav-inner">
 		<!-- ── Logo (original, untouched) ── -->
-		<a href="/" class="brand">
+		<a href={resolve('/')} class="brand">
 			<i class="fas fa-layer-group mr-2" aria-hidden="true"></i>
 			<span class="brand-text">Stock<span class="brand-accent">Sense</span></span>
 		</a>
@@ -149,7 +162,7 @@
 			{#if user}
 				<li>
 					<a
-						href="/manageItems"
+						href={resolve('/manageItems')}
 						class="nav-link"
 						class:active={currentPath === '/manageItems'}
 						aria-current={currentPath === '/manageItems' ? 'page' : undefined}
@@ -174,7 +187,7 @@
 				</li>
 				<li>
 					<a
-						href="/manageTransactions"
+						href={resolve('/manageTransactions')}
 						class="nav-link"
 						class:active={currentPath === '/manageTransactions'}
 						aria-current={currentPath === '/manageTransactions' ? 'page' : undefined}
@@ -200,7 +213,7 @@
 				</li>
 				<li>
 					<a
-						href="/transactionHistory"
+						href={resolve('/transactionHistory')}
 						class="nav-link"
 						class:active={currentPath === '/transactionHistory'}
 						aria-current={currentPath === '/transactionHistory' ? 'page' : undefined}
@@ -224,7 +237,7 @@
 				</li>
 				<li>
 					<a
-						href="/transactionAnalysis"
+						href={resolve('/transactionAnalysis')}
 						class="nav-link"
 						class:active={currentPath === '/transactionAnalysis'}
 						aria-current={currentPath === '/transactionAnalysis' ? 'page' : undefined}
@@ -248,7 +261,7 @@
 				</li>
 				<li>
 					<a
-						href="/inventoryPredictions"
+						href={resolve('/inventoryPredictions')}
 						class="nav-link"
 						class:active={currentPath === '/inventoryPredictions'}
 						aria-current={currentPath === '/inventoryPredictions' ? 'page' : undefined}
@@ -274,7 +287,7 @@
 			{:else}
 				<li>
 					<a
-						href="/login"
+						href={resolve('/login')}
 						class="nav-link"
 						class:active={currentPath === '/login'}
 						aria-current={currentPath === '/login' ? 'page' : undefined}
@@ -342,7 +355,12 @@
 
 							<ul class="drop-list" role="menu" aria-label="User menu">
 								<li role="none">
-									<a href="/profile" class="drop-item" role="menuitem" onclick={handleProfileClick}>
+									<a
+										href={resolve('/profile')}
+										class="drop-item"
+										role="menuitem"
+										onclick={handleProfileClick}
+									>
 										<svg
 											xmlns="http://www.w3.org/2000/svg"
 											width="13"
@@ -399,6 +417,7 @@
 			aria-expanded={isOpen}
 			aria-controls="mobile-nav"
 			aria-label={isOpen ? 'Close menu' : 'Open menu'}
+			onpointerdown={focusWithoutScroll}
 		>
 			<span class="burger-bars" class:open={isOpen} aria-hidden="true">
 				<span></span>
@@ -426,7 +445,7 @@
 				</div>
 				<div class="mob-divider"></div>
 				<a
-					href="/manageItems"
+					href={resolve('/manageItems')}
 					class="mob-link"
 					class:active={currentPath === '/manageItems'}
 					aria-current={currentPath === '/manageItems' ? 'page' : undefined}
@@ -450,7 +469,7 @@
 					Item Manager
 				</a>
 				<a
-					href="/manageTransactions"
+					href={resolve('/manageTransactions')}
 					class="mob-link"
 					class:active={currentPath === '/manageTransactions'}
 					aria-current={currentPath === '/manageTransactions' ? 'page' : undefined}
@@ -474,7 +493,7 @@
 					Manage Transactions
 				</a>
 				<a
-					href="/transactionHistory"
+					href={resolve('/transactionHistory')}
 					class="mob-link"
 					class:active={currentPath === '/transactionHistory'}
 					aria-current={currentPath === '/transactionHistory' ? 'page' : undefined}
@@ -497,7 +516,7 @@
 					Transaction History
 				</a>
 				<a
-					href="/transactionAnalysis"
+					href={resolve('/transactionAnalysis')}
 					class="mob-link"
 					class:active={currentPath === '/transactionAnalysis'}
 					aria-current={currentPath === '/transactionAnalysis' ? 'page' : undefined}
@@ -520,7 +539,7 @@
 					Transaction Analysis
 				</a>
 				<a
-					href="/inventoryPredictions"
+					href={resolve('/inventoryPredictions')}
 					class="mob-link"
 					class:active={currentPath === '/inventoryPredictions'}
 					aria-current={currentPath === '/inventoryPredictions' ? 'page' : undefined}
@@ -545,7 +564,7 @@
 				</a>
 				<div class="mob-divider"></div>
 				<a
-					href="/profile"
+					href={resolve('/profile')}
 					class="mob-link"
 					onclick={(e) => {
 						closeMenu();
@@ -588,7 +607,7 @@
 				</button>
 			{:else}
 				<a
-					href="/login"
+					href={resolve('/login')}
 					class="mob-link"
 					class:active={currentPath === '/login'}
 					onclick={closeMenu}>Login</a
@@ -609,16 +628,14 @@
 		--nb-surface: var(--nav-color);
 		--nb-border: var(--nav-border-color);
 		--nb-text: var(--nav-text-color);
-		--nb-muted: color-mix(in srgb, var(--nav-text-color) 45%, transparent);
+		--nb-muted: var(--nav-text-muted);
 		--nb-hover-bg: var(--nav-hover-bg);
 		--nb-accent: var(--tech-accent);
 		--nb-accent-rgb: var(--tech-accent-rgb);
-		/* Avatar fg: white on blue (light), dark on yellow (dark) */
-		--nb-avatar-fg: #fff;
-	}
-
-	:global([data-theme='dark']) .navbar {
-		--nb-avatar-fg: #0a0a0a;
+		--nb-avatar-fg: var(--nav-avatar-text);
+		--nb-danger: var(--nav-danger-text);
+		--nb-danger-bg: var(--nav-danger-surface);
+		--nb-dropdown-shadow: var(--nav-dropdown-shadow);
 	}
 
 	/* ── Shell ─────────────────────────────────── */
@@ -654,6 +671,7 @@
 		transition: opacity 0.4s ease;
 		display: flex;
 		align-items: center;
+		min-height: 48px;
 		flex-shrink: 0;
 		margin-right: 2rem;
 	}
@@ -669,6 +687,11 @@
 	}
 
 	.brand :global(i) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1rem;
+		height: 1rem;
 		font-size: 1rem;
 		line-height: 1;
 		color: var(--nb-accent);
@@ -858,9 +881,7 @@
 		z-index: 100;
 		background: var(--nb-surface);
 		border: 1px solid var(--nb-border);
-		box-shadow:
-			0 4px 12px rgba(0, 0, 0, 0.12),
-			0 12px 32px rgba(0, 0, 0, 0.16);
+		box-shadow: var(--nb-dropdown-shadow);
 	}
 
 	/* Account header — name + email, like Linear / Notion */
@@ -953,13 +974,8 @@
 	}
 
 	.drop-signout:hover {
-		background: rgba(239, 68, 68, 0.08);
-		color: #ef4444;
-	}
-
-	:global([data-theme='dark']) .drop-signout:hover {
-		background: rgba(248, 113, 113, 0.12);
-		color: #f87171;
+		background: var(--nb-danger-bg);
+		color: var(--nb-danger);
 	}
 
 	/* ── Burger ────────────────────────────────── */
@@ -967,8 +983,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 40px;
-		height: 40px;
+		width: 48px;
+		height: 48px;
 		/* Override global button touch-target rules (min-height 44px + big
 		   padding) that otherwise crush the icon's content box to 0 width. */
 		padding: 0;
@@ -1022,7 +1038,9 @@
 		width: 100%;
 		background: color-mix(in srgb, var(--nb-text) 75%, transparent);
 		border-radius: 2px;
-		transition: all 0.22s ease;
+		transition:
+			transform 0.22s ease,
+			opacity 0.22s ease;
 		transform-origin: center;
 	}
 
@@ -1043,9 +1061,17 @@
 
 	/* ── Mobile panel ──────────────────────────── */
 	.mobile-panel {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		right: 0;
+		z-index: 100;
 		background: var(--nb-surface);
 		border-top: 1px solid var(--nb-border);
 		padding: 8px 12px 4px;
+		max-height: calc(100dvh - 56px);
+		overflow-y: auto;
+		overscroll-behavior: contain;
 		/* No extra shadow — the bottom border is enough */
 	}
 
@@ -1095,7 +1121,7 @@
 		gap: 10px;
 		width: 100%;
 		padding: 0 10px;
-		height: 42px;
+		height: 48px;
 		border-radius: 7px;
 		font-size: 0.875rem;
 		font-weight: 500;
@@ -1126,13 +1152,8 @@
 	}
 
 	.mob-signout:hover {
-		background: rgba(239, 68, 68, 0.08);
-		color: #ef4444;
-	}
-
-	:global([data-theme='dark']) .mob-signout:hover {
-		background: rgba(248, 113, 113, 0.12);
-		color: #f87171;
+		background: var(--nb-danger-bg);
+		color: var(--nb-danger);
 	}
 
 	.mob-footer {

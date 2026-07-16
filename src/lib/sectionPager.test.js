@@ -102,7 +102,14 @@ describe('createGestureTracker', () => {
 		expect(t.feed(30, 120, true)).toBe(0);
 		// ...when the user flicks up: the flip re-arms immediately and the up
 		// delta is never netted against the leftover positive accumulation
-		expect(t.feed(-120, 160)).toBe(-1);
+		expect(t.feed(-120, 160, true)).toBe(-1);
+	});
+
+	it('accumulates a deliberate reversal while the previous page turn is still animating', () => {
+		const t = createGestureTracker();
+		expect(t.feed(120, 0)).toBe(1);
+		expect(t.feed(-25, 60, true)).toBe(0);
+		expect(t.feed(-40, 110, true)).toBe(-1);
 	});
 
 	it('mixed-direction deltas within one stream never page opposite to the latest direction', () => {
