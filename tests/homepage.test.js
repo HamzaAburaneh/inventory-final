@@ -225,17 +225,67 @@ test.describe('Inventory Observatory mobile behavior', () => {
 		await page.goto('/');
 		await waitForHomepage(page);
 
-		const geometry = await page.evaluate(() => ({
-			viewportWidth: window.innerWidth,
-			documentWidth: document.documentElement.scrollWidth,
-			railDisplay: getComputedStyle(document.querySelector('.rail')).display
-		}));
+		const geometry = await page.evaluate(() => {
+			const signalStrip = document.querySelector('.signal-strip');
+			const signalCells = [...signalStrip.querySelectorAll('p')].map((cell) => {
+				const rect = cell.getBoundingClientRect();
+				return { top: rect.top, height: rect.height };
+			});
+			return {
+				viewportWidth: window.innerWidth,
+				documentWidth: document.documentElement.scrollWidth,
+				railDisplay: getComputedStyle(document.querySelector('.rail')).display,
+				signalColumns: getComputedStyle(signalStrip).gridTemplateColumns.split(' ').length,
+				signalHeight: signalStrip.getBoundingClientRect().height,
+				signalTops: signalCells.map((cell) => cell.top)
+			};
+		});
 
 		expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth);
 		expect(geometry.railDisplay).toBe('flex');
+		expect(geometry.signalColumns).toBe(3);
+		expect(geometry.signalHeight).toBeLessThan(90);
+		expect(Math.max(...geometry.signalTops) - Math.min(...geometry.signalTops)).toBeLessThan(2);
 		await expect(
 			page.getByRole('heading', { name: 'One inventory. Zero guesswork.' })
 		).toBeAttached();
+	});
+
+	test('fits every panel below the fixed navigation', async ({ page }) => {
+		await page.goto('/');
+		await waitForHomepage(page);
+
+		const panelGeometry = await page.locator('.panel').evaluateAll((panels) => {
+			const snapTop =
+				Number.parseFloat(
+					getComputedStyle(document.documentElement).getPropertyValue('--snap-top')
+				) || 56;
+			return {
+				availableHeight: window.innerHeight - snapTop + 1,
+				heights: panels.map((panel) => panel.getBoundingClientRect().height)
+			};
+		});
+
+		for (const height of panelGeometry.heights) {
+			expect(height).toBeLessThanOrEqual(panelGeometry.availableHeight);
+		}
+
+		await page.getByRole('button', { name: 'Go to Inventory control' }).click();
+		await settledScrollY(page);
+		const alignment = await page.evaluate(() => {
+			const nav = document.querySelector('nav.navbar').getBoundingClientRect();
+			const panel = document.querySelector('#inventory').getBoundingClientRect();
+			const demo = document.querySelector('.inventory-demo').getBoundingClientRect();
+			return {
+				navBottom: nav.bottom,
+				panelTop: panel.top,
+				demoBottom: demo.bottom,
+				viewportHeight: window.innerHeight
+			};
+		});
+
+		expect(Math.abs(alignment.panelTop - alignment.navBottom)).toBeLessThan(2);
+		expect(alignment.demoBottom).toBeLessThanOrEqual(alignment.viewportHeight);
 	});
 
 	test('keeps the current panel stable while the mobile theme menu opens', async ({ page }) => {
@@ -289,14 +339,71 @@ test.describe('Inventory Observatory short landscape behavior', () => {
 				top: rect.top,
 				bottom: rect.bottom,
 				viewportHeight: window.innerHeight,
-				stops: rail.querySelectorAll('.rail-stop').length
+				stops: [...rail.querySelectorAll('.rail-stop')].map((stop) => {
+					const stopRect = stop.getBoundingClientRect();
+					return { width: stopRect.width, height: stopRect.height };
+				})
 			};
 		});
 
 		expect(railGeometry.display).toBe('flex');
-		expect(railGeometry.stops).toBe(5);
+		expect(railGeometry.stops).toHaveLength(5);
+		for (const stop of railGeometry.stops) {
+			expect(stop.width).toBeGreaterThanOrEqual(48);
+			expect(stop.height).toBeGreaterThanOrEqual(48);
+		}
 		expect(railGeometry.top).toBeGreaterThanOrEqual(0);
 		expect(railGeometry.bottom).toBeLessThanOrEqual(railGeometry.viewportHeight);
+	});
+
+	test('keeps the complete hero treatment inside the short viewport', async ({ page }) => {
+		await page.goto('/');
+		await waitForHomepage(page);
+
+		const heroGeometry = await page.evaluate(() => {
+			const nav = document.querySelector('nav.navbar').getBoundingClientRect();
+			const content = document.querySelector('.hero-layout').getBoundingClientRect();
+			const main = document.querySelector('main');
+			const headlineLines = [...document.querySelectorAll('.headline-line')].map(
+				(line) => line.getClientRects().length
+			);
+			return {
+				navBottom: nav.bottom,
+				contentTop: content.top,
+				contentBottom: content.bottom,
+				viewportHeight: window.innerHeight,
+				mainClientWidth: main.clientWidth,
+				mainScrollWidth: main.scrollWidth,
+				headlineLines
+			};
+		});
+
+		expect(heroGeometry.contentTop).toBeGreaterThanOrEqual(heroGeometry.navBottom);
+		expect(heroGeometry.contentBottom).toBeLessThanOrEqual(heroGeometry.viewportHeight);
+		expect(heroGeometry.mainScrollWidth).toBeLessThanOrEqual(heroGeometry.mainClientWidth);
+		expect(heroGeometry.headlineLines).toEqual([1, 1]);
+	});
+});
+
+test.describe('Inventory Observatory short portrait behavior', () => {
+	test.use({ viewport: { width: 320, height: 480 } });
+
+	test('allows headline wrapping without an internal horizontal scroller', async ({ page }) => {
+		await page.goto('/');
+		await waitForHomepage(page);
+
+		const geometry = await page.evaluate(() => {
+			const main = document.querySelector('main');
+			return {
+				documentWidth: document.documentElement.scrollWidth,
+				viewportWidth: window.innerWidth,
+				mainClientWidth: main.clientWidth,
+				mainScrollWidth: main.scrollWidth
+			};
+		});
+
+		expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth);
+		expect(geometry.mainScrollWidth).toBeLessThanOrEqual(geometry.mainClientWidth);
 	});
 });
 

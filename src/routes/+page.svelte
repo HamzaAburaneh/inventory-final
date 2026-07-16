@@ -551,7 +551,6 @@
 	:global(html.home-snap) {
 		scroll-snap-type: y proximity;
 		scroll-behavior: smooth;
-		scroll-padding-top: var(--snap-top, 56px);
 	}
 
 	.panel {
@@ -559,7 +558,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: 4.5rem 0;
+		padding: 2.25rem 0;
 		scroll-snap-align: start;
 		scroll-snap-stop: always;
 		scroll-margin-top: var(--snap-top, 56px);
@@ -705,7 +704,7 @@
 
 	.signal-strip {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr);
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 		width: 100%;
 		margin-top: 2.4rem;
 		border-top: 1px solid var(--observatory-border);
@@ -716,11 +715,18 @@
 		position: relative;
 		isolation: isolate;
 		overflow: hidden;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 68px;
 		margin: 0;
-		padding: 0.8rem 0;
-		font-size: 0.82rem;
+		padding: 0.65rem 0.35rem;
+		font-size: 0.75rem;
 		font-weight: 650;
+		line-height: 1.35;
 		letter-spacing: 0.01em;
+		text-align: center;
+		text-wrap: balance;
 		color: var(--observatory-text-muted);
 		transition:
 			background-color 180ms ease,
@@ -748,14 +754,14 @@
 	}
 
 	.signal-strip p + p {
-		border-top: 1px solid var(--observatory-border);
+		border-left: 1px solid var(--observatory-border);
 	}
 
 	.inventory-layout,
 	.trace-layout {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
-		gap: 2.5rem;
+		gap: 1.75rem;
 		align-items: center;
 	}
 
@@ -1062,7 +1068,7 @@
 
 	.forecast-layout {
 		display: grid;
-		gap: 2.3rem;
+		gap: 1.75rem;
 	}
 
 	.forecast-copy {
@@ -1416,12 +1422,13 @@
 		}
 
 		.signal-strip p {
+			min-height: 0;
 			padding: 0.9rem 1rem;
+			font-size: 0.82rem;
 			text-align: center;
 		}
 
 		.signal-strip p + p {
-			border-top: 0;
 			border-left: 1px solid var(--observatory-border);
 		}
 
@@ -1633,9 +1640,84 @@
 		.panel,
 		.hero,
 		.finale {
-			min-height: 0;
-			padding-top: 4rem;
-			padding-bottom: 4rem;
+			min-height: calc(100dvh - var(--snap-top, 56px) - 0.25rem);
+			padding-top: 1.5rem;
+			padding-bottom: 1.5rem;
+		}
+
+		#predictions {
+			padding-top: 1.5rem;
+			padding-bottom: 1.5rem;
+		}
+	}
+
+	@media (max-height: 540px) and (orientation: landscape) and (max-width: 959px) {
+		.hero {
+			min-height: calc(100dvh - var(--snap-top, 56px) - 0.25rem);
+			padding-top: 1rem;
+			padding-bottom: 1rem;
+		}
+
+		.hero-copy {
+			max-width: none;
+		}
+
+		.eyebrow {
+			margin-bottom: 0.55rem;
+		}
+
+		.hero h1 {
+			max-width: none;
+			font-size: clamp(2.4rem, 6vw, 3.25rem);
+			line-height: 0.94;
+		}
+
+		.headline-line {
+			white-space: nowrap;
+		}
+
+		.hero-lede {
+			max-width: 60ch;
+			margin-top: 0.75rem;
+			font-size: 0.95rem;
+			line-height: 1.45;
+		}
+
+		.actions {
+			gap: 0.6rem;
+			margin-top: 0.85rem;
+		}
+
+		.action {
+			min-height: 48px;
+			padding: 0.55rem 1.1rem;
+		}
+
+		.signal-strip {
+			margin-top: 0.85rem;
+		}
+
+		.signal-strip p {
+			min-height: 44px;
+			padding: 0.4rem 0.45rem;
+			font-size: 0.75rem;
+		}
+
+		.inventory-layout,
+		.trace-layout,
+		.forecast-layout {
+			gap: 1.25rem;
+		}
+
+		.section-copy h2,
+		.finale-content h2 {
+			font-size: clamp(2rem, 5vw, 2.75rem);
+		}
+
+		.section-copy p,
+		.finale-content > p {
+			margin-top: 0.75rem;
+			line-height: 1.5;
 		}
 	}
 
