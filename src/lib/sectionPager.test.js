@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { createGestureTracker, nextTarget, normalizeWheelDelta } from './sectionPager.js';
+import {
+	createGestureTracker,
+	keyToPageIntent,
+	nextTarget,
+	normalizeWheelDelta
+} from './sectionPager.js';
 
 describe('normalizeWheelDelta', () => {
 	it('passes pixel deltas through', () => {
@@ -130,5 +135,30 @@ describe('createGestureTracker', () => {
 		expect(t.feed(120, 400, true)).toBe(0);
 		// once unblocked, its continuation may page (deliberate double scroll)
 		expect(t.feed(120, 450)).toBe(1);
+	});
+});
+
+describe('keyToPageIntent', () => {
+	it('maps ArrowDown/PageDown to a downward step', () => {
+		expect(keyToPageIntent('ArrowDown')).toEqual({ dir: 1 });
+		expect(keyToPageIntent('PageDown')).toEqual({ dir: 1 });
+	});
+
+	it('maps ArrowUp/PageUp to an upward step', () => {
+		expect(keyToPageIntent('ArrowUp')).toEqual({ dir: -1 });
+		expect(keyToPageIntent('PageUp')).toEqual({ dir: -1 });
+	});
+
+	it('maps Home/End to first/last jumps', () => {
+		expect(keyToPageIntent('Home')).toEqual({ jump: 'first' });
+		expect(keyToPageIntent('End')).toEqual({ jump: 'last' });
+	});
+
+	it('returns null for unmapped keys so native behavior is preserved', () => {
+		expect(keyToPageIntent(' ')).toBeNull();
+		expect(keyToPageIntent('Tab')).toBeNull();
+		expect(keyToPageIntent('ArrowLeft')).toBeNull();
+		expect(keyToPageIntent('a')).toBeNull();
+		expect(keyToPageIntent('')).toBeNull();
 	});
 });

@@ -5,7 +5,12 @@
 	import { fly } from 'svelte/transition';
 	import ThreeScene from '../components/ThreeScene.svelte';
 	import ScrollReveal from '../components/ScrollReveal.svelte';
-	import { createGestureTracker, nextTarget, normalizeWheelDelta } from '../lib/sectionPager.js';
+	import {
+		createGestureTracker,
+		keyToPageIntent,
+		nextTarget,
+		normalizeWheelDelta
+	} from '../lib/sectionPager.js';
 
 	const authUser = $derived($authStore);
 
@@ -14,6 +19,7 @@
 	const rotatingWords = ['precision', 'foresight', 'clarity', 'confidence'];
 	let wordIndex = $state(0);
 	let reduceMotion = $state(false);
+	let motionPaused = $state(false);
 
 	$effect(() => {
 		const query = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -23,13 +29,20 @@
 		return () => query.removeEventListener('change', onChange);
 	});
 
-	// Cycle the headline word; honour reduced-motion by never starting the timer.
+	// Cycle the headline word; honour reduced-motion and the pause-motion
+	// control (WCAG 2.2.2) by never starting the timer while either is active.
 	$effect(() => {
-		if (reduceMotion) return;
+		if (reduceMotion || motionPaused) return;
 		const id = setInterval(() => {
 			wordIndex = (wordIndex + 1) % rotatingWords.length;
 		}, 2600);
 		return () => clearInterval(id);
+	});
+
+	// While paused, CSS-side loops (card float, scroll cue) freeze via this class.
+	$effect(() => {
+		document.documentElement.classList.toggle('motion-paused', motionPaused);
+		return () => document.documentElement.classList.remove('motion-paused');
 	});
 
 	const sections = [
@@ -51,12 +64,23 @@
 	const sampleRemovedTime = sampleTimeFormatter.format(new Date('2026-01-15T14:18:00Z'));
 
 	let activeSection = $state(firstSectionId);
+	// Drives the rail's progress track: 0 at the first panel, 1 at the last.
+	const railProgress = $derived(
+		Math.max(
+			0,
+			sections.findIndex((section) => section.id === activeSection)
+		) /
+			(sections.length - 1)
+	);
 
 	function scrollToSection(sectionId) {
 		const section = document.getElementById(sectionId);
 		if (!section) return;
 		const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		section.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+		// Keep focus in sync with the visual position: screen-reader and keyboard
+		// users land on the section instead of staying on the rail stop they used.
+		section.focus({ preventScroll: true });
 	}
 
 	// Scope section-snap scrolling to the homepage document scroller.
@@ -67,9 +91,11 @@
 
 	// Keep the established one-section-per-wheel-gesture behavior. Direction and
 	// inertia decisions remain in sectionPager.js so the tested rules stay pure.
+	// Keyboard paging (arrows/PageUp/PageDown/Home/End, the fullPage.js convention)
+	// shares the same snap targets and focus sync; the wheel hijack stays off under
+	// reduced motion, while keys keep working there (scrollToSection jumps instantly).
 	$effect(() => {
-		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
+		const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 		const navEl = document.querySelector('nav.navbar');
 		const tracker = createGestureTracker();
 		let animating = false;
@@ -141,11 +167,47 @@
 			}
 		}
 
+		function onKeydown(event) {
+			if (event.defaultPrevented || event.ctrlKey || event.altKey || event.metaKey) return;
+			const target = event.target;
+			// Never hijack keys from form fields or editable regions (WCAG 2.1.2).
+			if (
+				target instanceof HTMLElement &&
+				(target.isContentEditable || target.closest('input, textarea, select'))
+			) {
+				return;
+			}
+			const intent = keyToPageIntent(event.key);
+			if (!intent) return;
+			let sectionId;
+			if ('jump' in intent) {
+				sectionId = intent.jump === 'first' ? firstSectionId : sections[sections.length - 1].id;
+			} else {
+				const list = targets();
+				const position = nextTarget(list, window.scrollY, intent.dir);
+				// Duplicated clamped targets (short docs) resolve toward the travel direction.
+				const index = intent.dir > 0 ? list.indexOf(position) : list.lastIndexOf(position);
+				sectionId = index === -1 ? undefined : sections[index]?.id;
+			}
+			// At either end there is no target: leave the key's native behavior alone.
+			if (!sectionId) return;
+			event.preventDefault();
+			if (animating) {
+				animationId += 1;
+				animating = false;
+			}
+			scrollToSection(sectionId);
+		}
+
 		setOffsets();
 		window.addEventListener('resize', setOffsets);
-		window.addEventListener('wheel', onWheel, { passive: false });
+		window.addEventListener('keydown', onKeydown);
+		if (!reduceMotionQuery.matches) {
+			window.addEventListener('wheel', onWheel, { passive: false });
+		}
 		return () => {
 			window.removeEventListener('resize', setOffsets);
+			window.removeEventListener('keydown', onKeydown);
 			window.removeEventListener('wheel', onWheel);
 			document.documentElement.style.removeProperty('--snap-top');
 		};
@@ -189,7 +251,7 @@
 
 <ThreeScene />
 
-<nav class="rail" aria-label="Homepage panels">
+<nav class="rail" aria-label="Homepage panels" style:--rail-progress={railProgress}>
 	{#each sections as section (section.id)}
 		<button
 			type="button"
@@ -206,8 +268,31 @@
 	{/each}
 </nav>
 
+<!-- WCAG 2.2.2: one user-reachable stop for the page's looping motion
+     (word rotator, floating cards, scroll cue). Hidden under reduced-motion,
+     where nothing loops anyway. -->
+{#if !reduceMotion}
+	<button
+		type="button"
+		class="motion-toggle"
+		onclick={() => (motionPaused = !motionPaused)}
+		aria-pressed={motionPaused}
+		aria-label={motionPaused ? 'Resume motion' : 'Pause motion'}
+		title={motionPaused ? 'Resume motion' : 'Pause motion'}
+	>
+		<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+			{#if motionPaused}
+				<path d="M9 6.5v11l8.5-5.5L9 6.5z" fill="currentColor" />
+			{:else}
+				<rect x="7.5" y="6" width="3.2" height="12" rx="1" fill="currentColor" />
+				<rect x="13.3" y="6" width="3.2" height="12" rx="1" fill="currentColor" />
+			{/if}
+		</svg>
+	</button>
+{/if}
+
 <div class="page">
-	<section id="intro" class="panel hero" aria-labelledby="intro-heading">
+	<section id="intro" class="panel hero" aria-labelledby="intro-heading" tabindex="-1">
 		<div class="hero-layout">
 			<div class="hero-copy">
 				<h1 id="intro-heading">
@@ -406,9 +491,30 @@
 				</article>
 			</div>
 		</div>
+
+		<!-- Anti-"false floor" cue (NN/g): signals more content below the fold.
+		     Fades out once the intro is left; stays mounted so it returns at the top. -->
+		<button
+			type="button"
+			class="scroll-cue"
+			class:hidden={activeSection !== firstSectionId}
+			onclick={() => scrollToSection('inventory')}
+			aria-label="Scroll to next section: Inventory control"
+		>
+			<span aria-hidden="true">Scroll</span>
+			<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+				<path
+					d="M6 9l6 6 6-6"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				/>
+			</svg>
+		</button>
 	</section>
 
-	<section id="inventory" class="panel" aria-labelledby="inventory-heading">
+	<section id="inventory" class="panel" aria-labelledby="inventory-heading" tabindex="-1">
 		<ScrollReveal>
 			<div class="panel-layout inventory-layout">
 				<div class="section-copy">
@@ -462,7 +568,7 @@
 		</ScrollReveal>
 	</section>
 
-	<section id="traceability" class="panel" aria-labelledby="traceability-heading">
+	<section id="traceability" class="panel" aria-labelledby="traceability-heading" tabindex="-1">
 		<ScrollReveal>
 			<div class="panel-layout trace-layout">
 				<div class="section-copy trace-copy">
@@ -529,7 +635,7 @@
 		</ScrollReveal>
 	</section>
 
-	<section id="predictions" class="panel" aria-labelledby="predictions-heading">
+	<section id="predictions" class="panel" aria-labelledby="predictions-heading" tabindex="-1">
 		<ScrollReveal>
 			<div class="forecast-layout">
 				<div class="section-copy forecast-copy">
@@ -638,7 +744,7 @@
 		</ScrollReveal>
 	</section>
 
-	<section id="closing" class="panel finale" aria-labelledby="closing-heading">
+	<section id="closing" class="panel finale" aria-labelledby="closing-heading" tabindex="-1">
 		<ScrollReveal>
 			<div class="finale-content">
 				<h2 id="closing-heading">Run inventory with foresight.</h2>
@@ -683,6 +789,25 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 0;
+	}
+
+	/* Track line behind the dots; the accent-filled share follows the active
+	   section, doubling as a discrete progress indicator. */
+	.rail::before {
+		content: '';
+		position: absolute;
+		left: 50%;
+		top: 24px;
+		bottom: 24px;
+		width: 2px;
+		transform: translateX(-50%);
+		border-radius: 999px;
+		background: linear-gradient(
+			to bottom,
+			var(--observatory-accent) calc(var(--rail-progress, 0) * 100%),
+			var(--observatory-border-strong) calc(var(--rail-progress, 0) * 100%)
+		);
+		transition: background 240ms ease;
 	}
 
 	.rail button.rail-stop {
@@ -730,14 +855,65 @@
 			height 180ms ease,
 			border-color 180ms ease,
 			background-color 180ms ease,
+			box-shadow 180ms ease,
 			transform 180ms ease;
 	}
 
+	/* Active state differs on three channels (size + fill + halo ring) so it
+	   never relies on the subtle size change alone. */
 	.rail-stop.active .rail-dot {
 		width: 12px;
 		height: 12px;
 		border-color: var(--observatory-accent);
 		background: var(--observatory-accent);
+		box-shadow: 0 0 0 4px var(--observatory-accent-soft);
+	}
+
+	/* Pause-motion control: a fixed circular toggle mirroring the rail's lane. */
+	.motion-toggle {
+		position: fixed;
+		left: max(0.75rem, var(--safe-area-inset-left));
+		bottom: max(0.9rem, var(--safe-area-inset-bottom));
+		z-index: 5;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 48px;
+		height: 48px;
+		padding: 0;
+		border: 1px solid var(--observatory-border);
+		border-radius: 50%;
+		background: var(--observatory-rail-surface);
+		box-shadow: var(--observatory-shadow);
+		color: var(--observatory-text-muted);
+		cursor: pointer;
+		touch-action: manipulation;
+		-webkit-tap-highlight-color: var(--observatory-accent-soft);
+		transition:
+			color 180ms ease,
+			border-color 180ms ease,
+			background-color 180ms ease;
+	}
+
+	.motion-toggle svg {
+		width: 1.15rem;
+		height: 1.15rem;
+	}
+
+	.motion-toggle:focus {
+		outline: 0;
+	}
+
+	.motion-toggle:focus-visible {
+		outline: 3px solid var(--observatory-focus);
+		outline-offset: 3px;
+	}
+
+	/* While paused, every CSS-side loop freezes in place (the word rotator's
+	   timer is stopped from the script side). */
+	:global(html.motion-paused) .float-body,
+	:global(html.motion-paused) .scroll-cue {
+		animation-play-state: paused;
 	}
 
 	:global(html.home-snap) {
@@ -746,6 +922,7 @@
 	}
 
 	.panel {
+		position: relative;
 		min-height: max(620px, calc(100dvh - var(--snap-top, 56px) - 1rem));
 		display: flex;
 		align-items: center;
@@ -754,6 +931,18 @@
 		scroll-snap-align: start;
 		scroll-snap-stop: always;
 		scroll-margin-top: var(--snap-top, 56px);
+	}
+
+	/* Sections receive programmatic focus after rail/keyboard jumps. Mouse clicks
+	   must never show a ring; scripted focus after a key press matches
+	   :focus-visible, so keyboard users get a quiet confirmation of where they landed. */
+	.panel:focus {
+		outline: none;
+	}
+
+	.panel:focus-visible {
+		outline: 2px solid var(--observatory-focus);
+		outline-offset: -2px;
 	}
 
 	.panel > :global(.scroll-reveal) {
@@ -788,6 +977,68 @@
 		line-height: 1.7;
 		color: var(--observatory-text-muted);
 		text-wrap: pretty;
+	}
+
+	/* Scroll affordance: a quiet pill at the hero's bottom edge. Uses the CSS
+	   `translate` property for the bob so it never fights the centering transform. */
+	.scroll-cue {
+		position: absolute;
+		left: 50%;
+		bottom: 1.25rem;
+		z-index: 2;
+		translate: -50% 0;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.55rem 1rem;
+		border: 1px solid var(--observatory-border);
+		border-radius: 999px;
+		background: var(--observatory-rail-surface);
+		box-shadow: var(--observatory-shadow);
+		color: var(--observatory-text-muted);
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		cursor: pointer;
+		touch-action: manipulation;
+		-webkit-tap-highlight-color: var(--observatory-accent-soft);
+		animation: cue-bob 2.6s ease-in-out infinite;
+		transition:
+			opacity 300ms ease,
+			visibility 300ms,
+			color 180ms ease,
+			border-color 180ms ease;
+	}
+
+	.scroll-cue svg {
+		width: 0.95rem;
+		height: 0.95rem;
+	}
+
+	.scroll-cue.hidden {
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+	}
+
+	.scroll-cue:focus {
+		outline: 0;
+	}
+
+	.scroll-cue:focus-visible {
+		outline: 3px solid var(--observatory-focus);
+		outline-offset: 3px;
+	}
+
+	@keyframes cue-bob {
+		0%,
+		100% {
+			translate: -50% 0;
+		}
+		50% {
+			translate: -50% 7px;
+		}
 	}
 
 	.hero {
@@ -1905,6 +2156,16 @@
 			transform: scale(1.16);
 		}
 
+		.motion-toggle:hover {
+			border-color: var(--observatory-accent-border);
+			color: var(--observatory-accent);
+		}
+
+		.scroll-cue:hover:not(.hidden) {
+			border-color: var(--observatory-accent-border);
+			color: var(--observatory-accent);
+		}
+
 		.action:not(:active):hover {
 			transform: translateY(-2px);
 		}
@@ -2012,7 +2273,10 @@
 		}
 	}
 
-	@media (min-width: 768px) {
+	/* Mandatory snapping only where every panel comfortably fits the viewport;
+	   shorter/zoomed screens keep proximity so no content can be trapped
+	   between snap points. */
+	@media (min-width: 768px) and (min-height: 620px) {
 		:global(html.home-snap) {
 			scroll-snap-type: y mandatory;
 		}
@@ -2176,7 +2440,8 @@
 			opacity: 1;
 		}
 
-		.float-body {
+		.float-body,
+		.scroll-cue {
 			animation: none;
 		}
 
@@ -2185,6 +2450,9 @@
 		.rail button.rail-stop,
 		.rail-label,
 		.rail-dot,
+		.rail::before,
+		.scroll-cue,
+		.motion-toggle,
 		.inventory-demo,
 		.forecast-demo,
 		.inventory-counts > div,
@@ -2212,6 +2480,11 @@
 	@media (max-height: 540px) {
 		.rail {
 			top: calc(50% + var(--snap-top, 56px) / 2);
+		}
+
+		/* Short landscape screens have no spare vertical room for the cue. */
+		.scroll-cue {
+			display: none;
 		}
 
 		.page {

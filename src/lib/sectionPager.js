@@ -37,6 +37,32 @@ export function nextTarget(targetList, scrollY, dir) {
 }
 
 /**
+ * Map a keyboard key to a section-paging intent. Step intents ({dir}) flow
+ * through the same nextTarget() pipeline as wheel gestures, so a key press
+ * can only ever move the page in the key's own direction; jump intents
+ * ({jump}) target the first/last section directly. Returns null for any
+ * unmapped key so callers can leave native behavior untouched.
+ * @param {string} key - `KeyboardEvent.key`
+ * @returns {{dir: 1|-1}|{jump: 'first'|'last'}|null} paging intent, or null
+ */
+export function keyToPageIntent(key) {
+	switch (key) {
+		case 'ArrowDown':
+		case 'PageDown':
+			return { dir: 1 };
+		case 'ArrowUp':
+		case 'PageUp':
+			return { dir: -1 };
+		case 'Home':
+			return { jump: 'first' };
+		case 'End':
+			return { jump: 'last' };
+		default:
+			return null;
+	}
+}
+
+/**
  * Turns a raw wheel-delta stream into discrete page-turn intents.
  *
  * Rules:

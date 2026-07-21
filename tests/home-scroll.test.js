@@ -118,4 +118,34 @@ test.describe('home page section pager', () => {
 		}
 		expect(await page.evaluate(() => window.scrollY)).toBe(0);
 	});
+
+	test('ArrowDown pages one section down and moves focus to it', async ({ page }) => {
+		await page.keyboard.press('ArrowDown');
+		const y = await settledScrollY(page);
+		const inventoryTop = await sectionTop(page, 'inventory');
+		const traceabilityTop = await sectionTop(page, 'traceability');
+		expect(Math.abs(y - inventoryTop)).toBeLessThan(150);
+		expect(y).toBeLessThan(traceabilityTop - 100);
+		// Focus management: the jump lands the user on the section itself
+		expect(await page.evaluate(() => document.activeElement?.id)).toBe('inventory');
+	});
+
+	test('ArrowUp after paging down returns to the top', async ({ page }) => {
+		await page.keyboard.press('ArrowDown');
+		await settledScrollY(page);
+		await page.keyboard.press('ArrowUp');
+		expect(await settledScrollY(page)).toBeLessThan(5);
+	});
+
+	test('End jumps to the last section, Home returns to the first', async ({ page }) => {
+		await page.keyboard.press('End');
+		const y = await settledScrollY(page);
+		const closingTop = await sectionTop(page, 'closing');
+		expect(Math.abs(y - closingTop)).toBeLessThan(150);
+		expect(await page.evaluate(() => document.activeElement?.id)).toBe('closing');
+
+		await page.keyboard.press('Home');
+		expect(await settledScrollY(page)).toBeLessThan(5);
+		expect(await page.evaluate(() => document.activeElement?.id)).toBe('intro');
+	});
 });
