@@ -21,3 +21,7 @@ vite.config.ts.timestamp-*
 # Codex CLI local config/skills (machine-local, not shared)
 .agents/
 .codex/
+
+# Local Claude tooling (machine-local, not shared)
+.claude/launch.json
+.claude/skills/threejs-*/

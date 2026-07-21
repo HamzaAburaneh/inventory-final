@@ -2,11 +2,35 @@
 	import { authStore } from '../stores/authStore.js';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
+	import { fly } from 'svelte/transition';
 	import ThreeScene from '../components/ThreeScene.svelte';
 	import ScrollReveal from '../components/ScrollReveal.svelte';
 	import { createGestureTracker, nextTarget, normalizeWheelDelta } from '../lib/sectionPager.js';
 
 	const authUser = $derived($authStore);
+
+	// Hero headline: the final word rotates through a short list. The static copy
+	// in the visually-hidden span keeps the heading readable for screen readers.
+	const rotatingWords = ['precision', 'foresight', 'clarity', 'confidence'];
+	let wordIndex = $state(0);
+	let reduceMotion = $state(false);
+
+	$effect(() => {
+		const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+		reduceMotion = query.matches;
+		const onChange = () => (reduceMotion = query.matches);
+		query.addEventListener('change', onChange);
+		return () => query.removeEventListener('change', onChange);
+	});
+
+	// Cycle the headline word; honour reduced-motion by never starting the timer.
+	$effect(() => {
+		if (reduceMotion) return;
+		const id = setInterval(() => {
+			wordIndex = (wordIndex + 1) % rotatingWords.length;
+		}, 2600);
+		return () => clearInterval(id);
+	});
 
 	const sections = [
 		{ id: 'intro', label: 'Overview' },
@@ -186,10 +210,26 @@
 	<section id="intro" class="panel hero" aria-labelledby="intro-heading">
 		<div class="hero-layout">
 			<div class="hero-copy">
-				<p class="eyebrow">Inventory intelligence, in focus</p>
 				<h1 id="intro-heading">
-					<span class="headline-line">Know what’s in stock.</span>
-					<span class="headline-line">Know what happens next.</span>
+					<span class="sr-only">Run your inventory with precision.</span>
+					<span class="headline-visual" aria-hidden="true">
+						<span class="headline-line headline-static">Run your inventory with</span>
+						<span class="headline-line headline-word">
+							<span class="rotator">
+								{#each rotatingWords as ghost (ghost)}
+									<span class="rotator-ghost">{ghost}</span>
+								{/each}
+								{#key wordIndex}
+									<span
+										class="rotator-word"
+										in:fly={{ y: 18, duration: reduceMotion ? 0 : 460 }}
+										out:fly={{ y: -18, duration: reduceMotion ? 0 : 300 }}
+										>{rotatingWords[wordIndex]}</span
+									>
+								{/key}
+							</span>
+						</span>
+					</span>
 				</h1>
 				<p class="hero-lede">
 					StockSense brings inventory counts, transaction history, and predictive insights into one
@@ -198,20 +238,172 @@
 				<div class="actions" aria-label="StockSense actions">
 					{#if authUser}
 						<a href={resolve('/manageItems')} class="action action-primary">Open inventory</a>
-						<a href={resolve('/inventoryPredictions')} class="action action-secondary"
-							>Explore predictions</a
-						>
+						<a href={resolve('/inventoryPredictions')} class="action-link">
+							Explore predictions
+							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M5 12h14M13 6l6 6-6 6"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
+						</a>
 					{:else}
 						<a href={resolve('/login')} class="action action-primary">Open inventory</a>
-						<a href={resolve('/login')} class="action action-secondary">Explore predictions</a>
+						<a href={resolve('/login')} class="action-link">
+							Explore predictions
+							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M5 12h14M13 6l6 6-6 6"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
+						</a>
 					{/if}
 				</div>
 			</div>
 
-			<div class="signal-strip" aria-label="StockSense operational capabilities">
-				<p><span>Live inventory visibility</span></p>
-				<p><span>Traceable count changes</span></p>
-				<p><span>Forecast-ready insights</span></p>
+			<div class="hero-stage" aria-hidden="true">
+				<span class="hero-glow"></span>
+
+				<article class="float-card card-movement" style="--enter-delay: 60ms;">
+					<div class="float-body">
+						<div class="fc-head">
+							<span class="fc-label">Items counted today</span>
+							<span class="fc-icon fc-icon-accent">
+								<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+									<path
+										d="M3 17l6-6 4 4 8-8"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+									<path
+										d="M17 7h4v4"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+								</svg>
+							</span>
+						</div>
+						<p class="fc-metric">1,284</p>
+						<div class="fc-bars">
+							<span style="--h: 42%"></span>
+							<span style="--h: 58%"></span>
+							<span style="--h: 48%"></span>
+							<span style="--h: 70%"></span>
+							<span style="--h: 60%"></span>
+							<span style="--h: 82%"></span>
+							<span class="fc-bar-lead" style="--h: 100%"></span>
+						</div>
+						<span class="fc-pill fc-pill-add">+12% vs yesterday</span>
+					</div>
+				</article>
+
+				<article class="float-card card-updated" style="--enter-delay: 240ms;">
+					<div class="float-body fc-row">
+						<span class="fc-avatar">
+							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M3 8l9-5 9 5v8l-9 5-9-5V8z"
+									stroke="currentColor"
+									stroke-width="1.8"
+									stroke-linejoin="round"
+								/>
+								<path d="M3 8l9 5 9-5M12 13v8" stroke="currentColor" stroke-width="1.8" />
+							</svg>
+						</span>
+						<div class="fc-row-main">
+							<p class="fc-row-title">Count updated</p>
+							<p class="fc-row-sub">Cold brew concentrate</p>
+							<p class="fc-flow">
+								<span>12</span>
+								<span class="fc-arrow">→</span>
+								<span>18</span>
+								<span class="fc-tag-add">+6</span>
+							</p>
+							<p class="fc-row-meta">Just now · Mira P.</p>
+						</div>
+					</div>
+				</article>
+
+				<article class="float-card card-forecast" style="--enter-delay: 160ms;">
+					<div class="float-body">
+						<div class="fc-head">
+							<span class="fc-icon">
+								<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+									<rect
+										x="3"
+										y="4"
+										width="18"
+										height="17"
+										rx="2"
+										stroke="currentColor"
+										stroke-width="1.8"
+									/>
+									<path
+										d="M3 9h18M8 2v4M16 2v4"
+										stroke="currentColor"
+										stroke-width="1.8"
+										stroke-linecap="round"
+									/>
+								</svg>
+							</span>
+							<span class="fc-label fc-label-strong">Weekly forecast</span>
+						</div>
+						<dl class="fc-rows">
+							<div>
+								<dt>Projected demand</dt>
+								<dd>320</dd>
+							</div>
+							<div>
+								<dt>On hand</dt>
+								<dd>180</dd>
+							</div>
+							<div class="fc-rows-total">
+								<dt>Reorder by</dt>
+								<dd class="fc-accent">Friday</dd>
+							</div>
+						</dl>
+					</div>
+				</article>
+
+				<article class="float-card card-lowstock" style="--enter-delay: 340ms;">
+					<div class="float-body fc-row">
+						<span class="fc-avatar fc-avatar-warn">
+							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M12 3l9 16H3l9-16z"
+									stroke="currentColor"
+									stroke-width="1.8"
+									stroke-linejoin="round"
+								/>
+								<path
+									d="M12 10v4M12 17.5v.5"
+									stroke="currentColor"
+									stroke-width="1.8"
+									stroke-linecap="round"
+								/>
+							</svg>
+						</span>
+						<div class="fc-lowstock-main">
+							<div class="fc-lowstock-head">
+								<p class="fc-row-title">Low stock alert</p>
+								<span class="fc-lowstock-count">4 left</span>
+							</div>
+							<p class="fc-row-sub fc-row-sub-strong">Oat milk 1L</p>
+							<div class="fc-progress"><span style="width: 16%"></span></div>
+						</div>
+					</div>
+				</article>
 			</div>
 		</div>
 	</section>
@@ -606,37 +798,79 @@
 
 	.hero-layout {
 		width: 100%;
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		animation: hero-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+		display: flex;
+		flex-direction: column;
+		gap: 2.75rem;
+		align-items: stretch;
 	}
 
 	.hero-copy {
 		max-width: 58rem;
+		animation: hero-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
 
-	.eyebrow {
-		margin: 0 0 1.15rem;
-		font-size: 0.76rem;
-		font-weight: 700;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		color: var(--observatory-accent);
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		border: 0;
+		clip: rect(0 0 0 0);
+		clip-path: inset(50%);
+		overflow: hidden;
+		white-space: nowrap;
 	}
 
 	.hero h1 {
-		max-width: 16ch;
+		max-width: none;
 		margin: 0;
-		font-size: clamp(2.4rem, 10.5vw, 5.9rem);
+		font-size: clamp(2.3rem, 8.5vw, 3.9rem);
 		font-weight: 680;
-		line-height: 0.98;
-		letter-spacing: -0.055em;
+		line-height: 1;
+		letter-spacing: -0.05em;
 		color: var(--observatory-text);
-		text-wrap: balance;
+		/* Line breaks are controlled explicitly via .headline-line spans; balancing
+		   would re-break the heading each time the rotating word resizes. */
+		text-wrap: wrap;
+	}
+
+	.headline-visual {
+		display: block;
 	}
 
 	.headline-line {
-		display: inline;
+		display: block;
+	}
+
+	/* The static phrase leads; the rotating word sits on the line beneath it. On wide
+	   screens the phrase is pinned to one line (see the >=1024 block); on phones it
+	   wraps naturally so it never overflows. */
+	.headline-word {
+		display: block;
+		margin-top: 0.22em;
+	}
+
+	.rotator {
+		position: relative;
+		display: inline-grid;
+	}
+
+	.rotator-ghost,
+	.rotator-word {
+		grid-area: 1 / 1;
+		white-space: nowrap;
+	}
+
+	/* Invisible copies of every word reserve the widest word's width, so the line
+	   never re-wraps — nothing below the heading shifts when the word changes. */
+	.rotator-ghost {
+		visibility: hidden;
+		pointer-events: none;
+	}
+
+	.rotator-word {
+		color: var(--observatory-accent);
 	}
 
 	.hero-lede {
@@ -689,6 +923,40 @@
 		color: var(--observatory-accent);
 	}
 
+	/* Editorial CTA: a text link with a sliding arrow beside the primary button. */
+	.action-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		min-height: 50px;
+		padding: 0.7rem 0.6rem;
+		color: var(--observatory-accent);
+		font-size: 0.95rem;
+		font-weight: 700;
+		line-height: 1;
+		text-decoration: none;
+		white-space: nowrap;
+		-webkit-tap-highlight-color: var(--observatory-accent-soft);
+		transition:
+			gap 180ms ease,
+			color 180ms ease;
+	}
+
+	.action-link svg {
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+
+	.action-link:focus {
+		outline: 0;
+	}
+
+	.action-link:focus-visible {
+		outline: 3px solid var(--observatory-focus);
+		outline-offset: 3px;
+		border-radius: 8px;
+	}
+
 	.action:focus {
 		outline: 0;
 	}
@@ -702,59 +970,339 @@
 		transform: scale(0.98);
 	}
 
-	.signal-strip {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		width: 100%;
-		margin-top: 2.4rem;
-		border-top: 1px solid var(--observatory-border);
-		border-bottom: 1px solid var(--observatory-border);
-	}
-
-	.signal-strip p {
+	/* Dashboard: a bento grid. Single column on phones; a KPI-anchored bento with a
+	   full-width footer on tablet/desktop (see the >=640 and >=1024 blocks). */
+	.hero-stage {
 		position: relative;
-		isolation: isolate;
-		overflow: hidden;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		min-height: 68px;
-		margin: 0;
-		padding: 0.65rem 0.35rem;
-		font-size: 0.75rem;
-		font-weight: 650;
-		line-height: 1.35;
-		letter-spacing: 0.01em;
-		text-align: center;
-		text-wrap: balance;
-		color: var(--observatory-text-muted);
-		transition:
-			background-color 180ms ease,
-			color 180ms ease;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0.85rem;
+		width: 100%;
+		max-width: 26rem;
+		margin: 0 auto;
 	}
 
-	.signal-strip p::after {
-		content: '';
+	.hero-glow {
 		position: absolute;
-		right: 0;
-		bottom: 0;
-		left: 0;
-		height: 2px;
-		background: var(--observatory-accent);
-		transform: scaleX(0);
-		transform-origin: left;
-		transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+		inset: -8% -6% -6%;
+		z-index: 0;
+		background: radial-gradient(
+			70% 60% at 55% 38%,
+			var(--observatory-accent-soft) 0%,
+			transparent 72%
+		);
+		opacity: 0.7;
+		pointer-events: none;
 	}
 
-	.signal-strip p span {
+	.float-card {
 		position: relative;
 		z-index: 1;
-		display: inline-block;
-		transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+		min-width: 0;
+		animation: card-enter 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+		animation-delay: var(--enter-delay, 0ms);
 	}
 
-	.signal-strip p + p {
-		border-left: 1px solid var(--observatory-border);
+	.float-body {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		border: 1px solid var(--observatory-border);
+		border-radius: 18px;
+		background: var(--observatory-surface-solid);
+		box-shadow: var(--observatory-shadow);
+		padding: 1.15rem 1.25rem;
+		/* All cards share one rhythm so they hover in sync, not at staggered times. */
+		animation: card-float 6s ease-in-out infinite;
+		transition:
+			border-color 200ms ease,
+			box-shadow 200ms ease;
+	}
+
+	.fc-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+	}
+
+	.fc-label {
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--observatory-text-soft);
+	}
+
+	.fc-label-strong {
+		text-transform: none;
+		letter-spacing: 0;
+		font-size: 0.9rem;
+		color: var(--observatory-text);
+	}
+
+	.fc-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2rem;
+		height: 2rem;
+		border-radius: 10px;
+		background: var(--observatory-surface-soft);
+		color: var(--observatory-text-muted);
+	}
+
+	.fc-icon-accent {
+		background: var(--observatory-accent-soft);
+		color: var(--observatory-accent);
+	}
+
+	.fc-icon svg {
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+
+	.fc-metric {
+		margin: 0.85rem 0 0;
+		font-size: clamp(1.9rem, 6vw, 2.35rem);
+		font-weight: 730;
+		line-height: 1;
+		letter-spacing: -0.03em;
+		font-variant-numeric: tabular-nums;
+		color: var(--observatory-text);
+	}
+
+	.fc-bars {
+		display: flex;
+		align-items: flex-end;
+		gap: 0.4rem;
+		height: 3.25rem;
+		margin: 1rem 0 0.9rem;
+	}
+
+	.fc-bars span {
+		flex: 1;
+		height: var(--h, 50%);
+		border-radius: 5px 5px 3px 3px;
+		background: var(--observatory-bar);
+	}
+
+	.fc-bars .fc-bar-lead {
+		background: var(--observatory-accent);
+	}
+
+	.fc-pill {
+		display: inline-flex;
+		align-self: flex-start;
+		align-items: center;
+		padding: 0.28rem 0.6rem;
+		border: 1px solid;
+		border-radius: 999px;
+		font-size: 0.72rem;
+		font-weight: 700;
+	}
+
+	/* KPI is the focal card: its chart grows to fill the tall cell. */
+	.card-movement .fc-bars {
+		flex: 1;
+		height: auto;
+		min-height: 3.25rem;
+		margin-bottom: 1.1rem;
+	}
+
+	/* "+12% vs yesterday" is a trend badge, not a count addition — use the brand
+	   accent (blue in light, gold in dark), not the add-green. */
+	.fc-pill-add {
+		border-color: var(--observatory-accent-border);
+		background: var(--observatory-accent-soft);
+		color: var(--observatory-accent);
+	}
+
+	.fc-row {
+		flex-direction: row;
+		align-items: flex-start;
+		gap: 0.85rem;
+		padding: 1rem 1.1rem;
+	}
+
+	/* The low-stock footer is wide: its content spans the full width instead of
+	   bunching in the middle. Icon + text sit left, the item name and count share a
+	   row, and the meter runs the full width beneath them. */
+	.card-lowstock .float-body {
+		align-items: center;
+	}
+
+	.card-lowstock .fc-lowstock-main {
+		flex: 1;
+	}
+
+	.fc-lowstock-head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.fc-avatar {
+		display: inline-flex;
+		flex-shrink: 0;
+		align-items: center;
+		justify-content: center;
+		width: 2.4rem;
+		height: 2.4rem;
+		border-radius: 12px;
+		background: var(--observatory-add-soft);
+		color: var(--observatory-add);
+	}
+
+	.fc-avatar svg {
+		width: 1.3rem;
+		height: 1.3rem;
+	}
+
+	.fc-avatar-warn {
+		background: var(--observatory-warn-soft);
+		color: var(--observatory-warn);
+	}
+
+	.fc-row-main,
+	.fc-lowstock-main {
+		min-width: 0;
+	}
+
+	.fc-row-title {
+		margin: 0;
+		font-size: 0.82rem;
+		font-weight: 750;
+		color: var(--observatory-text);
+	}
+
+	.fc-row-sub {
+		margin: 0.15rem 0 0;
+		font-size: 0.78rem;
+		color: var(--observatory-text-soft);
+	}
+
+	.fc-row-sub-strong {
+		font-weight: 700;
+		color: var(--observatory-text);
+	}
+
+	.fc-flow {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		margin: 0.6rem 0 0;
+		font-size: 1.1rem;
+		font-weight: 720;
+		font-variant-numeric: tabular-nums;
+		color: var(--observatory-text);
+	}
+
+	.fc-arrow {
+		color: var(--observatory-text-soft);
+	}
+
+	.fc-tag-add {
+		padding: 0.1rem 0.45rem;
+		border-radius: 999px;
+		background: var(--observatory-add-soft);
+		font-size: 0.72rem;
+		font-weight: 700;
+		color: var(--observatory-add);
+	}
+
+	.fc-row-meta {
+		margin: 0.5rem 0 0;
+		font-size: 0.72rem;
+		color: var(--observatory-text-soft);
+	}
+
+	.fc-rows {
+		display: grid;
+		gap: 0.55rem;
+		margin: 0.95rem 0 0;
+	}
+
+	.fc-rows > div {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.fc-rows dt {
+		margin: 0;
+		font-size: 0.8rem;
+		color: var(--observatory-text-soft);
+	}
+
+	.fc-rows dd {
+		margin: 0;
+		font-size: 0.9rem;
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+		color: var(--observatory-text);
+	}
+
+	.fc-rows-total {
+		margin-top: 0.35rem;
+		padding-top: 0.6rem;
+		border-top: 1px solid var(--observatory-border);
+	}
+
+	.fc-accent {
+		color: var(--observatory-accent);
+	}
+
+	.fc-lowstock-count {
+		flex-shrink: 0;
+		font-size: 0.9rem;
+		font-weight: 750;
+		color: var(--observatory-warn);
+	}
+
+	.fc-progress {
+		height: 6px;
+		margin-top: 0.7rem;
+		border-radius: 999px;
+		background: var(--observatory-surface-soft);
+		overflow: hidden;
+	}
+
+	.fc-progress span {
+		display: block;
+		height: 100%;
+		border-radius: 999px;
+		background: var(--observatory-warn);
+	}
+
+	.card-updated,
+	.card-forecast {
+		display: none;
+	}
+
+	@keyframes card-enter {
+		from {
+			opacity: 0;
+			transform: translateY(24px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	/* Gentle hover: the inner body drifts while its grid cell stays pinned, so the
+	   bento stays aligned but the cards feel alive — all in unison. */
+	@keyframes card-float {
+		0%,
+		100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-6px);
+		}
 	}
 
 	.inventory-layout,
@@ -816,9 +1364,9 @@
 	}
 
 	.status-ok {
-		border-color: var(--observatory-add-border);
-		background: var(--observatory-add-soft);
-		color: var(--observatory-add);
+		border-color: var(--observatory-accent-border);
+		background: var(--observatory-accent-soft);
+		color: var(--observatory-accent);
 	}
 
 	.inventory-primary {
@@ -852,7 +1400,7 @@
 		margin: 0.65rem 0 0;
 		font-size: 0.84rem;
 		line-height: 1.5;
-		color: var(--observatory-add);
+		color: var(--observatory-accent);
 	}
 
 	.inventory-counts {
@@ -1295,30 +1843,28 @@
 	}
 
 	@media (hover: hover) {
-		.signal-strip p:hover {
-			background: var(--observatory-accent-soft);
-			color: var(--observatory-text);
+		.float-card:hover {
+			z-index: 3;
 		}
 
-		.signal-strip p:hover::after {
-			transform: scaleX(1);
-		}
-
-		.signal-strip p:hover span {
-			transform: translateY(-2px);
+		.float-card:hover .float-body {
+			border-color: var(--observatory-accent);
+			box-shadow:
+				var(--observatory-shadow),
+				0 0 0 1px var(--observatory-accent);
 		}
 
 		.inventory-demo:hover,
 		.forecast-demo:hover {
-			border-color: var(--observatory-accent-border);
+			border-color: var(--observatory-accent);
 			box-shadow:
 				var(--observatory-shadow),
-				0 0 0 1px var(--observatory-accent-border);
+				0 0 0 1px var(--observatory-accent);
 			transform: translateY(-4px);
 		}
 
 		.inventory-counts > div:hover {
-			border-color: var(--observatory-accent-border);
+			border-color: var(--observatory-accent);
 			background: var(--observatory-surface-solid);
 			transform: translateY(-3px);
 		}
@@ -1335,9 +1881,9 @@
 		}
 
 		.transaction-event:hover .event-body {
-			border-color: var(--observatory-accent-border);
+			border-color: var(--observatory-accent);
 			background: var(--observatory-surface-solid);
-			box-shadow: 0 0 0 1px var(--observatory-accent-border);
+			box-shadow: 0 0 0 1px var(--observatory-accent);
 			transform: translateX(4px);
 		}
 
@@ -1371,12 +1917,18 @@
 		.action-secondary:hover {
 			background: var(--observatory-accent-soft);
 		}
+
+		.action-link:hover {
+			gap: 0.7rem;
+			color: var(--observatory-accent-hover);
+		}
 	}
 
 	@media (min-width: 480px) {
 		.actions {
 			display: flex;
 			flex-wrap: wrap;
+			align-items: center;
 			width: auto;
 		}
 
@@ -1413,23 +1965,38 @@
 			padding-left: 1.5rem;
 		}
 
-		.headline-line {
+		/* Tablet/desktop: "twin towers" bento — the KPI and the forecast stand tall
+		   side by side (each spanning two rows), with activity + alert sharing the
+		   base row beneath them. */
+		.card-updated,
+		.card-forecast {
 			display: block;
 		}
 
-		.signal-strip {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
+		.hero-stage {
+			max-width: 40rem;
+			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+			grid-auto-rows: auto;
 		}
 
-		.signal-strip p {
-			min-height: 0;
-			padding: 0.9rem 1rem;
-			font-size: 0.82rem;
-			text-align: center;
+		.card-movement {
+			grid-column: 1;
+			grid-row: 1 / span 2;
 		}
 
-		.signal-strip p + p {
-			border-left: 1px solid var(--observatory-border);
+		.card-forecast {
+			grid-column: 2;
+			grid-row: 1 / span 2;
+		}
+
+		.card-updated {
+			grid-column: 1;
+			grid-row: 3;
+		}
+
+		.card-lowstock {
+			grid-column: 2;
+			grid-row: 3;
 		}
 
 		.inventory-counts {
@@ -1525,29 +2092,6 @@
 			transform: translateX(0);
 		}
 
-		.hero-layout {
-			grid-template-columns: repeat(12, minmax(0, 1fr));
-		}
-
-		.hero-copy {
-			grid-column: 1 / 12;
-			padding-left: clamp(1rem, 4vw, 3.5rem);
-		}
-
-		.hero h1 {
-			max-width: none;
-			font-size: clamp(3.5rem, 5.4vw, 5.1rem);
-		}
-
-		.headline-line {
-			white-space: nowrap;
-		}
-
-		.signal-strip {
-			grid-column: 2 / 12;
-			margin-top: 3rem;
-		}
-
 		.inventory-layout {
 			grid-template-columns: minmax(16rem, 0.78fr) minmax(0, 1.35fr);
 			gap: clamp(3rem, 7vw, 6.5rem);
@@ -1573,6 +2117,37 @@
 		}
 	}
 
+	/* Desktop: headline in the left column, the bento dashboard fills the right. */
+	@media (min-width: 1024px) {
+		.hero-layout {
+			display: grid;
+			grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+			gap: clamp(1.5rem, 4vw, 3.5rem);
+			align-items: center;
+		}
+
+		.hero-copy {
+			padding-left: clamp(1rem, 3vw, 3rem);
+			container-type: inline-size;
+		}
+
+		.hero h1 {
+			max-width: none;
+			/* Sized to the copy column (cqi), not the viewport, so the one-line phrase
+			   never overflows into the cards on wide screens where the page is capped. */
+			font-size: clamp(2rem, 8.2cqi, 2.9rem);
+		}
+
+		.headline-static {
+			white-space: nowrap;
+		}
+
+		.hero-stage {
+			max-width: none;
+			margin: 0;
+		}
+	}
+
 	@media (min-width: 1200px) {
 		.page {
 			padding-right: 5.5rem;
@@ -1592,17 +2167,24 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.hero-layout {
+		.hero-copy {
+			animation: none;
+		}
+
+		.float-card {
+			animation: none;
+			opacity: 1;
+		}
+
+		.float-body {
 			animation: none;
 		}
 
 		.action,
+		.action-link,
 		.rail button.rail-stop,
 		.rail-label,
 		.rail-dot,
-		.signal-strip p,
-		.signal-strip p::after,
-		.signal-strip p span,
 		.inventory-demo,
 		.forecast-demo,
 		.inventory-counts > div,
@@ -1615,7 +2197,6 @@
 			transition: none;
 		}
 
-		.signal-strip p:hover span,
 		.inventory-demo:hover,
 		.forecast-demo:hover,
 		.inventory-counts > div:hover,
@@ -1662,18 +2243,10 @@
 			max-width: none;
 		}
 
-		.eyebrow {
-			margin-bottom: 0.55rem;
-		}
-
 		.hero h1 {
 			max-width: none;
 			font-size: clamp(2.4rem, 6vw, 3.25rem);
 			line-height: 0.94;
-		}
-
-		.headline-line {
-			white-space: nowrap;
 		}
 
 		.hero-lede {
@@ -1693,14 +2266,27 @@
 			padding: 0.55rem 1.1rem;
 		}
 
-		.signal-strip {
-			margin-top: 0.85rem;
+		.hero-layout {
+			gap: 1rem;
 		}
 
-		.signal-strip p {
-			min-height: 44px;
-			padding: 0.4rem 0.45rem;
-			font-size: 0.75rem;
+		/* Short landscape phones: collapse the bento to a compact single column and
+		   show only the focal KPI + the alert so the panel stays within one screen. */
+		.hero-stage {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 0.75rem;
+			max-width: 26rem;
+		}
+
+		.card-updated,
+		.card-forecast {
+			display: none;
+		}
+
+		.card-movement,
+		.card-lowstock {
+			grid-column: 1;
+			grid-row: auto;
 		}
 
 		.inventory-layout,
@@ -1725,7 +2311,8 @@
 		.inventory-demo,
 		.forecast-demo,
 		.event-body,
-		.inventory-counts > div {
+		.inventory-counts > div,
+		.float-body {
 			border-width: 2px;
 		}
 

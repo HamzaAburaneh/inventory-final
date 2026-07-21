@@ -108,35 +108,40 @@
 	--tech-label: #6b7280;
 
 	/* === Inventory observatory homepage ===
-	   Semantic tokens keep every homepage surface and state theme-bound. */
-	--observatory-text: #101827;
-	--observatory-text-muted: #465569;
-	--observatory-text-soft: #5d6d82;
-	--observatory-surface: rgba(253, 254, 255, 0.9);
-	--observatory-surface-solid: #fdfefe;
-	--observatory-surface-soft: #edf2f8;
-	--observatory-border: #c7d2df;
-	--observatory-border-strong: #8292a6;
-	--observatory-shadow: 0 24px 72px rgba(35, 61, 92, 0.16);
-	--nav-dropdown-shadow: 0 12px 32px rgba(35, 61, 92, 0.18);
-	--observatory-accent: #0066ff;
-	--observatory-accent-hover: #0054d1;
-	--observatory-on-accent: #f8fbff;
-	--observatory-accent-soft: #e7f0ff;
-	--observatory-accent-border: #8eb6f4;
-	--observatory-focus: #004ebd;
-	--observatory-rail-surface: rgba(253, 254, 255, 0.96);
+	   Aligned to the rest of the app's theme (see ItemCardMobile / global app tokens):
+	   neutral grays + the app blue (#007bff), not a blue-tinted slate. */
+	--observatory-text: #1a1a1a;
+	--observatory-text-muted: #4b5560;
+	--observatory-text-soft: #6b7280;
+	--observatory-surface: rgba(255, 255, 255, 0.9);
+	--observatory-surface-solid: #ffffff;
+	--observatory-surface-soft: #f3f5f7;
+	--observatory-bar: #e1e7ef;
+	--observatory-border: #e4e7eb;
+	--observatory-border-strong: #c2c7cf;
+	--observatory-shadow: 0 24px 72px rgba(20, 24, 31, 0.12);
+	--nav-dropdown-shadow: 0 12px 32px rgba(20, 24, 31, 0.16);
+	--observatory-accent: #007bff;
+	--observatory-accent-hover: #0056b3;
+	--observatory-on-accent: #ffffff;
+	--observatory-accent-soft: #e8f1ff;
+	--observatory-accent-border: #cfe2fb;
+	--observatory-focus: #0056b3;
+	--observatory-rail-surface: rgba(255, 255, 255, 0.96);
 	--observatory-add: #176b49;
 	--observatory-add-soft: #e2f3eb;
 	--observatory-add-border: #79b59b;
 	--observatory-remove: #a53d38;
 	--observatory-remove-soft: #f8e8e6;
 	--observatory-remove-border: #d59a96;
+	--observatory-warn: #9a5a00;
+	--observatory-warn-soft: #fdf0da;
+	--observatory-warn-border: #e6b978;
 	--observatory-chart-grid: #d9e1ea;
 	--observatory-chart-history: #24364a;
 	--observatory-chart-threshold: #64748a;
-	--observatory-chart-confidence: rgba(0, 102, 255, 0.14);
-	--scene-accent: #0066ff;
+	--observatory-chart-confidence: rgba(0, 123, 255, 0.14);
+	--scene-accent: #007bff;
 	--scene-fog: #f4f6fb;
 	--scene-terrain: #b9c2d4;
 	--scene-glow-rgb: 255, 255, 255;
@@ -208,30 +213,36 @@
 	--tech-title: #ffffff;
 	--tech-label: #8a8e98;
 
-	/* === Inventory observatory homepage === */
-	--observatory-text: #f4f7fb;
-	--observatory-text-muted: #b8c3d1;
-	--observatory-text-soft: #98a7ba;
-	--observatory-surface: rgba(16, 19, 24, 0.92);
-	--observatory-surface-solid: #11151b;
-	--observatory-surface-soft: #1c232d;
-	--observatory-border: #3b4655;
-	--observatory-border-strong: #748399;
-	--observatory-shadow: 0 24px 72px rgba(2, 4, 8, 0.5);
-	--nav-dropdown-shadow: 0 12px 32px rgba(2, 4, 8, 0.52);
+	/* === Inventory observatory homepage ===
+	   Neutral-gray dark surfaces + app gold accent, matching the app's cards
+	   (ItemCardMobile: #343434 borders, gold #ffe260), not a blue-tinted slate. */
+	--observatory-text: #ffffff;
+	--observatory-text-muted: #b0b4ba;
+	--observatory-text-soft: #8a8f97;
+	--observatory-surface: rgba(30, 30, 30, 0.92);
+	--observatory-surface-solid: #1e1e1e;
+	--observatory-surface-soft: #2a2a2a;
+	--observatory-bar: #343434;
+	--observatory-border: #343434;
+	--observatory-border-strong: #4d4d4d;
+	--observatory-shadow: 0 24px 72px rgba(0, 0, 0, 0.5);
+	--nav-dropdown-shadow: 0 12px 32px rgba(0, 0, 0, 0.52);
 	--observatory-accent: #ffe260;
-	--observatory-accent-hover: #f1cf38;
+	--observatory-accent-hover: #ffd000;
 	--observatory-on-accent: #191500;
-	--observatory-accent-soft: #302c18;
-	--observatory-accent-border: #766b32;
+	--observatory-accent-soft: #2a2410;
+	--observatory-accent-border: #4a4020;
 	--observatory-focus: #ffe260;
-	--observatory-rail-surface: rgba(17, 21, 27, 0.97);
+	--observatory-rail-surface: rgba(30, 30, 30, 0.97);
 	--observatory-add: #71d5a5;
 	--observatory-add-soft: #142b21;
 	--observatory-add-border: #3a7659;
 	--observatory-remove: #ff968d;
 	--observatory-remove-soft: #34201f;
 	--observatory-remove-border: #824b47;
+	--observatory-warn: #f3c366;
+	--observatory-warn-soft: #322611;
+	--observatory-warn-border: #6f5a2b;
 	--observatory-chart-grid: #303a47;
 	--observatory-chart-history: #d8e1ec;
 	--observatory-chart-threshold: #a8b5c5;
@@ -245,6 +256,16 @@
 	--theme-toggle-track-border-active: rgba(255, 226, 96, 0.34);
 	--theme-toggle-track-border-hover: rgba(255, 226, 96, 0.5);
 	--theme-toggle-thumb-shadow: 0 1px 3px rgba(2, 4, 8, 0.55);
+}
+
+/* While the theme is switching, suppress transitions for one frame. Transitions on
+   var()-derived colors otherwise stick at the previous theme's value in Chromium
+   (the property never repaints), leaving borders/backgrounds from the old theme. */
+:root.theme-switching,
+:root.theme-switching *,
+:root.theme-switching *::before,
+:root.theme-switching *::after {
+	transition: none !important;
 }
 
 /* Base styles with mobile-first approach */

@@ -20,7 +20,16 @@
 	}
 
 	$effect(() => {
-		document.documentElement.setAttribute('data-theme', currentTheme);
+		const root = document.documentElement;
+		// Suppress transitions for the instant of the switch, then restore them a
+		// frame later. Without this, transitions on var()-derived colors stick at
+		// the old theme's value in Chromium (borders/backgrounds don't repaint).
+		root.classList.add('theme-switching');
+		root.setAttribute('data-theme', currentTheme);
+		const id = requestAnimationFrame(() =>
+			requestAnimationFrame(() => root.classList.remove('theme-switching'))
+		);
+		return () => cancelAnimationFrame(id);
 	});
 
 	const isDark = $derived(currentTheme === 'dark');
