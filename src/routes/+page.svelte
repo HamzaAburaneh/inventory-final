@@ -64,14 +64,15 @@
 	const sampleRemovedTime = sampleTimeFormatter.format(new Date('2026-01-15T14:18:00Z'));
 
 	let activeSection = $state(firstSectionId);
-	// Drives the rail's progress track: 0 at the first panel, 1 at the last.
-	const railProgress = $derived(
+	// Index of the active panel; dots at or before it read as "done" (see the rail).
+	const activeIndex = $derived(
 		Math.max(
 			0,
 			sections.findIndex((section) => section.id === activeSection)
-		) /
-			(sections.length - 1)
+		)
 	);
+	// Drives the rail's progress track: 0 at the first panel, 1 at the last.
+	const railProgress = $derived(activeIndex / (sections.length - 1));
 
 	function scrollToSection(sectionId) {
 		const section = document.getElementById(sectionId);
@@ -252,11 +253,12 @@
 <ThreeScene />
 
 <nav class="rail" aria-label="Homepage panels" style:--rail-progress={railProgress}>
-	{#each sections as section (section.id)}
+	{#each sections as section, index (section.id)}
 		<button
 			type="button"
 			class="rail-stop"
 			class:active={activeSection === section.id}
+			class:done={index < activeIndex}
 			onclick={() => scrollToSection(section.id)}
 			aria-label="Go to {section.label}"
 			aria-controls={section.id}
@@ -850,6 +852,9 @@
 		border: 2px solid var(--observatory-border-strong);
 		border-radius: 50%;
 		background: var(--observatory-rail-surface);
+		/* Gap ring in the backdrop color masks the connecting line right at each
+		   dot, so dots read as distinct beads instead of merging into the line. */
+		box-shadow: 0 0 0 3px var(--observatory-rail-surface);
 		transition:
 			width 180ms ease,
 			height 180ms ease,
@@ -859,6 +864,13 @@
 			transform 180ms ease;
 	}
 
+	/* Panels already scrolled past read as completed steps: gold fill, but at the
+	   resting size and with no ring, so the active dot still stands out. */
+	.rail-stop.done .rail-dot {
+		border-color: var(--observatory-accent);
+		background: var(--observatory-accent);
+	}
+
 	/* Active state differs on three channels (size + fill + halo ring) so it
 	   never relies on the subtle size change alone. */
 	.rail-stop.active .rail-dot {
@@ -866,7 +878,9 @@
 		height: 12px;
 		border-color: var(--observatory-accent);
 		background: var(--observatory-accent);
-		box-shadow: 0 0 0 4px var(--observatory-accent-soft);
+		box-shadow:
+			0 0 0 3px var(--observatory-rail-surface),
+			0 0 0 5px var(--observatory-accent-soft);
 	}
 
 	/* Pause-motion control: a fixed circular toggle mirroring the rail's lane. */
@@ -2147,13 +2161,15 @@
 			stroke-width: 4;
 		}
 
-		.rail button.rail-stop:hover {
-			background: var(--observatory-surface-soft);
-			color: var(--observatory-text);
+		/* Hover emphasizes the small dot itself — no full-button disc (which read as
+		   a messy blob around the dot). */
+		.rail button.rail-stop:hover .rail-dot {
+			border-color: var(--observatory-accent);
+			transform: scale(1.3);
 		}
 
-		.rail button.rail-stop:hover .rail-dot {
-			transform: scale(1.16);
+		.rail-stop.active:hover .rail-dot {
+			transform: scale(1.15);
 		}
 
 		.motion-toggle:hover {
@@ -2350,7 +2366,8 @@
 				transform 180ms ease;
 		}
 
-		.rail-stop:hover .rail-label,
+		/* Label appears only on keyboard focus, not mouse hover — the hover pill
+		   was unwanted. Screen readers still get each stop's name via aria-label. */
 		.rail-stop:focus-visible .rail-label {
 			opacity: 1;
 			transform: translateX(0);
