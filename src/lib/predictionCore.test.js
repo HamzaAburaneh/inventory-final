@@ -4,6 +4,7 @@ import {
 	buildCneBaseline,
 	buildDailySeries,
 	buildForecastContext,
+	classifyOrderUrgency,
 	computeConfidence,
 	crossYearScale,
 	indexNormalizedBaseRate,
@@ -12,6 +13,7 @@ import {
 	reorderByDate,
 	stableStringify,
 	stockOutDate,
+	suggestedOrderQty,
 	validateAIPrediction,
 	wape
 } from './predictionCore.js';
@@ -285,5 +287,89 @@ describe('validateAIPrediction', () => {
 		expect(out.prediction).toEqual([1, 2, 3]);
 		expect(out.confidence).toBeNull();
 		expect(out.drivers).toEqual(['a', 'b']);
+	});
+});
+
+describe('suggestedOrderQty', () => {
+	it('covers post-delivery demand plus the buffer, net of stock at delivery', () => {
+		// Lead consumes day 0 (3): stock at delivery 7. Coverage days 1-2 = 9.
+		// ceil(9 + 2 - 7) = 4.
+		expect(suggestedOrderQty(10, 2, [3, 4, 5], { coverageDays: 2, leadDays: 1 })).toBe(4);
+	});
+
+	it('rounds fractional case demand up to whole cases', () => {
+		// Delivery stock 0.8, coverage 2.4 → ceil(1.6) = 2.
+		expect(suggestedOrderQty(2, 0, [1.2, 1.2, 1.2], { coverageDays: 2, leadDays: 1 })).toBe(2);
+	});
+
+	it('clamps stock at delivery at zero instead of owing lost sales', () => {
+		// Day 0 demand (5) exceeds stock (2); delivery stock is 0, not -3, so the
+		// order covers day 1 demand only: 6, not 9.
+		expect(suggestedOrderQty(2, 0, [5, 6], { coverageDays: 1, leadDays: 1 })).toBe(6);
+	});
+
+	it('tops up to the buffer even with no forecast demand', () => {
+		expect(suggestedOrderQty(1, 5, [], { coverageDays: 2, leadDays: 1 })).toBe(4);
+	});
+
+	it('returns 0 for healthy stock with zero demand', () => {
+		expect(suggestedOrderQty(50, 2, [0, 0, 0], { coverageDays: 2, leadDays: 1 })).toBe(0);
+	});
+
+	it('treats days past the prediction horizon as zero demand', () => {
+		expect(suggestedOrderQty(0, 0, [2], { coverageDays: 3, leadDays: 0 })).toBe(2);
+	});
+
+	it('consumes no lead demand when leadDays is 0', () => {
+		expect(suggestedOrderQty(3, 0, [4, 4], { coverageDays: 1, leadDays: 0 })).toBe(1);
+	});
+
+	it('coerces garbage inputs to safe zeros', () => {
+		expect(suggestedOrderQty(null, undefined, undefined)).toBe(0);
+	});
+
+	it('defaults to coverageDays 2 and leadDays 1', () => {
+		expect(suggestedOrderQty(10, 2, [3, 4, 5])).toBe(
+			suggestedOrderQty(10, 2, [3, 4, 5], { coverageDays: 2, leadDays: 1 })
+		);
+	});
+});
+
+describe('classifyOrderUrgency', () => {
+	it('returns ok when no reorder is due', () => {
+		expect(classifyOrderUrgency(null, { leadDays: 1 })).toBe('ok');
+	});
+
+	it('returns urgent for immediate regardless of dayIndex', () => {
+		expect(classifyOrderUrgency({ dayIndex: 0, immediate: true }, { leadDays: 1 })).toBe('urgent');
+		expect(classifyOrderUrgency({ dayIndex: 6, immediate: true }, { leadDays: 1 })).toBe('urgent');
+	});
+
+	it("puts breaches within the lead time on today's order", () => {
+		expect(classifyOrderUrgency({ dayIndex: 0, immediate: false }, { leadDays: 1 })).toBe('today');
+		expect(classifyOrderUrgency({ dayIndex: 1, immediate: false }, { leadDays: 1 })).toBe('today');
+	});
+
+	it('marks the look-ahead window as upcoming and beyond it ok', () => {
+		expect(classifyOrderUrgency({ dayIndex: 2, immediate: false }, { leadDays: 1 })).toBe(
+			'upcoming'
+		);
+		expect(classifyOrderUrgency({ dayIndex: 4, immediate: false }, { leadDays: 1 })).toBe(
+			'upcoming'
+		);
+		expect(classifyOrderUrgency({ dayIndex: 5, immediate: false }, { leadDays: 1 })).toBe('ok');
+	});
+
+	it('shifts the boundary with a zero-day lead', () => {
+		expect(classifyOrderUrgency({ dayIndex: 0, immediate: false }, { leadDays: 0 })).toBe('today');
+		expect(classifyOrderUrgency({ dayIndex: 1, immediate: false }, { leadDays: 0 })).toBe(
+			'upcoming'
+		);
+	});
+
+	it('respects a custom lookahead window', () => {
+		expect(
+			classifyOrderUrgency({ dayIndex: 3, immediate: false }, { leadDays: 1, lookaheadDays: 1 })
+		).toBe('ok');
 	});
 });

@@ -287,6 +287,60 @@ export function reorderByDate(currentCount, lowCount, prediction, forecastDayKey
 }
 
 /**
+ * Cases to put on today's order for one item: enough to cover `coverageDays`
+ * of predicted demand after the truck lands (plus the low-stock buffer), net
+ * of what will still be on hand at delivery. Delivery is `leadDays` out, so
+ * demand during the lead time is consumed first. Days beyond the prediction
+ * horizon count as zero demand.
+ * @param {number} count - Cases on hand now
+ * @param {number | null} lowCount - Low-stock threshold (null → 0)
+ * @param {number[]} prediction - Daily predicted demand, day 0 = today
+ * @param {object} [options]
+ * @param {number} [options.coverageDays=2] - Days of demand to cover after delivery
+ * @param {number} [options.leadDays=1] - Days until the order arrives
+ * @returns {number} Whole cases to order (>= 0)
+ */
+export function suggestedOrderQty(count, lowCount, prediction, options = {}) {
+	const lead = Math.max(0, Math.floor(Number(options.leadDays ?? 1) || 0));
+	const cover = Math.max(0, Math.floor(Number(options.coverageDays ?? 2) || 0));
+	const onHand = Math.max(0, Number(count) || 0);
+	const threshold = Math.max(0, Number(lowCount) || 0);
+	const daily = Array.isArray(prediction) ? prediction : [];
+	const demandOver = (from, days) => {
+		let sum = 0;
+		for (let i = from; i < from + days; i++) sum += Math.max(0, Number(daily[i]) || 0);
+		return sum;
+	};
+	// Clamp at zero: an item that stocks out before delivery loses those sales,
+	// it does not "owe" them — without the clamp we would over-order.
+	const stockAtDelivery = Math.max(0, onHand - demandOver(0, lead));
+	return Math.max(0, Math.ceil(demandOver(lead, cover) + threshold - stockAtDelivery));
+}
+
+/**
+ * Bucket an item's reorder-by result for the order page, given the order lead
+ * time. `dayIndex <= leadDays` must go on today's order: with a 1-day lead an
+ * item breaching its threshold on day 1 is saved only by an order placed
+ * today (arriving the morning of day 1) — waiting a day means a shortage.
+ * `leadDays + 1` is the first index where ordering tomorrow still delivers in
+ * time, so those fall into the look-ahead bucket.
+ * @param {{dayIndex: number, immediate: boolean} | null} reorderBy - From reorderByDate
+ * @param {object} options
+ * @param {number} options.leadDays - Order lead time in days
+ * @param {number} [options.lookaheadDays=3] - "Coming up" window after the order cutoff
+ * @returns {'urgent' | 'today' | 'upcoming' | 'ok'} Urgency bucket
+ */
+export function classifyOrderUrgency(reorderBy, { leadDays, lookaheadDays = 3 }) {
+	if (!reorderBy) return 'ok';
+	if (reorderBy.immediate) return 'urgent';
+	const lead = Math.max(0, Math.floor(Number(leadDays) || 0));
+	const lookahead = Math.max(0, Math.floor(Number(lookaheadDays) || 0));
+	if (reorderBy.dayIndex <= lead) return 'today';
+	if (reorderBy.dayIndex <= lead + lookahead) return 'upcoming';
+	return 'ok';
+}
+
+/**
  * Data-grounded confidence: what the forecast is actually standing on — days
  * of this fair's history, prior-CNE coverage, and agreement between the shown
  * prediction and the deterministic baseline — blended with (and tempered by)

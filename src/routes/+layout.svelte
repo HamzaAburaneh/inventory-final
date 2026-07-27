@@ -33,6 +33,7 @@
 		'/transactionHistory',
 		'/transactionAnalysis',
 		'/inventoryPredictions',
+		'/orders',
 		'/profile'
 	];
 	const isProtected = $derived(
