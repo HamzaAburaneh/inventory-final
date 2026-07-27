@@ -60,6 +60,29 @@
  */
 
 /**
+ * One item's line on a saved order draft. Only the fields the user actually
+ * changed are stored — an absent `qty` means "still the suggested quantity",
+ * which lets a reopened draft track a refreshed forecast instead of freezing
+ * yesterday's numbers.
+ * @typedef {object} OrderLine
+ * @property {number} [qty] - User-entered case count overriding the suggestion
+ * @property {boolean} [included] - User's include/exclude choice for this item
+ */
+
+/**
+ * A shared, per-day order draft (`groups/{gid}/orders/{dayKey}`), so an order
+ * edited on one device is visible to the rest of the group (e.g. an owner
+ * reviewing what staff plan to buy). Keyed by the order's day, not the
+ * delivery day.
+ * @typedef {object} OrderDraft
+ * @property {Object.<string, OrderLine>} lines - Per-item edits, keyed by item id
+ * @property {number} coverageDays - Days of demand the quantities were sized for
+ * @property {number} leadDays - Delivery lead the quantities were sized for
+ * @property {Date | null} updatedAt - Server clock of the last save
+ * @property {string} updatedBy - Display name/email of whoever last saved
+ */
+
+/**
  * @typedef {object} DailyAnalysis
  * @property {string} date - ISO date string (YYYY-MM-DD)
  * @property {number} totalAdded

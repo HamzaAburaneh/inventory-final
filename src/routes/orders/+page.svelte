@@ -3,6 +3,7 @@
 	import { fly } from 'svelte/transition';
 	import { itemStore } from '../../stores/itemStore.js';
 	import { notificationStore } from '../../stores/notificationStore.js';
+	import { authStore } from '../../stores/authStore.js';
 	import { fetchStockPredictions } from '../../lib/predictionsClient.js';
 	import {
 		classifyOrderUrgency,
@@ -10,6 +11,17 @@
 		stockOutDate,
 		suggestedOrderQty
 	} from '../../lib/predictionCore.js';
+	import {
+		draftLines,
+		filterRows,
+		formatCount,
+		formatMoney,
+		isOpeningOrder,
+		sameLines,
+		savedByLabel,
+		sortRows
+	} from '../../lib/orderSheet.js';
+	import { clearOrderDraft, saveOrderDraft, subscribeOrderDraft } from '../../lib/orders.js';
 	import { dayFromKey, torontoDayKey } from '../../lib/cneCalendar.js';
 
 	// The "coming up" window after today's order cutoff (see classifyOrderUrgency).
@@ -20,6 +32,9 @@
 	const LEAD_MAX = 3;
 	// 14 days always covers the worst stepper case (lead 3 + coverage 7 = 10).
 	const FORECAST_DAYS = 14;
+	// Long enough that typing a 3-digit quantity is one write, short enough that
+	// a teammate watching the same day sees it land while you're still looking.
+	const SAVE_DEBOUNCE_MS = 700;
 
 	let predictions = $state.raw({});
 	let loading = $state(true);
@@ -27,13 +42,28 @@
 	let coverageDays = $state(2);
 	let leadDays = $state(1);
 	// Per-item user edits: { [itemId]: { qty?: number, included?: boolean } }.
+	// This is the only thing persisted — never the computed suggestions, so a
+	// reopened draft tracks a refreshed forecast (see lib/orders.js).
 	let overrides = $state({});
 	let copied = $state(false);
 	let copyFallbackText = $state('');
+	let search = $state('');
+	let sortKey = $state('urgency');
+	let sortDir = $state('asc');
+
+	// Draft persistence state. Saving is blocked until the stored draft has been
+	// read at least once, so a slow load can't overwrite a teammate's edits with
+	// an empty local draft.
+	let draftLoaded = $state(false);
+	let saveState = $state('idle');
+	let draftMeta = $state({ updatedAt: null, updatedBy: '' });
+	let lastSavedLines = {};
+	let saveTimer = null;
 
 	// Realtime item counts — quantities and grouping recompute as the team logs
 	// sales, without refetching the forecast.
 	const items = $derived($itemStore);
+	const userName = $derived($authStore?.displayName || $authStore?.email || '');
 
 	async function loadData() {
 		try {
@@ -55,6 +85,14 @@
 
 	onMount(() => {
 		loadData();
+		// A quantity typed a moment before navigating away is still on the timer —
+		// flush it rather than dropping it.
+		return () => {
+			if (saveTimer) {
+				clearTimeout(saveTimer);
+				flushSave();
+			}
+		};
 	});
 
 	const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -105,6 +143,10 @@
 		return [];
 	});
 
+	// The draft is keyed by the ORDER day (not the delivery day), so everyone
+	// looking at the same day's order opens the same document.
+	const orderDayKey = $derived(forecastDates.length > 0 ? forecastDates[0] : '');
+
 	// Pre-fair the server anchors the window at opening day, not today.
 	const planStartsLater = $derived(
 		forecastDates.length > 0 && forecastDates[0] > torontoDayKey(new Date())
@@ -130,13 +172,15 @@
 				leadDays
 			});
 			const ov = overrides[item.id] ?? {};
+			const qty = ov.qty ?? suggested;
 			out.push({
 				id: item.id,
 				name: item.name,
 				count,
 				cost: Number(item.cost) || 0,
 				suggested,
-				qty: ov.qty ?? suggested,
+				qty,
+				lineCost: qty * (Number(item.cost) || 0),
 				edited: ov.qty !== undefined,
 				included: ov.included ?? (group === 'urgent' || group === 'today'),
 				group,
@@ -145,15 +189,19 @@
 				confidence: normalizeConfidence(p.confidence)
 			});
 		}
-		return out.sort((a, b) => {
-			const ai = a.reorderBy ? a.reorderBy.dayIndex : Infinity;
-			const bi = b.reorderBy ? b.reorderBy.dayIndex : Infinity;
-			return ai - bi || a.name.localeCompare(b.name);
-		});
+		return out;
 	});
 
-	const urgent = $derived(rows.filter((r) => r.group === 'urgent'));
-	const todays = $derived(rows.filter((r) => r.group === 'today'));
+	// Pre-fair, every shelf is empty so every item is trivially "at or below low
+	// stock" and all three urgency bands collapse into one. That's an opening
+	// buy, not a top-up, so the page drops the bands and shows a single list.
+	const openingOrder = $derived(isOpeningOrder(rows, planStartsLater));
+
+	// Search narrows what's DISPLAYED only. Totals below deliberately stay on the
+	// full row set — the order total must not change while you look something up.
+	const searched = $derived(filterRows(rows, search));
+	const hiddenBySearch = $derived(rows.length - searched.length);
+
 	const upcoming = $derived(rows.filter((r) => r.group === 'upcoming'));
 	const healthy = $derived(rows.filter((r) => r.group === 'ok'));
 	const missingForecast = $derived(Math.max(0, items.length - rows.length));
@@ -161,27 +209,163 @@
 	// Pre-fair every item is "at/below low stock" but most have zero predicted
 	// demand — so the actionable count is the rows that actually need cases.
 	const todayActionable = $derived(
-		urgent.filter((r) => r.qty > 0).length + todays.filter((r) => r.qty > 0).length
+		rows.filter((r) => (r.group === 'urgent' || r.group === 'today') && r.qty > 0).length
 	);
 	// Zero-order rows are collapsed per section to keep the list short.
-	let showZeros = $state({ urgent: false, today: false, upcoming: false });
+	let showZeros = $state({ urgent: false, today: false, upcoming: false, opening: false });
 
-	function splitRows(groupRows) {
-		const active = groupRows
-			.filter((r) => r.qty > 0)
-			.sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name));
-		const zeros = groupRows.filter((r) => r.qty === 0);
-		return { active, zeros };
+	/**
+	 * Rows for one band, filtered by the search box and ordered by the active
+	 * sort, split so the "nothing to order" tail can collapse.
+	 */
+	function bandParts(groupKeys) {
+		const inBand = searched.filter((r) => groupKeys.includes(r.group));
+		const ordered = sortRows(inBand, sortKey, sortDir);
+		return {
+			active: ordered.filter((r) => r.qty > 0),
+			zeros: ordered.filter((r) => r.qty === 0)
+		};
 	}
 
 	const checked = $derived(rows.filter((r) => r.included && r.qty > 0));
 	const totalCases = $derived(checked.reduce((s, r) => s + r.qty, 0));
-	const totalCost = $derived(checked.reduce((s, r) => s + r.qty * r.cost, 0));
+	const totalCost = $derived(checked.reduce((s, r) => s + r.lineCost, 0));
+
+	const BAND_LABELS = {
+		urgent: 'Urgent',
+		today: 'Today',
+		upcoming: 'Coming up',
+		ok: 'Later'
+	};
+
+	// Cost split per urgency band, for the total card. Empty bands are dropped.
+	const bandBreakdown = $derived.by(() => {
+		if (openingOrder) return [];
+		const out = [];
+		for (const key of ['urgent', 'today', 'upcoming', 'ok']) {
+			const band = checked.filter((r) => r.group === key);
+			if (band.length === 0) continue;
+			out.push({
+				key,
+				label: BAND_LABELS[key],
+				cases: band.reduce((s, r) => s + r.qty, 0),
+				cost: band.reduce((s, r) => s + r.lineCost, 0)
+			});
+		}
+		return out;
+	});
 
 	const deliveryKey = $derived(
 		forecastDates.length > 0 ? forecastDates[Math.min(leadDays, forecastDates.length - 1)] : ''
 	);
 	const nextDue = $derived(upcoming.length > 0 ? upcoming[0].reorderBy : null);
+
+	// ————————————————————————————————————————————————————————————————————
+	// Draft persistence
+	// ————————————————————————————————————————————————————————————————————
+
+	// Watch the day's shared draft. Re-subscribes if the order day rolls over.
+	$effect(() => {
+		const key = orderDayKey;
+		if (!key) return;
+		let cancelled = false;
+		draftLoaded = false;
+		const unsubscribe = subscribeOrderDraft(
+			key,
+			(draft, meta) => {
+				// Skip the optimistic echo of our own in-flight write; re-applying it
+				// would fight the cursor of whatever is being typed right now.
+				if (cancelled || meta.local) return;
+				applyRemoteDraft(draft);
+				draftLoaded = true;
+			},
+			() => {
+				// Listener detached (offline, or rules denied). Let editing continue
+				// locally rather than freezing the page behind a never-loaded draft.
+				if (!cancelled) draftLoaded = true;
+			}
+		);
+		return () => {
+			cancelled = true;
+			unsubscribe();
+		};
+	});
+
+	function applyRemoteDraft(draft) {
+		// The server confirming our own save arrives as a non-local snapshot too.
+		// It carries the data we already have, so only refresh the stamp — taking
+		// the whole payload would discard edits typed since the save fired.
+		if (draftLoaded && sameLines(draft.lines, lastSavedLines)) {
+			draftMeta = { updatedAt: draft.updatedAt, updatedBy: draft.updatedBy };
+			return;
+		}
+		overrides = { ...draft.lines };
+		lastSavedLines = draft.lines;
+		if (draft.coverageDays !== null) coverageDays = draft.coverageDays;
+		if (draft.leadDays !== null) leadDays = draft.leadDays;
+		draftMeta = { updatedAt: draft.updatedAt, updatedBy: draft.updatedBy };
+		saveState = 'idle';
+	}
+
+	// Saves are triggered explicitly from each edit handler rather than from an
+	// effect on `overrides`, so applying a remote draft can never echo back out
+	// as a fresh save and ping-pong between two open tabs.
+	function scheduleSave() {
+		if (!draftLoaded || !orderDayKey) return;
+		clearTimeout(saveTimer);
+		saveState = 'saving';
+		saveTimer = setTimeout(() => {
+			saveTimer = null;
+			flushSave();
+		}, SAVE_DEBOUNCE_MS);
+	}
+
+	async function flushSave() {
+		if (!draftLoaded || !orderDayKey) return;
+		const lines = draftLines(overrides);
+		try {
+			await saveOrderDraft(orderDayKey, {
+				lines,
+				coverageDays,
+				leadDays,
+				updatedBy: userName
+			});
+			lastSavedLines = lines;
+			saveState = 'saved';
+		} catch (err) {
+			console.error('Failed to save the order draft:', err);
+			saveState = 'error';
+			notificationStore.showNotification(
+				'Could not save the order — your edits are local.',
+				'error'
+			);
+		}
+	}
+
+	async function resetDraft() {
+		if (!orderDayKey) return;
+		clearTimeout(saveTimer);
+		saveTimer = null;
+		overrides = {};
+		lastSavedLines = {};
+		try {
+			await clearOrderDraft(orderDayKey);
+			draftMeta = { updatedAt: null, updatedBy: '' };
+			saveState = 'idle';
+			notificationStore.showNotification('Order reset to the suggested quantities.', 'success');
+		} catch (err) {
+			console.error('Failed to clear the order draft:', err);
+			saveState = 'error';
+			notificationStore.showNotification('Could not clear the saved order.', 'error');
+		}
+	}
+
+	const savedLabel = $derived(savedByLabel(draftMeta));
+	const hasEdits = $derived(Object.keys(overrides).length > 0);
+
+	// ————————————————————————————————————————————————————————————————————
+	// Edit handlers
+	// ————————————————————————————————————————————————————————————————————
 
 	// An edited quantity was reasoned under the old lead/coverage assumptions —
 	// silently keeping it would misstate the totals, so stepper changes drop the
@@ -197,6 +381,7 @@
 		if (next === coverageDays) return;
 		coverageDays = next;
 		clearQtyOverrides();
+		scheduleSave();
 	}
 
 	function stepLead(delta) {
@@ -204,6 +389,7 @@
 		if (next === leadDays) return;
 		leadDays = next;
 		clearQtyOverrides();
+		scheduleSave();
 	}
 
 	function setQtyOverride(row, qty) {
@@ -212,10 +398,16 @@
 			return;
 		}
 		overrides[row.id] = { ...(overrides[row.id] ?? {}), qty };
+		scheduleSave();
 	}
 
 	function resetQty(id) {
-		if (overrides[id]?.qty !== undefined) delete overrides[id].qty;
+		if (overrides[id]?.qty !== undefined) {
+			delete overrides[id].qty;
+			// A line left with no fields is dead weight in the saved document.
+			if (Object.keys(overrides[id]).length === 0) delete overrides[id];
+			scheduleSave();
+		}
 	}
 
 	function onQtyInput(row, event) {
@@ -234,6 +426,26 @@
 
 	function toggleIncluded(row, event) {
 		overrides[row.id] = { ...(overrides[row.id] ?? {}), included: event.currentTarget.checked };
+		scheduleSave();
+	}
+
+	// Numeric columns read high-to-low first; name and dates read low-to-high.
+	const DESC_FIRST = ['qty', 'value', 'count'];
+
+	function toggleSort(key) {
+		if (sortKey === key) {
+			sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+			return;
+		}
+		sortKey = key;
+		sortDir = DESC_FIRST.includes(key) ? 'desc' : 'asc';
+	}
+
+	// Spoken suffix for the sort buttons — the arrow glyph is decorative, so the
+	// current sort state has to reach screen readers through the label.
+	function sortLabel(key) {
+		if (sortKey !== key) return '';
+		return sortDir === 'asc' ? ', currently ascending' : ', currently descending';
 	}
 
 	function runOutLabel(row) {
@@ -244,29 +456,39 @@
 
 	function buildOrderSheet() {
 		const lines = [];
+		const heading = openingOrder ? 'GFS OPENING ORDER' : 'GFS ORDER';
 		lines.push(
-			`GFS ORDER — ${formatDayKey(forecastDates[0])} (delivery ${formatDayKey(deliveryKey)})`
+			`${heading} — ${formatDayKey(forecastDates[0])} (delivery ${formatDayKey(deliveryKey)})`
 		);
-		const groups = [
-			['URGENT', 'urgent'],
-			['TODAY', 'today'],
-			['UPCOMING', 'upcoming'],
-			['LATER', 'ok']
-		];
-		for (const [label, key] of groups) {
-			const groupRows = checked.filter((r) => r.group === key);
+		const groups = openingOrder
+			? [['OPENING ORDER', ['urgent', 'today', 'upcoming', 'ok']]]
+			: [
+					['URGENT', ['urgent']],
+					['TODAY', ['today']],
+					['UPCOMING', ['upcoming']],
+					['LATER', ['ok']]
+				];
+		for (const [label, keys] of groups) {
+			const groupRows = sortRows(
+				checked.filter((r) => keys.includes(r.group)),
+				sortKey,
+				sortDir
+			);
 			if (groupRows.length === 0) continue;
 			lines.push('');
 			lines.push(label);
 			for (const r of groupRows) {
-				const runOut = r.runOut ? `out ${runOutLabel(r)}` : 'no run-out forecast';
-				lines.push(
-					`  ${String(r.qty).padStart(3)} x ${r.name.padEnd(24)} (on hand ${r.count}, ${runOut})`
-				);
+				const detail = openingOrder
+					? `on hand ${r.count}`
+					: `on hand ${r.count}, ${r.runOut ? `out ${runOutLabel(r)}` : 'no run-out forecast'}`;
+				lines.push(`  ${String(r.qty).padStart(3)} x ${r.name.padEnd(24)} (${detail})`);
 			}
 		}
 		lines.push('');
-		lines.push(`${checked.length} items · ${totalCases} cases · est. $${totalCost.toFixed(2)}`);
+		lines.push(
+			`${checked.length} items · ${formatCount(totalCases)} cases · est. ${formatMoney(totalCost)}`
+		);
+		if (savedLabel) lines.push(savedLabel);
 		return lines.join('\n');
 	}
 
@@ -295,43 +517,72 @@
 		typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 	const sectionIn = $derived({ y: 12, duration: reduceMotion ? 0 : 300 });
 
-	const SECTIONS = $derived([
-		{
-			key: 'urgent',
-			tone: 'tone-urgent',
-			title: 'Urgent — top up now',
-			sub: "At or below low stock — don't wait for the truck.",
-			rows: urgent
-		},
-		{
-			key: 'today',
-			tone: 'tone-today',
-			title: "Today's GFS order",
-			sub: `Order today — with a ${leadDays}-day lead, waiting means running short.`,
-			rows: todays
-		},
-		{
-			key: 'upcoming',
-			tone: 'tone-upcoming',
-			title: 'Coming up',
-			sub: `Due within ${UPCOMING_LOOKAHEAD_DAYS} days after today's cutoff.`,
-			rows: upcoming
-		}
-	]);
+	// In opening mode the three urgency bands carry no signal, so they collapse
+	// into a single list (see `openingOrder`).
+	const SECTIONS = $derived(
+		openingOrder
+			? [
+					{
+						key: 'opening',
+						tone: 'tone-opening',
+						title: 'Opening order',
+						sub: 'Nothing on the shelves yet — this is the full buy to open with.',
+						groups: ['urgent', 'today', 'upcoming', 'ok']
+					}
+				]
+			: [
+					{
+						key: 'urgent',
+						tone: 'tone-urgent',
+						title: 'Urgent — top up now',
+						sub: "At or below low stock — don't wait for the truck.",
+						groups: ['urgent']
+					},
+					{
+						key: 'today',
+						tone: 'tone-today',
+						title: "Today's GFS order",
+						sub: `Order today — with a ${leadDays}-day lead, waiting means running short.`,
+						groups: ['today']
+					},
+					{
+						key: 'upcoming',
+						tone: 'tone-upcoming',
+						title: 'Coming up',
+						sub: `Due within ${UPCOMING_LOOKAHEAD_DAYS} days after today's cutoff.`,
+						groups: ['upcoming']
+					}
+				]
+	);
 </script>
 
 <svelte:head>
-	<title>Today's Order - StockSense</title>
+	<title>{openingOrder ? 'Opening Order' : "Today's Order"} - StockSense</title>
 </svelte:head>
 
+{#snippet sortHead(key, label, extraClass = '')}
+	<button
+		class="sort-btn {extraClass}"
+		class:sorted={sortKey === key}
+		onclick={() => toggleSort(key)}
+		aria-label={`Sort by ${label.toLowerCase()}${sortLabel(key)}`}
+	>
+		{label}
+		<span class="sort-arrow" aria-hidden="true">
+			{#if sortKey === key}{sortDir === 'asc' ? '▲' : '▼'}{/if}
+		</span>
+	</button>
+{/snippet}
+
 {#snippet colHead()}
-	<div class="col-head" aria-hidden="true">
+	<div class="col-head">
 		<span></span>
-		<span>Item</span>
-		<span class="num">On hand</span>
-		<span class="num">Order</span>
-		<span class="num">Runs out</span>
-		<span></span>
+		<span>{@render sortHead('name', 'Item')}</span>
+		<span class="num">{@render sortHead('count', 'On hand', 'num')}</span>
+		<span class="num">{@render sortHead('qty', 'Order', 'num')}</span>
+		<span class="num">{@render sortHead('value', 'Line cost', 'num')}</span>
+		<span class="num">{@render sortHead('runOut', 'Runs out', 'num')}</span>
+		<span class="conf-head" title="Forecast confidence">Conf.</span>
 	</div>
 {/snippet}
 
@@ -347,12 +598,6 @@
 		</label>
 		<div class="cell-name">
 			<span class="item-name">{row.name}</span>
-			{#if row.edited}
-				<button class="reset-qty" onclick={() => resetQty(row.id)} title="Reset to suggested">
-					edited
-					<span aria-hidden="true">&times;</span>
-				</button>
-			{/if}
 		</div>
 		<div class="cell-onhand">
 			<span class="cell-cap">On hand</span>
@@ -360,17 +605,34 @@
 		</div>
 		<div class="cell-qty">
 			<span class="cell-cap">Order</span>
-			<input
-				type="number"
-				min="0"
-				step="1"
-				inputmode="numeric"
-				value={row.qty}
-				disabled={!row.included}
-				oninput={(e) => onQtyInput(row, e)}
-				onblur={(e) => onQtyBlur(row, e)}
-				aria-label={`Cases of ${row.name} to order`}
-			/>
+			<div class="qty-wrap">
+				<input
+					type="number"
+					min="0"
+					step="1"
+					inputmode="numeric"
+					class:is-edited={row.edited}
+					value={row.qty}
+					disabled={!row.included}
+					oninput={(e) => onQtyInput(row, e)}
+					onblur={(e) => onQtyBlur(row, e)}
+					aria-label={`Cases of ${row.name} to order`}
+				/>
+				{#if row.edited}
+					<button
+						class="qty-was"
+						onclick={() => resetQty(row.id)}
+						title={`Suggested ${row.suggested} — click to restore`}
+					>
+						was {row.suggested}
+						<span aria-hidden="true">&times;</span>
+					</button>
+				{/if}
+			</div>
+		</div>
+		<div class="cell-line">
+			<span class="cell-cap">Line cost</span>
+			<span class="cell-val">{row.cost > 0 ? formatMoney(row.lineCost) : '—'}</span>
 		</div>
 		<div class="cell-runout">
 			<span class="cell-cap">Runs out</span>
@@ -389,7 +651,7 @@
 {/snippet}
 
 {#snippet group(cfg)}
-	{@const parts = splitRows(cfg.rows)}
+	{@const parts = bandParts(cfg.groups)}
 	{#if parts.active.length > 0 || parts.zeros.length > 0}
 		<div class="group {cfg.tone}">
 			<div class="group-head">
@@ -426,19 +688,26 @@
 
 <div class="orders-page">
 	<header class="page-header">
-		<h1>Today's Order</h1>
+		<h1>{openingOrder ? 'Opening Order' : "Today's Order"}</h1>
 		{#if forecastDates.length > 0}
 			<p class="date-line">
 				Order for <strong>{formatDayKey(forecastDates[0])}</strong>
 				<span class="dot">&middot;</span> delivery {formatDayKey(deliveryKey)}
 			</p>
-			{#if planStartsLater}
-				<p class="prefair-note">
-					Plan starts {formatDayKey(forecastDates[0])} — fair hasn't opened yet.
-				</p>
-			{/if}
 		{/if}
 	</header>
+
+	{#if planStartsLater && forecastDates.length > 0}
+		<div class="prefair-banner">
+			<span class="pf-icon" aria-hidden="true">◷</span>
+			<p>
+				<strong>The fair hasn't opened yet.</strong>
+				This plan starts {formatDayKey(forecastDates[0])}{openingOrder
+					? ' and every shelf is still empty, so these are opening quantities rather than top-ups.'
+					: '.'}
+			</p>
+		</div>
+	{/if}
 
 	<div class="controls-card">
 		<div class="stepper-group">
@@ -479,26 +748,72 @@
 				>
 			</div>
 		</div>
+
+		<div class="search-group">
+			<span class="control-label" id="search-label">Find</span>
+			<input
+				class="search-input"
+				type="search"
+				placeholder="Search items…"
+				bind:value={search}
+				aria-labelledby="search-label"
+			/>
+		</div>
+
 		<button class="refresh-btn" onclick={loadData} disabled={loading}>
 			{loading ? 'Refreshing…' : 'Refresh'}
 		</button>
 	</div>
 
 	{#if !loading && !error && rows.length > 0}
-		<div class="summary-bar">
-			<p class="totals">
-				<strong>{checked.length}</strong>
-				{checked.length === 1 ? 'item' : 'items'}
-				<span class="dot">&middot;</span>
-				<strong>{totalCases}</strong>
-				{totalCases === 1 ? 'case' : 'cases'}
-				<span class="dot">&middot;</span>
-				est. <span class="est-cost">${totalCost.toFixed(2)}</span>
-			</p>
-			<button class="copy-btn" onclick={copyOrder} disabled={checked.length === 0}>
-				{copied ? 'Copied ✓' : 'Copy order'}
-			</button>
-		</div>
+		<section class="total-card" in:fly={sectionIn}>
+			<div class="total-main">
+				<span class="total-label">Estimated order total</span>
+				<span class="total-value">{formatMoney(totalCost)}</span>
+				<span class="total-sub">
+					{formatCount(totalCases)}
+					{totalCases === 1 ? 'case' : 'cases'}
+					<span class="dot">&middot;</span>
+					{checked.length}
+					{checked.length === 1 ? 'item' : 'items'}
+				</span>
+			</div>
+
+			{#if bandBreakdown.length > 0}
+				<ul class="band-list">
+					{#each bandBreakdown as band (band.key)}
+						<li class="band-chip tone-{band.key}">
+							<span class="band-dot" aria-hidden="true"></span>
+							<span class="band-name">{band.label}</span>
+							<span class="band-cost">{formatMoney(band.cost)}</span>
+							<span class="band-meta">{formatCount(band.cases)} cases</span>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+
+			<div class="total-actions">
+				<p class="save-line" class:is-error={saveState === 'error'} aria-live="polite">
+					{#if saveState === 'saving'}
+						Saving…
+					{:else if saveState === 'error'}
+						Not saved — edits are local only
+					{:else if savedLabel}
+						{savedLabel}
+					{:else}
+						Suggested quantities · not edited yet
+					{/if}
+				</p>
+				<div class="btn-row">
+					{#if hasEdits}
+						<button class="reset-btn" onclick={resetDraft}>Reset to suggested</button>
+					{/if}
+					<button class="copy-btn" onclick={copyOrder} disabled={checked.length === 0}>
+						{copied ? 'Copied ✓' : 'Copy order'}
+					</button>
+				</div>
+			</div>
+		</section>
 	{/if}
 
 	{#if loading}
@@ -537,12 +852,22 @@
 				{#each SECTIONS as cfg (cfg.key)}
 					{@render group(cfg)}
 				{/each}
+				{#if searched.length === 0}
+					<p class="no-match">No items match “{search}”.</p>
+				{/if}
 			</div>
 		</div>
 
-		{#if healthy.length > 0 || missingForecast > 0}
+		<!-- Wrapped rather than relying on :empty — Svelte leaves whitespace text
+		     nodes behind a false {#if}, so an "empty" <p> would still take space. -->
+		{#if hiddenBySearch > 0 || (!openingOrder && healthy.length > 0) || missingForecast > 0}
 			<p class="healthy-line">
-				{#if healthy.length > 0}
+				{#if hiddenBySearch > 0}
+					{hiddenBySearch}
+					{hiddenBySearch === 1 ? 'item is' : 'items are'} hidden by the search — totals above still cover
+					the whole order.
+				{/if}
+				{#if !openingOrder && healthy.length > 0}
 					{healthy.length}
 					{healthy.length === 1 ? 'item is' : 'items are'} stocked past the next
 					{leadDays + UPCOMING_LOOKAHEAD_DAYS} days.
@@ -594,7 +919,7 @@
 
 	/* --- Header --- */
 	.page-header {
-		margin-bottom: 1.1rem;
+		margin-bottom: 0.85rem;
 	}
 
 	.page-header h1 {
@@ -619,11 +944,33 @@
 		margin: 0 0.15rem;
 	}
 
-	.prefair-note {
-		margin: 0.3rem 0 0;
-		font-size: var(--text-xs);
-		color: var(--ord-dim);
-		font-style: italic;
+	/* --- Pre-fair banner (promoted out of the header footnote) --- */
+	.prefair-banner {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.6rem;
+		margin-bottom: 0.85rem;
+		padding: 0.7rem 0.9rem;
+		border-radius: 0.75rem;
+		background: var(--observatory-warn-soft);
+		border: 1px solid var(--observatory-warn-border);
+	}
+
+	.prefair-banner p {
+		margin: 0;
+		font-size: var(--text-sm);
+		color: var(--text-color);
+	}
+
+	.prefair-banner strong {
+		color: var(--observatory-warn);
+	}
+
+	.pf-icon {
+		flex: none;
+		color: var(--observatory-warn);
+		font-size: 1.05rem;
+		line-height: 1.35;
 	}
 
 	/* --- Controls --- */
@@ -639,10 +986,16 @@
 		border-radius: 0.75rem;
 	}
 
-	.stepper-group {
+	.stepper-group,
+	.search-group {
 		display: flex;
 		flex-direction: column;
 		gap: 0.4rem;
+	}
+
+	.search-group {
+		flex: 1;
+		min-width: 10rem;
 	}
 
 	.control-label {
@@ -651,6 +1004,39 @@
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		color: var(--ord-label);
+	}
+
+	.search-input {
+		height: 2.4rem;
+		padding: 0 0.7rem;
+		background: var(--input-bg);
+		color: var(--text-color);
+		border: 1px solid var(--ord-border);
+		border-radius: 0.5rem;
+		font-size: var(--text-sm);
+	}
+
+	.search-input::placeholder {
+		color: var(--ord-dim);
+	}
+
+	.search-input:focus {
+		outline: none;
+		border-color: var(--input-focus-border);
+		box-shadow: 0 0 0 2px color-mix(in srgb, var(--input-focus-border) 30%, transparent);
+	}
+
+	/* The native clear "x" in WebKit is drawn from a fixed dark asset that
+	   disappears on dark surfaces — recolor it via a mask so it follows the theme. */
+	.search-input::-webkit-search-cancel-button {
+		-webkit-appearance: none;
+		appearance: none;
+		height: 0.85rem;
+		width: 0.85rem;
+		cursor: pointer;
+		background-color: var(--ord-label);
+		mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
+			center / contain no-repeat;
 	}
 
 	.stepper {
@@ -702,8 +1088,8 @@
 	}
 
 	.refresh-btn,
-	.retry-btn {
-		margin-left: auto;
+	.retry-btn,
+	.reset-btn {
 		height: 2.4rem;
 		padding: 0 1rem;
 		border: 1px solid var(--ord-border);
@@ -712,11 +1098,13 @@
 		color: var(--text-color);
 		font-size: var(--text-sm);
 		cursor: pointer;
+		white-space: nowrap;
 		transition: background-color 0.15s ease-out;
 	}
 
 	.refresh-btn:hover:not(:disabled),
-	.retry-btn:hover {
+	.retry-btn:hover,
+	.reset-btn:hover {
 		background: var(--ord-hover);
 	}
 
@@ -725,39 +1113,129 @@
 		cursor: wait;
 	}
 
-	/* --- Summary bar --- */
-	.summary-bar {
-		display: flex;
+	/* --- Total card (the number the order is judged on) --- */
+	.total-card {
+		display: grid;
+		grid-template-columns: minmax(11rem, auto) 1fr auto;
 		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
+		gap: 1.25rem;
 		margin-bottom: 1.1rem;
-		padding: 0.7rem 0.9rem;
+		padding: 1rem 1.1rem;
 		background: var(--container-bg);
 		border: 1px solid var(--ord-border);
 		border-radius: 0.75rem;
 	}
 
-	.totals {
-		margin: 0;
-		font-size: var(--text-sm);
+	.total-main {
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+	}
+
+	.total-label {
+		font-size: var(--text-xs);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
 		color: var(--ord-label);
 	}
 
-	.totals strong {
-		color: var(--text-color);
+	.total-value {
+		font-size: clamp(1.75rem, 4vw, 2.4rem);
+		font-weight: 700;
+		line-height: 1.1;
+		font-variant-numeric: tabular-nums;
+		color: var(--value-color);
+	}
+
+	.total-sub {
+		font-size: var(--text-sm);
+		color: var(--ord-label);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.band-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.band-chip {
+		--tone: var(--ord-label);
+		display: grid;
+		grid-template-columns: auto auto;
+		align-items: baseline;
+		gap: 0 0.4rem;
+		padding: 0.35rem 0.6rem;
+		border-radius: 0.5rem;
+		background: var(--ord-soft);
+		border: 1px solid var(--ord-border);
+	}
+
+	.band-chip.tone-urgent {
+		--tone: var(--observatory-remove);
+	}
+
+	.band-chip.tone-today {
+		--tone: var(--observatory-warn);
+	}
+
+	.band-dot {
+		width: 0.45rem;
+		height: 0.45rem;
+		border-radius: 50%;
+		background: var(--tone);
+	}
+
+	.band-name {
+		font-size: var(--text-xs);
+		font-weight: 600;
+		color: var(--tone);
+	}
+
+	.band-cost {
+		grid-column: 1 / -1;
+		font-size: var(--text-sm);
 		font-weight: 700;
 		font-variant-numeric: tabular-nums;
 	}
 
-	.est-cost {
-		color: var(--value-color);
-		font-weight: 700;
+	.band-meta {
+		grid-column: 1 / -1;
+		font-size: 0.68rem;
+		color: var(--ord-label);
 		font-variant-numeric: tabular-nums;
+	}
+
+	.total-actions {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.5rem;
+	}
+
+	.save-line {
+		margin: 0;
+		font-size: var(--text-xs);
+		color: var(--ord-label);
+		text-align: right;
+	}
+
+	.save-line.is-error {
+		color: var(--observatory-remove);
+		font-weight: 600;
+	}
+
+	.btn-row {
+		display: flex;
+		gap: 0.5rem;
 	}
 
 	.copy-btn {
-		height: 2.3rem;
+		height: 2.4rem;
 		padding: 0 1.15rem;
 		border: none;
 		border-radius: 0.5rem;
@@ -792,6 +1270,9 @@
 		overflow-y: auto;
 		overflow-x: hidden;
 		-webkit-overflow-scrolling: touch;
+		/* Reserve the scrollbar gutter so the sticky header's last column can't
+		   slide under the scrollbar. */
+		scrollbar-gutter: stable;
 	}
 
 	/* --- Group band (urgency section header inside the table) --- */
@@ -805,6 +1286,10 @@
 
 	.tone-today {
 		--tone: var(--observatory-warn);
+	}
+
+	.tone-opening {
+		--tone: var(--observatory-accent);
 	}
 
 	.group-head {
@@ -851,8 +1336,8 @@
 	.col-head,
 	.order-row {
 		display: grid;
-		grid-template-columns: 1.6rem minmax(9rem, 2.4fr) 0.9fr 0.9fr 1.1fr 1.6rem;
-		gap: 0.75rem;
+		grid-template-columns: 1.5rem minmax(8rem, 2.2fr) 0.8fr 0.95fr 1fr 1fr 1.5rem;
+		gap: 0.6rem;
 		align-items: center;
 	}
 
@@ -866,16 +1351,59 @@
 		letter-spacing: 0.05em;
 		color: var(--table-header-text);
 		background: var(--table-header-bg);
-		padding: 0.7rem 0.9rem;
+		padding: 0.5rem 0.9rem;
 		border-bottom: 1px solid var(--ord-border);
 	}
 
-	.col-head .num {
-		text-align: right;
+	.sort-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.2rem;
+		padding: 0.2rem 0.25rem;
+		margin: -0.2rem -0.25rem;
+		border: none;
+		border-radius: 0.3rem;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		letter-spacing: inherit;
+		text-transform: inherit;
+		cursor: pointer;
+		transition: background-color 0.12s ease-out;
+	}
+
+	.sort-btn.num {
+		width: 100%;
+		justify-content: flex-end;
+	}
+
+	.sort-btn:hover {
+		background: color-mix(in srgb, var(--table-header-text) 12%, transparent);
+	}
+
+	.sort-btn:focus-visible {
+		outline: 2px solid var(--input-focus-border);
+		outline-offset: 1px;
+	}
+
+	.sort-btn.sorted {
+		color: var(--value-color);
+	}
+
+	.sort-arrow {
+		font-size: 0.55rem;
+		line-height: 1;
+	}
+
+	.conf-head {
+		font-size: 0.6rem;
+		text-align: center;
+		color: var(--table-header-text);
+		cursor: help;
 	}
 
 	.order-row {
-		padding: 0.55rem 0.9rem;
+		padding: 0.45rem 0.9rem;
 		border-bottom: 1px solid var(--ord-divider);
 		transition: background-color 0.12s ease-out;
 	}
@@ -890,6 +1418,10 @@
 
 	.tone-today .order-row {
 		box-shadow: inset 3px 0 0 var(--observatory-warn);
+	}
+
+	.tone-opening .order-row {
+		box-shadow: inset 3px 0 0 var(--observatory-accent);
 	}
 
 	.order-row.skipped {
@@ -930,23 +1462,9 @@
 		text-overflow: ellipsis;
 	}
 
-	.reset-qty {
-		flex: none;
-		border: none;
-		background: color-mix(in srgb, var(--text-color) 9%, transparent);
-		color: var(--ord-label);
-		font-size: 0.64rem;
-		border-radius: 0.25rem;
-		padding: 0.08rem 0.35rem;
-		cursor: pointer;
-	}
-
-	.reset-qty:hover {
-		color: var(--text-color);
-	}
-
 	.cell-onhand,
-	.cell-runout {
+	.cell-runout,
+	.cell-line {
 		text-align: right;
 	}
 
@@ -973,6 +1491,13 @@
 		justify-content: flex-end;
 	}
 
+	.qty-wrap {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.15rem;
+	}
+
 	.cell-qty input {
 		width: 4rem;
 		height: 2rem;
@@ -986,6 +1511,14 @@
 		padding: 0 0.5rem;
 	}
 
+	/* An edited quantity is what the boss most needs to spot — mark the field
+	   itself, not just a pill beside it. */
+	.cell-qty input.is-edited {
+		border-color: var(--observatory-accent);
+		box-shadow: inset 2px 0 0 var(--observatory-accent);
+		font-weight: 700;
+	}
+
 	.cell-qty input:focus {
 		outline: none;
 		border-color: var(--input-focus-border);
@@ -995,6 +1528,25 @@
 	.cell-qty input:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	.qty-was {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.2rem;
+		border: none;
+		border-radius: 0.25rem;
+		padding: 0.05rem 0.3rem;
+		background: color-mix(in srgb, var(--observatory-accent) 14%, transparent);
+		color: var(--observatory-accent);
+		font-size: 0.62rem;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	.qty-was:hover {
+		background: color-mix(in srgb, var(--observatory-accent) 24%, transparent);
 	}
 
 	.cell-conf {
@@ -1055,6 +1607,14 @@
 		.chev {
 			transition: none;
 		}
+	}
+
+	.no-match {
+		margin: 0;
+		padding: 1.5rem 0.9rem;
+		text-align: center;
+		font-size: var(--text-sm);
+		color: var(--ord-label);
 	}
 
 	/* --- All-clear / states --- */
@@ -1196,7 +1756,27 @@
 		border: 0;
 	}
 
-	/* --- Mobile: rows become two-line compact cards, page scrolls (no inner cap) --- */
+	/* --- Tablet: the total card stacks before the table does --- */
+	@media (max-width: 900px) {
+		.total-card {
+			grid-template-columns: 1fr;
+			gap: 0.85rem;
+		}
+
+		.total-actions {
+			align-items: stretch;
+		}
+
+		.save-line {
+			text-align: left;
+		}
+
+		.btn-row {
+			justify-content: flex-end;
+		}
+	}
+
+	/* --- Mobile: rows become three-line compact cards, page scrolls (no inner cap) --- */
 	@media (max-width: 640px) {
 		.orders-page {
 			max-width: 100%;
@@ -1218,16 +1798,18 @@
 		}
 
 		.order-row {
-			grid-template-columns: 1.4rem 1fr 1fr 1fr;
+			grid-template-columns: 1.4rem 1fr 1fr 1.4rem;
 			grid-template-areas:
 				'check name name conf'
-				'onhand order runout runout';
+				'onhand onhand order order'
+				'line line runout runout';
 			row-gap: 0.5rem;
 			padding: 0.65rem 0.75rem;
 		}
 
 		.tone-urgent .order-row,
-		.tone-today .order-row {
+		.tone-today .order-row,
+		.tone-opening .order-row {
 			box-shadow: none;
 		}
 
@@ -1246,12 +1828,16 @@
 		.cell-qty {
 			grid-area: order;
 		}
+		.cell-line {
+			grid-area: line;
+		}
 		.cell-runout {
 			grid-area: runout;
 		}
 
 		.cell-onhand,
 		.cell-runout,
+		.cell-line,
 		.cell-qty {
 			display: flex;
 			flex-direction: column;
@@ -1262,6 +1848,11 @@
 
 		.cell-cap {
 			display: block;
+		}
+
+		.qty-wrap {
+			align-items: flex-start;
+			width: 100%;
 		}
 
 		.cell-qty input {
@@ -1280,7 +1871,6 @@
 		}
 
 		.refresh-btn {
-			margin-left: 0;
 			flex: 1;
 		}
 
@@ -1288,8 +1878,16 @@
 			flex: 1;
 		}
 
+		.search-group {
+			flex: 1 0 100%;
+		}
+
 		.stepper {
 			justify-content: space-between;
+		}
+
+		.total-value {
+			font-size: 2rem;
 		}
 	}
 </style>

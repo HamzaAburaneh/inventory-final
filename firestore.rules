@@ -78,6 +78,14 @@ service cloud.firestore {
         allow read, write: if isMember(gid);
       }
 
+      // Group-scoped order drafts, one doc per order day (`orders/{YYYY-MM-DD}`).
+      // Any member may read/write: staff build the day's order, the owner opens
+      // the same doc to review it. Last write wins, and every save stamps
+      // updatedBy so the group can see who changed the numbers.
+      match /orders/{dayKey} {
+        allow read, write: if isMember(gid);
+      }
+
       // Group-scoped booth list — any member may read (to render item tags),
       // only the owner may add/rename/recolor/delete (workspace configuration).
       match /booths/{boothId} {
