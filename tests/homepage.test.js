@@ -163,48 +163,66 @@ test.describe('Inventory Observatory homepage', () => {
 		}
 	});
 
-	test('adds restrained hover motion to homepage signals and demonstrations', async ({ page }) => {
+	test('leaves illustrative homepage elements inert on hover', async ({ page }) => {
 		await page.goto('/');
 		await waitForHomepage(page);
 
-		const signal = page.locator('.signal-strip p').first();
-		const signalLabel = signal.locator('span');
-		const signalBase = await signal.evaluate((element) => ({
-			background: getComputedStyle(element).backgroundColor,
-			underline: getComputedStyle(element, '::after').transform
-		}));
-		await signal.hover();
-		await page.waitForTimeout(300);
-		const signalHover = await signal.evaluate((element) => ({
-			background: getComputedStyle(element).backgroundColor,
-			underline: getComputedStyle(element, '::after').transform
-		}));
-		expect(signalHover.background).not.toBe(signalBase.background);
-		expect(signalHover.underline).not.toBe(signalBase.underline);
-		expect(await signalLabel.evaluate((element) => getComputedStyle(element).transform)).not.toBe(
-			'none'
+		/* Freeze the card-float loop so a moving transform can't be read as a
+		   hover response. */
+		await page.locator('.motion-toggle').click();
+		await expect(page.locator('html')).toHaveClass(/motion-paused/);
+
+		/* None of these take a click, so none of them may advertise one. */
+		const inert = [
+			'.float-body',
+			'.inventory-demo',
+			'.forecast-demo',
+			'.inventory-counts > div',
+			'.booth-tags span',
+			'.event-body',
+			'.event-marker'
+		];
+
+		const readStyle = (locator) =>
+			locator.evaluate((element) => {
+				const style = getComputedStyle(element);
+				return {
+					transform: style.transform,
+					borderColor: style.borderColor,
+					background: style.backgroundColor,
+					boxShadow: style.boxShadow
+				};
+			});
+
+		for (const selector of inert) {
+			const target = page.locator(selector).first();
+			const base = await readStyle(target);
+			await target.hover();
+			await page.waitForTimeout(300);
+			expect(await readStyle(target), `${selector} should not react to hover`).toEqual(base);
+		}
+	});
+
+	test('keeps hover feedback on the controls that are actually operable', async ({ page }) => {
+		await page.goto('/');
+		await waitForHomepage(page);
+
+		const action = page.locator('.action-primary').first();
+		const actionBase = await action.evaluate(
+			(element) => getComputedStyle(element).backgroundColor
+		);
+		await action.hover();
+		await page.waitForTimeout(240);
+		expect(await action.evaluate((element) => getComputedStyle(element).backgroundColor)).not.toBe(
+			actionBase
 		);
 
-		const inventoryDemo = page.locator('.inventory-demo');
-		await inventoryDemo.hover();
-		await page.waitForTimeout(280);
-		expect(await inventoryDemo.evaluate((element) => getComputedStyle(element).transform)).not.toBe(
-			'none'
-		);
-
-		const eventBody = page.locator('.event-body').first();
-		await eventBody.hover();
-		await page.waitForTimeout(260);
-		expect(await eventBody.evaluate((element) => getComputedStyle(element).transform)).not.toBe(
-			'none'
-		);
-
-		const forecastDemo = page.locator('.forecast-demo');
-		await forecastDemo.hover();
-		await page.waitForTimeout(280);
-		await expect(page.locator('.forecast-chart-desktop .forecast-line')).toHaveCSS(
-			'stroke-width',
-			'4px'
+		const railDot = page.locator('.rail button.rail-stop:not(.active) .rail-dot').first();
+		const dotBase = await railDot.evaluate((element) => getComputedStyle(element).transform);
+		await page.locator('.rail button.rail-stop:not(.active)').first().hover();
+		await page.waitForTimeout(240);
+		expect(await railDot.evaluate((element) => getComputedStyle(element).transform)).not.toBe(
+			dotBase
 		);
 	});
 
@@ -415,16 +433,9 @@ test.describe('Inventory Observatory reduced motion', () => {
 		await page.goto('/');
 		await waitForHomepage(page);
 
-		const signal = page.locator('.signal-strip p').first();
-		await signal.hover();
-		const signalMotion = await signal.evaluate((element) => ({
-			transition: getComputedStyle(element).transitionDuration,
-			labelTransform: getComputedStyle(element.querySelector('span')).transform
-		}));
-
-		const inventoryDemo = page.locator('.inventory-demo');
-		await inventoryDemo.hover();
-		const inventoryMotion = await inventoryDemo.evaluate((element) => ({
+		const action = page.locator('.action-primary').first();
+		await action.hover();
+		const actionMotion = await action.evaluate((element) => ({
 			transition: getComputedStyle(element).transitionDuration,
 			transform: getComputedStyle(element).transform
 		}));
@@ -438,9 +449,7 @@ test.describe('Inventory Observatory reduced motion', () => {
 		expect(motion.snap).toBe('none');
 		expect(motion.heroAnimation).toBe('none');
 		expect(motion.revealOpacity).toBe('1');
-		expect(signalMotion.transition).toBe('0s');
-		expect(signalMotion.labelTransform).toBe('none');
-		expect(inventoryMotion.transition).toBe('0s');
-		expect(inventoryMotion.transform).toBe('none');
+		expect(actionMotion.transition).toBe('0s');
+		expect(actionMotion.transform).toBe('none');
 	});
 });

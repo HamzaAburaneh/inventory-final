@@ -1279,9 +1279,6 @@
 		padding: 1.15rem 1.25rem;
 		/* All cards share one rhythm so they hover in sync, not at staggered times. */
 		animation: card-float 6s ease-in-out infinite;
-		transition:
-			border-color 200ms ease,
-			box-shadow 200ms ease;
 	}
 
 	.fc-head {
@@ -1586,10 +1583,6 @@
 		background: var(--observatory-surface);
 		box-shadow: var(--observatory-shadow);
 		overflow: hidden;
-		transition:
-			transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
-			border-color 180ms ease,
-			box-shadow 240ms ease;
 	}
 
 	.forecast-demo {
@@ -1680,10 +1673,6 @@
 		border: 1px solid var(--observatory-border);
 		border-radius: 12px;
 		background: var(--observatory-surface-soft);
-		transition:
-			transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
-			background-color 180ms ease,
-			border-color 180ms ease;
 	}
 
 	.inventory-counts dt,
@@ -1734,11 +1723,6 @@
 		background: var(--observatory-surface-soft);
 		font-size: 0.78rem;
 		color: var(--observatory-text-muted);
-		transition:
-			transform 180ms ease,
-			background-color 180ms ease,
-			border-color 180ms ease,
-			color 180ms ease;
 	}
 
 	.transaction-demo {
@@ -1804,7 +1788,6 @@
 		font-size: 1.2rem;
 		font-weight: 800;
 		line-height: 1;
-		transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 	}
 
 	.event-body {
@@ -1812,11 +1795,6 @@
 		border: 1px solid var(--observatory-border);
 		border-radius: 12px;
 		background: var(--observatory-surface);
-		transition:
-			transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-			background-color 180ms ease,
-			border-color 180ms ease,
-			box-shadow 220ms ease;
 	}
 
 	.event-add .event-marker,
@@ -1960,7 +1938,6 @@
 	.confidence-area {
 		fill: var(--observatory-chart-confidence);
 		opacity: 0.78;
-		transition: opacity 240ms ease;
 	}
 
 	.history-line,
@@ -1969,9 +1946,6 @@
 		stroke-width: 3;
 		stroke-linecap: round;
 		stroke-linejoin: round;
-		transition:
-			filter 220ms ease,
-			stroke-width 220ms ease;
 	}
 
 	.history-line {
@@ -2107,60 +2081,11 @@
 		}
 	}
 
+	/* Nothing on this page hovers unless it is genuinely operable. The float
+	   cards, demo panels, count tiles, booth chips and transaction rows are
+	   illustrations — they take no click, so they promise no click. Hover lives
+	   only on the rail, the motion toggle, the scroll cue and the actions. */
 	@media (hover: hover) {
-		.float-card:hover {
-			z-index: 3;
-		}
-
-		.float-card:hover .float-body {
-			border-color: var(--observatory-accent);
-			box-shadow:
-				var(--observatory-shadow),
-				0 0 0 1px var(--observatory-accent);
-		}
-
-		.inventory-demo:hover,
-		.forecast-demo:hover {
-			border-color: var(--observatory-accent);
-			box-shadow:
-				var(--observatory-shadow),
-				0 0 0 1px var(--observatory-accent);
-			transform: translateY(-4px);
-		}
-
-		.inventory-counts > div:hover {
-			border-color: var(--observatory-accent);
-			background: var(--observatory-surface-solid);
-			transform: translateY(-3px);
-		}
-
-		.booth-tags span:hover {
-			border-color: var(--observatory-accent-border);
-			background: var(--observatory-accent-soft);
-			color: var(--observatory-text);
-			transform: translateY(-2px);
-		}
-
-		.transaction-event:hover .event-marker {
-			transform: scale(1.08);
-		}
-
-		.transaction-event:hover .event-body {
-			border-color: var(--observatory-accent);
-			background: var(--observatory-surface-solid);
-			box-shadow: 0 0 0 1px var(--observatory-accent);
-			transform: translateX(4px);
-		}
-
-		.forecast-demo:hover .confidence-area {
-			opacity: 1;
-		}
-
-		.forecast-demo:hover .forecast-line {
-			filter: drop-shadow(0 0 3px var(--observatory-accent));
-			stroke-width: 4;
-		}
-
 		/* Hover emphasizes the small dot itself — no full-button disc (which read as
 		   a messy blob around the dot). */
 		.rail button.rail-stop:hover .rail-dot {
@@ -2469,25 +2394,10 @@
 		.rail-dot,
 		.rail::before,
 		.scroll-cue,
-		.motion-toggle,
-		.inventory-demo,
-		.forecast-demo,
-		.inventory-counts > div,
-		.booth-tags span,
-		.event-marker,
-		.event-body,
-		.confidence-area,
-		.history-line,
-		.forecast-line {
+		.motion-toggle {
 			transition: none;
 		}
 
-		.inventory-demo:hover,
-		.forecast-demo:hover,
-		.inventory-counts > div:hover,
-		.booth-tags span:hover,
-		.transaction-event:hover .event-marker,
-		.transaction-event:hover .event-body,
 		.rail button.rail-stop:hover .rail-dot,
 		.action:not(:active):hover {
 			transform: none;
