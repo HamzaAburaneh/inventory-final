@@ -212,8 +212,10 @@ describe('isOpeningOrder', () => {
 		expect(isOpeningOrder([{ count: 0 }, { count: 0 }], true)).toBe(true);
 	});
 
-	it('is false once anything is on hand', () => {
-		expect(isOpeningOrder([{ count: 0 }, { count: 3 }], true)).toBe(false);
+	it('stays true pre-fair when a stray item still has stock', () => {
+		// A single leftover count must not drop the page back into urgency mode,
+		// where all 50 items band as "urgent" and the alarm colouring is noise.
+		expect(isOpeningOrder([{ count: 0 }, { count: 3 }], true)).toBe(true);
 	});
 
 	it('is false once the fair has started, even at zero stock', () => {

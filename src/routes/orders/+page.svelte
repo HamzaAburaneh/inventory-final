@@ -581,7 +581,9 @@
 		<span class="num">{@render sortHead('count', 'On hand', 'num')}</span>
 		<span class="num">{@render sortHead('qty', 'Order', 'num')}</span>
 		<span class="num">{@render sortHead('value', 'Line cost', 'num')}</span>
-		<span class="num">{@render sortHead('runOut', 'Runs out', 'num')}</span>
+		{#if !openingOrder}
+			<span class="num">{@render sortHead('runOut', 'Runs out', 'num')}</span>
+		{/if}
 		<span class="conf-head" title="Forecast confidence">Conf.</span>
 	</div>
 {/snippet}
@@ -606,6 +608,17 @@
 		<div class="cell-qty">
 			<span class="cell-cap">Order</span>
 			<div class="qty-wrap">
+				{#if row.edited}
+					<button
+						class="qty-prev"
+						onclick={() => resetQty(row.id)}
+						aria-label={`Restore the suggested ${row.suggested} cases of ${row.name}`}
+						title="Restore the suggested quantity"
+					>
+						{row.suggested}
+					</button>
+					<span class="qty-arrow" aria-hidden="true">&rarr;</span>
+				{/if}
 				<input
 					type="number"
 					min="0"
@@ -618,28 +631,22 @@
 					onblur={(e) => onQtyBlur(row, e)}
 					aria-label={`Cases of ${row.name} to order`}
 				/>
-				{#if row.edited}
-					<button
-						class="qty-was"
-						onclick={() => resetQty(row.id)}
-						title={`Suggested ${row.suggested} — click to restore`}
-					>
-						was {row.suggested}
-						<span aria-hidden="true">&times;</span>
-					</button>
-				{/if}
 			</div>
 		</div>
 		<div class="cell-line">
 			<span class="cell-cap">Line cost</span>
 			<span class="cell-val">{row.cost > 0 ? formatMoney(row.lineCost) : '—'}</span>
 		</div>
-		<div class="cell-runout">
-			<span class="cell-cap">Runs out</span>
-			<span class="cell-val" class:runout-now={row.group === 'urgent' && row.qty > 0}>
-				{runOutLabel(row)}
-			</span>
-		</div>
+		<!-- Pre-fair every shelf reads "today", so 50 identical values would be
+		     pure noise — the column is dropped entirely in opening mode. -->
+		{#if !openingOrder}
+			<div class="cell-runout">
+				<span class="cell-cap">Runs out</span>
+				<span class="cell-val" class:runout-now={row.group === 'urgent' && row.qty > 0}>
+					{runOutLabel(row)}
+				</span>
+			</div>
+		{/if}
 		<div class="cell-conf">
 			<span
 				class="conf-dot {CONFIDENCE_META[row.confidence.level].cls}"
@@ -694,20 +701,15 @@
 				Order for <strong>{formatDayKey(forecastDates[0])}</strong>
 				<span class="dot">&middot;</span> delivery {formatDayKey(deliveryKey)}
 			</p>
+			<!-- One line of context, not a third stacked card above the data. -->
+			{#if planStartsLater}
+				<p class="prefair-line">
+					<span class="pf-icon" aria-hidden="true">◷</span>
+					The fair hasn't opened yet — nothing here is a top-up.
+				</p>
+			{/if}
 		{/if}
 	</header>
-
-	{#if planStartsLater && forecastDates.length > 0}
-		<div class="prefair-banner">
-			<span class="pf-icon" aria-hidden="true">◷</span>
-			<p>
-				<strong>The fair hasn't opened yet.</strong>
-				This plan starts {formatDayKey(forecastDates[0])}{openingOrder
-					? ' and every shelf is still empty, so these are opening quantities rather than top-ups.'
-					: '.'}
-			</p>
-		</div>
-	{/if}
 
 	<div class="controls-card">
 		<div class="stepper-group">
@@ -779,7 +781,9 @@
 				</span>
 			</div>
 
-			{#if bandBreakdown.length > 0}
+			<!-- With a single band the chip restates the hero total verbatim, right
+			     beside it — only worth showing once there's a split to see. -->
+			{#if bandBreakdown.length > 1}
 				<ul class="band-list">
 					{#each bandBreakdown as band (band.key)}
 						<li class="band-chip tone-{band.key}">
@@ -846,7 +850,7 @@
 			</div>
 		{/if}
 
-		<div class="table-card" in:fly={sectionIn}>
+		<div class="table-card" class:is-opening={openingOrder} in:fly={sectionIn}>
 			<div class="table-scroll">
 				{@render colHead()}
 				{#each SECTIONS as cfg (cfg.key)}
@@ -944,33 +948,21 @@
 		margin: 0 0.15rem;
 	}
 
-	/* --- Pre-fair banner (promoted out of the header footnote) --- */
-	.prefair-banner {
+	/* --- Pre-fair note: a header line, not a third stacked card --- */
+	.prefair-line {
 		display: flex;
-		align-items: flex-start;
-		gap: 0.6rem;
-		margin-bottom: 0.85rem;
-		padding: 0.7rem 0.9rem;
-		border-radius: 0.75rem;
-		background: var(--observatory-warn-soft);
-		border: 1px solid var(--observatory-warn-border);
-	}
-
-	.prefair-banner p {
-		margin: 0;
-		font-size: var(--text-sm);
-		color: var(--text-color);
-	}
-
-	.prefair-banner strong {
-		color: var(--observatory-warn);
+		align-items: center;
+		gap: 0.35rem;
+		margin: 0.25rem 0 0;
+		font-size: var(--text-xs);
+		color: var(--ord-label);
 	}
 
 	.pf-icon {
 		flex: none;
 		color: var(--observatory-warn);
-		font-size: 1.05rem;
-		line-height: 1.35;
+		font-size: 0.9rem;
+		line-height: 1;
 	}
 
 	/* --- Controls --- */
@@ -1292,13 +1284,16 @@
 		--tone: var(--observatory-accent);
 	}
 
+	/* Tinted band rather than a solid accent fill: once the fair opens and three
+	   bands stack, full-bleed colour blocks would out-shout the order total —
+	   and keep red/amber meaningful for genuine urgency. */
 	.group-head {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.5rem 0.9rem;
-		background: color-mix(in srgb, var(--tone) 9%, var(--container-bg));
-		border-top: 1px solid var(--ord-border);
+		background: color-mix(in srgb, var(--tone) 12%, var(--container-bg));
+		border-top: 1px solid color-mix(in srgb, var(--tone) 35%, transparent);
 		border-bottom: 1px solid var(--ord-divider);
 	}
 
@@ -1336,9 +1331,24 @@
 	.col-head,
 	.order-row {
 		display: grid;
-		grid-template-columns: 1.5rem minmax(8rem, 2.2fr) 0.8fr 0.95fr 1fr 1fr 1.5rem;
-		gap: 0.6rem;
+		grid-template-columns: 1.5rem minmax(7rem, 2.6fr) 0.75fr 1.15fr 1fr 1fr 1.5rem;
+		gap: 0.5rem;
 		align-items: center;
+	}
+
+	/* Opening mode drops the run-out column, so the tracks drop with it. */
+	.is-opening .col-head,
+	.is-opening .order-row {
+		grid-template-columns: 1.5rem minmax(7rem, 3fr) 0.85fr 1.3fr 1.1fr 1.5rem;
+	}
+
+	/* Ruled columns: a hairline before each numeric column keeps the figures
+	   visually bound to their header across a wide row, instead of drifting in
+	   open space. The name and the trailing confidence dot stay unruled. */
+	.col-head > span:nth-child(n + 3):not(:last-child),
+	.order-row > div:nth-child(n + 3):not(:last-child) {
+		border-left: 1px solid var(--ord-divider);
+		padding-left: 0.5rem;
 	}
 
 	.col-head {
@@ -1412,17 +1422,8 @@
 		background: var(--ord-hover);
 	}
 
-	.tone-urgent .order-row {
-		box-shadow: inset 3px 0 0 var(--observatory-remove);
-	}
-
-	.tone-today .order-row {
-		box-shadow: inset 3px 0 0 var(--observatory-warn);
-	}
-
-	.tone-opening .order-row {
-		box-shadow: inset 3px 0 0 var(--observatory-accent);
-	}
+	/* No per-row left stripe: with every item in one band it drew a solid bar
+	   down the whole table. The tinted band header already marks the section. */
 
 	.order-row.skipped {
 		opacity: 0.5;
@@ -1491,11 +1492,37 @@
 		justify-content: flex-end;
 	}
 
+	/* Row, not column: a stacked caption made edited rows taller than their
+	   neighbours, which read as a detached tooltip. `19 → 21` states the change
+	   on one line and leaves row height untouched. */
 	.qty-wrap {
 		display: flex;
-		flex-direction: column;
-		align-items: flex-end;
-		gap: 0.15rem;
+		flex-direction: row;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.2rem;
+		min-width: 0;
+	}
+
+	.qty-prev {
+		border: none;
+		background: transparent;
+		padding: 0 0.1rem;
+		color: var(--ord-dim);
+		font-size: var(--text-xs);
+		font-variant-numeric: tabular-nums;
+		text-decoration: line-through;
+		cursor: pointer;
+	}
+
+	.qty-prev:hover {
+		color: var(--text-color);
+	}
+
+	.qty-arrow {
+		flex: none;
+		color: var(--ord-dim);
+		font-size: 0.7rem;
 	}
 
 	.cell-qty input {
@@ -1528,25 +1555,6 @@
 	.cell-qty input:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
-	}
-
-	.qty-was {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.2rem;
-		border: none;
-		border-radius: 0.25rem;
-		padding: 0.05rem 0.3rem;
-		background: color-mix(in srgb, var(--observatory-accent) 14%, transparent);
-		color: var(--observatory-accent);
-		font-size: 0.62rem;
-		font-variant-numeric: tabular-nums;
-		white-space: nowrap;
-		cursor: pointer;
-	}
-
-	.qty-was:hover {
-		background: color-mix(in srgb, var(--observatory-accent) 24%, transparent);
 	}
 
 	.cell-conf {
@@ -1797,7 +1805,8 @@
 			display: none;
 		}
 
-		.order-row {
+		.order-row,
+		.is-opening .order-row {
 			grid-template-columns: 1.4rem 1fr 1fr 1.4rem;
 			grid-template-areas:
 				'check name name conf'
@@ -1807,10 +1816,10 @@
 			padding: 0.65rem 0.75rem;
 		}
 
-		.tone-urgent .order-row,
-		.tone-today .order-row,
-		.tone-opening .order-row {
-			box-shadow: none;
+		/* Column rules belong to the desktop grid; the stacked card has none. */
+		.order-row > div:nth-child(n + 3):not(:last-child) {
+			border-left: none;
+			padding-left: 0;
 		}
 
 		.cell-check {
@@ -1851,7 +1860,7 @@
 		}
 
 		.qty-wrap {
-			align-items: flex-start;
+			justify-content: flex-start;
 			width: 100%;
 		}
 

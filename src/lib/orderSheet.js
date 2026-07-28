@@ -208,18 +208,21 @@ export function sortRows(rows, key, dir = 'asc') {
 }
 
 /**
- * True when this is an opening buy rather than a top-up: the fair hasn't
- * started and there is nothing on any shelf yet. In that state every item is
- * trivially "at or below low stock", so the urgent/today/upcoming bands all
- * collapse into one and the page shows a single list instead.
+ * True when this is an opening buy rather than a top-up — i.e. the forecast
+ * window starts after today, so the fair hasn't opened.
+ *
+ * Deliberately keyed on the calendar alone and NOT on "every shelf is empty":
+ * one item left with stock from last year would otherwise drop the whole page
+ * back into urgency mode, where all 50 items land in "urgent" and the red
+ * banding fires on every row — alarm colouring with no signal in it. Before
+ * the fair opens nothing can be a top-up, whatever a few stray counts say.
  * @param {Array<{count: number}>} rows - Order rows
  * @param {boolean} planStartsLater - Forecast window opens after today
  * @returns {boolean}
  */
 export function isOpeningOrder(rows, planStartsLater) {
 	if (!planStartsLater) return false;
-	if (!Array.isArray(rows) || rows.length === 0) return false;
-	return rows.every((r) => (Number(r.count) || 0) === 0);
+	return Array.isArray(rows) && rows.length > 0;
 }
 
 /**
