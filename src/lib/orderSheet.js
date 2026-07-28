@@ -226,6 +226,31 @@ export function isOpeningOrder(rows, planStartsLater) {
 }
 
 /**
+ * The real dates the coverage/lead steppers resolve to: when the truck lands
+ * and the last day the order is sized to cover. Two steppers both reading
+ * "2 days" mean different things, so the page states the consequence in dates
+ * rather than making the reader derive it.
+ *
+ * Mirrors suggestedOrderQty's window exactly — it sums demand over indices
+ * `lead … lead + cover - 1`, so delivery is day `lead` and the order covers
+ * through `lead + cover - 1`.
+ * @param {string[]} forecastDates - ISO day keys, index 0 = the order day
+ * @param {number} leadDays - Days until delivery
+ * @param {number} coverageDays - Days of demand to cover after delivery
+ * @returns {{arrives: string, through: string} | null} Day keys, or null with no forecast
+ */
+export function coverageWindow(forecastDates, leadDays, coverageDays) {
+	if (!Array.isArray(forecastDates) || forecastDates.length === 0) return null;
+	const last = forecastDates.length - 1;
+	const lead = Math.max(0, Math.floor(Number(leadDays) || 0));
+	const cover = Math.max(1, Math.floor(Number(coverageDays) || 1));
+	return {
+		arrives: forecastDates[Math.min(lead, last)],
+		through: forecastDates[Math.min(lead + cover - 1, last)]
+	};
+}
+
+/**
  * Short "who last touched this" line for the draft status, e.g.
  * `Saved by Hamza · 2:14 PM`. Returns '' when the draft has never been saved.
  * @param {{updatedAt: Date | null, updatedBy: string}} draft - Normalized draft

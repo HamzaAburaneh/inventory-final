@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	coverageWindow,
 	draftLines,
 	filterRows,
 	formatCount,
@@ -224,6 +225,45 @@ describe('isOpeningOrder', () => {
 
 	it('is false with no rows', () => {
 		expect(isOpeningOrder([], true)).toBe(false);
+	});
+});
+
+describe('coverageWindow', () => {
+	const days = ['2026-08-21', '2026-08-22', '2026-08-23', '2026-08-24', '2026-08-25'];
+
+	it('lands on the lead day and covers the coverage span after it', () => {
+		// Lead 2 → arrives Aug 23; coverage 2 → covers Aug 23 and Aug 24.
+		expect(coverageWindow(days, 2, 2)).toEqual({ arrives: '2026-08-23', through: '2026-08-24' });
+	});
+
+	it('covers only the arrival day at a coverage of 1', () => {
+		expect(coverageWindow(days, 1, 1)).toEqual({ arrives: '2026-08-22', through: '2026-08-22' });
+	});
+
+	it('arrives the same day at a zero lead', () => {
+		expect(coverageWindow(days, 0, 3)).toEqual({ arrives: '2026-08-21', through: '2026-08-23' });
+	});
+
+	it('clamps to the end of the horizon', () => {
+		expect(coverageWindow(days, 3, 7)).toEqual({ arrives: '2026-08-24', through: '2026-08-25' });
+	});
+
+	it('matches the window suggestedOrderQty actually sums', () => {
+		// Lead 1, coverage 2 sums prediction indices 1 and 2 — days Aug 22..23.
+		const win = coverageWindow(days, 1, 2);
+		expect(win).toEqual({ arrives: days[1], through: days[2] });
+	});
+
+	it('returns null without a forecast', () => {
+		expect(coverageWindow([], 1, 2)).toBeNull();
+		expect(coverageWindow(undefined, 1, 2)).toBeNull();
+	});
+
+	it('coerces garbage to a sane window', () => {
+		expect(coverageWindow(days, undefined, undefined)).toEqual({
+			arrives: '2026-08-21',
+			through: '2026-08-21'
+		});
 	});
 });
 

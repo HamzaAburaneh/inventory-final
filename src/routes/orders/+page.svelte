@@ -12,6 +12,7 @@
 		suggestedOrderQty
 	} from '../../lib/predictionCore.js';
 	import {
+		coverageWindow,
 		draftLines,
 		filterRows,
 		formatCount,
@@ -259,6 +260,10 @@
 		forecastDates.length > 0 ? forecastDates[Math.min(leadDays, forecastDates.length - 1)] : ''
 	);
 	const nextDue = $derived(upcoming.length > 0 ? upcoming[0].reorderBy : null);
+
+	// "2 days" and "2 days" mean different things — state what they resolve to.
+	// Not named `window`: that shadows the global the reduced-motion check reads.
+	const coverWindow = $derived(coverageWindow(forecastDates, leadDays, coverageDays));
 
 	// ————————————————————————————————————————————————————————————————————
 	// Draft persistence
@@ -713,7 +718,23 @@
 
 	<div class="controls-card">
 		<div class="stepper-group">
-			<span class="control-label" id="coverage-label">Coverage</span>
+			<span class="control-label" id="coverage-label">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+					><rect x="4" y="5" width="16" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M4 11h16"
+					></path></svg
+				>
+				Buy enough for
+			</span>
 			<div class="stepper" role="group" aria-labelledby="coverage-label">
 				<button
 					aria-label="Decrease coverage days"
@@ -732,7 +753,24 @@
 			</div>
 		</div>
 		<div class="stepper-group">
-			<span class="control-label" id="lead-label">Delivery lead</span>
+			<span class="control-label" id="lead-label">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+					><circle cx="7" cy="17" r="2"></circle><circle cx="17" cy="17" r="2"></circle><path
+						d="M5 17H3v-4m-1-8h11v12m-4 0h6m4 0h2v-6h-8m0-5h5l3 5"
+					></path></svg
+				>
+				Truck arrives in
+			</span>
 			<div class="stepper" role="group" aria-labelledby="lead-label">
 				<button
 					aria-label="Decrease lead days"
@@ -765,6 +803,20 @@
 		<button class="refresh-btn" onclick={loadData} disabled={loading}>
 			{loading ? 'Refreshing…' : 'Refresh'}
 		</button>
+
+		<!-- Both steppers read "N days" but mean different things, so spell out
+		     what the pair actually resolves to. Catches a lead that skips a
+		     delivery day without the reader working it out from the header. -->
+		{#if coverWindow}
+			<p class="window-line" aria-live="polite">
+				Arrives <strong>{formatDayKey(coverWindow.arrives)}</strong>
+				{#if coverWindow.through === coverWindow.arrives}
+					&mdash; covers that day only
+				{:else}
+					&mdash; covers through <strong>{formatDayKey(coverWindow.through)}</strong>
+				{/if}
+			</p>
+		{/if}
 	</div>
 
 	{#if !loading && !error && rows.length > 0}
@@ -990,12 +1042,35 @@
 		min-width: 10rem;
 	}
 
+	/* Sentence case, not uppercase: these read as instructions ("Buy enough
+	   for"), and shouting them made two unlike controls look interchangeable. */
 	.control-label {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
 		font-size: var(--text-xs);
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
+		font-weight: 500;
 		color: var(--ord-label);
+	}
+
+	.control-label svg {
+		flex: none;
+		opacity: 0.85;
+	}
+
+	/* Full-width so it wraps below the controls rather than squeezing them. */
+	.window-line {
+		flex: 1 0 100%;
+		margin: 0.15rem 0 0;
+		padding-top: 0.6rem;
+		border-top: 1px solid var(--ord-divider);
+		font-size: var(--text-xs);
+		color: var(--ord-label);
+	}
+
+	.window-line strong {
+		color: var(--text-color);
+		font-weight: 600;
 	}
 
 	.search-input {
