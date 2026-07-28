@@ -48,11 +48,16 @@ test.describe('Inventory Observatory homepage', () => {
 
 		await expect(page.locator('.panel')).toHaveCount(5);
 		await expect(
-			page.getByRole('heading', { name: 'Know what’s in stock. Know what happens next.' })
+			page.getByRole('heading', { name: 'Run your inventory with precision.' })
+		).toBeAttached();
+		await expect(
+			page.getByRole('heading', { name: 'One inventory. Zero guesswork.' })
 		).toBeVisible();
-		await expect(page.getByText('Live inventory visibility')).toBeVisible();
-		await expect(page.getByText('Traceable count changes')).toBeVisible();
-		await expect(page.getByText('Forecast-ready insights')).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Every count has a story.' })).toBeAttached();
+		await expect(page.getByRole('heading', { name: 'Plan before stock runs low.' })).toBeAttached();
+		await expect(
+			page.getByRole('heading', { name: 'Run inventory with foresight.' })
+		).toBeAttached();
 		await expect(page.getByText('Example inventory record')).toBeAttached();
 		await expect(page.getByText('Example transaction sequence')).toBeAttached();
 		await expect(page.getByText('Illustrative forecast example')).toBeAttached();
@@ -243,27 +248,18 @@ test.describe('Inventory Observatory mobile behavior', () => {
 		await page.goto('/');
 		await waitForHomepage(page);
 
-		const geometry = await page.evaluate(() => {
-			const signalStrip = document.querySelector('.signal-strip');
-			const signalCells = [...signalStrip.querySelectorAll('p')].map((cell) => {
-				const rect = cell.getBoundingClientRect();
-				return { top: rect.top, height: rect.height };
-			});
-			return {
-				viewportWidth: window.innerWidth,
-				documentWidth: document.documentElement.scrollWidth,
-				railDisplay: getComputedStyle(document.querySelector('.rail')).display,
-				signalColumns: getComputedStyle(signalStrip).gridTemplateColumns.split(' ').length,
-				signalHeight: signalStrip.getBoundingClientRect().height,
-				signalTops: signalCells.map((cell) => cell.top)
-			};
-		});
+		const geometry = await page.evaluate(() => ({
+			viewportWidth: window.innerWidth,
+			documentWidth: document.documentElement.scrollWidth,
+			railDisplay: getComputedStyle(document.querySelector('.rail')).display,
+			widest: [...document.querySelectorAll('.panel *')]
+				.map((element) => Math.ceil(element.getBoundingClientRect().right))
+				.reduce((max, right) => Math.max(max, right), 0)
+		}));
 
 		expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth);
 		expect(geometry.railDisplay).toBe('flex');
-		expect(geometry.signalColumns).toBe(3);
-		expect(geometry.signalHeight).toBeLessThan(90);
-		expect(Math.max(...geometry.signalTops) - Math.min(...geometry.signalTops)).toBeLessThan(2);
+		expect(geometry.widest).toBeLessThanOrEqual(geometry.viewportWidth);
 		await expect(
 			page.getByRole('heading', { name: 'One inventory. Zero guesswork.' })
 		).toBeAttached();

@@ -2126,6 +2126,24 @@
 		}
 	}
 
+	/* Phones stack the hero copy above the card stage, so the desktop vertical
+	   rhythm adds up to more than one screen. Tighten the whitespace — not the
+	   content — so the intro panel still fits below the fixed nav. */
+	@media (max-width: 767px) {
+		.hero {
+			padding-top: 1.5rem;
+			padding-bottom: 1.5rem;
+		}
+
+		.hero-layout {
+			gap: 1.5rem;
+		}
+
+		.hero-copy .actions {
+			margin-top: 1.25rem;
+		}
+	}
+
 	@media (min-width: 480px) {
 		.actions {
 			display: flex;
@@ -2470,23 +2488,12 @@
 			gap: 1rem;
 		}
 
-		/* Short landscape phones: collapse the bento to a compact single column and
-		   show only the focal KPI + the alert so the panel stays within one screen. */
+		/* Short landscape phones have room for the headline, the lede and the
+		   actions — and nothing else. The card stage is decorative (aria-hidden),
+		   so it yields rather than push the real content off-screen; the
+		   ThreeScene backdrop still carries the panel. */
 		.hero-stage {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 0.75rem;
-			max-width: 26rem;
-		}
-
-		.card-updated,
-		.card-forecast {
 			display: none;
-		}
-
-		.card-movement,
-		.card-lowstock {
-			grid-column: 1;
-			grid-row: auto;
 		}
 
 		.inventory-layout,
