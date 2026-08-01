@@ -25,6 +25,23 @@
 
 	const currentPath = $derived($page.url.pathname);
 
+	// The landing hero is designed to run edge-to-edge under a seamless navbar.
+	// Once the page has scrolled off the hero, the surface fades back in so links
+	// stay legible over whatever panel is underneath.
+	const isLanding = $derived(currentPath === '/');
+	let scrolledPastHero = $state(false);
+
+	$effect(() => {
+		if (!isLanding) {
+			scrolledPastHero = false;
+			return;
+		}
+		const onScroll = () => (scrolledPastHero = window.scrollY > 24);
+		onScroll();
+		window.addEventListener('scroll', onScroll, { passive: true });
+		return () => window.removeEventListener('scroll', onScroll);
+	});
+
 	const userInitials = $derived(
 		user
 			? user.displayName
@@ -149,11 +166,34 @@
 	});
 </script>
 
-<nav class="navbar" aria-label="Main navigation">
+<nav
+	class="navbar"
+	class:landing={isLanding}
+	class:scrolled={scrolledPastHero}
+	aria-label="Main navigation"
+>
 	<div class="nav-inner">
-		<!-- ── Logo (original, untouched) ── -->
+		<!-- ── Logo ── -->
 		<a href={resolve('/')} class="brand">
-			<i class="fas fa-layer-group mr-2" aria-hidden="true"></i>
+			<svg class="brand-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+				<path d="M12 2.9 21.2 7.5 12 12.1 2.8 7.5 12 2.9Z" fill="currentColor" />
+				<path
+					d="m3.4 12 8.6 4.3 8.6-4.3"
+					stroke="currentColor"
+					stroke-width="2.1"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					opacity="0.7"
+				/>
+				<path
+					d="m3.4 16.4 8.6 4.3 8.6-4.3"
+					stroke="currentColor"
+					stroke-width="2.1"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					opacity="0.42"
+				/>
+			</svg>
 			<span class="brand-text">Stock<span class="brand-accent">Sense</span></span>
 		</a>
 
@@ -698,6 +738,37 @@
 		/* No shadow — intentional */
 	}
 
+	/* On `/` the bar sits directly on the hero backdrop with no plate and no
+	   seam; the surface only fades in once the hero has scrolled away. The
+	   border keeps its 1px so the fade never shifts layout. */
+	.navbar.landing {
+		background: var(--nav-landing-surface);
+		border-bottom-color: var(--nav-landing-border);
+		transition:
+			background-color 220ms ease,
+			border-color 220ms ease,
+			backdrop-filter 220ms ease;
+	}
+
+	.navbar.landing.scrolled {
+		background: var(--nav-landing-scrolled);
+		border-bottom-color: var(--nb-border);
+		backdrop-filter: blur(14px);
+		-webkit-backdrop-filter: blur(14px);
+	}
+
+	/* Seamlessness is a stylistic choice, not one worth spending contrast on:
+	   under a high-contrast preference the bar keeps its surface and its edge. */
+	@media (prefers-contrast: more), (prefers-contrast: high) {
+		.navbar.landing,
+		.navbar.landing.scrolled {
+			background: var(--nb-surface);
+			border-bottom-color: var(--nb-border);
+			backdrop-filter: none;
+			-webkit-backdrop-filter: none;
+		}
+	}
+
 	/* ── Inner container ───────────────────────── */
 	.nav-inner {
 		max-width: 1280px;
@@ -709,20 +780,29 @@
 		gap: 0;
 	}
 
-	/* ── Original logo — markup + styles untouched ── */
+	/* ── Logo ── */
 	.brand {
 		color: var(--tech-title);
-		font-size: 1.3rem;
-		font-weight: 300;
-		letter-spacing: -0.01em;
+		font-size: 1.35rem;
+		/* Was 300 — too light to hold up against the dark hero backdrop. */
+		font-weight: 600;
+		letter-spacing: -0.025em;
 		line-height: 1;
 		text-decoration: none;
 		transition: opacity 0.4s ease;
 		display: flex;
 		align-items: center;
+		gap: 0.55rem;
 		min-height: 48px;
 		flex-shrink: 0;
 		margin-right: 2rem;
+	}
+
+	.brand-mark {
+		width: 1.5rem;
+		height: 1.5rem;
+		flex-shrink: 0;
+		color: var(--nb-accent);
 	}
 
 	.brand:hover {
@@ -735,24 +815,12 @@
 		border-radius: 4px;
 	}
 
-	.brand :global(i) {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 1rem;
-		height: 1rem;
-		font-size: 1rem;
-		line-height: 1;
-		color: var(--nb-accent);
-		transform: translateY(1px);
-	}
-
 	.brand-text {
 		position: relative;
 	}
 	.brand-accent {
 		color: var(--nb-accent);
-		font-weight: 400;
+		font-weight: 600;
 	}
 
 	/* ── Nav links ─────────────────────────────── */

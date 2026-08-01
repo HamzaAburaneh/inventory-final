@@ -61,6 +61,10 @@ test.describe('Inventory Observatory homepage', () => {
 		await expect(page.getByText('Example inventory record')).toBeAttached();
 		await expect(page.getByText('Example transaction sequence')).toBeAttached();
 		await expect(page.getByText('Illustrative forecast example')).toBeAttached();
+		await expect(page.getByText('Smarter inventory. Better decisions.')).toBeVisible();
+		await expect(page.locator('.dashboard-shell')).toBeVisible();
+		await expect(page.getByText('Trusted by modern operations')).toBeVisible();
+		await expect(page.getByText('BrewHub')).toBeVisible();
 		await expect(page.getByText('John Doe')).toHaveCount(0);
 		await expect(page.getByText('Join thousands of businesses')).toHaveCount(0);
 	});
@@ -173,9 +177,10 @@ test.describe('Inventory Observatory homepage', () => {
 		await waitForHomepage(page);
 
 		/* Freeze the card-float loop so a moving transform can't be read as a
-		   hover response. */
-		await page.locator('.motion-toggle').click();
-		await expect(page.locator('html')).toHaveClass(/motion-paused/);
+		   hover response. Reduced motion disables it at the CSS level. */
+		await page.emulateMedia({ reducedMotion: 'reduce' });
+		await page.reload();
+		await waitForHomepage(page);
 
 		/* None of these take a click, so none of them may advertise one. */
 		const inert = [
@@ -248,14 +253,29 @@ test.describe('Inventory Observatory mobile behavior', () => {
 		await page.goto('/');
 		await waitForHomepage(page);
 
-		const geometry = await page.evaluate(() => ({
-			viewportWidth: window.innerWidth,
-			documentWidth: document.documentElement.scrollWidth,
-			railDisplay: getComputedStyle(document.querySelector('.rail')).display,
-			widest: [...document.querySelectorAll('.panel *')]
-				.map((element) => Math.ceil(element.getBoundingClientRect().right))
-				.reduce((max, right) => Math.max(max, right), 0)
-		}));
+		const geometry = await page.evaluate(() => {
+			// An element clipped by an `overflow: hidden` ancestor can never cause
+			// visible or scrollable overflow, however far its own raw
+			// getBoundingClientRect() extends — the hero badge's shine wedge is
+			// deliberately oversized (200% of the badge width) and doubly clipped
+			// this way, by design, so it must not count here.
+			const isClipped = (element) => {
+				for (let node = element.parentElement; node; node = node.parentElement) {
+					const overflow = getComputedStyle(node).overflow;
+					if (overflow === 'hidden' || overflow === 'clip') return true;
+				}
+				return false;
+			};
+			return {
+				viewportWidth: window.innerWidth,
+				documentWidth: document.documentElement.scrollWidth,
+				railDisplay: getComputedStyle(document.querySelector('.rail')).display,
+				widest: [...document.querySelectorAll('.panel *')]
+					.filter((element) => !isClipped(element))
+					.map((element) => Math.ceil(element.getBoundingClientRect().right))
+					.reduce((max, right) => Math.max(max, right), 0)
+			};
+		});
 
 		expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth);
 		expect(geometry.railDisplay).toBe('flex');

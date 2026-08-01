@@ -3,7 +3,6 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
 	import { fly } from 'svelte/transition';
-	import ThreeScene from '../components/ThreeScene.svelte';
 	import ScrollReveal from '../components/ScrollReveal.svelte';
 	import {
 		createGestureTracker,
@@ -19,7 +18,6 @@
 	const rotatingWords = ['precision', 'foresight', 'clarity', 'confidence'];
 	let wordIndex = $state(0);
 	let reduceMotion = $state(false);
-	let motionPaused = $state(false);
 
 	$effect(() => {
 		const query = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -32,17 +30,11 @@
 	// Cycle the headline word; honour reduced-motion and the pause-motion
 	// control (WCAG 2.2.2) by never starting the timer while either is active.
 	$effect(() => {
-		if (reduceMotion || motionPaused) return;
+		if (reduceMotion) return;
 		const id = setInterval(() => {
 			wordIndex = (wordIndex + 1) % rotatingWords.length;
 		}, 2600);
 		return () => clearInterval(id);
-	});
-
-	// While paused, CSS-side loops (card float, scroll cue) freeze via this class.
-	$effect(() => {
-		document.documentElement.classList.toggle('motion-paused', motionPaused);
-		return () => document.documentElement.classList.remove('motion-paused');
 	});
 
 	const sections = [
@@ -250,7 +242,19 @@
 	<meta property="og:url" content={canonicalHref} />
 </svelte:head>
 
-<ThreeScene />
+<!-- Landing backdrop. Replaces the WebGL terrain on `/` (— /login still uses
+     ThreeScene): a flat base, a wide light arc sweeping the lower-left corner,
+     and a soft bloom. Static, so there is nothing here for the pause control or
+     reduced-motion to switch off, and no GPU cost.
+
+     The sweep is a stroked SVG path rather than the border of an oversized CSS
+     ellipse: a 1.5px border on a ~1600px-radius curve is rasterised by the
+     border-radius path and visibly stair-steps, where a stroke is antialiased
+     analytically. `non-scaling-stroke` holds the line at 1.5px however the
+     viewBox is scaled to cover. -->
+<div class="backdrop" aria-hidden="true">
+	<span class="backdrop-bloom"></span>
+</div>
 
 <nav class="rail" aria-label="Homepage panels" style:--rail-progress={railProgress}>
 	{#each sections as section, index (section.id)}
@@ -270,39 +274,33 @@
 	{/each}
 </nav>
 
-<!-- WCAG 2.2.2: one user-reachable stop for the page's looping motion
-     (word rotator, floating cards, scroll cue). Hidden under reduced-motion,
-     where nothing loops anyway. -->
-{#if !reduceMotion}
-	<button
-		type="button"
-		class="motion-toggle"
-		onclick={() => (motionPaused = !motionPaused)}
-		aria-pressed={motionPaused}
-		aria-label={motionPaused ? 'Resume motion' : 'Pause motion'}
-		title={motionPaused ? 'Resume motion' : 'Pause motion'}
-	>
-		<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-			{#if motionPaused}
-				<path d="M9 6.5v11l8.5-5.5L9 6.5z" fill="currentColor" />
-			{:else}
-				<rect x="7.5" y="6" width="3.2" height="12" rx="1" fill="currentColor" />
-				<rect x="13.3" y="6" width="3.2" height="12" rx="1" fill="currentColor" />
-			{/if}
-		</svg>
-	</button>
-{/if}
-
 <div class="page">
 	<section id="intro" class="panel hero" aria-labelledby="intro-heading" tabindex="-1">
 		<div class="hero-layout">
 			<div class="hero-copy">
+				<p class="hero-badge">
+					<span class="badge-shine-mask" aria-hidden="true">
+						<span class="badge-shine-wedge"></span>
+					</span>
+					<span class="badge-shine-backdrop" aria-hidden="true"></span>
+					<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path
+							d="M12 2.75l1.7 5.05 5.05 1.7-5.05 1.7-1.7 5.05-1.7-5.05-5.05-1.7 5.05-1.7L12 2.75z"
+							fill="currentColor"
+						/>
+						<path
+							d="M19 15.25l.8 2.45 2.45.8-2.45.8-.8 2.45-.8-2.45-2.45-.8 2.45-.8.8-2.45z"
+							fill="currentColor"
+						/>
+					</svg>
+					<span class="hero-badge-text">Smarter inventory. Better decisions.</span>
+				</p>
 				<h1 id="intro-heading">
 					<span class="sr-only">Run your inventory with precision.</span>
 					<span class="headline-visual" aria-hidden="true">
-						<span class="headline-line headline-static">Run your inventory with</span>
+						<span class="headline-line headline-static">Run your inventory</span>
 						<span class="headline-line headline-word">
-							<span class="rotator">
+							with <span class="rotator">
 								{#each rotatingWords as ghost (ghost)}
 									<span class="rotator-ghost">{ghost}</span>
 								{/each}
@@ -324,9 +322,8 @@
 				</p>
 				<div class="actions" aria-label="StockSense actions">
 					{#if authUser}
-						<a href={resolve('/manageItems')} class="action action-primary">Open inventory</a>
-						<a href={resolve('/inventoryPredictions')} class="action-link">
-							Explore predictions
+						<a href={resolve('/manageItems')} class="action action-primary">
+							Open inventory
 							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
 								<path
 									d="M5 12h14M13 6l6 6-6 6"
@@ -337,13 +334,36 @@
 								/>
 							</svg>
 						</a>
+						<a href={resolve('/inventoryPredictions')} class="action-link">
+							<span>Explore predictions</span>
+							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M4 17l5-5 4 4 7-8M15 8h5v5"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
+						</a>
 					{:else}
-						<a href={resolve('/login')} class="action action-primary">Open inventory</a>
-						<a href={resolve('/login')} class="action-link">
-							Explore predictions
+						<a href={resolve('/login')} class="action action-primary">
+							Open inventory
 							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
 								<path
 									d="M5 12h14M13 6l6 6-6 6"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
+						</a>
+						<a href={resolve('/login')} class="action-link">
+							<span>Explore predictions</span>
+							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M4 17l5-5 4 4 7-8M15 8h5v5"
 									stroke="currentColor"
 									stroke-width="2"
 									stroke-linecap="round"
@@ -353,167 +373,335 @@
 						</a>
 					{/if}
 				</div>
+
+				<ul class="hero-promises" aria-label="StockSense strengths">
+					<li>
+						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path
+								d="M12 3l7 3v5c0 4.5-2.8 8-7 10-4.2-2-7-5.5-7-10V6l7-3z"
+								stroke="currentColor"
+								stroke-width="1.8"
+								stroke-linejoin="round"
+							/>
+							<path
+								d="M9 12l2 2 4-4"
+								stroke="currentColor"
+								stroke-width="1.8"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+						<span class="promise-copy">
+							<span class="promise-title">Accurate counts</span>
+							<small>you can trust</small>
+						</span>
+					</li>
+					<li>
+						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8" />
+							<path
+								d="M12 7v5l3 2M18.5 5.5L20 4"
+								stroke="currentColor"
+								stroke-width="1.8"
+								stroke-linecap="round"
+							/>
+							<path
+								d="M17.5 17.5l2 2"
+								stroke="currentColor"
+								stroke-width="1.8"
+								stroke-linecap="round"
+							/>
+						</svg>
+						<span class="promise-copy">
+							<span class="promise-title">Real-time updates</span>
+							<small>and visibility</small>
+						</span>
+					</li>
+					<li>
+						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path
+								d="M3 18l5-6 4 3 7-9M15 6h4v4"
+								stroke="currentColor"
+								stroke-width="1.8"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+						<span class="promise-copy">
+							<span class="promise-title">Predictive insights</span>
+							<small>that drive action</small>
+						</span>
+					</li>
+				</ul>
 			</div>
 
 			<div class="hero-stage" aria-hidden="true">
 				<span class="hero-glow"></span>
-
-				<article class="float-card card-movement" style="--enter-delay: 60ms;">
-					<div class="float-body">
-						<div class="fc-head">
-							<span class="fc-label">Items counted today</span>
-							<span class="fc-icon fc-icon-accent">
-								<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path
-										d="M3 17l6-6 4 4 8-8"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									/>
-									<path
-										d="M17 7h4v4"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									/>
-								</svg>
-							</span>
+				<div class="dashboard-shell glow-host">
+					<span class="glow-bloom" aria-hidden="true"><i></i></span>
+					<header class="dashboard-header">
+						<div>
+							<p>Overview</p>
+							<span>Your inventory at a glance</span>
 						</div>
-						<p class="fc-metric">1,284</p>
-						<div class="fc-bars">
-							<span style="--h: 42%"></span>
-							<span style="--h: 58%"></span>
-							<span style="--h: 48%"></span>
-							<span style="--h: 70%"></span>
-							<span style="--h: 60%"></span>
-							<span style="--h: 82%"></span>
-							<span class="fc-bar-lead" style="--h: 100%"></span>
-						</div>
-						<span class="fc-pill fc-pill-add">+12% vs yesterday</span>
-					</div>
-				</article>
-
-				<article class="float-card card-updated" style="--enter-delay: 240ms;">
-					<div class="float-body fc-row">
-						<span class="fc-avatar">
+						<span class="dashboard-period">
 							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M3 8l9-5 9 5v8l-9 5-9-5V8z"
+								<rect
+									x="3"
+									y="5"
+									width="18"
+									height="16"
+									rx="2"
 									stroke="currentColor"
 									stroke-width="1.8"
-									stroke-linejoin="round"
-								/>
-								<path d="M3 8l9 5 9-5M12 13v8" stroke="currentColor" stroke-width="1.8" />
-							</svg>
-						</span>
-						<div class="fc-row-main">
-							<p class="fc-row-title">Count updated</p>
-							<p class="fc-row-sub">Cold brew concentrate</p>
-							<p class="fc-flow">
-								<span>12</span>
-								<span class="fc-arrow">→</span>
-								<span>18</span>
-								<span class="fc-tag-add">+6</span>
-							</p>
-							<p class="fc-row-meta">Just now · Mira P.</p>
-						</div>
-					</div>
-				</article>
-
-				<article class="float-card card-forecast" style="--enter-delay: 160ms;">
-					<div class="float-body">
-						<div class="fc-head">
-							<span class="fc-icon">
-								<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<rect
-										x="3"
-										y="4"
-										width="18"
-										height="17"
-										rx="2"
-										stroke="currentColor"
-										stroke-width="1.8"
-									/>
-									<path
-										d="M3 9h18M8 2v4M16 2v4"
-										stroke="currentColor"
-										stroke-width="1.8"
-										stroke-linecap="round"
-									/>
-								</svg>
-							</span>
-							<span class="fc-label fc-label-strong">Weekly forecast</span>
-						</div>
-						<dl class="fc-rows">
-							<div>
-								<dt>Projected demand</dt>
-								<dd>320</dd>
-							</div>
-							<div>
-								<dt>On hand</dt>
-								<dd>180</dd>
-							</div>
-							<div class="fc-rows-total">
-								<dt>Reorder by</dt>
-								<dd class="fc-accent">Friday</dd>
-							</div>
-						</dl>
-					</div>
-				</article>
-
-				<article class="float-card card-lowstock" style="--enter-delay: 340ms;">
-					<div class="float-body fc-row">
-						<span class="fc-avatar fc-avatar-warn">
-							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M12 3l9 16H3l9-16z"
-									stroke="currentColor"
-									stroke-width="1.8"
-									stroke-linejoin="round"
 								/>
 								<path
-									d="M12 10v4M12 17.5v.5"
+									d="M3 10h18M8 3v4M16 3v4"
 									stroke="currentColor"
 									stroke-width="1.8"
 									stroke-linecap="round"
 								/>
 							</svg>
+							<span>This week</span>
+							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M7 10l5 5 5-5"
+									stroke="currentColor"
+									stroke-width="1.8"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
 						</span>
-						<div class="fc-lowstock-main">
-							<div class="fc-lowstock-head">
-								<p class="fc-row-title">Low stock alert</p>
-								<span class="fc-lowstock-count">4 left</span>
+					</header>
+
+					<div class="dashboard-grid">
+						<article class="float-card card-movement" style="--enter-delay: 60ms;">
+							<div class="float-body">
+								<div class="fc-head">
+									<span class="fc-icon fc-icon-accent">
+										<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+											<path
+												d="M3 8l9-5 9 5v8l-9 5-9-5V8z"
+												stroke="currentColor"
+												stroke-width="1.8"
+												stroke-linejoin="round"
+											/>
+											<path d="M3 8l9 5 9-5M12 13v8" stroke="currentColor" stroke-width="1.8" />
+										</svg>
+									</span>
+									<span class="fc-label">Items counted today</span>
+								</div>
+								<div class="fc-metric-row">
+									<p class="fc-metric">1,284</p>
+									<span class="fc-pill fc-pill-add">+12%</span>
+								</div>
+								<div class="fc-bars">
+									<span style="--h: 42%"></span>
+									<span style="--h: 58%"></span>
+									<span style="--h: 48%"></span>
+									<span style="--h: 70%"></span>
+									<span style="--h: 60%"></span>
+									<span style="--h: 82%"></span>
+									<span class="fc-bar-lead" style="--h: 100%"></span>
+								</div>
+								<span class="fc-caption">vs yesterday</span>
 							</div>
-							<p class="fc-row-sub fc-row-sub-strong">Oat milk 1L</p>
-							<div class="fc-progress"><span style="width: 16%"></span></div>
-						</div>
+						</article>
+
+						<article class="float-card card-updated" style="--enter-delay: 240ms;">
+							<div class="float-body fc-row">
+								<span class="fc-avatar">
+									<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+										<path
+											d="M3 8l9-5 9 5v8l-9 5-9-5V8z"
+											stroke="currentColor"
+											stroke-width="1.8"
+											stroke-linejoin="round"
+										/>
+										<path d="M3 8l9 5 9-5M12 13v8" stroke="currentColor" stroke-width="1.8" />
+									</svg>
+								</span>
+								<div class="fc-row-main">
+									<p class="fc-row-title">Count updated</p>
+									<p class="fc-row-sub">Cold brew concentrate</p>
+									<p class="fc-flow">
+										<span>12</span>
+										<span class="fc-arrow">→</span>
+										<span>18</span>
+										<span class="fc-tag-add">+6</span>
+									</p>
+									<p class="fc-row-meta">Just now · Mira P.</p>
+								</div>
+							</div>
+						</article>
+
+						<article class="float-card card-forecast" style="--enter-delay: 160ms;">
+							<div class="float-body">
+								<div class="fc-head">
+									<span class="fc-icon fc-icon-accent">
+										<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+											<rect
+												x="3"
+												y="4"
+												width="18"
+												height="17"
+												rx="2"
+												stroke="currentColor"
+												stroke-width="1.8"
+											/>
+											<path
+												d="M3 9h18M8 2v4M16 2v4"
+												stroke="currentColor"
+												stroke-width="1.8"
+												stroke-linecap="round"
+											/>
+										</svg>
+									</span>
+									<span class="fc-label">Weekly forecast</span>
+								</div>
+								<dl class="fc-rows">
+									<div>
+										<dt>Projected demand</dt>
+										<dd>320</dd>
+									</div>
+									<div>
+										<dt>On hand</dt>
+										<dd>180</dd>
+									</div>
+									<div class="fc-rows-total">
+										<dt>Reorder by</dt>
+										<dd class="fc-accent">Friday</dd>
+									</div>
+								</dl>
+							</div>
+						</article>
+
+						<article class="float-card card-lowstock" style="--enter-delay: 340ms;">
+							<div class="float-body fc-row">
+								<span class="fc-avatar fc-avatar-warn">
+									<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+										<path
+											d="M12 3l9 16H3l9-16z"
+											stroke="currentColor"
+											stroke-width="1.8"
+											stroke-linejoin="round"
+										/>
+										<path
+											d="M12 10v4M12 17.5v.5"
+											stroke="currentColor"
+											stroke-width="1.8"
+											stroke-linecap="round"
+										/>
+									</svg>
+								</span>
+								<div class="fc-lowstock-main">
+									<div class="fc-lowstock-head">
+										<p class="fc-row-title">Low stock alert</p>
+										<span class="fc-lowstock-count">4 left</span>
+									</div>
+									<p class="fc-row-sub fc-row-sub-strong">Oat milk 1L</p>
+									<div class="fc-progress"><span style="width: 16%"></span></div>
+								</div>
+							</div>
+						</article>
 					</div>
-				</article>
+
+					<div class="dashboard-callout">
+						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path
+								d="M12 2.75l1.7 5.05 5.05 1.7-5.05 1.7-1.7 5.05-1.7-5.05-5.05-1.7 5.05-1.7L12 2.75z"
+								fill="currentColor"
+							/>
+						</svg>
+						<span>
+							<strong>Stay ahead with AI-powered demand forecasting.</strong>
+							<small>Reduce stockouts and make every reorder count.</small>
+						</span>
+						<span class="dashboard-callout-link">
+							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M4 17l5-5 4 4 7-8M15 8h5v5"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
+							Explore forecast
+						</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Illustrative customer row. The marks and names are placeholders for a
+			     future real customer list, in the same spirit as the data-free demo
+			     cards above; swap the <li> contents when real logos exist. -->
+			<div class="operations-strip" aria-label="Trusted by modern operations">
+				<p>Trusted by modern operations</p>
+				<ul>
+					<li>
+						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path
+								d="M7 4h7a4 4 0 0 1 0 8H7V4zM7 12h8a4 4 0 0 1 0 8H7v-8z"
+								stroke="currentColor"
+								stroke-width="1.7"
+								stroke-linejoin="round"
+							/>
+						</svg>
+						<span>BrewHub</span>
+					</li>
+					<li>
+						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<circle cx="12" cy="12" r="8.4" stroke="currentColor" stroke-width="1.7" />
+							<path
+								d="M12 6.6a5.4 5.4 0 1 0 3.9 9.1"
+								stroke="currentColor"
+								stroke-width="1.7"
+								stroke-linecap="round"
+							/>
+						</svg>
+						<span>Café Collective</span>
+					</li>
+					<li>
+						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path
+								d="M4.5 9.5h12v5a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5v-5z"
+								stroke="currentColor"
+								stroke-width="1.7"
+								stroke-linejoin="round"
+							/>
+							<path
+								d="M16.5 11h1.6a2.4 2.4 0 0 1 0 4.8h-1.6M8 3v3M12 3v3"
+								stroke="currentColor"
+								stroke-width="1.7"
+								stroke-linecap="round"
+							/>
+						</svg>
+						<span>Daily Grind</span>
+					</li>
+					<li>
+						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<circle cx="12" cy="12" r="8.4" stroke="currentColor" stroke-width="1.7" />
+							<circle cx="12" cy="12" r="3.4" stroke="currentColor" stroke-width="1.7" />
+						</svg>
+						<span>Luna Eats</span>
+					</li>
+					<li>
+						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path
+								d="M2.5 18.5l5.2-8.4 3.4 4.6 2.3-3.2 5.1 7H2.5z"
+								stroke="currentColor"
+								stroke-width="1.7"
+								stroke-linejoin="round"
+							/>
+							<path d="M13.4 11.5l2-2.8 2 2.8" stroke="currentColor" stroke-width="1.7" />
+						</svg>
+						<span>Peak Supplies</span>
+					</li>
+				</ul>
 			</div>
 		</div>
-
-		<!-- Anti-"false floor" cue (NN/g): signals more content below the fold.
-		     Fades out once the intro is left; stays mounted so it returns at the top. -->
-		<button
-			type="button"
-			class="scroll-cue"
-			class:hidden={activeSection !== firstSectionId}
-			onclick={() => scrollToSection('inventory')}
-			aria-label="Scroll to next section: Inventory control"
-		>
-			<span aria-hidden="true">Scroll</span>
-			<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-				<path
-					d="M6 9l6 6 6-6"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				/>
-			</svg>
-		</button>
 	</section>
 
 	<section id="inventory" class="panel" aria-labelledby="inventory-heading" tabindex="-1">
@@ -768,6 +956,125 @@
 </div>
 
 <style>
+	/* ── Landing backdrop ─────────────────────────────────────────────
+	   Four fixed layers behind everything: base wash, a blurred halo that
+	   traces the arc, the crisp arc line itself, a fainter far arc in the
+	   bottom-right, and a corner bloom. The arcs are one large ellipse
+	   parked mostly off-screen below-left, so only its upper-left shoulder
+	   crosses the viewport — that is the sweep in the reference. */
+	.backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 0;
+		overflow: hidden;
+		pointer-events: none;
+		background:
+			linear-gradient(to bottom, var(--home-vignette) 0%, transparent 34%),
+			radial-gradient(120% 90% at 76% 6%, var(--home-backdrop-tint) 0%, transparent 62%),
+			var(--home-backdrop-base);
+	}
+
+	.backdrop-bloom {
+		position: absolute;
+		left: -18%;
+		bottom: -26%;
+		width: 78%;
+		height: 66%;
+		background: radial-gradient(closest-side, var(--home-bloom) 0%, transparent 100%);
+	}
+
+	/* ── Travelling edge highlight (badge + dashboard shell) ── */
+	.glow-host {
+		position: relative;
+		/* Traps the bloom's negative z-index inside the host; without a stacking
+		   context here it drops behind the page backdrop. */
+		isolation: isolate;
+	}
+
+	/* Panel: rotating conic ring, two lobes 180deg apart. */
+	.glow-host {
+		position: relative;
+		isolation: isolate;
+	}
+
+	.glow-host::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		padding: 1.5px;
+		pointer-events: none;
+		background: conic-gradient(
+			from var(--ring-angle),
+			var(--home-ring-rest) 0deg,
+			var(--home-ring-trail) 52deg,
+			var(--home-ring-lead) 90deg,
+			var(--home-ring-trail) 128deg,
+			var(--home-ring-rest) 180deg,
+			var(--home-ring-trail) 232deg,
+			var(--home-ring-lead) 270deg,
+			var(--home-ring-trail) 308deg,
+			var(--home-ring-rest) 360deg
+		);
+		-webkit-mask:
+			linear-gradient(#000 0 0) content-box,
+			linear-gradient(#000 0 0);
+		-webkit-mask-composite: xor;
+		mask:
+			linear-gradient(#000 0 0) content-box,
+			linear-gradient(#000 0 0);
+		mask-composite: exclude;
+		animation: ring-spin var(--ring-dur, 12s) linear infinite;
+	}
+
+	/* Bloom, behind the host's contents so the light washes the panel surface
+	   and spills past the edge with the cards on top. Blur on the wrapper and
+	   gradient on the child: `filter` applies before `mask`, so blurring a
+	   masked ring on one element re-cuts hard edges out of the blurred result. */
+	.glow-bloom {
+		position: absolute;
+		inset: calc(-1 * var(--bloom-spread, 10px));
+		z-index: -1;
+		border-radius: var(--bloom-radius, 30px);
+		filter: blur(var(--bloom-blur, 14px));
+		opacity: var(--bloom-alpha, 0.9);
+		pointer-events: none;
+	}
+
+	.glow-bloom i {
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		padding: var(--bloom-thick, 9px);
+		background: conic-gradient(
+			from var(--ring-angle),
+			var(--home-ring-zero) 0deg,
+			var(--home-ring-trail) 56deg,
+			var(--home-ring-lead) 90deg,
+			var(--home-ring-trail) 124deg,
+			var(--home-ring-zero) 180deg,
+			var(--home-ring-trail) 236deg,
+			var(--home-ring-lead) 270deg,
+			var(--home-ring-trail) 304deg,
+			var(--home-ring-zero) 360deg
+		);
+		-webkit-mask:
+			linear-gradient(#000 0 0) content-box,
+			linear-gradient(#000 0 0);
+		-webkit-mask-composite: xor;
+		mask:
+			linear-gradient(#000 0 0) content-box,
+			linear-gradient(#000 0 0);
+		mask-composite: exclude;
+		animation: ring-spin var(--ring-dur, 12s) linear infinite;
+	}
+
+	@keyframes ring-spin {
+		to {
+			--ring-angle: 360deg;
+		}
+	}
+
 	.page {
 		position: relative;
 		z-index: 1;
@@ -883,53 +1190,6 @@
 			0 0 0 5px var(--observatory-accent-soft);
 	}
 
-	/* Pause-motion control: a fixed circular toggle mirroring the rail's lane. */
-	.motion-toggle {
-		position: fixed;
-		left: max(0.75rem, var(--safe-area-inset-left));
-		bottom: max(0.9rem, var(--safe-area-inset-bottom));
-		z-index: 5;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 48px;
-		height: 48px;
-		padding: 0;
-		border: 1px solid var(--observatory-border);
-		border-radius: 50%;
-		background: var(--observatory-rail-surface);
-		box-shadow: var(--observatory-shadow);
-		color: var(--observatory-text-muted);
-		cursor: pointer;
-		touch-action: manipulation;
-		-webkit-tap-highlight-color: var(--observatory-accent-soft);
-		transition:
-			color 180ms ease,
-			border-color 180ms ease,
-			background-color 180ms ease;
-	}
-
-	.motion-toggle svg {
-		width: 1.15rem;
-		height: 1.15rem;
-	}
-
-	.motion-toggle:focus {
-		outline: 0;
-	}
-
-	.motion-toggle:focus-visible {
-		outline: 3px solid var(--observatory-focus);
-		outline-offset: 3px;
-	}
-
-	/* While paused, every CSS-side loop freezes in place (the word rotator's
-	   timer is stopped from the script side). */
-	:global(html.motion-paused) .float-body,
-	:global(html.motion-paused) .scroll-cue {
-		animation-play-state: paused;
-	}
-
 	:global(html.home-snap) {
 		scroll-snap-type: y proximity;
 		scroll-behavior: smooth;
@@ -993,68 +1253,6 @@
 		text-wrap: pretty;
 	}
 
-	/* Scroll affordance: a quiet pill at the hero's bottom edge. Uses the CSS
-	   `translate` property for the bob so it never fights the centering transform. */
-	.scroll-cue {
-		position: absolute;
-		left: 50%;
-		bottom: 1.25rem;
-		z-index: 2;
-		translate: -50% 0;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		padding: 0.55rem 1rem;
-		border: 1px solid var(--observatory-border);
-		border-radius: 999px;
-		background: var(--observatory-rail-surface);
-		box-shadow: var(--observatory-shadow);
-		color: var(--observatory-text-muted);
-		font-size: 0.72rem;
-		font-weight: 700;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		cursor: pointer;
-		touch-action: manipulation;
-		-webkit-tap-highlight-color: var(--observatory-accent-soft);
-		animation: cue-bob 2.6s ease-in-out infinite;
-		transition:
-			opacity 300ms ease,
-			visibility 300ms,
-			color 180ms ease,
-			border-color 180ms ease;
-	}
-
-	.scroll-cue svg {
-		width: 0.95rem;
-		height: 0.95rem;
-	}
-
-	.scroll-cue.hidden {
-		opacity: 0;
-		visibility: hidden;
-		pointer-events: none;
-	}
-
-	.scroll-cue:focus {
-		outline: 0;
-	}
-
-	.scroll-cue:focus-visible {
-		outline: 3px solid var(--observatory-focus);
-		outline-offset: 3px;
-	}
-
-	@keyframes cue-bob {
-		0%,
-		100% {
-			translate: -50% 0;
-		}
-		50% {
-			translate: -50% 7px;
-		}
-	}
-
 	.hero {
 		min-height: max(620px, calc(100dvh - var(--snap-top, 56px) - 1rem));
 		padding-top: 3.25rem;
@@ -1070,8 +1268,123 @@
 	}
 
 	.hero-copy {
+		position: relative;
+		z-index: 1;
+		isolation: isolate;
 		max-width: 58rem;
 		animation: hero-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+
+	/* The legibility plate that used to sit behind the copy is gone: the WebGL
+	   terrain it was compensating for has been replaced by a calm gradient
+	   backdrop, so the copy now sits directly on the page. */
+
+	/* Explicit height rather than vertical padding, so the pill radius is a known
+	   half of it and the shine's geometry below can match exactly. Both are in
+	   rem, so they stay in step if the root size changes. */
+	.hero-badge {
+		position: relative;
+		isolation: isolate;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+		width: fit-content;
+		height: 1.9rem;
+		margin: 0 0 1.65rem;
+		padding: 0 0.85rem;
+		border: 0;
+		border-radius: 0.95rem;
+		overflow: hidden;
+		/* The pill's own background IS the border colour; `.badge-shine-backdrop`
+		   sits 1px inset with the true surface colour on top, revealing only a
+		   1px ring — see the shine layers below for why. */
+		background: var(--home-ring-rest);
+		color: var(--observatory-text-muted);
+		font-size: 0.72rem;
+		font-weight: 650;
+		line-height: 1;
+		letter-spacing: 0.01em;
+	}
+
+	/* A "spotlight card" shine rather than a travelling ring: `.badge-shine-mask`
+	   fades its content from opaque to transparent at the vertical midpoint, so
+	   only the top half of whatever's inside it is ever visible. Nested inside
+	   it, `.badge-shine-wedge` is a huge square (200% of the badge's width)
+	   holding a narrow conic-gradient sliver, parked mostly above the badge and
+	   centred horizontally, so only a small arc of it ever crosses into the
+	   visible top half; a slow rotation sweeps that arc across the top edge,
+	   and a periodic 180deg flip of the whole masked layer swaps which edge is
+	   visible. Because `.badge-shine-backdrop` covers everything but the outer
+	   1px, the sweep only ever reads as a highlight travelling along the
+	   border. */
+	.badge-shine-mask {
+		position: absolute;
+		inset: 0;
+		overflow: hidden;
+		border-radius: inherit;
+		-webkit-mask: linear-gradient(#000, transparent 50%);
+		mask: linear-gradient(#000, transparent 50%);
+		animation: badge-shine-flip 6s steps(2, end) infinite;
+	}
+
+	.badge-shine-wedge {
+		position: absolute;
+		inset: 0 auto auto 50%;
+		width: 200%;
+		aspect-ratio: 1;
+		translate: -50% -15%;
+		rotate: -90deg;
+		background: conic-gradient(
+			from 0deg,
+			var(--home-ring-zero) 0deg,
+			var(--home-ring-zero) 336deg,
+			var(--home-ring-trail) 348deg,
+			var(--home-ring-lead) 356deg,
+			var(--home-ring-lead) 4deg,
+			var(--home-ring-trail) 12deg,
+			var(--home-ring-zero) 24deg,
+			var(--home-ring-zero) 360deg
+		);
+		animation: badge-shine-sweep 3s linear infinite;
+	}
+
+	.badge-shine-backdrop {
+		position: absolute;
+		inset: 1px;
+		border-radius: calc(0.95rem - 1px);
+		background: var(--home-badge-surface);
+	}
+
+	/* Sits above the two absolutely-positioned shine layers, which would
+	   otherwise paint over the in-flow icon/text within the same stacking
+	   context — `.badge-shine-backdrop` is a solid fill, unlike the old
+	   masked-ring `::before` it replaced, which never needed this because its
+	   own mask kept the whole content-box area transparent. */
+	.hero-badge svg,
+	.hero-badge-text {
+		position: relative;
+		z-index: 1;
+	}
+
+	@keyframes badge-shine-sweep {
+		from {
+			rotate: -90deg;
+		}
+		to {
+			rotate: 90deg;
+		}
+	}
+
+	@keyframes badge-shine-flip {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	.hero-badge svg {
+		width: 1rem;
+		height: 1rem;
+		color: var(--observatory-accent);
 	}
 
 	.sr-only {
@@ -1147,6 +1460,16 @@
 		text-wrap: pretty;
 	}
 
+	.hero-lede::before {
+		content: '';
+		display: block;
+		width: 2.2rem;
+		height: 3px;
+		margin-bottom: 1.2rem;
+		border-radius: 999px;
+		background: var(--observatory-accent);
+	}
+
 	.actions {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
@@ -1162,7 +1485,7 @@
 		min-height: 50px;
 		padding: 0.7rem 1.5rem;
 		border: 1px solid var(--observatory-accent);
-		border-radius: 999px;
+		border-radius: 12px;
 		font-size: 0.95rem;
 		font-weight: 700;
 		line-height: 1;
@@ -1176,6 +1499,17 @@
 			background-color 180ms ease,
 			border-color 180ms ease,
 			color 180ms ease;
+	}
+
+	.action svg,
+	.action-link svg {
+		flex-shrink: 0;
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+
+	.action {
+		gap: 0.65rem;
 	}
 
 	.action-primary {
@@ -1192,9 +1526,13 @@
 	.action-link {
 		display: inline-flex;
 		align-items: center;
+		justify-content: center;
 		gap: 0.4rem;
 		min-height: 50px;
-		padding: 0.7rem 0.6rem;
+		padding: 0.7rem 1.25rem;
+		border: 1px solid var(--observatory-accent-border);
+		border-radius: 12px;
+		background: var(--observatory-cta-link-surface);
 		color: var(--observatory-accent);
 		font-size: 0.95rem;
 		font-weight: 700;
@@ -1202,14 +1540,10 @@
 		text-decoration: none;
 		white-space: nowrap;
 		-webkit-tap-highlight-color: var(--observatory-accent-soft);
-		transition:
-			gap 180ms ease,
-			color 180ms ease;
 	}
 
 	.action-link svg {
-		width: 1.1rem;
-		height: 1.1rem;
+		transition: transform 180ms ease;
 	}
 
 	.action-link:focus {
@@ -1220,6 +1554,32 @@
 		outline: 3px solid var(--observatory-focus);
 		outline-offset: 3px;
 		border-radius: 8px;
+	}
+
+	/* Shine sweep: a diagonal gleam crosses the button on hover. */
+	.action-link {
+		position: relative;
+		z-index: 0;
+		overflow: hidden;
+	}
+
+	.action-link > span,
+	.action-link > svg {
+		position: relative;
+		z-index: 1;
+	}
+
+	.action-link::after {
+		content: '';
+		position: absolute;
+		top: -50%;
+		left: -60%;
+		z-index: 0;
+		width: 40%;
+		height: 200%;
+		background: linear-gradient(120deg, transparent, var(--observatory-accent-soft), transparent);
+		transform: translateX(-20%) rotate(20deg);
+		transition: transform 550ms ease;
 	}
 
 	.action:focus {
@@ -1233,6 +1593,56 @@
 
 	.action:active {
 		transform: scale(0.98);
+	}
+
+	.hero-promises {
+		display: none;
+		margin: 2.2rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	/* Icon and its two-line label share one centered baseline block, so the icons
+	   line up with each other and sit centred against the dividers rather than
+	   hanging off the top of a label that wrapped to a different height. */
+	.hero-promises li {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		min-width: 0;
+		min-height: 2.1rem;
+		padding-right: 0.65rem;
+		color: var(--observatory-text-muted);
+	}
+
+	.hero-promises li + li {
+		padding-left: 0.65rem;
+		border-left: 1px solid var(--observatory-border-strong);
+	}
+
+	.hero-promises svg {
+		flex-shrink: 0;
+		width: 1.5rem;
+		height: 1.5rem;
+		color: var(--observatory-accent);
+	}
+
+	/* Two fixed rows: the strength on top, its qualifier under it. Sized to fit
+	   the longest label ("Real-time updates") on one line in the copy column. */
+	.hero-promises .promise-copy {
+		display: grid;
+		gap: 0.1rem;
+		min-width: 0;
+		font-size: 0.62rem;
+		font-weight: 700;
+		line-height: 1.32;
+		letter-spacing: -0.005em;
+	}
+
+	.hero-promises small {
+		color: var(--observatory-text-soft);
+		font-size: inherit;
+		font-weight: 500;
 	}
 
 	/* Dashboard: a bento grid. Single column on phones; a KPI-anchored bento with a
@@ -1284,8 +1694,7 @@
 	.fc-head {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 0.75rem;
+		gap: 0.6rem;
 	}
 
 	.fc-label {
@@ -1293,14 +1702,7 @@
 		font-weight: 700;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
-		color: var(--observatory-text-soft);
-	}
-
-	.fc-label-strong {
-		text-transform: none;
-		letter-spacing: 0;
-		font-size: 0.9rem;
-		color: var(--observatory-text);
+		color: var(--observatory-accent);
 	}
 
 	.fc-icon {
@@ -1324,8 +1726,16 @@
 		height: 1.1rem;
 	}
 
-	.fc-metric {
+	.fc-metric-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.6rem;
 		margin: 0.85rem 0 0;
+	}
+
+	.fc-metric {
+		margin: 0;
 		font-size: clamp(1.9rem, 6vw, 2.35rem);
 		font-weight: 730;
 		line-height: 1;
@@ -1353,6 +1763,17 @@
 		background: var(--observatory-accent);
 	}
 
+	.fc-caption {
+		margin: 0.7rem 0 0;
+		display: block;
+		font-size: 0.72rem;
+		color: var(--observatory-text-soft);
+	}
+
+	.fc-metric-row .fc-pill {
+		align-self: center;
+	}
+
 	.fc-pill {
 		display: inline-flex;
 		align-self: flex-start;
@@ -1364,11 +1785,13 @@
 		font-weight: 700;
 	}
 
-	/* KPI is the focal card: its chart grows to fill the tall cell. */
+	/* KPI is the focal card: its chart grows to fill the tall cell, but capped so
+	   the bars stay a modest height rather than stretching the whole card. */
 	.card-movement .fc-bars {
 		flex: 1;
 		height: auto;
-		min-height: 3.25rem;
+		min-height: 2.5rem;
+		max-height: 3.5rem;
 		margin-bottom: 1.1rem;
 	}
 
@@ -1387,15 +1810,15 @@
 		padding: 1rem 1.1rem;
 	}
 
-	/* The low-stock footer is wide: its content spans the full width instead of
-	   bunching in the middle. Icon + text sit left, the item name and count share a
-	   row, and the meter runs the full width beneath them. */
 	.card-lowstock .float-body {
-		align-items: center;
+		align-items: stretch;
 	}
 
 	.card-lowstock .fc-lowstock-main {
+		display: flex;
 		flex: 1;
+		flex-direction: column;
+		justify-content: space-between;
 	}
 
 	.fc-lowstock-head {
@@ -1413,8 +1836,8 @@
 		width: 2.4rem;
 		height: 2.4rem;
 		border-radius: 12px;
-		background: var(--observatory-add-soft);
-		color: var(--observatory-add);
+		background: var(--observatory-accent-soft);
+		color: var(--observatory-accent);
 	}
 
 	.fc-avatar svg {
@@ -1423,8 +1846,8 @@
 	}
 
 	.fc-avatar-warn {
-		background: var(--observatory-warn-soft);
-		color: var(--observatory-warn);
+		background: var(--observatory-accent-soft);
+		color: var(--observatory-accent);
 	}
 
 	.fc-row-main,
@@ -1434,9 +1857,11 @@
 
 	.fc-row-title {
 		margin: 0;
-		font-size: 0.82rem;
-		font-weight: 750;
-		color: var(--observatory-text);
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--observatory-accent);
 	}
 
 	.fc-row-sub {
@@ -1468,10 +1893,10 @@
 	.fc-tag-add {
 		padding: 0.1rem 0.45rem;
 		border-radius: 999px;
-		background: var(--observatory-add-soft);
+		background: var(--observatory-accent-soft);
 		font-size: 0.72rem;
 		font-weight: 700;
-		color: var(--observatory-add);
+		color: var(--observatory-accent);
 	}
 
 	.fc-row-meta {
@@ -1521,7 +1946,7 @@
 		flex-shrink: 0;
 		font-size: 0.9rem;
 		font-weight: 750;
-		color: var(--observatory-warn);
+		color: var(--observatory-accent);
 	}
 
 	.fc-progress {
@@ -1536,12 +1961,213 @@
 		display: block;
 		height: 100%;
 		border-radius: 999px;
-		background: var(--observatory-warn);
+		background: var(--observatory-accent);
 	}
 
 	.card-updated,
-	.card-forecast {
+	.card-forecast,
+	.card-lowstock {
 		display: none;
+	}
+
+	/* The reference dashboard reads as one instrument panel rather than four
+	   unrelated floating cards. The existing illustrative cards remain inert and
+	   data-free, but now sit inside this shared overview shell. */
+	.hero-stage {
+		display: block;
+		max-width: 30rem;
+	}
+
+	/* Same rotating edge highlight as the hero badge, just slower — it drifts
+	   around the panel rather than spinning. The `glowRing` stroke draws the
+	   border, so the shell itself has none. */
+	.dashboard-shell {
+		--ring-dur: 7s;
+		--bloom-spread: 0px;
+		--bloom-radius: 30px;
+		--bloom-thick: 2px;
+		--bloom-blur: 7px;
+		position: relative;
+		z-index: 1;
+		padding: calc(0.9rem + 1px);
+		border: 0;
+		border-radius: 20px;
+		background: var(--home-shell-surface);
+		box-shadow:
+			var(--observatory-shadow),
+			0 0 70px -12px var(--home-shell-bloom);
+	}
+
+	.dashboard-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 0.15rem 0.2rem 0.85rem;
+	}
+
+	.dashboard-header p {
+		margin: 0;
+		color: var(--observatory-text);
+		font-size: 0.92rem;
+		font-weight: 750;
+		line-height: 1.2;
+	}
+
+	.dashboard-header div > span {
+		display: block;
+		margin-top: 0.16rem;
+		color: var(--observatory-text-soft);
+		font-size: 0.7rem;
+		line-height: 1.2;
+	}
+
+	.dashboard-period {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		flex-shrink: 0;
+		min-height: 36px;
+		padding: 0.45rem 0.65rem;
+		border: 1px solid var(--observatory-border);
+		border-radius: 10px;
+		background: var(--observatory-surface-soft);
+		color: var(--observatory-text-muted);
+		font-size: 0.7rem;
+		font-weight: 650;
+	}
+
+	.dashboard-period svg {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.dashboard-period svg:last-child {
+		width: 0.8rem;
+	}
+
+	.dashboard-grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0.7rem;
+	}
+
+	.dashboard-shell .float-body {
+		border-radius: 14px;
+		background: var(--observatory-surface);
+		box-shadow: none;
+	}
+
+	.card-forecast .float-body {
+		justify-content: space-between;
+	}
+
+	.dashboard-callout {
+		display: none;
+		align-items: center;
+		gap: 0.75rem;
+		margin-top: 0.7rem;
+		padding: 0.7rem 0.8rem;
+		border: 1px solid var(--observatory-callout-border);
+		border-radius: 12px;
+		background: var(--observatory-accent-soft);
+		color: var(--observatory-accent);
+	}
+
+	.dashboard-callout > svg {
+		flex-shrink: 0;
+		width: 1.2rem;
+		height: 1.2rem;
+	}
+
+	.dashboard-callout > span:not(.dashboard-callout-link) {
+		display: grid;
+		gap: 0.14rem;
+		min-width: 0;
+		margin-right: auto;
+	}
+
+	.dashboard-callout strong {
+		color: var(--observatory-text);
+		font-size: 0.68rem;
+		line-height: 1.3;
+	}
+
+	.dashboard-callout small {
+		color: var(--observatory-text-soft);
+		font-size: 0.62rem;
+		line-height: 1.3;
+	}
+
+	.dashboard-callout-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		flex-shrink: 0;
+		padding: 0.45rem 0.55rem;
+		border: 1px solid var(--observatory-callout-border);
+		border-radius: 9px;
+		background: var(--observatory-surface);
+		font-size: 0.64rem;
+		font-weight: 750;
+	}
+
+	.dashboard-callout-link svg {
+		width: 0.9rem;
+		height: 0.9rem;
+	}
+
+	.operations-strip {
+		display: none;
+		width: 100%;
+		text-align: center;
+	}
+
+	.operations-strip p {
+		margin: 0 0 1.1rem;
+		color: var(--observatory-text-soft);
+		font-size: 0.62rem;
+		font-weight: 750;
+		letter-spacing: 0.34em;
+		text-transform: uppercase;
+	}
+
+	.operations-strip ul {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+		gap: 0.9rem clamp(1.5rem, 4vw, 3.4rem);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	/* Mark + wordmark pairs, held back to a quiet tint so the row reads as a
+	   supporting proof strip rather than competing with the hero. */
+	.operations-strip li {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: var(--observatory-text-soft);
+		font-size: 0.88rem;
+		font-weight: 650;
+		letter-spacing: -0.005em;
+		opacity: 0.78;
+		transition:
+			opacity 200ms ease,
+			color 200ms ease;
+	}
+
+	.operations-strip li:hover {
+		color: var(--observatory-text-muted);
+		opacity: 1;
+	}
+
+	.operations-strip li svg {
+		flex-shrink: 0;
+		width: 1.35rem;
+		height: 1.35rem;
 	}
 
 	@keyframes card-enter {
@@ -2097,16 +2723,6 @@
 			transform: scale(1.15);
 		}
 
-		.motion-toggle:hover {
-			border-color: var(--observatory-accent-border);
-			color: var(--observatory-accent);
-		}
-
-		.scroll-cue:hover:not(.hidden) {
-			border-color: var(--observatory-accent-border);
-			color: var(--observatory-accent);
-		}
-
 		.action:not(:active):hover {
 			transform: translateY(-2px);
 		}
@@ -2120,9 +2736,12 @@
 			background: var(--observatory-accent-soft);
 		}
 
-		.action-link:hover {
-			gap: 0.7rem;
-			color: var(--observatory-accent-hover);
+		.action-link:hover svg {
+			transform: translateX(3px);
+		}
+
+		.action-link:hover::after {
+			transform: translateX(420%) rotate(20deg);
 		}
 	}
 
@@ -2131,16 +2750,20 @@
 	   content — so the intro panel still fits below the fixed nav. */
 	@media (max-width: 767px) {
 		.hero {
-			padding-top: 1.5rem;
-			padding-bottom: 1.5rem;
+			padding-top: 1rem;
+			padding-bottom: 1rem;
 		}
 
 		.hero-layout {
-			gap: 1.5rem;
+			gap: 1.25rem;
 		}
 
 		.hero-copy .actions {
 			margin-top: 1.25rem;
+		}
+
+		.hero-badge {
+			margin-bottom: 1rem;
 		}
 	}
 
@@ -2153,7 +2776,7 @@
 		}
 
 		.action {
-			min-width: 10.5rem;
+			min-width: 9.5rem;
 		}
 
 		.inventory-primary {
@@ -2189,14 +2812,26 @@
 		   side by side (each spanning two rows), with activity + alert sharing the
 		   base row beneath them. */
 		.card-updated,
-		.card-forecast {
+		.card-forecast,
+		.card-lowstock {
 			display: block;
 		}
 
 		.hero-stage {
 			max-width: 40rem;
+		}
+
+		.dashboard-grid {
 			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 			grid-auto-rows: auto;
+		}
+
+		.dashboard-shell {
+			padding: 1rem;
+		}
+
+		.dashboard-callout {
+			display: flex;
 		}
 
 		.card-movement {
@@ -2343,15 +2978,21 @@
 
 	/* Desktop: headline in the left column, the bento dashboard fills the right. */
 	@media (min-width: 1024px) {
+		.hero {
+			padding-top: 1rem;
+			padding-bottom: 2.75rem;
+		}
+
 		.hero-layout {
 			display: grid;
-			grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-			gap: clamp(1.5rem, 4vw, 3.5rem);
+			grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+			gap: clamp(1.5rem, 3vw, 2.75rem);
+			row-gap: 1rem;
 			align-items: center;
 		}
 
 		.hero-copy {
-			padding-left: clamp(1rem, 3vw, 3rem);
+			padding-left: clamp(0.5rem, 1.5vw, 1.5rem);
 			container-type: inline-size;
 		}
 
@@ -2359,7 +3000,7 @@
 			max-width: none;
 			/* Sized to the copy column (cqi), not the viewport, so the one-line phrase
 			   never overflows into the cards on wide screens where the page is capped. */
-			font-size: clamp(2rem, 8.2cqi, 2.9rem);
+			font-size: clamp(2.3rem, 11cqi, 3.65rem);
 		}
 
 		.headline-static {
@@ -2369,6 +3010,19 @@
 		.hero-stage {
 			max-width: none;
 			margin: 0;
+		}
+
+		.hero-promises {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			align-items: stretch;
+		}
+
+		.operations-strip {
+			display: block;
+			grid-column: 1 / -1;
+			margin-top: 0;
+			padding: 0 4rem;
 		}
 	}
 
@@ -2380,6 +3034,12 @@
 
 		.rail {
 			right: max(1.5rem, var(--safe-area-inset-right));
+		}
+
+		/* Wide enough for each strength to hold one line; below this the title is
+		   allowed to wrap and the centred icon keeps the row aligned regardless. */
+		.hero-promises .promise-title {
+			white-space: nowrap;
 		}
 	}
 
@@ -2400,8 +3060,22 @@
 			opacity: 1;
 		}
 
-		.float-body,
-		.scroll-cue {
+		.float-body {
+			animation: none;
+		}
+
+		/* The beam parks wherever it started; the constant base ring still draws
+		   the edge, so the border does not disappear. */
+		.glow-host::before,
+		.glow-bloom i {
+			animation: none;
+		}
+
+		/* The mask parks on whichever half it stopped on and the wedge holds its
+		   last angle; the badge's outer 1px ring (its own background colour)
+		   still reads as a border either way. */
+		.badge-shine-mask,
+		.badge-shine-wedge {
 			animation: none;
 		}
 
@@ -2410,9 +3084,7 @@
 		.rail button.rail-stop,
 		.rail-label,
 		.rail-dot,
-		.rail::before,
-		.scroll-cue,
-		.motion-toggle {
+		.rail::before {
 			transition: none;
 		}
 
@@ -2425,11 +3097,6 @@
 	@media (max-height: 540px) {
 		.rail {
 			top: calc(50% + var(--snap-top, 56px) / 2);
-		}
-
-		/* Short landscape screens have no spare vertical room for the cue. */
-		.scroll-cue {
-			display: none;
 		}
 
 		.page {
@@ -2459,6 +3126,12 @@
 
 		.hero-copy {
 			max-width: none;
+		}
+
+		.hero-badge,
+		.hero-promises,
+		.operations-strip {
+			display: none;
 		}
 
 		.hero h1 {

@@ -115,10 +115,12 @@
 	--observatory-text-soft: #6b7280;
 	--observatory-surface: rgba(255, 255, 255, 0.9);
 	--observatory-surface-solid: #ffffff;
+	--observatory-cta-link-surface: var(--observatory-surface-solid);
 	--observatory-surface-soft: #f3f5f7;
 	--observatory-bar: #e1e7ef;
 	--observatory-border: #e4e7eb;
 	--observatory-border-strong: #c2c7cf;
+	--observatory-background: #fdfdfd;
 	--observatory-shadow: 0 24px 72px rgba(20, 24, 31, 0.12);
 	--nav-dropdown-shadow: 0 12px 32px rgba(20, 24, 31, 0.16);
 	--observatory-accent: #007bff;
@@ -126,6 +128,7 @@
 	--observatory-on-accent: #ffffff;
 	--observatory-accent-soft: #e8f1ff;
 	--observatory-accent-border: #cfe2fb;
+	--observatory-callout-border: var(--observatory-accent-border);
 	--observatory-focus: #0056b3;
 	--observatory-rail-surface: rgba(255, 255, 255, 0.96);
 	--observatory-add: #176b49;
@@ -150,6 +153,37 @@
 	--theme-toggle-track-border-active: rgba(0, 102, 255, 0.34);
 	--theme-toggle-track-border-hover: rgba(0, 102, 255, 0.52);
 	--theme-toggle-thumb-shadow: 0 1px 3px rgba(16, 24, 39, 0.24);
+
+	/* === Landing backdrop (CSS replacement for the WebGL scene on `/`) ===
+	   A flat base wash with a soft corner bloom. */
+	--home-backdrop-base: #ffffff;
+	--home-backdrop-tint: #eaeffa;
+	--home-bloom: rgba(0, 102, 255, 0.07);
+	--home-vignette: rgba(255, 255, 255, 0.85);
+	/* Blue in light — a yellow beam on white would be near-invisible and
+	   would leak the dark theme's accent onto a light ground. Pushed to a deep,
+	   near-navy blue at near-opaque alpha, so it holds its own against white
+	   the way the yellow does against near-black — a pale, low-alpha blue
+	   washes out on a light ground in a way the dark theme's palette never has
+	   to fight. */
+	--home-beam-from: #0fc7ff;
+	--home-beam-to: #46e7f3;
+	/* The panel's rotating ring uses the beam's own hex values (#0a3aad /
+	   #001d66 as rgb(10,58,173) / rgb(0,29,102)) rather than the flat accent,
+	   so the two travelling highlights read as the same color. */
+	--home-ring-lead: rgba(44, 29, 255, 0.95);
+	--home-ring-trail: rgba(18, 61, 170, 0.65);
+	--home-ring-zero: rgba(0, 29, 102, 0);
+	--home-ring-rest: rgba(0, 0, 0, 0.1);
+	--home-badge-surface: rgba(255, 255, 255, 0.88);
+	/* Tinted, not white: the cards inside the shell are white, and they need a
+	   surface to sit on rather than blend into. */
+	--home-shell-surface: rgba(243, 247, 253, 0.95);
+	--home-shell-bloom: rgba(0, 102, 255, 0.12);
+	/* Navbar over the landing hero: no seam, no plate. */
+	--nav-landing-surface: transparent;
+	--nav-landing-border: transparent;
+	--nav-landing-scrolled: rgba(255, 255, 255, 0.82);
 }
 
 [data-theme='dark'] {
@@ -221,6 +255,7 @@
 	--observatory-text-soft: #8a8f97;
 	--observatory-surface: rgba(30, 30, 30, 0.92);
 	--observatory-surface-solid: #1e1e1e;
+	--observatory-cta-link-surface: #000000;
 	--observatory-surface-soft: #2a2a2a;
 	--observatory-bar: #343434;
 	--observatory-border: #343434;
@@ -230,8 +265,10 @@
 	--observatory-accent: #ffe260;
 	--observatory-accent-hover: #ffd000;
 	--observatory-on-accent: #191500;
+	--observatory-background: #191500;
 	--observatory-accent-soft: #2a2410;
-	--observatory-accent-border: #4a4020;
+	--observatory-accent-border: #ffd13b;
+	--observatory-callout-border: #4a4020;
 	--observatory-focus: #ffe260;
 	--observatory-rail-surface: rgba(30, 30, 30, 0.97);
 	--observatory-add: #71d5a5;
@@ -256,6 +293,30 @@
 	--theme-toggle-track-border-active: rgba(255, 226, 96, 0.34);
 	--theme-toggle-track-border-hover: rgba(255, 226, 96, 0.5);
 	--theme-toggle-thumb-shadow: 0 1px 3px rgba(2, 4, 8, 0.55);
+
+	/* === Landing backdrop (CSS replacement for the WebGL scene on `/`) ===
+	   A flat base wash with a soft corner bloom. */
+	--home-backdrop-base: #050506;
+	--home-backdrop-tint: #101013;
+	--home-bloom: rgba(255, 214, 92, 0.13);
+	--home-vignette: rgba(0, 0, 0, 0.9);
+	/* Border beam (badge only): bright yellow head fading to nothing. */
+	--home-beam-from: #ffe260;
+	--home-beam-to: #ffa62c;
+	/* The panel's rotating ring uses the beam's own hex values (#ffe260 /
+	   #ffa62c as rgb(255,226,96) / rgb(255,166,44)) rather than a flat single
+	   hue, so the two travelling highlights read as the same color. Alphas are
+	   unchanged from before this swap — only the hue moved. */
+	--home-ring-lead: rgba(255, 226, 96, 0.95);
+	--home-ring-trail: rgba(255, 166, 44, 0.32);
+	--home-ring-zero: rgba(255, 166, 44, 0);
+	--home-ring-rest: rgba(255, 255, 255, 0.09);
+	--home-badge-surface: rgba(20, 20, 22, 0.9);
+	--home-shell-surface: rgba(18, 18, 20, 0.92);
+	--home-shell-bloom: rgba(255, 214, 92, 0.08);
+	--nav-landing-surface: transparent;
+	--nav-landing-border: transparent;
+	--nav-landing-scrolled: rgba(8, 8, 10, 0.78);
 }
 
 /* While the theme is switching, suppress transitions for one frame. Transitions on
@@ -569,4 +630,13 @@ button:disabled {
 		display: table;
 		clear: both;
 	}
+}
+
+/* Registered so the conic ring can animate its start angle. Unregistered the
+   angle is an unanimatable token and the ring renders static — degraded, not
+   broken. */
+@property --ring-angle {
+	syntax: '<angle>';
+	inherits: false;
+	initial-value: 0deg;
 }
