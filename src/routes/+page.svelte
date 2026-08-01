@@ -283,14 +283,21 @@
 						<span class="badge-shine-wedge"></span>
 					</span>
 					<span class="badge-shine-backdrop" aria-hidden="true"></span>
-					<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 						<path
-							d="M12 2.75l1.7 5.05 5.05 1.7-5.05 1.7-1.7 5.05-1.7-5.05-5.05-1.7 5.05-1.7L12 2.75z"
-							fill="currentColor"
+							fill-rule="evenodd"
+							clip-rule="evenodd"
+							d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"
 						/>
 						<path
-							d="M19 15.25l.8 2.45 2.45.8-2.45.8-.8 2.45-.8-2.45-2.45-.8 2.45-.8.8-2.45z"
-							fill="currentColor"
+							fill-rule="evenodd"
+							clip-rule="evenodd"
+							d="M18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"
+						/>
+						<path
+							fill-rule="evenodd"
+							clip-rule="evenodd"
+							d="M16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
 						/>
 					</svg>
 					<span class="hero-badge-text">Smarter inventory. Better decisions.</span>
@@ -378,17 +385,11 @@
 					<li>
 						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
 							<path
-								d="M12 3l7 3v5c0 4.5-2.8 8-7 10-4.2-2-7-5.5-7-10V6l7-3z"
 								stroke="currentColor"
-								stroke-width="1.8"
-								stroke-linejoin="round"
-							/>
-							<path
-								d="M9 12l2 2 4-4"
-								stroke="currentColor"
-								stroke-width="1.8"
+								stroke-width="1.75"
 								stroke-linecap="round"
 								stroke-linejoin="round"
+								d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"
 							/>
 						</svg>
 						<span class="promise-copy">
@@ -398,18 +399,12 @@
 					</li>
 					<li>
 						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8" />
 							<path
-								d="M12 7v5l3 2M18.5 5.5L20 4"
 								stroke="currentColor"
-								stroke-width="1.8"
+								stroke-width="1.75"
 								stroke-linecap="round"
-							/>
-							<path
-								d="M17.5 17.5l2 2"
-								stroke="currentColor"
-								stroke-width="1.8"
-								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
 							/>
 						</svg>
 						<span class="promise-copy">
@@ -420,11 +415,11 @@
 					<li>
 						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
 							<path
-								d="M3 18l5-6 4 3 7-9M15 6h4v4"
 								stroke="currentColor"
-								stroke-width="1.8"
+								stroke-width="1.75"
 								stroke-linecap="round"
 								stroke-linejoin="round"
+								d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941"
 							/>
 						</svg>
 						<span class="promise-copy">
@@ -608,10 +603,21 @@
 					</div>
 
 					<div class="dashboard-callout">
-						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 							<path
-								d="M12 2.75l1.7 5.05 5.05 1.7-5.05 1.7-1.7 5.05-1.7-5.05-5.05-1.7 5.05-1.7L12 2.75z"
-								fill="currentColor"
+								fill-rule="evenodd"
+								clip-rule="evenodd"
+								d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"
+							/>
+							<path
+								fill-rule="evenodd"
+								clip-rule="evenodd"
+								d="M18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"
+							/>
+							<path
+								fill-rule="evenodd"
+								clip-rule="evenodd"
+								d="M16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
 							/>
 						</svg>
 						<span>
@@ -1382,8 +1388,8 @@
 	}
 
 	.hero-badge svg {
-		width: 1rem;
-		height: 1rem;
+		width: 1.125rem;
+		height: 1.125rem;
 		color: var(--observatory-accent);
 	}
 
@@ -2076,8 +2082,8 @@
 
 	.dashboard-callout > svg {
 		flex-shrink: 0;
-		width: 1.2rem;
-		height: 1.2rem;
+		width: 1.875rem;
+		height: 1.875rem;
 	}
 
 	.dashboard-callout > span:not(.dashboard-callout-link) {
@@ -2113,8 +2119,8 @@
 	}
 
 	.dashboard-callout-link svg {
-		width: 0.9rem;
-		height: 0.9rem;
+		width: 0.875rem;
+		height: 0.875rem;
 	}
 
 	.operations-strip {
@@ -3021,7 +3027,7 @@
 		.operations-strip {
 			display: block;
 			grid-column: 1 / -1;
-			margin-top: 0;
+			margin-top: 2.25rem;
 			padding: 0 4rem;
 		}
 	}
