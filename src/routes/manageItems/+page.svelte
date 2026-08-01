@@ -453,8 +453,8 @@
 
 	.inventory-title {
 		margin: 0;
-		font-size: 1.05rem;
-		font-weight: 700;
+		font-size: var(--text-2xl);
+		font-weight: var(--font-weight-bold);
 		color: var(--text-color);
 		letter-spacing: -0.025em;
 	}

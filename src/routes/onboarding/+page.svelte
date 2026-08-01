@@ -185,8 +185,8 @@
 	}
 
 	h1 {
-		font-size: 1.6rem;
-		font-weight: 700;
+		font-size: var(--text-2xl);
+		font-weight: var(--font-weight-bold);
 		letter-spacing: -0.02em;
 		margin-bottom: 0.5rem;
 	}

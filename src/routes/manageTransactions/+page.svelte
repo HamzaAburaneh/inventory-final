@@ -498,8 +498,8 @@
 
 	.tx-title {
 		margin: 0;
-		font-size: 1.5rem;
-		font-weight: 800;
+		font-size: var(--text-2xl);
+		font-weight: var(--font-weight-bold);
 		color: var(--text-color);
 		letter-spacing: -0.03em;
 		line-height: 1.15;

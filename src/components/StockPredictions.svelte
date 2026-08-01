@@ -190,7 +190,7 @@
 </script>
 
 <div class="stock-predictions">
-	<h2 class="text-2xl font-bold mb-4" in:slide={{ duration: 300, delay: 150 }}>
+	<h2 class="section-title mb-4" in:slide={{ duration: 300, delay: 150 }}>
 		<i class="fas fa-chart-bar inline-block mr-2"></i>
 		Inventory Predictions
 	</h2>
@@ -248,7 +248,7 @@
 				</div>
 			</div>
 		</div>
-		<p class="text-sm mb-2">
+		<p class="body-text mb-2">
 			{#if useAI}
 				AI-enhanced daily forecasts anchored on last CNE's demand and this fair's crowd pattern,
 				with an ARIMA/baseline fallback.
@@ -299,7 +299,7 @@
 					in:fly={{ y: 12, duration: 300, delay: 150 }}
 				>
 					<div class="flex justify-between items-start mb-2">
-						<h3 class="text-lg font-semibold">{item.name}</h3>
+						<h3 class="item-name">{item.name}</h3>
 						<div class="flex items-center gap-2 flex-wrap justify-end">
 							<span class="method-badge {item.isAI ? 'method-ai' : 'method-model'}"
 								>{item.method}</span
@@ -383,7 +383,7 @@
 					{/if}
 
 					{#if item.isAI && item.divergence !== null}
-						<p class="text-xs divergence mb-2">
+						<p class="divergence mb-2">
 							{#if item.divergence <= 0.15}
 								AI agrees with the CNE baseline (within {Math.round(item.divergence * 100)}%).
 							{:else}
@@ -430,6 +430,20 @@
 <style>
 	.stock-predictions {
 		margin-top: 2rem;
+	}
+
+	.section-title {
+		font-size: var(--text-xl);
+		font-weight: var(--font-weight-bold);
+	}
+
+	.body-text {
+		font-size: var(--text-sm);
+	}
+
+	.item-name {
+		font-size: var(--text-lg);
+		font-weight: var(--font-weight-semibold);
 	}
 
 	.summary-section {
@@ -695,6 +709,7 @@
 	}
 
 	.divergence {
+		font-size: var(--text-xs);
 		opacity: 0.75;
 	}
 

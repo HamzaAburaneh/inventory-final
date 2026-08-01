@@ -980,7 +980,7 @@
 
 	.page-header h1 {
 		font-size: var(--text-2xl);
-		font-weight: 700;
+		font-weight: var(--font-weight-bold);
 		margin: 0 0 0.15rem;
 	}
 

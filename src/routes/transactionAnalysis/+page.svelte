@@ -432,7 +432,7 @@
 		// App-matching chart chrome so charts read like the rest of the UI.
 		Chart.defaults.color = AXIS_TEXT;
 		Chart.defaults.font.family =
-			"'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+			"system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
 		loadAnalysisData();
 
@@ -758,8 +758,8 @@
 	}
 
 	.titles h1 {
-		font-size: 1.7rem;
-		font-weight: 700;
+		font-size: var(--text-2xl);
+		font-weight: var(--font-weight-bold);
 		letter-spacing: -0.02em;
 		line-height: 1.1;
 	}

@@ -185,8 +185,8 @@
 	}
 
 	h1 {
-		font-size: 1.75rem;
-		font-weight: 700;
+		font-size: var(--text-2xl);
+		font-weight: var(--font-weight-bold);
 		color: var(--tech-title);
 		margin: 0 0 0.4rem;
 	}

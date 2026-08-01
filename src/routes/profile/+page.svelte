@@ -507,8 +507,8 @@
 
 	.hero-name {
 		margin: 0;
-		font-size: 1.5rem;
-		font-weight: 600;
+		font-size: var(--text-2xl);
+		font-weight: var(--font-weight-bold);
 		color: var(--text-color);
 		letter-spacing: -0.015em;
 		line-height: 1.2;

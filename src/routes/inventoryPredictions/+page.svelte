@@ -111,15 +111,11 @@
 
 <svelte:head>
 	<title>Inventory Predictions - StockSense</title>
-	<link
-		href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
-		rel="stylesheet"
-	/>
 </svelte:head>
 
 <div class="inventory-predictions-page">
 	<div class="dashboard-overview">
-		<h2 class="text-xl font-medium mb-4">Overview</h2>
+		<h2 class="section-title mb-4">Overview</h2>
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 			<div class="metric-card">
 				<i class="fas fa-box" style="font-size: 24px;"></i>
@@ -141,11 +137,11 @@
 	</div>
 
 	<div class="container mx-auto p-6 rounded-lg shadow-lg bg-container mt-8">
-		<h1 class="text-4xl font-bold mb-6">
+		<h1 class="page-title mb-6">
 			<i class="fas fa-chart-line" style="font-size: 32px;"></i>
 			Inventory Predictions
 		</h1>
-		<p class="mb-8 text-lg font-light">
+		<p class="page-lede mb-8">
 			Welcome to the Inventory Predictions page. Here you can view AI-powered stock level
 			predictions based on historical sales data. Use these insights to optimize your inventory
 			management and avoid stockouts.
@@ -155,11 +151,7 @@
 </div>
 
 <style>
-	/* Scope Roboto to this page only — do NOT leak it onto :global(body), or it
-	   stays applied to the next page while this one finishes unmounting and
-	   causes a font flash on navigation away. */
 	.inventory-predictions-page {
-		font-family: 'Roboto', sans-serif;
 		background-color: var(--background-color);
 		min-height: 100vh;
 		padding: 2rem;
@@ -183,6 +175,21 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+	}
+
+	.page-title {
+		font-size: var(--text-2xl);
+		font-weight: var(--font-weight-bold);
+	}
+
+	.page-lede {
+		font-size: var(--text-lg);
+		font-weight: var(--font-weight-light);
+	}
+
+	.section-title {
+		font-size: var(--text-xl);
+		font-weight: var(--font-weight-bold);
 	}
 
 	.dashboard-overview {
@@ -225,12 +232,8 @@
 			padding: 1.5rem;
 		}
 
-		h1 {
-			font-size: 2rem;
-		}
-
-		p {
-			font-size: 1rem;
+		.page-lede {
+			font-size: var(--text-base);
 		}
 	}
 </style>
