@@ -8,8 +8,7 @@
 		return {
 			accent: styles.getPropertyValue('--scene-accent').trim(),
 			fog: styles.getPropertyValue('--scene-fog').trim(),
-			terrain: styles.getPropertyValue('--scene-terrain').trim(),
-			glowRgb: styles.getPropertyValue('--scene-glow-rgb').trim()
+			terrain: styles.getPropertyValue('--scene-terrain').trim()
 		};
 	}
 
@@ -108,122 +107,6 @@
 			pos.needsUpdate = true;
 		}
 
-		// ============================================================
-		// HORIZON SUN — one plane with a feathered radial-gradient
-		// texture, so the glow dissolves with no hard edge.
-		// ============================================================
-		const glowCanvas = document.createElement('canvas');
-		glowCanvas.width = 256;
-		glowCanvas.height = 256;
-		const glowCtx = glowCanvas.getContext('2d');
-		const gradient = glowCtx.createRadialGradient(128, 128, 0, 128, 128, 128);
-		gradient.addColorStop(0, `rgba(${initialPalette.glowRgb}, 0.85)`);
-		gradient.addColorStop(0.35, `rgba(${initialPalette.glowRgb}, 0.3)`);
-		gradient.addColorStop(0.7, `rgba(${initialPalette.glowRgb}, 0.08)`);
-		gradient.addColorStop(1, `rgba(${initialPalette.glowRgb}, 0)`);
-		glowCtx.fillStyle = gradient;
-		glowCtx.fillRect(0, 0, 256, 256);
-		const glowTex = new THREE.CanvasTexture(glowCanvas);
-
-		const sunGeo = new THREE.PlaneGeometry(38, 38);
-		const sunMat = new THREE.MeshBasicMaterial({
-			map: glowTex,
-			color: initialPalette.accent,
-			transparent: true,
-			opacity: 0.45,
-			depthWrite: false
-		});
-		const sun = new THREE.Mesh(sunGeo, sunMat);
-		sun.position.set(0, 4.5, -70);
-		scene.add(sun);
-
-		// ============================================================
-		// DRIFTING MOTES — sparse points rising like slow embers
-		// ============================================================
-		const MOTES = isMobile ? 40 : 80;
-		const motePos = new Float32Array(MOTES * 3);
-		for (let i = 0; i < MOTES; i++) {
-			motePos[i * 3] = (Math.random() - 0.5) * 70;
-			motePos[i * 3 + 1] = Math.random() * 14;
-			motePos[i * 3 + 2] = -5 - Math.random() * 55;
-		}
-		const moteGeo = new THREE.BufferGeometry();
-		moteGeo.setAttribute('position', new THREE.BufferAttribute(motePos, 3));
-
-		// Soft round sprite. PointsMaterial draws a bare quad without a map, so at
-		// the size below the near motes would read as squares — this feathers them
-		// into dots with a bright core, which is also what makes them easier to
-		// pick out than simply raising the opacity of a flat square would.
-		// Kept white: the material's `color` is lerped to the theme accent every
-		// frame in applyColors(), and map * color does the tinting.
-		const moteCanvas = document.createElement('canvas');
-		moteCanvas.width = 64;
-		moteCanvas.height = 64;
-		const moteCtx = moteCanvas.getContext('2d');
-		// Shaped like a neon bulb: a solid core with a hard shoulder, then a bright
-		// near-glow that decays into a long faint tail — the profile you get from
-		// stacking box-shadows at 20/40/60/80px over a filled dot. The plateau
-		// around 0.46 stands in for the wide, low-alpha ring those bulbs carry.
-		//
-		// Brightness is what separates a bulb from a smudge, not width: an earlier
-		// pass had a halo this wide but at low alpha and it just read as being out
-		// of focus. The hard core edge at 0.26/0.30 is the other half of that.
-		const moteGradient = moteCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
-		moteGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-		moteGradient.addColorStop(0.26, 'rgba(255, 255, 255, 1)');
-		moteGradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.72)');
-		moteGradient.addColorStop(0.38, 'rgba(255, 255, 255, 0.42)');
-		moteGradient.addColorStop(0.46, 'rgba(255, 255, 255, 0.3)');
-		moteGradient.addColorStop(0.56, 'rgba(255, 255, 255, 0.18)');
-		moteGradient.addColorStop(0.72, 'rgba(255, 255, 255, 0.08)');
-		moteGradient.addColorStop(0.88, 'rgba(255, 255, 255, 0.03)');
-		moteGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-		moteCtx.fillStyle = moteGradient;
-		moteCtx.fillRect(0, 0, 64, 64);
-		const moteTex = new THREE.CanvasTexture(moteCanvas);
-		// The sprite is drawn much smaller than 64px on screen; mipmapping that
-		// down softens the edge we just sharpened, so sample it directly.
-		moteTex.generateMipmaps = false;
-		moteTex.minFilter = THREE.LinearFilter;
-
-		const moteMat = new THREE.PointsMaterial({
-			color: initialPalette.accent,
-			map: moteTex,
-			// Holds the solid core near 6px on the nearest motes now that the core
-			// is 26% of the sprite, leaving the rest of the quad for the glow.
-			size: 0.5,
-			transparent: true,
-			// Full strength, so a mote lands on the accent's true value (the gold
-			// of the panel ring in dark, the app blue in light) instead of a
-			// washed-out fraction of it.
-			opacity: 1,
-			sizeAttenuation: true,
-			depthWrite: false
-		});
-		const motes = new THREE.Points(moteGeo, moteMat);
-		scene.add(motes);
-
-		// Every material here is depthWrite: false, so nothing populates the depth
-		// buffer and draw order is decided purely by the transparent sort — which
-		// orders back-to-front by z. The motes span z -5..-60 and the terrain plane
-		// is 90 deep, so they genuinely interleave and motes kept disappearing
-		// behind wireframe crests. Explicit renderOrder pins the layering: horizon
-		// glow, then terrain, then motes always last and on top. depthTest is off
-		// on the motes so no future opaque geometry can occlude them either.
-		sun.renderOrder = 0;
-		terrain.renderOrder = 1;
-		motes.renderOrder = 2;
-		moteMat.depthTest = false;
-
-		function driftMotes() {
-			const pos = moteGeo.attributes.position;
-			for (let i = 0; i < MOTES; i++) {
-				pos.array[i * 3 + 1] += 0.008;
-				if (pos.array[i * 3 + 1] > 15) pos.array[i * 3 + 1] = 0;
-			}
-			pos.needsUpdate = true;
-		}
-
 		// === Theme transitions (lerped every frame, cheap) ===
 		const current = {
 			accent: new THREE.Color(initialPalette.accent),
@@ -241,8 +124,6 @@
 			current.terrain.lerp(target.terrain, a);
 			scene.fog.color.copy(current.fog);
 			terrainMat.color.copy(current.terrain);
-			sunMat.color.copy(current.accent);
-			moteMat.color.copy(current.accent);
 		}
 		const themeObserver = new MutationObserver(() => {
 			const palette = readScenePalette();
@@ -263,7 +144,6 @@
 		function updateScroll() {
 			const f = Math.min(window.scrollY / (window.innerHeight * 0.9), 1);
 			canvas.style.opacity = String(1 - 0.7 * f);
-			sun.position.y = 4.5 - f * 2.5;
 		}
 		function onScroll() {
 			updateScroll();
@@ -289,7 +169,6 @@
 			const t = (performance.now() - startTime) / 1000;
 			applyColors();
 			displaceTerrain(t);
-			driftMotes();
 
 			// slow autonomous drift — no pointer tracking, nothing to chase
 			camera.position.x = Math.sin(t * 0.05) * 1.8;
@@ -308,12 +187,6 @@
 		function disposeAll() {
 			terrainGeo.dispose();
 			terrainMat.dispose();
-			sunGeo.dispose();
-			sunMat.dispose();
-			glowTex.dispose();
-			moteGeo.dispose();
-			moteMat.dispose();
-			moteTex.dispose();
 			renderer.dispose();
 		}
 
