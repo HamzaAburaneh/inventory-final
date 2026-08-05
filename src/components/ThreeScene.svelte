@@ -8,8 +8,16 @@
 		return {
 			accent: styles.getPropertyValue('--scene-accent').trim(),
 			fog: styles.getPropertyValue('--scene-fog').trim(),
-			terrain: styles.getPropertyValue('--scene-terrain').trim()
+			terrain: styles.getPropertyValue('--scene-terrain').trim(),
+			terrainOpacity: styles.getPropertyValue('--scene-terrain-opacity').trim(),
+			scrollFade: styles.getPropertyValue('--scene-scroll-fade').trim()
 		};
+	}
+
+	function parseSceneNumber(value, fallback) {
+		if (value === '') return fallback;
+		const parsed = Number(value);
+		return Number.isFinite(parsed) ? parsed : fallback;
 	}
 
 	$effect(() => {
@@ -17,9 +25,13 @@
 
 		const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		const isMobile = window.innerWidth < 768;
+		// Antialiasing must be requested at context-creation time, not on the
+		// renderer (it inherits whatever `context` was already made with) — this
+		// is what keeps the wireframe from turning into moiré noise where the
+		// grid lines compress toward the horizon.
 		const context = canvas.getContext('webgl2', {
 			alpha: true,
-			antialias: false,
+			antialias: true,
 			powerPreference: 'high-performance'
 		});
 		if (!context) {
@@ -32,7 +44,7 @@
 			canvas,
 			context,
 			alpha: true,
-			antialias: false,
+			antialias: true,
 			powerPreference: 'high-performance'
 		});
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.25 : 1.5));
@@ -64,7 +76,7 @@
 			color: initialPalette.terrain,
 			wireframe: true,
 			transparent: true,
-			opacity: 0.32,
+			opacity: parseSceneNumber(initialPalette.terrainOpacity, 0.32),
 			depthWrite: false
 		});
 		const terrain = new THREE.Mesh(terrainGeo, terrainMat);
@@ -125,25 +137,41 @@
 			scene.fog.color.copy(current.fog);
 			terrainMat.color.copy(current.terrain);
 		}
-		const themeObserver = new MutationObserver(() => {
+		let scrollFade = parseSceneNumber(initialPalette.scrollFade, 0.7);
+		function syncScenePalette() {
 			const palette = readScenePalette();
 			target.accent.set(palette.accent);
 			target.fog.set(palette.fog);
 			target.terrain.set(palette.terrain);
+			terrainMat.opacity = parseSceneNumber(palette.terrainOpacity, 0.32);
+			scrollFade = parseSceneNumber(palette.scrollFade, 0.7);
+			updateScroll();
 			if (prefersReducedMotion) {
 				applyColors(1);
 				renderer.render(scene, camera);
 			}
-		});
+		}
+		const themeObserver = new MutationObserver(syncScenePalette);
 		themeObserver.observe(document.documentElement, {
 			attributes: true,
 			attributeFilter: ['data-theme']
 		});
+		// CSS HMR replaces stylesheet contents without changing `data-theme`, so
+		// re-read the computed custom properties after Vite applies an update.
+		if (import.meta.hot) {
+			import.meta.hot.on('vite:afterUpdate', syncScenePalette);
+		}
+		function stopScenePaletteSync() {
+			themeObserver.disconnect();
+			if (import.meta.hot) {
+				import.meta.hot.off('vite:afterUpdate', syncScenePalette);
+			}
+		}
 
 		// === Scroll: gently sink the horizon as content takes over ===
 		function updateScroll() {
 			const f = Math.min(window.scrollY / (window.innerHeight * 0.9), 1);
-			canvas.style.opacity = String(1 - 0.7 * f);
+			canvas.style.opacity = String(1 - scrollFade * f);
 		}
 		function onScroll() {
 			updateScroll();
@@ -200,7 +228,7 @@
 			};
 			window.addEventListener('resize', staticResize);
 			return () => {
-				themeObserver.disconnect();
+				stopScenePaletteSync();
 				window.removeEventListener('resize', staticResize);
 				window.removeEventListener('scroll', onScroll);
 				window.removeEventListener('resize', onResize);
@@ -226,7 +254,7 @@
 			document.removeEventListener('visibilitychange', onVisibility);
 			window.removeEventListener('scroll', onScroll);
 			window.removeEventListener('resize', onResize);
-			themeObserver.disconnect();
+			stopScenePaletteSync();
 			disposeAll();
 		};
 	});
