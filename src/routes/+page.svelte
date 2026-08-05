@@ -4,6 +4,7 @@
 	import { page } from '$app/stores';
 	import { fly } from 'svelte/transition';
 	import ScrollReveal from '../components/ScrollReveal.svelte';
+	import ThreeScene from '../components/ThreeScene.svelte';
 	import {
 		createGestureTracker,
 		keyToPageIntent,
@@ -242,19 +243,12 @@
 	<meta property="og:url" content={canonicalHref} />
 </svelte:head>
 
-<!-- Landing backdrop. Replaces the WebGL terrain on `/` (— /login still uses
-     ThreeScene): a flat base, a wide light arc sweeping the lower-left corner,
-     and a soft bloom. Static, so there is nothing here for the pause control or
-     reduced-motion to switch off, and no GPU cost.
-
-     The sweep is a stroked SVG path rather than the border of an oversized CSS
-     ellipse: a 1.5px border on a ~1600px-radius curve is rasterised by the
-     border-radius path and visibly stair-steps, where a stroke is antialiased
-     analytically. `non-scaling-stroke` holds the line at 1.5px however the
-     viewBox is scaled to cover. -->
-<div class="backdrop" aria-hidden="true">
-	<span class="backdrop-bloom"></span>
-</div>
+<!-- Landing backdrop: the same breathing wireframe terrain that backs /login, so
+     the two public pages share one scene. The canvas is fixed, alpha, z-index 0
+     and pointer-events: none, which is the slot the old flat CSS wash occupied —
+     the page content above it (z-index 1) is unaffected. ThreeScene reads the
+     --scene-* variables, so it follows the theme toggle on its own. -->
+<ThreeScene />
 
 <nav class="rail" aria-label="Homepage panels" style:--rail-progress={railProgress}>
 	{#each sections as section, index (section.id)}
@@ -962,33 +956,6 @@
 </div>
 
 <style>
-	/* ── Landing backdrop ─────────────────────────────────────────────
-	   Four fixed layers behind everything: base wash, a blurred halo that
-	   traces the arc, the crisp arc line itself, a fainter far arc in the
-	   bottom-right, and a corner bloom. The arcs are one large ellipse
-	   parked mostly off-screen below-left, so only its upper-left shoulder
-	   crosses the viewport — that is the sweep in the reference. */
-	.backdrop {
-		position: fixed;
-		inset: 0;
-		z-index: 0;
-		overflow: hidden;
-		pointer-events: none;
-		background:
-			linear-gradient(to bottom, var(--home-vignette) 0%, transparent 34%),
-			radial-gradient(120% 90% at 76% 6%, var(--home-backdrop-tint) 0%, transparent 62%),
-			var(--home-backdrop-base);
-	}
-
-	.backdrop-bloom {
-		position: absolute;
-		left: -18%;
-		bottom: -26%;
-		width: 78%;
-		height: 66%;
-		background: radial-gradient(closest-side, var(--home-bloom) 0%, transparent 100%);
-	}
-
 	/* ── Travelling edge highlight (badge + dashboard shell) ── */
 	.glow-host {
 		position: relative;
@@ -1999,9 +1966,6 @@
 		border: 0;
 		border-radius: 20px;
 		background: var(--home-shell-surface);
-		box-shadow:
-			var(--observatory-shadow),
-			0 0 70px -12px var(--home-shell-bloom);
 	}
 
 	.dashboard-header {

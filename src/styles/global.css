@@ -165,12 +165,6 @@
 	--theme-toggle-track-border-hover: rgba(0, 102, 255, 0.52);
 	--theme-toggle-thumb-shadow: 0 1px 3px rgba(16, 24, 39, 0.24);
 
-	/* === Landing backdrop (CSS replacement for the WebGL scene on `/`) ===
-	   A flat base wash with a soft corner bloom. */
-	--home-backdrop-base: #ffffff;
-	--home-backdrop-tint: #eaeffa;
-	--home-bloom: rgba(0, 102, 255, 0.07);
-	--home-vignette: rgba(255, 255, 255, 0.85);
 	/* Blue in light — a yellow beam on white would be near-invisible and
 	   would leak the dark theme's accent onto a light ground. Pushed to a deep,
 	   near-navy blue at near-opaque alpha, so it holds its own against white
@@ -189,7 +183,9 @@
 	--home-badge-surface: rgba(255, 255, 255, 0.88);
 	/* Tinted, not white: the cards inside the shell are white, and they need a
 	   surface to sit on rather than blend into. */
-	--home-shell-surface: rgba(243, 247, 253, 0.95);
+	/* Opaque for the same reason as the dark theme: nothing from the WebGL
+	   backdrop should show through the panel. */
+	--home-shell-surface: #f3f7fd;
 	--home-shell-bloom: rgba(0, 102, 255, 0.12);
 	/* Navbar over the landing hero: no seam, no plate. */
 	--nav-landing-surface: transparent;
@@ -305,12 +301,6 @@
 	--theme-toggle-track-border-hover: rgba(255, 226, 96, 0.5);
 	--theme-toggle-thumb-shadow: 0 1px 3px rgba(2, 4, 8, 0.55);
 
-	/* === Landing backdrop (CSS replacement for the WebGL scene on `/`) ===
-	   A flat base wash with a soft corner bloom. */
-	--home-backdrop-base: #050506;
-	--home-backdrop-tint: #101013;
-	--home-bloom: rgba(255, 214, 92, 0.13);
-	--home-vignette: rgba(0, 0, 0, 0.9);
 	/* Border beam (badge only): bright yellow head fading to nothing. */
 	--home-beam-from: #ffe260;
 	--home-beam-to: #ffa62c;
@@ -323,7 +313,9 @@
 	--home-ring-zero: rgba(255, 166, 44, 0);
 	--home-ring-rest: rgba(255, 255, 255, 0.09);
 	--home-badge-surface: rgba(20, 20, 22, 0.9);
-	--home-shell-surface: rgba(18, 18, 20, 0.92);
+	/* Fully opaque, not 0.92: the landing backdrop is a live WebGL scene now, and
+	   at 8% transparency the drifting motes were visibly crossing the panel. */
+	--home-shell-surface: #121214;
 	--home-shell-bloom: rgba(255, 214, 92, 0.08);
 	--nav-landing-surface: transparent;
 	--nav-landing-border: transparent;

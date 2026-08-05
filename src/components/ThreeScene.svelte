@@ -72,15 +72,38 @@
 		terrain.position.set(0, 0, -28);
 		scene.add(terrain);
 
+		// Standing waves, not travelling ones. Putting `t` inside the spatial phase
+		// (sin(x*k + t*w)) marches the crests across the plane, and because the two
+		// z-terms used to travel in opposite directions at similar speeds they beat
+		// against each other — which is why the grid only *sometimes* looked like it
+		// was creeping toward the horizon. Here the spatial phase is fixed and only
+		// the amplitude breathes, so every crest stays put and the surface just
+		// swells and relaxes in place.
+		//
+		// The spatial half is therefore constant per vertex, so it is computed once
+		// here instead of four trig calls per vertex per frame.
+		const vertexCount = terrainGeo.attributes.position.count;
+		const shapeXZ = new Float32Array(vertexCount);
+		const shapeX = new Float32Array(vertexCount);
+		const shapeZ = new Float32Array(vertexCount);
+		for (let i = 0; i < vertexCount; i++) {
+			const x = basePos[i * 3];
+			const z = basePos[i * 3 + 2];
+			shapeXZ[i] = Math.sin(x * 0.16) * Math.cos(z * 0.13);
+			shapeX[i] = Math.sin(x * 0.045);
+			shapeZ[i] = Math.cos(z * 0.05);
+		}
+
 		function displaceTerrain(t) {
 			const pos = terrainGeo.attributes.position;
-			for (let i = 0; i < pos.count; i++) {
-				const x = basePos[i * 3];
-				const z = basePos[i * 3 + 2];
-				pos.array[i * 3 + 1] =
-					Math.sin(x * 0.16 + t * 0.22) * Math.cos(z * 0.13 - t * 0.16) * 1.5 +
-					Math.sin(x * 0.045 - t * 0.1) * 2.2 +
-					Math.cos(z * 0.05 + t * 0.07) * 1.4;
+			// Each envelope stays positive (0.1..1 and 0.2..1 of nominal) so the
+			// terrain never flattens to nothing or inverts through zero, and the
+			// three run at unrelated rates so they never trough together.
+			const ampXZ = 1.5 * (0.55 + 0.45 * Math.sin(t * 0.22));
+			const ampX = 2.2 * (0.6 + 0.4 * Math.sin(t * 0.1 + 1.7));
+			const ampZ = 1.4 * (0.6 + 0.4 * Math.cos(t * 0.07));
+			for (let i = 0; i < vertexCount; i++) {
+				pos.array[i * 3 + 1] = shapeXZ[i] * ampXZ + shapeX[i] * ampX + shapeZ[i] * ampZ;
 			}
 			pos.needsUpdate = true;
 		}
@@ -126,16 +149,71 @@
 		}
 		const moteGeo = new THREE.BufferGeometry();
 		moteGeo.setAttribute('position', new THREE.BufferAttribute(motePos, 3));
+
+		// Soft round sprite. PointsMaterial draws a bare quad without a map, so at
+		// the size below the near motes would read as squares — this feathers them
+		// into dots with a bright core, which is also what makes them easier to
+		// pick out than simply raising the opacity of a flat square would.
+		// Kept white: the material's `color` is lerped to the theme accent every
+		// frame in applyColors(), and map * color does the tinting.
+		const moteCanvas = document.createElement('canvas');
+		moteCanvas.width = 64;
+		moteCanvas.height = 64;
+		const moteCtx = moteCanvas.getContext('2d');
+		// Shaped like a neon bulb: a solid core with a hard shoulder, then a bright
+		// near-glow that decays into a long faint tail — the profile you get from
+		// stacking box-shadows at 20/40/60/80px over a filled dot. The plateau
+		// around 0.46 stands in for the wide, low-alpha ring those bulbs carry.
+		//
+		// Brightness is what separates a bulb from a smudge, not width: an earlier
+		// pass had a halo this wide but at low alpha and it just read as being out
+		// of focus. The hard core edge at 0.26/0.30 is the other half of that.
+		const moteGradient = moteCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+		moteGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+		moteGradient.addColorStop(0.26, 'rgba(255, 255, 255, 1)');
+		moteGradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.72)');
+		moteGradient.addColorStop(0.38, 'rgba(255, 255, 255, 0.42)');
+		moteGradient.addColorStop(0.46, 'rgba(255, 255, 255, 0.3)');
+		moteGradient.addColorStop(0.56, 'rgba(255, 255, 255, 0.18)');
+		moteGradient.addColorStop(0.72, 'rgba(255, 255, 255, 0.08)');
+		moteGradient.addColorStop(0.88, 'rgba(255, 255, 255, 0.03)');
+		moteGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+		moteCtx.fillStyle = moteGradient;
+		moteCtx.fillRect(0, 0, 64, 64);
+		const moteTex = new THREE.CanvasTexture(moteCanvas);
+		// The sprite is drawn much smaller than 64px on screen; mipmapping that
+		// down softens the edge we just sharpened, so sample it directly.
+		moteTex.generateMipmaps = false;
+		moteTex.minFilter = THREE.LinearFilter;
+
 		const moteMat = new THREE.PointsMaterial({
 			color: initialPalette.accent,
-			size: 0.09,
+			map: moteTex,
+			// Holds the solid core near 6px on the nearest motes now that the core
+			// is 26% of the sprite, leaving the rest of the quad for the glow.
+			size: 0.5,
 			transparent: true,
-			opacity: 0.35,
+			// Full strength, so a mote lands on the accent's true value (the gold
+			// of the panel ring in dark, the app blue in light) instead of a
+			// washed-out fraction of it.
+			opacity: 1,
 			sizeAttenuation: true,
 			depthWrite: false
 		});
 		const motes = new THREE.Points(moteGeo, moteMat);
 		scene.add(motes);
+
+		// Every material here is depthWrite: false, so nothing populates the depth
+		// buffer and draw order is decided purely by the transparent sort — which
+		// orders back-to-front by z. The motes span z -5..-60 and the terrain plane
+		// is 90 deep, so they genuinely interleave and motes kept disappearing
+		// behind wireframe crests. Explicit renderOrder pins the layering: horizon
+		// glow, then terrain, then motes always last and on top. depthTest is off
+		// on the motes so no future opaque geometry can occlude them either.
+		sun.renderOrder = 0;
+		terrain.renderOrder = 1;
+		motes.renderOrder = 2;
+		moteMat.depthTest = false;
 
 		function driftMotes() {
 			const pos = moteGeo.attributes.position;
@@ -235,6 +313,7 @@
 			glowTex.dispose();
 			moteGeo.dispose();
 			moteMat.dispose();
+			moteTex.dispose();
 			renderer.dispose();
 		}
 
