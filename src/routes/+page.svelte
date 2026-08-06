@@ -296,6 +296,7 @@
 					</svg>
 					<span class="hero-badge-text">Smarter inventory. Better decisions.</span>
 				</p>
+
 				<h1 id="intro-heading">
 					<span class="sr-only">Run your inventory with precision.</span>
 					<span class="headline-visual" aria-hidden="true">
@@ -1254,7 +1255,14 @@
 
 	/* Explicit height rather than vertical padding, so the pill radius is a known
 	   half of it and the shine's geometry below can match exactly. Both are in
-	   rem, so they stay in step if the root size changes. */
+	   whole pixels (not rem) on purpose: `.badge-shine-mask` flips 180deg to swap
+	   which edge shows the travelling highlight, and that rotation only lands
+	   pixel-for-pixel identical to the unrotated copy when its center sits on a
+	   device-pixel boundary. A rem-based height (e.g. 1.9rem = 30.390625px at a
+	   16px root) puts that center at a fractional pixel, so the flipped copy gets
+	   anti-aliased slightly differently and one edge reads dimmer — worse at some
+	   viewport sizes than others, since the page's vertical centering shifts which
+	   sub-pixel row the badge lands on. */
 	.hero-badge {
 		position: relative;
 		isolation: isolate;
@@ -1262,11 +1270,11 @@
 		align-items: center;
 		gap: 0.55rem;
 		width: fit-content;
-		height: 1.9rem;
+		height: 30px;
 		margin: 0 0 1.65rem;
 		padding: 0 0.85rem;
 		border: 0;
-		border-radius: 0.95rem;
+		border-radius: 15px;
 		overflow: hidden;
 		/* The pill's own background IS the border colour; `.badge-shine-backdrop`
 		   sits 1px inset with the true surface colour on top, revealing only a
@@ -1324,7 +1332,7 @@
 	.badge-shine-backdrop {
 		position: absolute;
 		inset: 1px;
-		border-radius: calc(0.95rem - 1px);
+		border-radius: 14px;
 		background: var(--home-badge-surface);
 	}
 
