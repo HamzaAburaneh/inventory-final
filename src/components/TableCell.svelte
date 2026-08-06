@@ -52,10 +52,14 @@
 				<span>{value}</span>
 			</button>
 			{#if low}
+				<!-- The pill carried a data-tooltip with nothing wired to it, so the
+				     only thing that ever showed was the unthemed native `title`. -->
 				<span
 					class="low-pill"
+					role="note"
 					data-tooltip="At or below low-stock level"
-					title="At or below low-stock level"
+					onmouseenter={onTooltipShow}
+					onmouseleave={onTooltipHide}
 				>
 					<Icon name="alert" size={11} />
 					Low

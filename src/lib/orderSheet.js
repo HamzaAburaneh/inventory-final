@@ -163,7 +163,7 @@ export function filterRows(rows, query) {
 }
 
 /** Sort keys the order table's column headers expose. */
-export const SORT_KEYS = ['urgency', 'name', 'count', 'qty', 'value', 'runOut'];
+export const SORT_KEYS = ['urgency', 'name', 'count', 'cost', 'qty', 'value', 'runOut'];
 
 /**
  * Sort order rows by a column. `urgency` (the default) is the planning order:
@@ -171,7 +171,7 @@ export const SORT_KEYS = ['urgency', 'name', 'count', 'qty', 'value', 'runOut'];
  * sort last on those keys regardless of direction, since "never runs out"
  * isn't a position on the timeline.
  * @param {Array<any>} rows - Order rows
- * @param {'urgency' | 'name' | 'count' | 'qty' | 'value' | 'runOut'} key - Sort column
+ * @param {'urgency' | 'name' | 'count' | 'cost' | 'qty' | 'value' | 'runOut'} key - Sort column
  * @param {'asc' | 'desc'} [dir='asc'] - Sort direction
  * @returns {Array<any>} A new sorted array
  */
@@ -201,6 +201,7 @@ export function sortRows(rows, key, dir = 'asc') {
 
 	const value = (r) => {
 		if (key === 'count') return Number(r.count) || 0;
+		if (key === 'cost') return Number(r.cost) || 0;
 		if (key === 'qty') return Number(r.qty) || 0;
 		return (Number(r.qty) || 0) * (Number(r.cost) || 0);
 	};
@@ -223,6 +224,62 @@ export function sortRows(rows, key, dir = 'asc') {
 export function isOpeningOrder(rows, planStartsLater) {
 	if (!planStartsLater) return false;
 	return Array.isArray(rows) && rows.length > 0;
+}
+
+/**
+ * True when a row carries user intent rather than the untouched suggestion —
+ * either a retyped quantity or an include/exclude the page wouldn't have chosen
+ * on its own.
+ * @param {{edited?: boolean, included?: boolean, defaultIncluded?: boolean}} row - An order row
+ * @returns {boolean}
+ */
+export function isEditedRow(row) {
+	if (!row) return false;
+	return Boolean(row.edited) || row.included !== row.defaultIncluded;
+}
+
+/**
+ * Compare the order as edited against the order the forecast alone would have
+ * produced.
+ *
+ * The owner opening a draft needs the *impact* of someone else's adjustments,
+ * not just the final number: `$16,292.40` says nothing about whether it was
+ * accepted as suggested or pushed up by $840. The baseline is what the page
+ * would total with an empty draft — every row the page auto-includes, at its
+ * suggested quantity — so rows with nothing to order are skipped on both sides,
+ * matching the totals the page displays.
+ * @param {Array<{cost: number, suggested: number, qty: number, included: boolean,
+ *   defaultIncluded: boolean, edited: boolean}>} rows - Order rows
+ * @returns {{suggested: number, current: number, delta: number, editedCount: number}}
+ */
+export function editSummary(rows) {
+	let suggested = 0;
+	let current = 0;
+	let editedCount = 0;
+	for (const row of rows ?? []) {
+		const cost = Number(row.cost) || 0;
+		const suggestedQty = Number(row.suggested) || 0;
+		const qty = Number(row.qty) || 0;
+		if (row.defaultIncluded && suggestedQty > 0) suggested += suggestedQty * cost;
+		if (row.included && qty > 0) current += qty * cost;
+		// A row can be both retyped and unchecked — that's still one edited line.
+		if (isEditedRow(row)) editedCount += 1;
+	}
+	return { suggested, current, delta: current - suggested, editedCount };
+}
+
+/**
+ * Apply a whole-case adjustment to an order quantity without allowing a
+ * negative result.
+ * @param {number} quantity - Current order quantity
+ * @param {number} amount - Whole cases to add or subtract
+ * @param {-1 | 1} direction - Subtract (-1) or add (1)
+ * @returns {number} Updated non-negative whole-case quantity
+ */
+export function adjustOrderQuantity(quantity, amount, direction) {
+	const current = Math.max(0, Math.floor(Number(quantity) || 0));
+	const change = Math.max(0, Math.floor(Number(amount) || 0));
+	return Math.max(0, current + (direction < 0 ? -change : change));
 }
 
 /**

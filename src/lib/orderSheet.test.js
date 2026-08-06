@@ -1,16 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import {
+	adjustOrderQuantity,
 	coverageWindow,
 	draftLines,
+	editSummary,
 	filterRows,
 	formatCount,
 	formatMoney,
+	isEditedRow,
 	isOpeningOrder,
 	normalizeDraft,
 	sameLines,
 	savedByLabel,
 	sortRows
 } from './orderSheet.js';
+
+describe('adjustOrderQuantity', () => {
+	it('adds and subtracts the entered adjustment amount', () => {
+		expect(adjustOrderQuantity(6, 5, 1)).toBe(11);
+		expect(adjustOrderQuantity(6, 5, -1)).toBe(1);
+	});
+
+	it('never produces a negative order quantity', () => {
+		expect(adjustOrderQuantity(3, 5, -1)).toBe(0);
+	});
+});
 
 describe('formatMoney', () => {
 	it('groups thousands and always shows two decimals', () => {
@@ -184,6 +198,12 @@ describe('sortRows', () => {
 		expect(sortRows(rows, 'qty', 'desc').map((r) => r.name)).toEqual(['corn', 'apple', 'beef']);
 	});
 
+	it('sorts by per-case cost independently of quantity', () => {
+		// cost apple 50, beef 5, corn 2 — a different order than line value.
+		expect(sortRows(rows, 'cost', 'desc').map((r) => r.name)).toEqual(['apple', 'beef', 'corn']);
+		expect(sortRows(rows, 'cost').map((r) => r.name)).toEqual(['corn', 'beef', 'apple']);
+	});
+
 	it('sorts by line value (qty x cost)', () => {
 		// apple 200, corn 20, beef 0
 		expect(sortRows(rows, 'value', 'desc').map((r) => r.name)).toEqual(['apple', 'corn', 'beef']);
@@ -283,5 +303,86 @@ describe('savedByLabel', () => {
 		const label = savedByLabel({ updatedAt: new Date(2026, 7, 21, 14, 5), updatedBy: '' });
 		expect(label).toMatch(/^Saved /);
 		expect(label).not.toMatch(/by/);
+	});
+});
+
+/**
+ * @param {Partial<{cost: number, suggested: number, qty: number, included: boolean,
+ *   defaultIncluded: boolean, edited: boolean}>} [over] - Fields to override
+ */
+function row(over = {}) {
+	return {
+		cost: 10,
+		suggested: 2,
+		qty: 2,
+		included: true,
+		defaultIncluded: true,
+		edited: false,
+		...over
+	};
+}
+
+describe('isEditedRow', () => {
+	it('is false for an untouched row', () => {
+		expect(isEditedRow(row())).toBe(false);
+		expect(isEditedRow(null)).toBe(false);
+	});
+
+	it('is true for a retyped quantity', () => {
+		expect(isEditedRow(row({ edited: true, qty: 5 }))).toBe(true);
+	});
+
+	it('is true when the include choice differs from the default', () => {
+		expect(isEditedRow(row({ included: false }))).toBe(true);
+		expect(isEditedRow(row({ included: true, defaultIncluded: false }))).toBe(true);
+	});
+});
+
+describe('editSummary', () => {
+	it('reports no delta when nothing has been touched', () => {
+		const summary = editSummary([row(), row({ cost: 5, suggested: 4, qty: 4 })]);
+		expect(summary).toEqual({ suggested: 40, current: 40, delta: 0, editedCount: 0 });
+	});
+
+	it('measures the cost impact of a raised quantity', () => {
+		const summary = editSummary([row({ qty: 5, edited: true }), row()]);
+		expect(summary.suggested).toBe(40);
+		expect(summary.current).toBe(70);
+		expect(summary.delta).toBe(30);
+		expect(summary.editedCount).toBe(1);
+	});
+
+	it('counts an excluded row as an edit and drops it from the current total', () => {
+		const summary = editSummary([row({ included: false }), row()]);
+		expect(summary.suggested).toBe(40);
+		expect(summary.current).toBe(20);
+		expect(summary.delta).toBe(-20);
+		expect(summary.editedCount).toBe(1);
+	});
+
+	it('counts a row that was both retyped and unchecked once', () => {
+		const summary = editSummary([row({ qty: 9, edited: true, included: false })]);
+		expect(summary.editedCount).toBe(1);
+		expect(summary.current).toBe(0);
+	});
+
+	it('adds rows the page would not have included on its own', () => {
+		const summary = editSummary([row({ defaultIncluded: false, included: true, qty: 3 })]);
+		expect(summary.suggested).toBe(0);
+		expect(summary.current).toBe(30);
+		expect(summary.delta).toBe(30);
+	});
+
+	it('skips zero-quantity rows on both sides of the comparison', () => {
+		const summary = editSummary([row({ suggested: 0, qty: 0 }), row()]);
+		expect(summary).toEqual({ suggested: 20, current: 20, delta: 0, editedCount: 0 });
+	});
+
+	it('tolerates missing numbers and an empty list', () => {
+		expect(editSummary([])).toEqual({ suggested: 0, current: 0, delta: 0, editedCount: 0 });
+		expect(editSummary(undefined).delta).toBe(0);
+		const summary = editSummary([row({ cost: NaN, qty: undefined, suggested: undefined })]);
+		expect(summary.current).toBe(0);
+		expect(summary.suggested).toBe(0);
 	});
 });

@@ -107,6 +107,15 @@
 	--nav-hover-bg: #f8f9fa;
 	--nav-drop-down-text-hover-color: #00aaff;
 
+	/* Tooltips read as a raised surface above the page in both themes: a dark
+	   plate on the light page, a *lighter* plate on the dark one. Hardcoding one
+	   colour for both left the dark theme with a tooltip the same value as the
+	   cards under it. */
+	--tooltip-bg: #2b2f33;
+	--tooltip-text: #ffffff;
+	--tooltip-border: #2b2f33;
+	--tooltip-shadow: rgba(0, 0, 0, 0.22);
+
 	/* === Tech/industrial design tokens (homepage revamp) === */
 	--tech-accent: #0066ff;
 	--tech-accent-rgb: 0, 102, 255;
@@ -246,6 +255,11 @@
 	--input-focus-border: var(--add-item-color);
 	--nav-drop-down-text-hover-color: #ffd000;
 	--text-color-dimmed: #727272;
+
+	--tooltip-bg: #3d3d3d;
+	--tooltip-text: #f2f2f2;
+	--tooltip-border: #565656;
+	--tooltip-shadow: rgba(0, 0, 0, 0.55);
 
 	/* === Tech/industrial design tokens (homepage revamp) === */
 	--tech-accent: #ffe260;
