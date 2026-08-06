@@ -29,10 +29,12 @@
 		// renderer (it inherits whatever `context` was already made with) — this
 		// is what keeps the wireframe from turning into moiré noise where the
 		// grid lines compress toward the horizon.
+		// `powerPreference: 'high-performance'` is deliberately NOT set: on hybrid-GPU
+		// laptops it forces the discrete card awake for what is only a background
+		// scene, which is a large power/heat cost for no visual gain.
 		const context = canvas.getContext('webgl2', {
 			alpha: true,
-			antialias: true,
-			powerPreference: 'high-performance'
+			antialias: true
 		});
 		if (!context) {
 			canvas.classList.add('webgl-unavailable');
@@ -44,10 +46,12 @@
 			canvas,
 			context,
 			alpha: true,
-			antialias: true,
-			powerPreference: 'high-performance'
+			antialias: true
 		});
-		renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.25 : 1.5));
+		// Fragment cost scales with the square of this, so it is the single biggest
+		// GPU lever here. MSAA still runs at whatever ratio we pick, so the wireframe
+		// stays smooth-edged — capping this trades resolution, not antialiasing.
+		renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1 : 1.25));
 		renderer.setSize(window.innerWidth, window.innerHeight);
 
 		const scene = new THREE.Scene();
@@ -66,8 +70,12 @@
 		// BREATHING TERRAIN — a single wireframe plane displaced by
 		// layered sine waves; calm dunes rolling toward the horizon.
 		// ============================================================
-		const SEG_X = isMobile ? 56 : 96;
-		const SEG_Z = isMobile ? 36 : 60;
+		// Kept deliberately coarse. The dune wavelengths below span ~18 segments each,
+		// so the surface still reads as smooth, but a denser grid only produced cells
+		// too small to resolve — near the horizon they merged into a solid smear while
+		// costing vertices to displace every frame and lines to rasterize.
+		const SEG_X = isMobile ? 44 : 64;
+		const SEG_Z = isMobile ? 28 : 40;
 		const terrainGeo = new THREE.PlaneGeometry(140, 90, SEG_X, SEG_Z);
 		terrainGeo.rotateX(-Math.PI / 2);
 		const basePos = terrainGeo.attributes.position.array.slice();
@@ -130,7 +138,9 @@
 			fog: current.fog.clone(),
 			terrain: current.terrain.clone()
 		};
-		function applyColors(a = 0.06) {
+		// Per-frame lerp, so the default is tuned to the capped 30fps loop below —
+		// at 0.06 (the old 60fps value) a theme switch would now fade twice as slowly.
+		function applyColors(a = 0.12) {
 			current.accent.lerp(target.accent, a);
 			current.fog.lerp(target.fog, a);
 			current.terrain.lerp(target.terrain, a);
@@ -206,10 +216,22 @@
 			renderer.render(scene, camera);
 		}
 
-		function loop() {
+		// The drift and the breathing are slow enough that 30fps is indistinguishable
+		// from 60 here, and it halves both the per-frame vertex work and the
+		// rasterization cost. All motion is driven by elapsed seconds, not by frame
+		// count, so capping the rate slows nothing down — it only draws less often.
+		const FRAME_INTERVAL = 1000 / 30;
+		// Slack so a 60Hz vsync tick landing a hair under the interval is not skipped
+		// (which would drop the scene to an uneven 20fps).
+		const FRAME_SLACK = 4;
+		let lastFrame = 0;
+
+		function loop(now = performance.now()) {
 			if (!running) return;
-			renderFrame();
 			rafId = requestAnimationFrame(loop);
+			if (now - lastFrame < FRAME_INTERVAL - FRAME_SLACK) return;
+			lastFrame = now;
+			renderFrame();
 		}
 
 		function disposeAll() {

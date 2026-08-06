@@ -271,7 +271,7 @@
 	--observatory-bar: #343434;
 	--observatory-border: #343434;
 	--observatory-border-strong: #4d4d4d;
-	--observatory-shadow: 0 24px 72px rgba(0, 0, 0, 0.5);
+	--observatory-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
 	--nav-dropdown-shadow: 0 12px 32px rgba(0, 0, 0, 0.52);
 	--observatory-accent: #ffe260;
 	--observatory-accent-hover: #ffd000;
@@ -649,13 +649,4 @@ button:disabled {
 		display: table;
 		clear: both;
 	}
-}
-
-/* Registered so the conic ring can animate its start angle. Unregistered the
-   angle is an unanimatable token and the ring renders static — degraded, not
-   broken. */
-@property --ring-angle {
-	syntax: '<angle>';
-	inherits: false;
-	initial-value: 0deg;
 }

@@ -428,6 +428,7 @@
 			<div class="hero-stage" aria-hidden="true">
 				<span class="hero-glow"></span>
 				<div class="dashboard-shell glow-host">
+					<span class="glow-ring" aria-hidden="true"></span>
 					<span class="glow-bloom" aria-hidden="true"><i></i></span>
 					<header class="dashboard-header">
 						<div>
@@ -957,7 +958,19 @@
 </div>
 
 <style>
-	/* ── Travelling edge highlight (badge + dashboard shell) ── */
+	/* ── Travelling edge highlight (dashboard shell) ──
+	   Two layers, same motion: `.glow-ring` is the crisp 1.5px border line and
+	   `.glow-bloom` is the soft halo behind the panel.
+
+	   The gradient is painted ONCE and the element carrying it is spun. The
+	   earlier version animated a registered `--ring-angle` custom property fed
+	   into `conic-gradient(from …)`, which Chrome cannot put on the compositor:
+	   every frame it re-rasterized a 9-stop conic gradient, re-applied the mask
+	   and re-ran the bloom's blur across the whole panel, all on the main
+	   thread — roughly 15% CPU on its own, and the single largest cost on this
+	   page. `rotate` is a compositor property, so the GPU just re-orients a
+	   cached texture instead. `.badge-shine-wedge` below already worked this
+	   way; this brings the panel in line with it. */
 	.glow-host {
 		position: relative;
 		/* Traps the bloom's negative z-index inside the host; without a stacking
@@ -965,31 +978,17 @@
 		isolation: isolate;
 	}
 
-	/* Panel: rotating conic ring, two lobes 180deg apart. */
-	.glow-host {
-		position: relative;
-		isolation: isolate;
-	}
-
-	.glow-host::before {
-		content: '';
+	/* Shapers. Each one carves its layer down to a band: `mask-composite:
+	   exclude` subtracts the content box from the border box, leaving only the
+	   padding ring, and `overflow: hidden` keeps the oversized spinner inside
+	   the rounded corners. Both are static — nothing here changes per frame. */
+	.glow-ring,
+	.glow-bloom i {
 		position: absolute;
 		inset: 0;
 		border-radius: inherit;
-		padding: 1.5px;
+		overflow: hidden;
 		pointer-events: none;
-		background: conic-gradient(
-			from var(--ring-angle),
-			var(--home-ring-rest) 0deg,
-			var(--home-ring-trail) 52deg,
-			var(--home-ring-lead) 90deg,
-			var(--home-ring-trail) 128deg,
-			var(--home-ring-rest) 180deg,
-			var(--home-ring-trail) 232deg,
-			var(--home-ring-lead) 270deg,
-			var(--home-ring-trail) 308deg,
-			var(--home-ring-rest) 360deg
-		);
 		-webkit-mask:
 			linear-gradient(#000 0 0) content-box,
 			linear-gradient(#000 0 0);
@@ -998,7 +997,10 @@
 			linear-gradient(#000 0 0) content-box,
 			linear-gradient(#000 0 0);
 		mask-composite: exclude;
-		animation: ring-spin var(--ring-dur, 12s) linear infinite;
+	}
+
+	.glow-ring {
+		padding: 1.5px;
 	}
 
 	/* Bloom, behind the host's contents so the light washes the panel surface
@@ -1016,12 +1018,42 @@
 	}
 
 	.glow-bloom i {
-		position: absolute;
-		inset: 0;
-		border-radius: inherit;
 		padding: var(--bloom-thick, 9px);
+	}
+
+	/* The spinners. A square at 200% of the host's width, centred on it, so the
+	   inscribed circle always clears the panel's half-diagonal and no corner is
+	   ever left uncovered mid-rotation. `translate` and `rotate` are separate
+	   properties from `transform`, so animating `rotate` leaves the centring
+	   alone. */
+	.glow-ring::before,
+	.glow-bloom i::before {
+		content: '';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 200%;
+		aspect-ratio: 1;
+		translate: -50% -50%;
+		animation: ring-spin var(--ring-dur, 12s) linear infinite;
+	}
+
+	.glow-ring::before {
 		background: conic-gradient(
-			from var(--ring-angle),
+			var(--home-ring-rest) 0deg,
+			var(--home-ring-trail) 52deg,
+			var(--home-ring-lead) 90deg,
+			var(--home-ring-trail) 128deg,
+			var(--home-ring-rest) 180deg,
+			var(--home-ring-trail) 232deg,
+			var(--home-ring-lead) 270deg,
+			var(--home-ring-trail) 308deg,
+			var(--home-ring-rest) 360deg
+		);
+	}
+
+	.glow-bloom i::before {
+		background: conic-gradient(
 			var(--home-ring-zero) 0deg,
 			var(--home-ring-trail) 56deg,
 			var(--home-ring-lead) 90deg,
@@ -1032,20 +1064,11 @@
 			var(--home-ring-trail) 304deg,
 			var(--home-ring-zero) 360deg
 		);
-		-webkit-mask:
-			linear-gradient(#000 0 0) content-box,
-			linear-gradient(#000 0 0);
-		-webkit-mask-composite: xor;
-		mask:
-			linear-gradient(#000 0 0) content-box,
-			linear-gradient(#000 0 0);
-		mask-composite: exclude;
-		animation: ring-spin var(--ring-dur, 12s) linear infinite;
 	}
 
 	@keyframes ring-spin {
 		to {
-			--ring-angle: 360deg;
+			rotate: 360deg;
 		}
 	}
 
@@ -2033,7 +2056,6 @@
 	.dashboard-shell .float-body {
 		border-radius: 14px;
 		background: var(--observatory-surface);
-		box-shadow: none;
 	}
 
 	.card-forecast .float-body {
@@ -2399,6 +2421,7 @@
 		border: 1px solid var(--observatory-border);
 		border-radius: 12px;
 		background: var(--observatory-surface);
+		box-shadow: var(--observatory-shadow);
 	}
 
 	.event-add .event-marker,
@@ -3044,8 +3067,8 @@
 
 		/* The beam parks wherever it started; the constant base ring still draws
 		   the edge, so the border does not disappear. */
-		.glow-host::before,
-		.glow-bloom i {
+		.glow-ring::before,
+		.glow-bloom i::before {
 			animation: none;
 		}
 
