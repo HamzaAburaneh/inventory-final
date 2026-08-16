@@ -11,9 +11,10 @@
 		"check:watch": "svelte-kit sync",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"test:integration": "playwright test",
+		"test:integration": "playwright test --project=chromium",
 		"test:unit": "vitest",
-		"prepare": "husky"
+		"prepare": "husky",
+		"test:cross-browser": "playwright test --project=firefox --project=webkit"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
