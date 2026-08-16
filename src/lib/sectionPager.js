@@ -7,6 +7,14 @@
  */
 
 /**
+ * Pixels a gesture must accumulate before it counts as a page turn, and the
+ * smallest distance a page turn is allowed to move the view. Sharing one number
+ * keeps the two honest: a turn that travelled less than the flick that asked for
+ * it reads as a broken gesture, so a stop closer than this is not worth having.
+ */
+export const MIN_PAGE_ADVANCE = 60;
+
+/**
  * Convert a WheelEvent delta to pixels.
  * @param {number} deltaY - raw `WheelEvent.deltaY`
  * @param {number} deltaMode - `WheelEvent.deltaMode`: 0 = pixels, 1 = lines, 2 = pages
@@ -42,10 +50,16 @@ export function nextTarget(targetList, scrollY, dir) {
  * can only ever move the page in the key's own direction; jump intents
  * ({jump}) target the first/last section directly. Returns null for any
  * unmapped key so callers can leave native behavior untouched.
+ *
+ * Space pages the same way it does in a browser's native scroll (down, or up
+ * with Shift) — without it, space would fall through to a native viewport
+ * scroll that snapping immediately yanks back, the one input that visibly
+ * broke the one-gesture-one-section model.
  * @param {string} key - `KeyboardEvent.key`
+ * @param {boolean} [shiftKey] - `KeyboardEvent.shiftKey`, reverses space
  * @returns {{dir: 1|-1}|{jump: 'first'|'last'}|null} paging intent, or null
  */
-export function keyToPageIntent(key) {
+export function keyToPageIntent(key, shiftKey = false) {
 	switch (key) {
 		case 'ArrowDown':
 		case 'PageDown':
@@ -53,6 +67,9 @@ export function keyToPageIntent(key) {
 		case 'ArrowUp':
 		case 'PageUp':
 			return { dir: -1 };
+		case ' ':
+		case 'Spacebar':
+			return { dir: shiftKey ? -1 : 1 };
 		case 'Home':
 			return { jump: 'first' };
 		case 'End':
@@ -82,7 +99,7 @@ export function keyToPageIntent(key) {
  * @returns {{feed: (delta: number, now: number, blocked?: boolean) => -1|0|1}}
  *   feed returns the page-turn direction, or 0 for no turn
  */
-export function createGestureTracker({ gestureGapMs = 200, threshold = 60 } = {}) {
+export function createGestureTracker({ gestureGapMs = 200, threshold = MIN_PAGE_ADVANCE } = {}) {
 	let accum = 0;
 	let lastTime = -Infinity;
 	let dir = 0;

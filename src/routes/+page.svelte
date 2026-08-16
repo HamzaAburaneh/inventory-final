@@ -8,6 +8,7 @@
 	import {
 		createGestureTracker,
 		keyToPageIntent,
+		MIN_PAGE_ADVANCE,
 		nextTarget,
 		normalizeWheelDelta
 	} from '../lib/sectionPager.js';
@@ -67,39 +68,196 @@
 	// Drives the rail's progress track: 0 at the first panel, 1 at the last.
 	const railProgress = $derived(activeIndex / (sections.length - 1));
 
-	function scrollToSection(sectionId) {
-		const section = document.getElementById(sectionId);
-		if (!section) return;
-		const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-		section.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
-		// Keep focus in sync with the visual position: screen-reader and keyboard
-		// users land on the section instead of staying on the rail stop they used.
-		section.focus({ preventScroll: true });
+	// Section paging is shared by three inputs (wheel, keyboard, rail dots). Every
+	// programmatic scroll runs through pageTo(), so an in-flight jump can always be
+	// cancelled and the wheel tracker knows when one is running — a rail click and
+	// a wheel flick can no longer race each other into some third section.
+	let navEl = null;
+	let animating = false;
+	let animationId = 0;
+	// True while any panel is taller than the visible band. The pager then emits
+	// intermediate stops inside that panel and CSS drops to proximity snapping, so
+	// content below the fold can never be paged straight over (html.home-tall-panel).
+	let tallPanel = $state(false);
+	// How far a panel may be scaled down to fit before readability suffers more
+	// than a second scroll stop would. 0.72 keeps 16px body copy above 11.5px.
+	const MIN_FIT_SCALE = 0.72;
+	// Effects layers that are far larger than what the reader actually sees: the
+	// blurred halos bleed past the card they sit behind, and the badge's shine
+	// sweep is a 600px wedge clipped to a 26px badge by overflow:hidden. A
+	// bounding box reports their full geometry regardless, so measuring content
+	// reach without excluding them buys scroll stops that travel to a shadow.
+	const DECORATIVE_BLEED =
+		'.hero-glow, .glow-ring, .glow-bloom, .badge-shine-mask, .badge-shine-backdrop, .badge-shine-wedge';
+	// Per-section distance from the panel's top edge to the bottom of its real
+	// content, measured in updateLayout(). Padding is not a usable proxy here —
+	// panels differ in how much of their box is decorative space — and walking the
+	// subtree on every gesture would be wasteful, so it is measured on layout
+	// changes only and read back cheaply while paging.
+	/** @type {Record<string, number>} */
+	let contentExtents = {};
+
+	function navHeight() {
+		navEl ??= document.querySelector('nav.navbar');
+		return navEl?.offsetHeight ?? 0;
 	}
 
-	// Scope section-snap scrolling to the homepage document scroller.
+	// The pager used to switch itself off below 768x620, which meant a laptop at
+	// 150% zoom (853x533 CSS px) lost both snapping and paging and fell back to
+	// plain scrolling. Panels are measured and scaled to fit now, so size alone is
+	// no longer a reason to bail; reduced motion still detaches the wheel listener
+	// entirely, and wheel events only ever come from a mouse or trackpad.
+	function pagerActive() {
+		return !reduceMotion;
+	}
+
+	/**
+	 * Scroll stops in ascending document order, each tagged with the section that
+	 * owns it. A panel taller than the visible band contributes extra stops every
+	 * band height plus a final one that aligns its bottom edge with the viewport
+	 * bottom, so no strip of content can sit between two stops and be unreachable.
+	 * @returns {{y: number, id: string}[]}
+	 */
+	function stops() {
+		const maxScroll = Math.max(
+			0,
+			(document.scrollingElement?.scrollHeight ?? 0) - window.innerHeight
+		);
+		const nav = navHeight();
+		const band = Math.max(1, window.innerHeight - nav);
+		/** @type {{y: number, id: string}[]} */
+		const list = [];
+		function push(y, id) {
+			const clamped = Math.min(Math.max(0, Math.round(y)), maxScroll);
+			// Anything inside nextTarget()'s dead zone is the same stop.
+			if (!list.some((stop) => Math.abs(stop.y - clamped) < 2)) list.push({ y: clamped, id });
+		}
+		for (const section of sections) {
+			const element = document.getElementById(section.id);
+			if (!element) continue;
+			const rect = element.getBoundingClientRect();
+			const top = rect.top + window.scrollY;
+			const base = section.id === firstSectionId ? 0 : top - nav;
+			push(base, section.id);
+			// Furthest position that still reveals unseen content from this panel.
+			// Only content counts, and only if it is worth a page turn — a panel
+			// whose overflow is a sliver of trailing whitespace is hiding nothing.
+			const last = top + (contentExtents[section.id] ?? rect.height) - window.innerHeight;
+			for (let y = base + band; y < last - MIN_PAGE_ADVANCE; y += band) push(y, section.id);
+			if (last > base + MIN_PAGE_ADVANCE) push(last, section.id);
+		}
+		return list;
+	}
+
+	/**
+	 * Scales any panel whose content outgrows the viewport down until it fits,
+	 * instead of clipping it or hiding parts of it on small screens. Each panel is
+	 * measured at its natural size and published a `--fit-scale`; the CSS applies
+	 * it to that panel's content wrapper.
+	 *
+	 * Media queries cannot do this: what has to shrink is the ratio between the
+	 * content a panel actually renders and the strip of viewport left under the
+	 * nav, and neither side of that ratio is a breakpoint. The floor keeps type
+	 * from going unreadable — a panel still over after the floor keeps the
+	 * intermediate pager stops that make its lower half reachable.
+	 */
+	function fitPanels() {
+		const wrappers = sections
+			.map((section) => document.getElementById(section.id))
+			.filter(Boolean)
+			.map((element) => ({
+				element,
+				wrapper: element.querySelector(':scope > .hero-layout, :scope > .scroll-reveal')
+			}))
+			.filter((entry) => entry.wrapper);
+		// Clear every scale first, so the measurement below sees natural heights
+		// and a resize can grow panels back as well as shrink them.
+		for (const { wrapper } of wrappers) wrapper.style.setProperty('--fit-scale', '1');
+		// Touch stops here, at natural size. Fitting a panel to the viewport earns
+		// its keep by landing the reader cleanly on a snap point, and coarse
+		// pointers no longer snap — so compressing the type would cost readability
+		// (0.72 puts 16px body copy near 11px on a small phone) and buy nothing.
+		// A panel that overflows simply scrolls, which is the native behaviour.
+		if (window.matchMedia('(pointer: coarse)').matches) return;
+		const band = window.innerHeight - navHeight();
+		for (const { element, wrapper } of wrappers) {
+			const style = getComputedStyle(element);
+			const padding = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+			const available = band - padding;
+			const contentHeight = wrapper.getBoundingClientRect().height;
+			const scale =
+				contentHeight > available && contentHeight > 0 && available > 0
+					? Math.max(MIN_FIT_SCALE, available / contentHeight)
+					: 1;
+			wrapper.style.setProperty('--fit-scale', scale.toFixed(3));
+		}
+	}
+
+	/**
+	 * Animate to a scroll position, optionally moving focus to the section that
+	 * owns it. Holds `animating` for the trip so the gesture tracker treats
+	 * trailing inertia as blocked.
+	 * @param {number} targetY - document scroll position
+	 * @param {string} [focusId] - section to focus on arrival (keyboard/rail jumps)
+	 */
+	function pageTo(targetY, focusId) {
+		const currentAnimationId = ++animationId;
+		animating = true;
+		window.scrollTo({ top: targetY, behavior: reduceMotion ? 'auto' : 'smooth' });
+		// Keep focus in sync with the visual position: screen-reader and keyboard
+		// users land on the section instead of staying on the control they used.
+		if (focusId) document.getElementById(focusId)?.focus({ preventScroll: true });
+		const start = performance.now();
+
+		function checkPosition() {
+			if (currentAnimationId !== animationId) return;
+			if (Math.abs(window.scrollY - targetY) < 4 || performance.now() - start > 900) {
+				animating = false;
+				return;
+			}
+			requestAnimationFrame(checkPosition);
+		}
+
+		requestAnimationFrame(checkPosition);
+	}
+
+	// Invalidate the in-flight animation so a fresh intent takes over cleanly.
+	function cancelPaging() {
+		animationId += 1;
+		animating = false;
+	}
+
+	function scrollToSection(sectionId) {
+		const stop = stops().find((entry) => entry.id === sectionId);
+		if (!stop) return;
+		cancelPaging();
+		pageTo(stop.y, sectionId);
+	}
+
+	// Scope section-snap scrolling to the homepage document scroller. Mandatory
+	// snapping is withdrawn while a panel overflows, so a reader dragging the
+	// scrollbar through that panel is not pulled back off the content.
 	$effect(() => {
-		document.documentElement.classList.add('home-snap');
-		return () => document.documentElement.classList.remove('home-snap');
+		const root = document.documentElement;
+		root.classList.add('home-snap');
+		root.classList.toggle('home-tall-panel', tallPanel);
+		return () => root.classList.remove('home-snap', 'home-tall-panel');
 	});
 
 	// Keep the established one-section-per-wheel-gesture behavior. Direction and
 	// inertia decisions remain in sectionPager.js so the tested rules stay pure.
-	// Keyboard paging (arrows/PageUp/PageDown/Home/End, the fullPage.js convention)
-	// shares the same snap targets and focus sync; the wheel hijack stays off under
-	// reduced motion, while keys keep working there (scrollToSection jumps instantly).
+	// Keyboard paging (arrows/space/PageUp/PageDown/Home/End, the fullPage.js
+	// convention) shares the same stops and focus sync; the wheel hijack stays off
+	// under reduced motion, while keys keep working there (pageTo jumps instantly).
 	$effect(() => {
-		const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-		const navEl = document.querySelector('nav.navbar');
+		// Read as a dependency: flipping the OS setting mid-session re-runs this
+		// effect, so the wheel hijack is attached or dropped without a reload.
+		const motionOff = reduceMotion;
 		const tracker = createGestureTracker();
-		let animating = false;
-		let animationId = 0;
+		let disposed = false;
+		let layoutFrame = 0;
 
-		function navHeight() {
-			return navEl?.offsetHeight ?? 0;
-		}
-
-		function setOffsets() {
+		function updateLayout() {
 			document.documentElement.style.setProperty('--snap-top', `${navHeight()}px`);
 			const firstSection = document.getElementById(firstSectionId);
 			if (firstSection) {
@@ -107,57 +265,59 @@
 					firstSection.getBoundingClientRect().top + window.scrollY
 				}px`;
 			}
-		}
-
-		function targets() {
-			const maxScroll = Math.max(
-				0,
-				(document.scrollingElement?.scrollHeight ?? 0) - window.innerHeight
-			);
-			return sections
-				.map((section) => document.getElementById(section.id))
-				.filter(Boolean)
-				.map((element) =>
-					element.id === firstSectionId
-						? 0
-						: Math.min(
-								Math.round(element.getBoundingClientRect().top + window.scrollY - navHeight()),
-								maxScroll
-							)
-				);
-		}
-
-		function pageTo(targetY) {
-			const currentAnimationId = ++animationId;
-			animating = true;
-			window.scrollTo({ top: targetY, behavior: 'smooth' });
-			const start = performance.now();
-
-			function checkPosition() {
-				if (currentAnimationId !== animationId) return;
-				if (Math.abs(window.scrollY - targetY) < 4 || performance.now() - start > 900) {
-					animating = false;
-					return;
+			fitPanels();
+			/** @type {Record<string, number>} */
+			const extents = {};
+			for (const section of sections) {
+				const element = document.getElementById(section.id);
+				if (!element) continue;
+				const panelTop = element.getBoundingClientRect().top;
+				let bottom = 0;
+				for (const node of element.querySelectorAll('*')) {
+					const box = node.getBoundingClientRect();
+					// Zero-area boxes are hidden or collapsed and bound nothing.
+					if (box.width === 0 || box.height === 0) continue;
+					// Nor do the blurred halos, which bleed past the card they sit behind
+					// by design — counting them would buy a stop to scroll to a shadow.
+					if (node.closest(DECORATIVE_BLEED)) continue;
+					bottom = Math.max(bottom, box.bottom - panelTop);
 				}
-				requestAnimationFrame(checkPosition);
+				extents[section.id] = bottom;
 			}
+			contentExtents = extents;
+			// Derived from the stop list itself so the CSS state can never disagree
+			// with the pager: a section owning more than one stop is an overflowing panel.
+			const owners = stops().map((entry) => entry.id);
+			tallPanel = new Set(owners).size < owners.length;
+		}
 
-			requestAnimationFrame(checkPosition);
+		// Resize fires in bursts while a window is dragged; the extent walk only
+		// needs to run once per frame.
+		function scheduleLayout() {
+			cancelAnimationFrame(layoutFrame);
+			layoutFrame = requestAnimationFrame(updateLayout);
 		}
 
 		function onWheel(event) {
-			if (event.ctrlKey || window.innerHeight <= 540) return;
+			if (event.ctrlKey || !pagerActive()) return;
+			// Leave horizontal gestures alone, the browser's back/forward swipe
+			// included — only a vertically dominant gesture is a page turn.
+			if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
 			event.preventDefault();
 			const delta = normalizeWheelDelta(event.deltaY, event.deltaMode, window.innerHeight);
 			const direction = tracker.feed(delta, performance.now(), animating);
 			if (direction === 0) return;
-			const target = nextTarget(targets(), window.scrollY, direction);
+			const list = stops();
+			const target = nextTarget(
+				list.map((entry) => entry.y),
+				window.scrollY,
+				direction
+			);
 			if (target !== undefined) {
 				pageTo(target);
 			} else if (animating) {
-				animationId += 1;
+				cancelPaging();
 				window.scrollTo({ top: window.scrollY, behavior: 'instant' });
-				animating = false;
 			}
 		}
 
@@ -171,36 +331,50 @@
 			) {
 				return;
 			}
-			const intent = keyToPageIntent(event.key);
+			// Space belongs to whatever control has focus before it belongs to the pager.
+			if (
+				event.key === ' ' &&
+				target instanceof HTMLElement &&
+				target.closest('button, a[href], summary, [role="button"], [role="link"]')
+			) {
+				return;
+			}
+			const intent = keyToPageIntent(event.key, event.shiftKey);
 			if (!intent) return;
-			let sectionId;
+			const list = stops();
+			let stop;
 			if ('jump' in intent) {
-				sectionId = intent.jump === 'first' ? firstSectionId : sections[sections.length - 1].id;
+				const id = intent.jump === 'first' ? firstSectionId : sections[sections.length - 1].id;
+				stop = list.find((entry) => entry.id === id);
 			} else {
-				const list = targets();
-				const position = nextTarget(list, window.scrollY, intent.dir);
-				// Duplicated clamped targets (short docs) resolve toward the travel direction.
-				const index = intent.dir > 0 ? list.indexOf(position) : list.lastIndexOf(position);
-				sectionId = index === -1 ? undefined : sections[index]?.id;
+				const position = nextTarget(
+					list.map((entry) => entry.y),
+					window.scrollY,
+					intent.dir
+				);
+				stop = position === undefined ? undefined : list.find((entry) => entry.y === position);
 			}
-			// At either end there is no target: leave the key's native behavior alone.
-			if (!sectionId) return;
+			// At either end there is no stop: leave the key's native behavior alone.
+			if (!stop) return;
 			event.preventDefault();
-			if (animating) {
-				animationId += 1;
-				animating = false;
-			}
-			scrollToSection(sectionId);
+			cancelPaging();
+			pageTo(stop.y, stop.id);
 		}
 
-		setOffsets();
-		window.addEventListener('resize', setOffsets);
+		updateLayout();
+		// Web fonts land after first paint and can push a panel past the fold.
+		document.fonts?.ready.then(() => {
+			if (!disposed) updateLayout();
+		});
+		window.addEventListener('resize', scheduleLayout);
 		window.addEventListener('keydown', onKeydown);
-		if (!reduceMotionQuery.matches) {
+		if (!motionOff) {
 			window.addEventListener('wheel', onWheel, { passive: false });
 		}
 		return () => {
-			window.removeEventListener('resize', setOffsets);
+			disposed = true;
+			cancelAnimationFrame(layoutFrame);
+			window.removeEventListener('resize', scheduleLayout);
 			window.removeEventListener('keydown', onKeydown);
 			window.removeEventListener('wheel', onWheel);
 			document.documentElement.style.removeProperty('--snap-top');
@@ -1187,18 +1361,33 @@
 			0 0 0 5px var(--observatory-accent-soft);
 	}
 
+	/* Snapping is gated on whether the panels FIT, not on how big the screen is.
+	   The old size gates (mandatory only above 768x620, snapping off entirely under
+	   540px tall) were standing in for "the content probably does not fit here" —
+	   which is now measured directly, so a 150%-zoomed laptop and a landscape phone
+	   snap like everything else instead of silently falling back to free scrolling. */
 	:global(html.home-snap) {
-		scroll-snap-type: y proximity;
+		scroll-snap-type: y mandatory;
 		scroll-behavior: smooth;
 	}
 
+	/* The panel box may never be taller than the strip of viewport left under the
+	   fixed nav. A fixed floor here (this used to carry `max(620px, …)`) outgrew
+	   that strip on every screen shorter than ~693px and forced content below the
+	   fold before any of it had been laid out. Vertical padding scales with the
+	   viewport for the same reason: on a short window it has to give way first.
+
+	   `svh`, not `dvh`, throughout: `dvh` tracks the phone's retracting URL bar, so
+	   every panel resized — and the fit pass re-measured — while the reader was
+	   mid-scroll. `svh` is fixed to the toolbar-visible height, so the layout holds
+	   still. On desktop the two are identical, there being no dynamic browser UI. */
 	.panel {
 		position: relative;
-		min-height: max(620px, calc(100dvh - var(--snap-top, 56px) - 1rem));
+		min-height: calc(100svh - var(--snap-top, 56px) - 1rem);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: 2.25rem 0;
+		padding: clamp(0.85rem, 3.5svh, 2.25rem) 0;
 		scroll-snap-align: start;
 		scroll-snap-stop: always;
 		scroll-margin-top: var(--snap-top, 56px);
@@ -1214,6 +1403,17 @@
 	.panel:focus-visible {
 		outline: 2px solid var(--observatory-focus);
 		outline-offset: -2px;
+	}
+
+	/* Shrink-to-fit: the pager measures each panel against the viewport strip under
+	   the nav and publishes --fit-scale here (see fitPanels). `zoom` is used rather
+	   than `transform: scale()` on purpose — it scales the box for layout too, so a
+	   shrunk panel actually occupies less height instead of leaving a gap where its
+	   full-size box used to be. Defaults to 1, so the page is unaffected on any
+	   screen with room to spare and if scripting never runs. */
+	.panel > :global(.scroll-reveal),
+	.panel > .hero-layout {
+		zoom: var(--fit-scale, 1);
 	}
 
 	.panel > :global(.scroll-reveal) {
@@ -1251,9 +1451,9 @@
 	}
 
 	.hero {
-		min-height: max(620px, calc(100dvh - var(--snap-top, 56px) - 1rem));
-		padding-top: 3.25rem;
-		padding-bottom: 3.25rem;
+		min-height: calc(100svh - var(--snap-top, 56px) - 1rem);
+		padding-top: clamp(1rem, 4svh, 3.25rem);
+		padding-bottom: clamp(1rem, 4svh, 3.25rem);
 	}
 
 	.hero-layout {
@@ -2524,6 +2724,18 @@
 		height: auto;
 	}
 
+	/* The forecast panel is the tallest composition on the page, and the only one
+	   that still reached the shrink-to-fit floor on short screens. Letting its
+	   chart give up height first keeps the panel's type at a readable scale —
+	   the chart is illustrative, so it loses less by being smaller than the copy
+	   and the recommendation would. */
+	@media (max-height: 720px) {
+		.chart-wrap,
+		.forecast-chart {
+			max-height: 22svh;
+		}
+	}
+
 	.forecast-chart-desktop {
 		display: none;
 	}
@@ -2676,7 +2888,7 @@
 	}
 
 	.finale {
-		min-height: max(620px, calc(100dvh - var(--snap-top, 56px) - 1rem));
+		min-height: calc(100svh - var(--snap-top, 56px) - 1rem);
 		text-align: center;
 	}
 
@@ -2872,27 +3084,27 @@
 	   shorter/zoomed screens keep proximity so no content can be trapped
 	   between snap points. */
 	@media (min-width: 768px) and (min-height: 620px) {
-		:global(html.home-snap) {
-			scroll-snap-type: y mandatory;
-		}
-
 		.page {
 			padding-right: 4.5rem;
 		}
 
+		/* Padding and display type are driven by height as well as width here. Keyed
+		   off `vw` alone, a 1200x600 window received full desktop spacing and a
+		   4.8rem headline inside 543px of usable height, which is what pushed the
+		   hero and the forecast panel past the fold on short laptops. */
 		.panel {
-			padding-top: 5.5rem;
-			padding-bottom: 5.5rem;
+			padding-top: clamp(1.5rem, 7svh, 5.5rem);
+			padding-bottom: clamp(1.5rem, 7svh, 5.5rem);
 		}
 
 		#predictions {
-			padding-top: 2.75rem;
-			padding-bottom: 2.75rem;
+			padding-top: clamp(1rem, 3.5svh, 2.75rem);
+			padding-bottom: clamp(1rem, 3.5svh, 2.75rem);
 		}
 
 		.section-copy h2,
 		.finale-content h2 {
-			font-size: clamp(3rem, 5.7vw, 4.8rem);
+			font-size: clamp(2.4rem, min(5.7vw, 9svh), 4.8rem);
 		}
 
 		.inventory-primary {
@@ -2977,6 +3189,35 @@
 		}
 	}
 
+	/* Short but wide: spend the horizontal room rather than the vertical. Stacked,
+	   the hero needs ~950px of height — more than a 150%-zoomed laptop has, and
+	   more than the fit scaling can absorb without dropping under its readability
+	   floor. So the side-by-side arrangement starts early when height is the scarce
+	   axis, instead of waiting for 1024px of width. */
+	@media (min-width: 820px) and (max-height: 760px) {
+		.hero-layout {
+			display: grid;
+			grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+			gap: clamp(1rem, 2.5vw, 2rem);
+			row-gap: 0.75rem;
+			align-items: center;
+		}
+
+		.hero-copy {
+			container-type: inline-size;
+		}
+
+		.hero h1 {
+			max-width: none;
+			font-size: clamp(1.9rem, 11cqi, 3rem);
+		}
+
+		.hero-stage {
+			max-width: none;
+			margin: 0;
+		}
+	}
+
 	/* Desktop: headline in the left column, the bento dashboard fills the right. */
 	@media (min-width: 1024px) {
 		.hero {
@@ -3044,8 +3285,41 @@
 		}
 	}
 
-	@media (prefers-reduced-motion: reduce), (max-height: 540px) {
-		:global(html.home-snap) {
+	/* A panel that outgrows the viewport withdraws mandatory snapping: the pager
+	   gives it intermediate stops, and mandatory snapping would drag a reader who
+	   scrolls into it straight back off the content. Set from the pager because
+	   only measurement can see it — bigger text, browser zoom or a line that wraps
+	   one further than the layout was tuned for all cause it at any screen size. */
+	:global(html.home-snap.home-tall-panel) {
+		scroll-snap-type: y proximity;
+	}
+
+	/* Touch scrolling is left entirely alone: snapping is a desktop affordance here.
+	   A phone browser retracts its URL bar mid-gesture, which grows the scrollport
+	   and shifts every snap position under a finger that is still moving — snapping
+	   then fights the gesture rather than helping it, and no amount of tuning fixes
+	   that because the toolbar behaviour is the platform's, not ours. Proximity was
+	   tried first and was still wrong on a real device. Native momentum scrolling is
+	   also simply what a phone reader expects. Fine pointers keep the full
+	   treatment: mandatory snapping plus the wheel pager.
+
+	   Listed with both selectors so it outranks the .home-tall-panel rule above,
+	   which is more specific and would otherwise win back proximity on a phone
+	   whenever a panel happened to overflow. */
+	@media (pointer: coarse) {
+		:global(html.home-snap),
+		:global(html.home-snap.home-tall-panel) {
+			scroll-snap-type: none;
+		}
+	}
+
+	/* Reduced motion opts out of snapping altogether. Both selectors are listed so
+	   this still outranks the .home-tall-panel rule above whether or not a panel
+	   happens to be overflowing. Short screens are deliberately NOT included any
+	   more — they fit now, so they snap. */
+	@media (prefers-reduced-motion: reduce) {
+		:global(html.home-snap),
+		:global(html.home-snap.home-tall-panel) {
 			scroll-snap-type: none;
 			scroll-behavior: auto;
 		}
@@ -3107,7 +3381,7 @@
 		.panel,
 		.hero,
 		.finale {
-			min-height: calc(100dvh - var(--snap-top, 56px) - 0.25rem);
+			min-height: calc(100svh - var(--snap-top, 56px) - 0.25rem);
 			padding-top: 1.5rem;
 			padding-bottom: 1.5rem;
 		}
@@ -3120,7 +3394,7 @@
 
 	@media (max-height: 540px) and (orientation: landscape) and (max-width: 959px) {
 		.hero {
-			min-height: calc(100dvh - var(--snap-top, 56px) - 0.25rem);
+			min-height: calc(100svh - var(--snap-top, 56px) - 0.25rem);
 			padding-top: 1rem;
 			padding-bottom: 1rem;
 		}

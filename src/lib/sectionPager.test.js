@@ -154,8 +154,20 @@ describe('keyToPageIntent', () => {
 		expect(keyToPageIntent('End')).toEqual({ jump: 'last' });
 	});
 
+	it('pages down on space and up on shift+space, matching native scrolling', () => {
+		expect(keyToPageIntent(' ')).toEqual({ dir: 1 });
+		expect(keyToPageIntent(' ', true)).toEqual({ dir: -1 });
+		// legacy key value still emitted by some browsers
+		expect(keyToPageIntent('Spacebar')).toEqual({ dir: 1 });
+		expect(keyToPageIntent('Spacebar', true)).toEqual({ dir: -1 });
+	});
+
+	it('shift does not alter the other mapped keys', () => {
+		expect(keyToPageIntent('ArrowDown', true)).toEqual({ dir: 1 });
+		expect(keyToPageIntent('Home', true)).toEqual({ jump: 'first' });
+	});
+
 	it('returns null for unmapped keys so native behavior is preserved', () => {
-		expect(keyToPageIntent(' ')).toBeNull();
 		expect(keyToPageIntent('Tab')).toBeNull();
 		expect(keyToPageIntent('ArrowLeft')).toBeNull();
 		expect(keyToPageIntent('a')).toBeNull();
