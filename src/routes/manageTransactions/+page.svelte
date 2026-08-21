@@ -281,6 +281,16 @@
 							<i class="fas {sortAscending ? 'fa-sort-up' : 'fa-sort-down'} sort-arrow"></i>
 						{/if}
 					</button>
+					<button
+						class="sort-btn"
+						class:active={currentSortColumn === 'storageType'}
+						onclick={() => sortBy('storageType')}
+					>
+						<span>Storage</span>
+						{#if currentSortColumn === 'storageType'}
+							<i class="fas {sortAscending ? 'fa-sort-up' : 'fa-sort-down'} sort-arrow"></i>
+						{/if}
+					</button>
 				</div>
 			</div>
 
