@@ -110,7 +110,12 @@
 	});
 
 	onMount(async () => {
-		await itemStore.loadItems();
+		try {
+			await itemStore.loadItems();
+		} catch {
+			// No active group yet — the layout guard will redirect; nothing to do.
+			return;
+		}
 		itemsLoaded = true;
 		try {
 			booths = await listBooths();

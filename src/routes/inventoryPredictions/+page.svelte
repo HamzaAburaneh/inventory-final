@@ -53,7 +53,13 @@
 	onMount(async () => {
 		Chart.register(...registerables);
 
-		await Promise.all([itemStore.fetchItems(), fetchPredictions()]);
+		try {
+			await itemStore.fetchItems();
+		} catch {
+			// No active group yet — the layout guard will redirect; nothing to do.
+			return;
+		}
+		await fetchPredictions();
 
 		// Initialize dashboard chart
 		overviewChart = new Chart(chartCanvas, {
