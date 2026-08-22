@@ -2,10 +2,7 @@
 	let { transactions = [] } = $props();
 
 	function transactionEvent(transaction) {
-		if (transaction.event) return transaction.event;
-		if (transaction.type === 'add' && transaction.previousCount === 0) return 'itemCreated';
-		if (transaction.type === 'remove' && transaction.newCount === 0) return 'itemDeleted';
-		return 'countChange';
+		return transaction.event ?? 'countChange';
 	}
 
 	function presentation(transaction) {

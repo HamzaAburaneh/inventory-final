@@ -21,18 +21,11 @@ function txCol() {
  */
 
 /**
- * Resolve a transaction lifecycle event, falling back to legacy heuristics for
- * rows written before the explicit `event` field existed.
  * @param {Transaction} transaction
  * @returns {'countChange' | 'itemCreated' | 'itemDeleted'}
  */
 function transactionEvent(transaction) {
-	if (transaction.event) return transaction.event;
-	const previousCount = parseInt(transaction.previousCount) || 0;
-	const newCount = parseInt(transaction.newCount) || 0;
-	if (transaction.type === 'add' && previousCount === 0) return 'itemCreated';
-	if (transaction.type === 'remove' && newCount === 0) return 'itemDeleted';
-	return 'countChange';
+	return transaction.event ?? 'countChange';
 }
 
 // ---------------------------------------------------------------------------

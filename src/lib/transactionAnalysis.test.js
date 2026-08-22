@@ -141,7 +141,7 @@ describe('computeSummaryStats', () => {
 		expect(result.inactiveItems).toBe(2);
 	});
 
-	it('still infers create/delete stats for legacy rows without an explicit event', () => {
+	it('treats legacy rows without an explicit event as countChange', () => {
 		const result = computeSummaryStats(
 			[
 				tx({ itemId: 'a', type: 'add', previousCount: 0, newCount: 10 }),
@@ -150,7 +150,7 @@ describe('computeSummaryStats', () => {
 			2
 		);
 
-		expect(result.newItemsCreated).toBe(1);
-		expect(result.itemsDeleted).toBe(1);
+		expect(result.newItemsCreated).toBe(0);
+		expect(result.itemsDeleted).toBe(0);
 	});
 });
