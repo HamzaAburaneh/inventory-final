@@ -1,5 +1,6 @@
 <script>
 	import { Chart, registerables } from 'chart.js';
+		import { fairWindowForYear } from '../../lib/cneCalendar.js';
 	import { getAnalyticsForRange } from '../../lib/transactionAnalysis';
 	import { notificationStore } from '../../stores/notificationStore';
 	import { onMount } from 'svelte';
@@ -21,12 +22,31 @@
 	const AXIS_TEXT = '#8a8a8a';
 	const GRID_COLOR = 'rgba(128, 128, 128, 0.14)';
 
-	const CNE_DATES = {
-		2022: { start: new Date(2022, 7, 19), end: new Date(2022, 8, 5, 23, 59, 59) },
-		2023: { start: new Date(2023, 7, 18), end: new Date(2023, 8, 4, 23, 59, 59) },
-		2024: { start: new Date(2024, 7, 16), end: new Date(2024, 8, 2, 23, 59, 59) },
-		2025: { start: new Date(2025, 7, 13), end: new Date(2025, 8, 1, 23, 59, 59) }
-	};
+	const FIRST_CNE_YEAR = 2022;
+	const CURRENT_CNE_YEAR = new Date().getFullYear();
+	const CNE_YEARS = Array.from(
+		{ length: CURRENT_CNE_YEAR - FIRST_CNE_YEAR + 1 },
+		(_, index) => FIRST_CNE_YEAR + index
+	);
+	const CNE_DATES = Object.fromEntries(
+		CNE_YEARS.map((year) => {
+			const window = fairWindowForYear(year);
+			return [
+				year,
+				{
+					start: window.start,
+					end: new Date(
+						window.end.getFullYear(),
+						window.end.getMonth(),
+						window.end.getDate(),
+						23,
+						59,
+						59
+					)
+				}
+			];
+		})
+	);
 
 	// The app is only used during the CNE, so open on the most recent CNE that has
 	// already started (the current one while it's running, otherwise last year's).
@@ -529,26 +549,13 @@
 
 		<div class="pill-set cne">
 			<span class="set-label">CNE</span>
-			<button
-				class="pill cne-pill"
-				class:on={activeFilter === 'cne2022'}
-				onclick={() => setCNERange(2022)}>2022</button
-			>
-			<button
-				class="pill cne-pill"
-				class:on={activeFilter === 'cne2023'}
-				onclick={() => setCNERange(2023)}>2023</button
-			>
-			<button
-				class="pill cne-pill"
-				class:on={activeFilter === 'cne2024'}
-				onclick={() => setCNERange(2024)}>2024</button
-			>
-			<button
-				class="pill cne-pill"
-				class:on={activeFilter === 'cne2025'}
-				onclick={() => setCNERange(2025)}>2025</button
-			>
+			{#each CNE_YEARS as year (year)}
+				<button
+					class="pill cne-pill"
+					class:on={activeFilter === `cne${year}`}
+					onclick={() => setCNERange(year)}>{year}</button
+				>
+			{/each}
 		</div>
 
 		<button class="export" onclick={exportToCSV}>

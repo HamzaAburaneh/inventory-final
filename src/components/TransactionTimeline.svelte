@@ -1,6 +1,41 @@
 <script>
 	let { transactions = [] } = $props();
 
+	function transactionEvent(transaction) {
+		if (transaction.event) return transaction.event;
+		if (transaction.type === 'add' && transaction.previousCount === 0) return 'itemCreated';
+		if (transaction.type === 'remove' && transaction.newCount === 0) return 'itemDeleted';
+		return 'countChange';
+	}
+
+	function presentation(transaction) {
+		const event = transactionEvent(transaction);
+		if (event === 'itemCreated') {
+			return {
+				icon: 'fa-box-open',
+				iconClass: 'create',
+				label: 'Item created',
+				deltaClass: 'create'
+			};
+		}
+		if (event === 'itemDeleted') {
+			return {
+				icon: 'fa-trash-can',
+				iconClass: 'delete',
+				label: 'Item deleted',
+				deltaClass: 'delete'
+			};
+		}
+		const delta = transaction.newCount - transaction.previousCount;
+		const positive = delta >= 0;
+		return {
+			icon: positive ? 'fa-arrow-up' : 'fa-arrow-down',
+			iconClass: positive ? 'add' : 'rem',
+			label: positive ? 'Stock added' : 'Stock removed',
+			deltaClass: positive ? 'pos' : 'neg'
+		};
+	}
+
 	function dayKey(date) {
 		const d = new Date(date);
 		return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -57,14 +92,21 @@
 			</div>
 			{#each group.items as transaction (transaction.id)}
 				{@const delta = transaction.newCount - transaction.previousCount}
-				{@const positive = delta >= 0}
+				{@const card = presentation(transaction)}
 				<div class="row">
-					<div class="row-ic" class:add={positive} class:rem={!positive}>
-						<i class="fas {positive ? 'fa-arrow-up' : 'fa-arrow-down'}"></i>
+					<div
+						class="row-ic"
+						class:add={card.iconClass === 'add'}
+						class:rem={card.iconClass === 'rem'}
+						class:create={card.iconClass === 'create'}
+						class:delete={card.iconClass === 'delete'}
+					>
+						<i class="fas {card.icon}"></i>
 					</div>
 					<div class="row-main">
 						<div class="row-name">{transaction.itemName}</div>
 						<div class="row-meta">
+							<span><i class="fas fa-tag"></i>{card.label}</span>
 							<span><i class="fas fa-clock"></i>{formatTime(transaction.timestamp)}</span>
 							<span><i class="fas fa-user"></i>{transaction.user}</span>
 						</div>
@@ -75,7 +117,13 @@
 							<i class="fas fa-arrow-right"></i>
 							<span class="new">{transaction.newCount}</span>
 						</div>
-						<span class="delta" class:pos={positive} class:neg={!positive}>
+						<span
+							class="delta"
+							class:pos={card.deltaClass === 'pos'}
+							class:neg={card.deltaClass === 'neg'}
+							class:create={card.deltaClass === 'create'}
+							class:delete={card.deltaClass === 'delete'}
+						>
 							{delta > 0 ? '+' : delta < 0 ? '−' : ''}{Math.abs(delta)}
 						</span>
 					</div>
@@ -91,6 +139,10 @@
 		--pos-bg: #e7f6ec;
 		--neg: #d83a32;
 		--neg-bg: #fdeceb;
+		--create: #1d7fe3;
+		--create-bg: #e4f0ff;
+		--delete: #9b2eb6;
+		--delete-bg: #f5e5fb;
 		display: flex;
 		flex-direction: column;
 		max-height: 670px;
@@ -103,6 +155,10 @@
 		--pos-bg: #16301f;
 		--neg: #f06a62;
 		--neg-bg: #341715;
+		--create: #7ab4ff;
+		--create-bg: #142742;
+		--delete: #d88af2;
+		--delete-bg: #32163d;
 	}
 
 	.day-header {
@@ -162,6 +218,16 @@
 	.row-ic.rem {
 		background: var(--neg-bg);
 		color: var(--neg);
+	}
+
+	.row-ic.create {
+		background: var(--create-bg);
+		color: var(--create);
+	}
+
+	.row-ic.delete {
+		background: var(--delete-bg);
+		color: var(--delete);
 	}
 
 	.row-main {
@@ -235,6 +301,16 @@
 	.delta.neg {
 		background: var(--neg-bg);
 		color: var(--neg);
+	}
+
+	.delta.create {
+		background: var(--create-bg);
+		color: var(--create);
+	}
+
+	.delta.delete {
+		background: var(--delete-bg);
+		color: var(--delete);
 	}
 
 	@media (max-width: 520px) {

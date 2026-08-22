@@ -19,6 +19,8 @@
  * @property {string} itemId
  * @property {string} itemName
  * @property {'add' | 'remove'} type
+ * @property {'countChange' | 'itemCreated' | 'itemDeleted'} [event] - Explicit lifecycle event.
+ *   Absent on legacy rows; consumers may infer it heuristically for older data.
  * @property {number} previousCount
  * @property {number} newCount
  * @property {Date} timestamp - When the change happened (device clock offline, server clock online).

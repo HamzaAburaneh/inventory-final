@@ -123,8 +123,8 @@ describe('computeSummaryStats', () => {
 	it('counts new items, deletions, and active/inactive split', () => {
 		const result = computeSummaryStats(
 			[
-				tx({ itemId: 'a', type: 'add', previousCount: 0, newCount: 10 }),
-				tx({ itemId: 'a', type: 'remove', previousCount: 10, newCount: 0 }),
+				tx({ itemId: 'a', type: 'add', event: 'itemCreated', previousCount: 0, newCount: 10 }),
+				tx({ itemId: 'a', type: 'remove', event: 'itemDeleted', previousCount: 10, newCount: 0 }),
 				tx({ itemId: 'b', type: 'add', previousCount: 3, newCount: 8 })
 			],
 			4
@@ -139,5 +139,18 @@ describe('computeSummaryStats', () => {
 		expect(result.uniqueItems).toBe(2); // a, b
 		expect(result.totalItems).toBe(4);
 		expect(result.inactiveItems).toBe(2);
+	});
+
+	it('still infers create/delete stats for legacy rows without an explicit event', () => {
+		const result = computeSummaryStats(
+			[
+				tx({ itemId: 'a', type: 'add', previousCount: 0, newCount: 10 }),
+				tx({ itemId: 'a', type: 'remove', previousCount: 10, newCount: 0 })
+			],
+			2
+		);
+
+		expect(result.newItemsCreated).toBe(1);
+		expect(result.itemsDeleted).toBe(1);
 	});
 });

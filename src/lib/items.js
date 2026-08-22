@@ -93,17 +93,19 @@ function isUnavailable(error) {
  * @param {string} itemId - The ID of the item whose count changed.
  * @param {string} itemName - The item's name at the time of the change.
  * @param {'add' | 'remove'} type - The direction of the change.
+ * @param {'countChange' | 'itemCreated' | 'itemDeleted'} event - Explicit lifecycle event.
  * @param {number} previousCount - The count before the change.
  * @param {number} newCount - The count after the change.
  * @param {string} user - The user who made the change.
  * @param {*} timestamp - serverTimestamp() (online) or Timestamp.now() (queued).
  * @returns {object} The ledger document data.
  */
-function ledgerRecord(itemId, itemName, type, previousCount, newCount, user, timestamp) {
+function ledgerRecord(itemId, itemName, type, event, previousCount, newCount, user, timestamp) {
 	return {
 		itemId,
 		itemName,
 		type,
+		event,
 		previousCount,
 		newCount,
 		user,
@@ -192,6 +194,7 @@ async function queueCountChange(id, computeNewCount, user) {
 			id,
 			item.name,
 			newCount > previousCount ? 'add' : 'remove',
+			'countChange',
 			previousCount,
 			newCount,
 			user,
@@ -236,6 +239,7 @@ export async function adjustItemCount(id, delta, user) {
 					id,
 					item.name,
 					delta > 0 ? 'add' : 'remove',
+					'countChange',
 					previousCount,
 					newCount,
 					user,
@@ -288,6 +292,7 @@ export async function setItemCount(id, count, user) {
 					id,
 					item.name,
 					newCount > previousCount ? 'add' : 'remove',
+					'countChange',
 					previousCount,
 					newCount,
 					user,
@@ -332,7 +337,16 @@ export async function resetAllItemCounts(user) {
 			batch.update(docSnapshot.ref, { count: 0 });
 			batch.set(
 				doc(txCol()),
-				ledgerRecord(docSnapshot.id, item.name, 'remove', previousCount, 0, user, timestamp)
+				ledgerRecord(
+					docSnapshot.id,
+					item.name,
+					'remove',
+					'countChange',
+					previousCount,
+					0,
+					user,
+					timestamp
+				)
 			);
 		}
 		if (offline) {
@@ -370,6 +384,7 @@ export async function addItemWithTransaction(item, user) {
 			itemRef.id,
 			item.name,
 			'add',
+			'itemCreated',
 			0,
 			parseInt(item.count, 10) || 0,
 			user,
@@ -407,7 +422,16 @@ export async function deleteItemWithTransaction(id, user) {
 			const previousCount = parseInt(item.count, 10) || 0;
 			txn.set(
 				doc(txCol()),
-				ledgerRecord(id, item.name, 'remove', previousCount, 0, user, serverTimestamp())
+				ledgerRecord(
+					id,
+					item.name,
+					'remove',
+					'itemDeleted',
+					previousCount,
+					0,
+					user,
+					serverTimestamp()
+				)
 			);
 			txn.delete(itemRef);
 		});
@@ -437,7 +461,16 @@ async function queueDelete(itemRef, id, user) {
 	const batch = writeBatch(db);
 	batch.set(
 		doc(txCol()),
-		ledgerRecord(id, item.name, 'remove', previousCount, 0, user, Timestamp.now())
+		ledgerRecord(
+			id,
+			item.name,
+			'remove',
+			'itemDeleted',
+			previousCount,
+			0,
+			user,
+			Timestamp.now()
+		)
 	);
 	batch.delete(itemRef);
 	commitDetached(batch);

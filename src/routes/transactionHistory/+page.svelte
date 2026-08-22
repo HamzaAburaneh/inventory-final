@@ -8,6 +8,13 @@
 	import { createSearchState } from '../../lib/runes/search.svelte.js';
 	import { onMount } from 'svelte';
 
+	function transactionEvent(transaction) {
+		if (transaction.event) return transaction.event;
+		if (transaction.type === 'add' && transaction.previousCount === 0) return 'itemCreated';
+		if (transaction.type === 'remove' && transaction.newCount === 0) return 'itemDeleted';
+		return 'countChange';
+	}
+
 	let allTransactions = $state([]);
 	// `ready` reveals the page chrome as soon as the listener is attached (mirrors
 	// manageItems' `itemsLoaded`); `received` flips once the first snapshot lands so
@@ -17,7 +24,7 @@
 	// The timeline is inherently chronological, so sorting collapses to a single
 	// newest/oldest toggle on the transaction timestamp.
 	let sortNewest = $state(true);
-	// Type filter: '' (all) | 'add' | 'remove'.
+	// View filter: '' (all) | stock add/remove | item lifecycle events.
 	let typeFilter = $state('');
 	let unsubscribeFromTransactions = null;
 
@@ -29,14 +36,22 @@
 
 	const typeFilters = [
 		{ value: '', label: 'All' },
-		{ value: 'add', label: 'Added' },
-		{ value: 'remove', label: 'Removed' }
+		{ value: 'add', label: 'Stock added' },
+		{ value: 'remove', label: 'Stock removed' },
+		{ value: 'itemCreated', label: 'New items' },
+		{ value: 'itemDeleted', label: 'Deleted items' }
 	];
 
 	const filteredTransactions = $derived.by(() => {
 		let result = allTransactions;
 		if (typeFilter) {
-			result = result.filter((transaction) => transaction.type === typeFilter);
+			result = result.filter((transaction) => {
+				const event = transactionEvent(transaction);
+				if (typeFilter === 'itemCreated' || typeFilter === 'itemDeleted') {
+					return event === typeFilter;
+				}
+				return event === 'countChange' && transaction.type === typeFilter;
+			});
 		}
 		if (searchTermValue) {
 			const lowerSearchTerm = searchTermValue.toLowerCase();
@@ -134,9 +149,10 @@
 
 	// Export the full filtered/sorted set (not just the current page) as CSV.
 	function exportCsv() {
-		const header = ['Item', 'Type', 'Previous', 'New', 'Change', 'Timestamp', 'User'];
+		const header = ['Item', 'Event', 'Type', 'Previous', 'New', 'Change', 'Timestamp', 'User'];
 		const rows = sortedTransactions.map((transaction) => [
 			transaction.itemName,
+			transactionEvent(transaction),
 			transaction.type,
 			transaction.previousCount,
 			transaction.newCount,

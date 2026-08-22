@@ -42,6 +42,7 @@ export async function getHistoricalTransactions(days = 90) {
 			return {
 				id: doc.id,
 				...data,
+				event: data.event,
 				// A write queued offline carries a serverTimestamp that reads back as
 				// null in the local cache until it syncs; fall back to now so consumers
 				// that expect a Date don't crash on `.toDate()`.
@@ -78,6 +79,7 @@ export function subscribeToTransactions(onData, onError) {
 						itemId: data.itemId,
 						itemName: data.itemName,
 						type: data.type,
+						event: data.event,
 						previousCount: data.previousCount,
 						newCount: data.newCount,
 						timestamp: data.timestamp?.toDate() || new Date(),

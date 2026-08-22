@@ -91,6 +91,7 @@ describe('adjustItemCount', () => {
 			itemId: 'item1',
 			itemName: 'Fries',
 			type: 'remove',
+			event: 'countChange',
 			previousCount: 10,
 			newCount: 6,
 			user: 'hamza@example.com',
@@ -109,6 +110,7 @@ describe('adjustItemCount', () => {
 		expect(result).toEqual({ previousCount: 10, newCount: 0 });
 		expect(txn.set.mock.calls[0][1]).toMatchObject({
 			type: 'remove',
+			event: 'countChange',
 			previousCount: 10,
 			newCount: 0
 		});
@@ -183,6 +185,7 @@ describe('resetAllItemCounts', () => {
 			itemId: 'a',
 			itemName: 'A',
 			type: 'remove',
+			event: 'countChange',
 			previousCount: 5,
 			newCount: 0
 		});
@@ -226,6 +229,7 @@ describe('addItemWithTransaction', () => {
 			itemId: 'auto-id',
 			itemName: 'Fries',
 			type: 'add',
+			event: 'itemCreated',
 			previousCount: 0,
 			newCount: 3,
 			user: 'user'
@@ -244,6 +248,7 @@ describe('deleteItemWithTransaction', () => {
 		expect(txn.set.mock.calls[0][1]).toMatchObject({
 			itemId: 'item1',
 			type: 'remove',
+			event: 'itemDeleted',
 			previousCount: 7,
 			newCount: 0
 		});
@@ -296,6 +301,7 @@ describe('offline mode', () => {
 		expect(batch.set.mock.calls[0][1]).toMatchObject({
 			itemId: 'item1',
 			type: 'remove',
+			event: 'countChange',
 			previousCount: 10,
 			newCount: 6,
 			// Offline records carry the device time on `timestamp`, but `syncedAt`
@@ -348,6 +354,7 @@ describe('offline mode', () => {
 		expect(mocks.runTransaction).not.toHaveBeenCalled();
 		expect(batch.set.mock.calls[0][1]).toMatchObject({
 			type: 'remove',
+			event: 'itemDeleted',
 			previousCount: 7,
 			newCount: 0
 		});
@@ -385,6 +392,7 @@ describe('offline fallback when navigator.onLine lies (iOS PWA in airplane mode)
 		});
 		expect(batch.set.mock.calls[0][1]).toMatchObject({
 			type: 'add',
+			event: 'countChange',
 			previousCount: 10,
 			newCount: 15,
 			timestamp: 'CLIENT_TIMESTAMP'
@@ -404,7 +412,11 @@ describe('offline fallback when navigator.onLine lies (iOS PWA in airplane mode)
 		await deleteItemWithTransaction('item1', 'user');
 
 		expect(batch.delete).toHaveBeenCalledWith(expect.objectContaining({ id: 'item1' }));
-		expect(batch.set.mock.calls[0][1]).toMatchObject({ type: 'remove', previousCount: 7 });
+		expect(batch.set.mock.calls[0][1]).toMatchObject({
+			type: 'remove',
+			event: 'itemDeleted',
+			previousCount: 7
+		});
 	});
 
 	it('re-throws non-connectivity errors instead of queuing', async () => {

@@ -20,6 +20,21 @@ function txCol() {
  * @typedef {import('../types').TopMover} TopMover
  */
 
+/**
+ * Resolve a transaction lifecycle event, falling back to legacy heuristics for
+ * rows written before the explicit `event` field existed.
+ * @param {Transaction} transaction
+ * @returns {'countChange' | 'itemCreated' | 'itemDeleted'}
+ */
+function transactionEvent(transaction) {
+	if (transaction.event) return transaction.event;
+	const previousCount = parseInt(transaction.previousCount) || 0;
+	const newCount = parseInt(transaction.newCount) || 0;
+	if (transaction.type === 'add' && previousCount === 0) return 'itemCreated';
+	if (transaction.type === 'remove' && newCount === 0) return 'itemDeleted';
+	return 'countChange';
+}
+
 // ---------------------------------------------------------------------------
 // Data fetching — keep the Firestore reads in one place so the analytics page
 // reads each window once and feeds the pure transforms below.
@@ -45,6 +60,7 @@ export async function fetchTransactionsInRange(startDate, endDate) {
 	return querySnapshot.docs.map((doc) => ({
 		id: doc.id,
 		...doc.data(),
+		event: doc.data().event,
 		timestamp: doc.data().timestamp.toDate()
 	}));
 }
@@ -312,17 +328,16 @@ export function computeSummaryStats(transactions, totalItems) {
 		const previousCount = parseInt(transaction.previousCount) || 0;
 		const newCount = parseInt(transaction.newCount) || 0;
 		const changeAmount = newCount - previousCount;
+		const event = transactionEvent(transaction);
 
 		totalTransactions++;
 		uniqueItems.add(transaction.itemId);
 
-		// Check for new item creation (type: 'add' with previousCount: 0)
-		if (transaction.type === 'add' && previousCount === 0) {
+		if (event === 'itemCreated') {
 			newItemsCreated++;
 		}
 
-		// Check for item deletion (type: 'remove' with newCount: 0)
-		if (transaction.type === 'remove' && newCount === 0) {
+		if (event === 'itemDeleted') {
 			itemsDeleted++;
 		}
 
