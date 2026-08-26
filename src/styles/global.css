@@ -77,6 +77,16 @@
 	   links take a darker blue here; in dark they track the (high-contrast) accent. */
 	--link-color: #0062cc;
 	--danger-text: #b42318;
+	/* Ledger event colours, shared by the timeline rows, the history stat cards
+	   and the filter chips, so one event reads the same everywhere it appears. */
+	--event-add: #1f9d4d;
+	--event-add-bg: #e7f6ec;
+	--event-remove: #d83a32;
+	--event-remove-bg: #fdeceb;
+	--event-create: #1d7fe3;
+	--event-create-bg: #e4f0ff;
+	--event-delete: #9b2eb6;
+	--event-delete-bg: #f5e5fb;
 	--nav-danger-text: var(--danger-text);
 	--nav-danger-surface: #fbe9e7;
 	--icon-color: #6c757d;
@@ -225,6 +235,14 @@
 	--nav-avatar-text: #0a0a0a;
 	--link-color: var(--add-item-color);
 	--danger-text: #ffaaa3;
+	--event-add: #5bcf7e;
+	--event-add-bg: #16301f;
+	--event-remove: #f06a62;
+	--event-remove-bg: #341715;
+	--event-create: #7ab4ff;
+	--event-create-bg: #142742;
+	--event-delete: #d88af2;
+	--event-delete-bg: #32163d;
 	--nav-danger-text: var(--danger-text);
 	--nav-danger-surface: #321f1e;
 	--input-bg: #1d1d1d;

@@ -136,30 +136,21 @@
 
 <style>
 	.timeline {
-		--pos: #1f9d4d;
-		--pos-bg: #e7f6ec;
-		--neg: #d83a32;
-		--neg-bg: #fdeceb;
-		--create: #1d7fe3;
-		--create-bg: #e4f0ff;
-		--delete: #9b2eb6;
-		--delete-bg: #f5e5fb;
+		/* Aliases onto the shared event tokens in global.css — the same colours now
+		   drive the history page's stat cards and filter chips. */
+		--pos: var(--event-add);
+		--pos-bg: var(--event-add-bg);
+		--neg: var(--event-remove);
+		--neg-bg: var(--event-remove-bg);
+		--create: var(--event-create);
+		--create-bg: var(--event-create-bg);
+		--delete: var(--event-delete);
+		--delete-bg: var(--event-delete-bg);
 		display: flex;
 		flex-direction: column;
 		max-height: 670px;
 		min-height: 300px;
 		overflow-y: auto;
-	}
-
-	:global([data-theme='dark']) .timeline {
-		--pos: #5bcf7e;
-		--pos-bg: #16301f;
-		--neg: #f06a62;
-		--neg-bg: #341715;
-		--create: #7ab4ff;
-		--create-bg: #142742;
-		--delete: #d88af2;
-		--delete-bg: #32163d;
 	}
 
 	.day-header {

@@ -1,18 +1,20 @@
 import { describe, it, expect } from 'vitest';
 import {
-	mergeTransactionWindows,
-	windowCoversLedger,
-	paginationNeedsFullHistory,
+	seasonRange,
+	currentSeasonYear,
+	availableYears,
 	countTransactionsByDay,
-	transactionDayKey
+	transactionDayKey,
+	transactionFilterMatches,
+	isMissingIndexError
 } from './transactionHistory';
 
 /**
- * The history page listens to only the newest N transactions so first paint
- * doesn't scale with ledger size (an unbounded listener measured ~3.8 MB and
- * ~730 ms of IndexedDB writes at ~6k records). These cover the bookkeeping that
- * keeps that bounded view honest: realtime updates must survive escalation, and
- * escalation must not fire on an empty window.
+ * The history page scopes to one CNE season and loads it whole, which keeps the
+ * query bounded (the largest season on record is ~2,250 rows) without truncating
+ * anything the user asked for. These cover the range arithmetic that scoping
+ * depends on — including keeping off-season test rows out of the figures — plus
+ * the filter translation that lets Firestore, rather than the browser, filter.
  */
 
 const txn = (id, itemName, overrides = {}) => ({
@@ -26,102 +28,6 @@ const txn = (id, itemName, overrides = {}) => ({
 	timestamp: new Date('2026-01-01T00:00:00Z'),
 	user: 'tester',
 	...overrides
-});
-
-describe('mergeTransactionWindows', () => {
-	it('returns the live window untouched before the full ledger is loaded', () => {
-		const recent = [txn('a', 'Bun'), txn('b', 'Ketchup')];
-		expect(mergeTransactionWindows(null, recent)).toBe(recent);
-	});
-
-	it('unions the full ledger with the live window', () => {
-		const full = [txn('a', 'Bun'), txn('b', 'Ketchup')];
-		const recent = [txn('b', 'Ketchup'), txn('c', 'Mustard')];
-
-		const merged = mergeTransactionWindows(full, recent);
-
-		expect(merged.map((t) => t.id).sort()).toEqual(['a', 'b', 'c']);
-	});
-
-	it('keeps transactions that arrive in realtime AFTER the full ledger was fetched', () => {
-		// The full ledger is a one-shot read; anything written afterwards exists only
-		// in the live window. Losing it here would mean realtime silently stops
-		// working once the user searches.
-		const full = [txn('old-1', 'Bun'), txn('old-2', 'Ketchup')];
-		const recent = [txn('brand-new', 'Funnel Cake Mix'), txn('old-1', 'Bun')];
-
-		const merged = mergeTransactionWindows(full, recent);
-
-		expect(merged.map((t) => t.id)).toContain('brand-new');
-		expect(merged).toHaveLength(3);
-	});
-
-	it('lets the live copy win, so an updated row is never served stale', () => {
-		const full = [txn('a', 'Old Name', { newCount: 2 })];
-		const recent = [txn('a', 'Corrected Name', { newCount: 99 })];
-
-		const merged = mergeTransactionWindows(full, recent);
-
-		expect(merged).toHaveLength(1);
-		expect(merged[0].itemName).toBe('Corrected Name');
-		expect(merged[0].newCount).toBe(99);
-	});
-
-	it('deduplicates by id rather than by object identity', () => {
-		const full = [txn('a', 'Bun')];
-		const recent = [txn('a', 'Bun')]; // structurally equal, different object
-		expect(mergeTransactionWindows(full, recent)).toHaveLength(1);
-	});
-
-	it('handles an empty live window without dropping the ledger', () => {
-		const full = [txn('a', 'Bun'), txn('b', 'Ketchup')];
-		expect(mergeTransactionWindows(full, [])).toHaveLength(2);
-	});
-});
-
-describe('windowCoversLedger', () => {
-	it('is false before the first snapshot, however small the window looks', () => {
-		// An empty window pre-snapshot says nothing about the ledger's size; treating
-		// it as "covers everything" would show an empty page as if it were complete.
-		expect(windowCoversLedger(false, 0, 250)).toBe(false);
-	});
-
-	it('is true when Firestore returned fewer rows than the cap', () => {
-		// Fewer results than the limit means the collection was exhausted.
-		expect(windowCoversLedger(true, 180, 250)).toBe(true);
-	});
-
-	it('is false when the window is exactly full, since more may exist', () => {
-		expect(windowCoversLedger(true, 250, 250)).toBe(false);
-	});
-});
-
-describe('paginationNeedsFullHistory', () => {
-	const base = { received: true, windowSize: 250, page: 1, perPage: 10 };
-
-	it('does not escalate before the first snapshot', () => {
-		// Regression guard: with windowSize 0, `page * perPage > windowSize` is true
-		// for every page, so without the `received` check this would pull the whole
-		// ledger on every single page load and undo the optimisation entirely.
-		expect(paginationNeedsFullHistory({ ...base, received: false, windowSize: 0 })).toBe(false);
-	});
-
-	it('does not escalate for pages the live window can fill', () => {
-		expect(paginationNeedsFullHistory({ ...base, page: 1 })).toBe(false);
-		expect(paginationNeedsFullHistory({ ...base, page: 25 })).toBe(false);
-	});
-
-	it('escalates once the user pages past the window', () => {
-		expect(paginationNeedsFullHistory({ ...base, page: 26 })).toBe(true);
-	});
-
-	it('escalates for the "all" page size, so "all" never means "all of 250"', () => {
-		expect(paginationNeedsFullHistory({ ...base, perPage: 'all' })).toBe(true);
-	});
-
-	it('escalates on a large page size that overruns the window', () => {
-		expect(paginationNeedsFullHistory({ ...base, page: 3, perPage: 100 })).toBe(true);
-	});
 });
 
 describe('countTransactionsByDay', () => {
@@ -178,5 +84,135 @@ describe('transactionDayKey', () => {
 		expect(transactionDayKey(new Date('2026-03-04T23:59:00'))).not.toBe(
 			transactionDayKey(new Date('2026-03-05T00:01:00'))
 		);
+	});
+});
+
+describe('transactionFilterMatches', () => {
+	it('matches nothing for the "All" filter, so the query stays unconstrained', () => {
+		expect(transactionFilterMatches('')).toEqual([]);
+	});
+
+	it('pins event as well as type for stock filters', () => {
+		// itemCreated rows are written with type 'add' and itemDeleted with type
+		// 'remove' (src/lib/items.js), so matching on type alone would file every
+		// item creation under "Stock added".
+		expect(transactionFilterMatches('add')).toEqual([
+			['event', 'countChange'],
+			['type', 'add']
+		]);
+		expect(transactionFilterMatches('remove')).toEqual([
+			['event', 'countChange'],
+			['type', 'remove']
+		]);
+	});
+
+	it('matches lifecycle filters on event alone', () => {
+		expect(transactionFilterMatches('itemCreated')).toEqual([['event', 'itemCreated']]);
+		expect(transactionFilterMatches('itemDeleted')).toEqual([['event', 'itemDeleted']]);
+	});
+
+	it('never matches on type alone, which would conflate lifecycle rows', () => {
+		for (const filter of ['add', 'remove', 'itemCreated', 'itemDeleted']) {
+			const fields = transactionFilterMatches(filter).map(([field]) => field);
+			expect(fields).toContain('event');
+		}
+	});
+});
+
+describe('isMissingIndexError', () => {
+	it('recognises the failed-precondition Firestore raises for a missing index', () => {
+		expect(isMissingIndexError({ code: 'failed-precondition' })).toBe(true);
+	});
+
+	it('does not treat other failures as a missing index', () => {
+		// Permission and offline errors must not send the page down the
+		// load-everything fallback path.
+		expect(isMissingIndexError({ code: 'permission-denied' })).toBe(false);
+		expect(isMissingIndexError({ code: 'unavailable' })).toBe(false);
+		expect(isMissingIndexError(new Error('boom'))).toBe(false);
+		expect(isMissingIndexError(null)).toBe(false);
+		expect(isMissingIndexError(undefined)).toBe(false);
+	});
+});
+
+describe('seasonRange', () => {
+	it('runs from Aug 15 to the end of Sep 15', () => {
+		const { start, end } = seasonRange(2026);
+
+		expect(start).toEqual(new Date(2026, 7, 15));
+		// Exclusive end is Sep 16 midnight, so all of Sep 15 is inside.
+		expect(end).toEqual(new Date(2026, 8, 16));
+	});
+
+	it('includes a transaction late on the closing day', () => {
+		const closingNight = new Date(2026, 8, 15, 23, 30);
+		const { start, end } = seasonRange(2026);
+
+		expect(closingNight >= start && closingNight < end).toBe(true);
+	});
+
+	it('includes the opening instant', () => {
+		const { start, end } = seasonRange(2026);
+
+		expect(start >= start && start < end).toBe(true);
+	});
+
+	it('excludes off-season rows, which is where the junk data lives', () => {
+		// A count of 500,000 was typed into an item named "#1" on 2026-07-03, and
+		// 44,444 on 2026-01-28. Summed over a calendar year those swamped every real
+		// movement in the stat cards.
+		const { start, end } = seasonRange(2026);
+		for (const offSeason of [
+			new Date(2026, 0, 28),
+			new Date(2026, 6, 3),
+			new Date(2026, 5, 25),
+			new Date(2026, 9, 19)
+		]) {
+			expect(offSeason >= start && offSeason < end).toBe(false);
+		}
+	});
+
+	it('keeps consecutive seasons disjoint', () => {
+		expect(seasonRange(2025).end.getTime()).toBeLessThan(seasonRange(2026).start.getTime());
+	});
+});
+
+describe('currentSeasonYear', () => {
+	it('is this year once the season has opened', () => {
+		expect(currentSeasonYear(new Date(2026, 7, 26))).toBe(2026);
+	});
+
+	it('is this year during the closing days', () => {
+		expect(currentSeasonYear(new Date(2026, 8, 15))).toBe(2026);
+	});
+
+	it('falls back to last season between fairs', () => {
+		// Opening the page in February must not show an empty current season.
+		expect(currentSeasonYear(new Date(2026, 1, 10))).toBe(2025);
+		expect(currentSeasonYear(new Date(2026, 7, 14))).toBe(2025);
+	});
+
+	it('stays on this season after it closes, until the next one opens', () => {
+		expect(currentSeasonYear(new Date(2026, 10, 1))).toBe(2026);
+	});
+});
+
+describe('availableYears', () => {
+	it('lists every season from the oldest row to the latest, newest first', () => {
+		expect(availableYears(2022, 2026)).toEqual([2026, 2025, 2024, 2023, 2022]);
+	});
+
+	it('offers the latest season alone before the oldest row is known', () => {
+		// The picker renders immediately; the lookup that widens it is not awaited.
+		expect(availableYears(null, 2026)).toEqual([2026]);
+	});
+
+	it('offers a single year for a group that started this season', () => {
+		expect(availableYears(2026, 2026)).toEqual([2026]);
+	});
+
+	it('never offers a season with no data behind it', () => {
+		// A clock-skewed row dated in the future must not produce an inverted range.
+		expect(availableYears(2030, 2026)).toEqual([2026]);
 	});
 });

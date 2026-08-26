@@ -2,6 +2,77 @@
 
 This directory contains scripts for managing inventory items.
 
+## Backfill Transaction Events Script
+
+`backfill-transaction-events.js` writes `event: 'countChange'` onto ledger rows
+that have no `event` field at all. Those are transactions written before
+lifecycle events existed; the app already reads them as `event ?? 'countChange'`,
+so nothing is broken today — but that default lives only in JavaScript, and
+**Firestore can only filter on values that are actually stored**.
+
+This matters because the transaction history page applies its type filters
+server-side: "Stock added" is the query `event == 'countChange' && type == 'add'`,
+bounded to one page of results instead of downloading the whole ledger. Rows
+missing `event` never match that query, so they would silently disappear from
+every filtered view until they are tagged.
+
+The script changes no counts and rewrites no history — it only fills in a blank.
+Rows that already carry an `event` (including `itemCreated` / `itemDeleted`) are
+left untouched, which also makes it safe to re-run.
+
+### Credentials
+
+Pick either. Both read the `VITE_FIREBASE_*` config from the project-root `.env`.
+
+**Sign-in (easiest — nothing to download).** The rules let any group member write
+that group's transactions, so an ordinary app login is enough. Add to the
+project-root `.env`:
+
+```
+BACKFILL_EMAIL=you@example.com
+BACKFILL_PASSWORD=your_password
+```
+
+This covers the one group that account belongs to.
+
+**Service account (Admin SDK).** Bypasses the rules and can do every group at
+once. Firebase console -> Project settings -> Service accounts -> Generate new
+private key, then set `GOOGLE_APPLICATION_CREDENTIALS` or pass `--key`.
+
+### Running it
+
+```bash
+cd src/scripts
+npm install                                    # first time only
+node backfill-transaction-events.js            # DRY RUN - reports, writes nothing
+node backfill-transaction-events.js --apply    # actually write
+```
+
+| Flag           | Effect                                                               |
+| -------------- | -------------------------------------------------------------------- |
+| _(none)_       | Dry run: prints how many rows would change, with examples.           |
+| `--apply`      | Commit the writes, in batches of 500.                                |
+| `--group <id>` | Restrict to one group.                                               |
+| `--key <path>` | Service-account JSON, if `GOOGLE_APPLICATION_CREDENTIALS` isn't set. |
+
+**Run the dry run first.** `--apply` is a real write across every untagged row
+(thousands, on an established group), so it costs writes and should be a
+deliberate, one-time action.
+
+### Deploy the indexes too
+
+The server-side filters need the composite indexes in `firestore.indexes.json`:
+
+```bash
+firebase deploy --only firestore:indexes
+```
+
+Until those are live, filtered queries fail with `failed-precondition` and the
+page falls back to loading the full ledger and filtering in JS — correct, just
+slow, and the header shows "index pending". Firestore serves a query and its
+exact reverse from one index, so the descending-`timestamp` entries also cover
+the oldest-first view.
+
 ## Audit Timestamps Script
 
 `audit-timestamps.js` scans the `transactions` collection for clock anomalies —

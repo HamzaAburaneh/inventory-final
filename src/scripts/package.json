@@ -9,7 +9,8 @@
 		"migrate-to-groups": "node migrate-to-groups.js",
 		"add-members-to-group": "node add-members-to-group.js",
 		"seed-booths-from-items": "node seed-booths-from-items.js",
-		"test": "node test-items.js"
+		"test": "node test-items.js",
+		"backfill-transaction-events": "node backfill-transaction-events.js"
 	},
 	"dependencies": {
 		"firebase": "^10.0.0",

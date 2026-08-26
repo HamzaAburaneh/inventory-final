@@ -1,4 +1,22 @@
 {
-	"indexes": [],
+	"indexes": [
+		{
+			"collectionGroup": "transactions",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "event", "order": "ASCENDING" },
+				{ "fieldPath": "timestamp", "order": "DESCENDING" }
+			]
+		},
+		{
+			"collectionGroup": "transactions",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "event", "order": "ASCENDING" },
+				{ "fieldPath": "type", "order": "ASCENDING" },
+				{ "fieldPath": "timestamp", "order": "DESCENDING" }
+			]
+		}
+	],
 	"fieldOverrides": []
 }

@@ -1,73 +1,118 @@
 /**
- * Pure helpers behind the bounded transaction-history view.
+ * Pure helpers behind the season-scoped transaction-history view.
  *
- * The history page listens to only the newest `RECENT_WINDOW_SIZE` transactions
- * so first paint doesn't scale with ledger size, then loads the rest on demand.
- * The window/full-ledger bookkeeping that makes that safe lives here so it can
- * be tested without a component or a Firestore connection.
+ * The ledger is append-only and grows forever, so the page cannot load all of
+ * it. It is also, in practice, a stack of annual CNE runs: real activity is
+ * concentrated in a few weeks each August, with only scattered off-season rows
+ * between them. So the page scopes to one season at a time and loads it whole —
+ * bounded (the largest season on record is ~2,250 rows), complete (every figure
+ * covers the season entirely, with no "latest N" caveat), and flat as the ledger
+ * grows, since next season's view carries none of this season's rows.
+ *
+ * Scoping to the season rather than the calendar year also keeps off-season
+ * testing out of the figures. Rows written between fairs have included counts
+ * like 500,000 typed into an item named "#1"; summed over a calendar year those
+ * six rows swamped every real movement in the stats.
  */
 
 /**
  * @typedef {import('../types').Transaction} Transaction
  */
 
-/**
- * Merge the live (bounded) listener window over a previously fetched full
- * ledger, keyed by id, with the live copy winning.
- *
- * The full ledger is a one-shot read taken at escalation time, so anything
- * written afterwards exists only in the live window — merging is what keeps
- * realtime updates working once the view has escalated. The ledger is
- * append-only (deleting an item writes an `itemDeleted` row rather than
- * removing history), so a merge can never strand a row that should be gone.
- * @param {Transaction[] | null} fullTransactions - The full ledger, or null if not loaded.
- * @param {Transaction[]} recentTransactions - The live listener window.
- * @returns {Transaction[]} Every known transaction, deduplicated by id.
- */
-export function mergeTransactionWindows(fullTransactions, recentTransactions) {
-	if (!fullTransactions) return recentTransactions;
+// The season window, as month (0-indexed) and day. Wide enough to cover setup
+// and teardown around the 18-day fair, narrow enough to exclude the off-season
+// months where test data lives.
+//
+// NOTE: an August 15th start also excludes real pre-fair stocking — 246 rows in
+// 2024 (ground beef, cheese curds, red onions...) and 344 in 2025. Setting
+// SEASON_START.day to 1 keeps all of that and still excludes every known junk
+// row, since those are all in January and July.
+const SEASON_START = { month: 7, day: 15 };
+const SEASON_END = { month: 8, day: 15 };
 
-	const byId = new Map();
-	for (const transaction of fullTransactions) byId.set(transaction.id, transaction);
-	for (const transaction of recentTransactions) byId.set(transaction.id, transaction);
-	return [...byId.values()];
+/**
+ * Half-open date range covering one CNE season, `start` inclusive to `end`
+ * exclusive. The end day itself is fully included.
+ *
+ * Local midnight on both edges, which is what the user means by a date.
+ * @param {number} year - Four-digit year of the season.
+ * @returns {{ start: Date, end: Date }} The range to query.
+ */
+export function seasonRange(year) {
+	return {
+		start: new Date(year, SEASON_START.month, SEASON_START.day),
+		end: new Date(year, SEASON_END.month, SEASON_END.day + 1)
+	};
 }
 
 /**
- * Whether the live window already holds the entire ledger.
+ * Which season to show by default.
  *
- * Firestore returning fewer documents than the limit means it ran out, so the
- * window is the whole ledger and escalating would be a redundant read. Only
- * meaningful once the first snapshot has arrived — an empty window before then
- * says nothing about the ledger's size.
- * @param {boolean} received - Whether the first snapshot has landed.
- * @param {number} windowSize - How many records the live window holds.
- * @param {number} windowCap - The limit the listener was created with.
- * @returns {boolean} True when the window is known to cover everything.
+ * Between fairs there is no current season, and defaulting to one that hasn't
+ * opened would show an empty page for most of the year. Fall back to the most
+ * recent season that actually happened.
+ * @param {Date} [today] - Overridable for tests.
+ * @returns {number} The season year to open on.
  */
-export function windowCoversLedger(received, windowSize, windowCap) {
-	return received && windowSize < windowCap;
+export function currentSeasonYear(today = new Date()) {
+	const year = today.getFullYear();
+	return today < seasonRange(year).start ? year - 1 : year;
 }
 
 /**
- * Whether a pagination state needs records the live window can't supply.
+ * The years a user can choose between, newest first.
  *
- * The "all" page size counts as needing everything — otherwise it would quietly
- * mean "all of the newest 250".
- * @param {object} params - Pagination state.
- * @param {boolean} params.received - Whether the first snapshot has landed.
- * @param {number} params.windowSize - How many records the live window holds.
- * @param {number} params.page - The 1-based current page.
- * @param {number | 'all'} params.perPage - The page size, or 'all'.
- * @returns {boolean} True when the full ledger should be loaded.
+ * Derived from the oldest row in the ledger rather than hardcoded, so a group
+ * that started last season doesn't get offered empty seasons, and next season
+ * appears without a code change.
+ * @param {number | null} earliestYear - Year of the oldest transaction, or null if unknown.
+ * @param {number} latestYear - The season to count back from, normally the current one.
+ * @returns {number[]} Selectable seasons, newest first; always at least `latestYear`.
  */
-export function paginationNeedsFullHistory({ received, windowSize, page, perPage }) {
-	// Before the first snapshot the window is empty, and escalating off an empty
-	// window would pull the whole ledger on every page load — precisely what the
-	// bounded listener exists to prevent.
-	if (!received) return false;
-	if (perPage === 'all') return true;
-	return page * perPage > windowSize;
+export function availableYears(earliestYear, latestYear) {
+	if (!earliestYear || earliestYear > latestYear) return [latestYear];
+	const years = [];
+	for (let year = latestYear; year >= earliestYear; year--) years.push(year);
+	return years;
+}
+
+/**
+ * Express a type filter as field equality matches a Firestore query can apply.
+ *
+ * These filters used to be answered by downloading the whole ledger and
+ * filtering in JS, which cost one read per record in the group. Firestore can
+ * apply them itself for the price of the rows you actually show — but only
+ * over fields that are written down, which is why `event` had to be backfilled
+ * onto legacy rows (see src/scripts/backfill-transaction-events.js).
+ *
+ * Stock filters have to pin `event` as well as `type`: an itemCreated row is
+ * written with type 'add' and an itemDeleted row with type 'remove'
+ * (src/lib/items.js), so matching on `type` alone would file every item
+ * creation under "Stock added".
+ * @param {string} filter - '' | 'add' | 'remove' | 'itemCreated' | 'itemDeleted'.
+ * @returns {Array<[string, string]>} `[field, value]` pairs; empty for no filter.
+ */
+export function transactionFilterMatches(filter) {
+	if (!filter) return [];
+	if (filter === 'itemCreated' || filter === 'itemDeleted') return [['event', filter]];
+	return [
+		['event', 'countChange'],
+		['type', filter]
+	];
+}
+
+/**
+ * Whether a Firestore error means the query needs an index that isn't ready.
+ *
+ * Filtering by type within a season needs a composite index. Those are deployed
+ * (firestore.indexes.json), but Firestore builds indexes asynchronously, so a
+ * fresh deploy can fail this way for a few minutes — worth telling the user
+ * apart from a real failure, since it fixes itself.
+ * @param {unknown} error - The error from a Firestore listener or read.
+ * @returns {boolean} True when the failure is a missing or still-building index.
+ */
+export function isMissingIndexError(error) {
+	return Boolean(error) && /** @type {{ code?: string }} */ (error).code === 'failed-precondition';
 }
 
 /**

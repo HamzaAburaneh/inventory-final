@@ -1,15 +1,10 @@
 <script>
+	import { subscribeToTransactions, getEarliestTransactionYear } from '../../lib/transactions';
 	import {
-		subscribeToTransactions,
-		getAllTransactions,
-		getTransactionCount,
-		RECENT_WINDOW_SIZE
-	} from '../../lib/transactions';
-	import {
-		mergeTransactionWindows,
-		windowCoversLedger,
-		paginationNeedsFullHistory,
-		countTransactionsByDay
+		availableYears,
+		countTransactionsByDay,
+		currentSeasonYear,
+		isMissingIndexError
 	} from '../../lib/transactionHistory';
 	import TransactionTimeline from '../../components/TransactionTimeline.svelte';
 	import TableSkeleton from '../../components/TableSkeleton.svelte';
@@ -23,35 +18,40 @@
 		return transaction.event ?? 'countChange';
 	}
 
-	// The live listener is bounded to the newest RECENT_WINDOW_SIZE records so first
-	// paint doesn't scale with ledger size. `fullTransactions` stays null until
-	// something needs the whole ledger (search, type filter, oldest-first, deep
-	// paging, "all" page size, CSV export), at which point it's fetched once and
-	// merged over the live window — see `ensureFullHistory`.
+	// The page shows one CNE season at a time, loaded whole. That keeps the query
+	// bounded without truncating anything — every figure below covers the selected
+	// season completely, so there is no "these numbers only describe the latest N
+	// rows" caveat to explain. It also stays flat as the ledger grows: the largest
+	// season on record is ~2,250 rows, and next season's view carries none of this
+	// season's.
 	//
-	// Both use $state.raw: these arrays are only ever reassigned wholesale from a
-	// snapshot, never mutated, so deep proxying would buy nothing and cost a lot.
-	// Measured over a ~6.3k-record ledger, the derived chain ran 12.9 ms proxied
-	// vs 1.1 ms raw — the proxy's per-property access traps, paid on every filter,
-	// stats pass and sort comparison.
-	let recentTransactions = $state.raw([]);
-	/** @type {import('../../types').Transaction[] | null} */
-	let fullTransactions = $state.raw(null);
-	let loadingFull = $state(false);
-	let fullLoadFailed = $state(false);
-	// Size of the whole ledger, from a server-side count aggregation — so the header
-	// can say "250 of 6,314" without downloading 6,314 records to find out. Stays
-	// null when the count is unavailable (offline: aggregations can't be served from
-	// the local cache), in which case the header falls back to what's loaded.
+	// $state.raw because this array is only ever reassigned wholesale from a
+	// snapshot, never mutated — deep proxying would cost per-property access traps
+	// on every filter, stats pass and sort comparison, and buy nothing.
+	let transactions = $state.raw([]);
+
+	// Between fairs this resolves to the last season that actually ran, so opening
+	// the page in February shows real data instead of an empty current season.
+	const LATEST_SEASON = currentSeasonYear();
+	let selectedYear = $state(LATEST_SEASON);
 	/** @type {number | null} */
-	let ledgerTotal = $state(null);
+	let earliestYear = $state(null);
+	// Until the oldest row is known this offers the latest season alone, so the
+	// picker renders immediately rather than popping in.
+	const yearOptions = $derived(availableYears(earliestYear, LATEST_SEASON));
+
+	// Set when a query fails because its composite index is still building. Index
+	// builds are asynchronous, so a fresh deploy can fail this way for a few
+	// minutes and then start working on its own — worth saying, since retrying is
+	// genuinely the right response.
+	let indexPending = $state(false);
+	let loadFailed = $state(false);
+
 	// `ready` reveals the page chrome as soon as the listener is attached (mirrors
 	// manageItems' `itemsLoaded`); `received` flips once the first snapshot lands so
 	// the empty state only shows after real data has come back, not during the wait.
 	let ready = $state(false);
 	let received = $state(false);
-	// The timeline is inherently chronological, so sorting collapses to a single
-	// newest/oldest toggle on the transaction timestamp.
 	let sortNewest = $state(true);
 	// View filter: '' (all) | stock add/remove | item lifecycle events.
 	let typeFilter = $state('');
@@ -63,97 +63,25 @@
 	const search = createSearchState();
 	const searchTermValue = $derived(search.term);
 
+	// Icons match the ones TransactionTimeline puts on the rows themselves, so a
+	// filter and the rows it produces are recognisably the same thing.
 	const typeFilters = [
-		{ value: '', label: 'All' },
-		{ value: 'add', label: 'Stock added' },
-		{ value: 'remove', label: 'Stock removed' },
-		{ value: 'itemCreated', label: 'New items' },
-		{ value: 'itemDeleted', label: 'Deleted items' }
+		{ value: '', label: 'All', icon: '' },
+		{ value: 'add', label: 'Stock added', icon: 'fa-arrow-up' },
+		{ value: 'remove', label: 'Stock removed', icon: 'fa-arrow-down' },
+		{ value: 'itemCreated', label: 'New items', icon: 'fa-box-open' },
+		{ value: 'itemDeleted', label: 'Deleted items', icon: 'fa-trash-can' }
 	];
 
-	// The set every downstream derived works from. Before escalation that's just the
-	// live window; after it, the full ledger with the live window merged over the
-	// top by id — so transactions that arrive in realtime after the one-shot fetch
-	// still show up. The ledger is append-only (items.js only ever adds rows, and
-	// deleting an item writes an `itemDeleted` row rather than removing history), so
-	// a merge can never leave a stale row behind.
-	const allTransactions = $derived(mergeTransactionWindows(fullTransactions, recentTransactions));
-
-	// True once every downstream figure (search, filters, stats, sort, export) spans
-	// the whole ledger rather than just the live window.
-	const scopeIsFull = $derived(fullTransactions !== null);
-
-	// What "of N records" counts. Once escalated the loaded set is authoritative
-	// (and includes anything that arrived since the count was taken); before that
-	// the server count is, falling back to the loaded window if it's unavailable.
-	const totalRecords = $derived(
-		scopeIsFull ? allTransactions.length : (ledgerTotal ?? allTransactions.length)
-	);
-
-	// Whether what's loaded is known to be the complete ledger — either because it
-	// was escalated, or because Firestore returned fewer rows than the window cap
-	// (which means it ran out). Anything else is a partial view, even when the
-	// server count is unavailable and we can't say how partial.
-	const windowIsEverything = $derived(
-		scopeIsFull || windowCoversLedger(received, recentTransactions.length, RECENT_WINDOW_SIZE)
-	);
-
-	/** @type {Promise<void> | null} */
-	let fullLoadPromise = null;
-
-	/**
-	 * Load the whole ledger once, then let it be merged with the live window.
-	 * Idempotent and safe to call from several triggers at once — the in-flight
-	 * promise is shared, and a plain (non-reactive) variable guards re-entry so
-	 * calling this from an effect can't loop.
-	 * @returns {Promise<void>} Resolves once the full ledger is loaded (or failed).
-	 */
-	function ensureFullHistory() {
-		if (fullLoadPromise) return fullLoadPromise;
-		// Firestore returned fewer rows than the window cap, which means it ran out of
-		// documents — the window already IS the whole ledger. Promote it rather than
-		// paying for a redundant read (the common case for a young group).
-		if (windowCoversLedger(received, recentTransactions.length, RECENT_WINDOW_SIZE)) {
-			fullTransactions = recentTransactions;
-			fullLoadPromise = Promise.resolve();
-			return fullLoadPromise;
-		}
-		loadingFull = true;
-		fullLoadFailed = false;
-		fullLoadPromise = getAllTransactions()
-			.then((transactions) => {
-				fullTransactions = transactions;
-			})
-			.catch((error) => {
-				console.error('Error loading full transaction history:', error);
-				fullLoadFailed = true;
-				// Clear the guard so a later trigger (or a retry) can try again.
-				fullLoadPromise = null;
-			})
-			.finally(() => {
-				loadingFull = false;
-			});
-		return fullLoadPromise;
-	}
-
+	// Firestore already applied the year and the type filter, so only the search
+	// term is left to apply here — it has no server-side equivalent, since
+	// Firestore cannot match a substring.
 	const filteredTransactions = $derived.by(() => {
-		let result = allTransactions;
-		if (typeFilter) {
-			result = result.filter((transaction) => {
-				const event = transactionEvent(transaction);
-				if (typeFilter === 'itemCreated' || typeFilter === 'itemDeleted') {
-					return event === typeFilter;
-				}
-				return event === 'countChange' && transaction.type === typeFilter;
-			});
-		}
-		if (searchTermValue) {
-			const lowerSearchTerm = searchTermValue.toLowerCase();
-			result = result.filter((transaction) =>
-				transaction.itemName.toLowerCase().includes(lowerSearchTerm)
-			);
-		}
-		return result;
+		if (!searchTermValue) return transactions;
+		const lowerSearchTerm = searchTermValue.toLowerCase();
+		return transactions.filter((transaction) =>
+			transaction.itemName.toLowerCase().includes(lowerSearchTerm)
+		);
 	});
 
 	// Summary figures shown in the stat cards, computed over the filtered set so they
@@ -173,25 +101,7 @@
 		setTotalItems(filteredTransactions.length);
 	});
 
-	// Pagination lives in a store, so this is the one trigger that has to be an
-	// effect rather than an event handler. Escalate when the user asks for a page
-	// the live window can't fill, or picks the "all" page size — otherwise "all"
-	// would quietly mean "all 250".
-	$effect(() => {
-		const needsFull = paginationNeedsFullHistory({
-			received,
-			windowSize: recentTransactions.length,
-			page: $currentPage,
-			perPage: $itemsPerPage
-		});
-		if (needsFull) ensureFullHistory();
-	});
-
-	const sortedTransactions = $derived(
-		[...filteredTransactions].sort((a, b) =>
-			sortNewest ? b.timestamp - a.timestamp : a.timestamp - b.timestamp
-		)
-	);
+	const sortedTransactions = $derived(filteredTransactions);
 
 	// Counted over the whole filtered set, not the current page, so a day header
 	// reports that day's real total regardless of page size.
@@ -206,38 +116,60 @@
 		return sortedTransactions.slice(startIndex, endIndex);
 	});
 
+	/**
+	 * (Re)attach the live listener for the selected year, filter and sort order.
+	 *
+	 * All three are query parameters, so changing any of them re-queries rather
+	 * than re-processing a superset that was fetched for a different question.
+	 */
 	function startSubscription() {
+		if (unsubscribeFromTransactions) {
+			unsubscribeFromTransactions();
+			unsubscribeFromTransactions = null;
+		}
+		// The rows on screen answer the previous query. Leave them visible so the
+		// list doesn't blank out mid-switch, but don't let `received` claim the new
+		// snapshot has landed.
+		received = false;
+		indexPending = false;
+		loadFailed = false;
 		try {
 			unsubscribeFromTransactions = subscribeToTransactions(
-				(transactions) => {
-					recentTransactions = transactions;
+				(rows) => {
+					transactions = rows;
+					received = true;
+					indexPending = false;
+					loadFailed = false;
+				},
+				(error) => {
+					// Distinguish "the index is still building, try again shortly" from a
+					// real failure — the first fixes itself, the second doesn't.
+					if (isMissingIndexError(error)) indexPending = true;
+					else loadFailed = true;
+					transactions = [];
 					received = true;
 				},
-				() => {
-					received = true;
-				}
+				{ year: selectedYear, filter: typeFilter, sortNewest }
 			);
 		} catch (error) {
 			console.error('Error setting up transactions subscription:', error);
+			loadFailed = true;
 			received = true;
 		}
 	}
 
 	onMount(() => {
 		startSubscription();
-		// Deliberately not awaited — it's a separate tiny round trip that must never
-		// delay the rows. Offline it just rejects and the header falls back.
-		try {
-			getTransactionCount()
-				.then((count) => {
-					ledgerTotal = count;
-				})
-				.catch((error) => {
-					console.warn('Transaction count unavailable:', error);
-				});
-		} catch (error) {
-			console.warn('Transaction count unavailable:', error);
-		}
+		// Not awaited — one document read that only populates the year picker, and
+		// must never delay the rows. Offline it rejects and the picker falls back to
+		// the current year alone.
+		getEarliestTransactionYear()
+			.then((year) => {
+				earliestYear = year;
+			})
+			.catch((error) => {
+				console.warn('Earliest transaction year unavailable:', error);
+			});
 		ready = true;
 
 		return () => {
@@ -247,12 +179,83 @@
 		};
 	});
 
+	// A native <select> renders its open list with the OS, not the page — on macOS
+	// that is a grey panel with a system-blue highlight that ignores every theme
+	// variable. This is a listbox built from ordinary elements so the open state is
+	// styled like the rest of the app.
+	let seasonOpen = $state(false);
+	/** @type {HTMLElement | undefined} */
+	let seasonEl = $state();
+
+	/** Move focus onto an option once the list opens, so keyboard use continues. */
+	function focusOption(year) {
+		requestAnimationFrame(() => {
+			seasonEl?.querySelector(`[data-season="${year}"]`)?.focus();
+		});
+	}
+
+	function openSeasons(focusYear = selectedYear) {
+		seasonOpen = true;
+		focusOption(focusYear);
+	}
+
+	function closeSeasons(returnFocus = true) {
+		if (!seasonOpen) return;
+		seasonOpen = false;
+		if (returnFocus) {
+			/** @type {HTMLElement | null | undefined} */
+			const trigger = seasonEl?.querySelector('.season-trigger');
+			trigger?.focus();
+		}
+	}
+
+	function onTriggerKeydown(event) {
+		if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+			event.preventDefault();
+			openSeasons();
+		} else if (event.key === 'Escape') {
+			closeSeasons();
+		}
+	}
+
+	function onOptionKeydown(event) {
+		const options = [...(seasonEl?.querySelectorAll('.season-option') ?? [])];
+		const index = options.indexOf(event.currentTarget);
+		if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+			event.preventDefault();
+			const next = event.key === 'ArrowDown' ? index + 1 : index - 1;
+			options[Math.max(0, Math.min(options.length - 1, next))]?.focus();
+		} else if (event.key === 'Escape') {
+			event.preventDefault();
+			closeSeasons();
+		} else if (event.key === 'Tab') {
+			// Tabbing away from the list is a dismissal; don't steal focus back.
+			closeSeasons(false);
+		}
+	}
+
+	// Dismiss on an outside press. Bound only while open, and on pointerdown so the
+	// list is gone before a click lands on whatever is underneath.
+	$effect(() => {
+		if (!seasonOpen) return;
+		const onPointerDown = (event) => {
+			if (!seasonEl?.contains(event.target)) closeSeasons(false);
+		};
+		document.addEventListener('pointerdown', onPointerDown);
+		return () => document.removeEventListener('pointerdown', onPointerDown);
+	});
+
+	function chooseYear(year) {
+		closeSeasons();
+		if (year === selectedYear) return;
+		selectedYear = year;
+		setCurrentPage(1);
+		startSubscription();
+	}
+
 	function handleSearch(value) {
 		search.setTerm(value);
 		setCurrentPage(1);
-		// Searching only the newest 250 would silently hide older matches, so pull the
-		// rest. Fires once — subsequent keystrokes filter the already-loaded set.
-		if (value) ensureFullHistory();
 	}
 
 	function handleClear() {
@@ -261,36 +264,35 @@
 	}
 
 	function setTypeFilter(value) {
+		if (value === typeFilter) return;
 		typeFilter = value;
 		setCurrentPage(1);
-		// Same reasoning as search: a filtered count over a 250-row window would be
-		// wrong for the ledger as a whole.
-		if (value) ensureFullHistory();
+		startSubscription();
 	}
 
 	function toggleSort() {
 		sortNewest = !sortNewest;
-		// "Oldest" over the newest-250 window would show the oldest of the window, not
-		// of the ledger — which is simply the wrong answer. Load the rest.
-		if (!sortNewest) ensureFullHistory();
+		setCurrentPage(1);
+		// A direction on the query, not a client-side re-sort of a partial set — so
+		// "Oldest" means the oldest of the year, which is what it looks like it means.
+		startSubscription();
 	}
 
 	function formatSigned(value) {
-		const sign = value > 0 ? '+' : value < 0 ? '−' : '';
-		return `${sign}${Math.abs(value).toLocaleString()}`;
+		if (value > 0) return `+${value}`;
+		if (value < 0) return `\u2212${Math.abs(value)}`;
+		return '0';
 	}
 
-	function escapeCsv(value) {
+	function csvCell(value) {
 		const str = String(value ?? '');
 		return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
 	}
 
 	// Export the full filtered/sorted set (not just the current page) as CSV. The
-	// bounded listener means "full" has to be loaded first — export is a deliberate,
-	// infrequent action, so paying for the whole ledger here is the right trade
-	// rather than silently exporting a truncated file.
-	async function exportCsv() {
-		await ensureFullHistory();
+	// whole selected year is already loaded, so this needs no extra reads and the
+	// file matches exactly what the page is showing.
+	function exportCsv() {
 		const header = ['Item', 'Event', 'Type', 'Previous', 'New', 'Change', 'Timestamp', 'User'];
 		const rows = sortedTransactions.map((transaction) => [
 			transaction.itemName,
@@ -302,12 +304,12 @@
 			new Date(transaction.timestamp).toISOString(),
 			transaction.user
 		]);
-		const csv = [header, ...rows].map((row) => row.map(escapeCsv).join(',')).join('\n');
+		const csv = [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\n');
 		const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
 		const url = URL.createObjectURL(blob);
 		const link = document.createElement('a');
 		link.href = url;
-		link.download = `transaction-history-${new Date().toISOString().slice(0, 10)}.csv`;
+		link.download = `transaction-history-${selectedYear}.csv`;
 		link.click();
 		URL.revokeObjectURL(url);
 	}
@@ -326,27 +328,22 @@
 				<div class="history-heading">
 					<h2 class="history-title">Transaction history</h2>
 					<p class="history-sub">
-						{filteredTransactions.length.toLocaleString()} of {totalRecords.toLocaleString()}
-						records
-						{#if loadingFull}
-							<span class="scope-note">
-								<i class="fas fa-circle-notch fa-spin"></i> loading full history…
-							</span>
-						{:else if fullLoadFailed}
-							<span class="scope-note scope-error">
-								<i class="fas fa-triangle-exclamation"></i> couldn't load older records
-							</span>
-							<button class="scope-link" onclick={ensureFullHistory}>Retry</button>
-						{:else if !windowIsEverything}
-							<span class="scope-note">· latest {allTransactions.length.toLocaleString()}</span>
-							<button class="scope-link" onclick={ensureFullHistory}>Load full history</button>
+						{#if searchTermValue || typeFilter}
+							{filteredTransactions.length.toLocaleString()} of {transactions.length.toLocaleString()}
+							records in the {selectedYear} season
+						{:else}
+							{transactions.length.toLocaleString()}
+							{transactions.length === 1 ? 'record' : 'records'} in the {selectedYear} season
+						{/if}
+						{#if !received}
+							<span class="scope-note"><i class="fas fa-circle-notch fa-spin"></i> loading…</span>
 						{/if}
 					</p>
 				</div>
 				<button
 					class="export-button"
 					onclick={exportCsv}
-					disabled={loadingFull || sortedTransactions.length === 0}
+					disabled={sortedTransactions.length === 0}
 				>
 					<i class="fas fa-download"></i>
 					<span>Export</span>
@@ -374,17 +371,25 @@
 				</div>
 			</div>
 
-			<p class="stats-scope">
-				{#if windowIsEverything}
-					Figures cover all {totalRecords.toLocaleString()} records.
-				{:else if ledgerTotal !== null}
-					Figures cover the latest {allTransactions.length.toLocaleString()} of {ledgerTotal.toLocaleString()}
-					records — search, filter or sort by oldest to include the full history.
-				{:else}
-					Figures cover the latest {allTransactions.length.toLocaleString()} records — search, filter
-					or sort by oldest to include the full history.
-				{/if}
-			</p>
+			{#if indexPending}
+				<p class="stats-scope scope-error">
+					<i class="fas fa-triangle-exclamation"></i>
+					This filter needs a database index that is still building. It usually takes a few minutes —
+					try again shortly.
+					<button class="scope-link" onclick={startSubscription}>Retry</button>
+				</p>
+			{:else if loadFailed}
+				<p class="stats-scope scope-error">
+					<i class="fas fa-triangle-exclamation"></i>
+					Couldn't load the {selectedYear} season.
+					<button class="scope-link" onclick={startSubscription}>Retry</button>
+				</p>
+			{:else}
+				<p class="stats-scope">
+					Figures cover {typeFilter || searchTermValue ? 'every matching record' : 'every record'} in
+					the {selectedYear} season (Aug 15 – Sep 15).
+				</p>
+			{/if}
 
 			<div class="toolbar">
 				<div class="toolbar-search">
@@ -395,10 +400,14 @@
 						<button
 							class="segment"
 							class:active={typeFilter === option.value}
+							data-filter={option.value}
 							aria-pressed={typeFilter === option.value}
 							onclick={() => setTypeFilter(option.value)}
 						>
-							{option.label}
+							{#if option.icon}
+								<i class="fas {option.icon}" aria-hidden="true"></i>
+							{/if}
+							<span>{option.label}</span>
 						</button>
 					{/each}
 				</div>
@@ -406,6 +415,46 @@
 					<i class="fas {sortNewest ? 'fa-arrow-down-wide-short' : 'fa-arrow-up-wide-short'}"></i>
 					<span>{sortNewest ? 'Newest' : 'Oldest'}</span>
 				</button>
+			</div>
+
+			<div class="season-bar">
+				<span class="year-label" id="season-label">Season</span>
+				<div class="season-select" bind:this={seasonEl}>
+					<button
+						type="button"
+						class="season-trigger"
+						class:open={seasonOpen}
+						aria-haspopup="listbox"
+						aria-expanded={seasonOpen}
+						aria-labelledby="season-label season-value"
+						onclick={() => (seasonOpen = !seasonOpen)}
+						onkeydown={onTriggerKeydown}
+					>
+						<span id="season-value">{selectedYear}</span>
+						<i class="fas fa-chevron-down" aria-hidden="true"></i>
+					</button>
+					{#if seasonOpen}
+						<div class="season-list" role="listbox" aria-labelledby="season-label">
+							{#each yearOptions as year (year)}
+								<button
+									type="button"
+									role="option"
+									class="season-option"
+									class:selected={year === selectedYear}
+									aria-selected={year === selectedYear}
+									data-season={year}
+									onclick={() => chooseYear(year)}
+									onkeydown={onOptionKeydown}
+								>
+									<span>{year}</span>
+									{#if year === selectedYear}
+										<i class="fas fa-check" aria-hidden="true"></i>
+									{/if}
+								</button>
+							{/each}
+						</div>
+					{/if}
+				</div>
 			</div>
 
 			<div class="timeline-section">
@@ -562,19 +611,11 @@
 	}
 
 	.stat-value.pos {
-		color: #1f9d4d;
+		color: var(--event-add);
 	}
 
 	.stat-value.neg {
-		color: #d83a32;
-	}
-
-	:global([data-theme='dark']) .stat-value.pos {
-		color: #5bcf7e;
-	}
-
-	:global([data-theme='dark']) .stat-value.neg {
-		color: #f06a62;
+		color: var(--event-remove);
 	}
 
 	.toolbar {
@@ -601,12 +642,15 @@
 	}
 
 	.segment {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
 		font-size: 0.78rem;
 		font-weight: 500;
 		color: var(--text-color);
 		background: var(--container-bg);
 		border: 1px solid var(--table-border-color);
-		padding: 0.45rem 0.8rem;
+		padding: 0.3rem 0.8rem 0.3rem 0.35rem;
 		border-radius: var(--border-radius);
 		min-height: 0;
 		transition:
@@ -615,9 +659,48 @@
 			color 0.15s ease-out;
 	}
 
+	/* The same tinted square the timeline puts on every row (.row-ic), scaled down:
+	   a filter chip and the rows it produces then carry an identical badge. The
+	   fixed box also stops a trash can and an arrow — different glyph widths — from
+	   landing each label on a different x. */
+	.segment i {
+		flex: none;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.4rem;
+		height: 1.4rem;
+		border-radius: 6px;
+		font-size: 0.68rem;
+	}
+
+	.segment[data-filter='add'] i {
+		background: var(--event-add-bg);
+		color: var(--event-add);
+	}
+
+	.segment[data-filter='remove'] i {
+		background: var(--event-remove-bg);
+		color: var(--event-remove);
+	}
+
+	.segment[data-filter='itemCreated'] i {
+		background: var(--event-create-bg);
+		color: var(--event-create);
+	}
+
+	.segment[data-filter='itemDeleted'] i {
+		background: var(--event-delete-bg);
+		color: var(--event-delete);
+	}
+
 	.segment:hover:not(.active) {
 		background: var(--hover-bg-color);
 		border-color: var(--hover-border-color);
+	}
+
+	.segment[data-filter=''] {
+		padding: 0.45rem 0.8rem;
 	}
 
 	.segment.active {
@@ -646,6 +729,115 @@
 	.sort-button:hover {
 		background: var(--hover-bg-color);
 		border-color: var(--hover-border-color);
+	}
+
+	/* Its own row under the filters rather than competing with them: the season
+	   scopes everything above it, and it is the control you touch least. */
+	.season-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		padding: 0.7rem 1.25rem;
+		border-bottom: 1px solid var(--table-border-color);
+	}
+
+	.season-select {
+		position: relative;
+		/* Wide enough for a four-digit year and its chevron, and no wider — a
+		   full-bleed control for "2026" reads as a text field, not a picker. */
+		width: 9.5rem;
+	}
+
+	.season-trigger {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		width: 100%;
+		font-size: 0.78rem;
+		font-weight: 600;
+		color: var(--text-color);
+		background: var(--container-bg);
+		border: 1px solid var(--table-border-color);
+		border-radius: var(--border-radius);
+		padding: 0.45rem 0.7rem;
+		min-height: 0;
+		cursor: pointer;
+		transition:
+			background-color 0.15s ease-out,
+			border-color 0.15s ease-out;
+	}
+
+	.season-trigger:hover,
+	.season-trigger.open {
+		background: var(--hover-bg-color);
+		border-color: var(--hover-border-color);
+	}
+
+	.season-trigger:focus-visible {
+		outline: 2px solid var(--focus-border-color);
+		outline-offset: 1px;
+	}
+
+	.season-trigger i {
+		font-size: 0.65rem;
+		color: var(--text-color-dimmed);
+		transition: transform 0.15s ease-out;
+	}
+
+	.season-trigger.open i {
+		transform: rotate(180deg);
+	}
+
+	.season-list {
+		position: absolute;
+		top: calc(100% + 0.3rem);
+		left: 0;
+		right: 0;
+		z-index: 20;
+		display: flex;
+		flex-direction: column;
+		padding: 0.25rem;
+		background: var(--container-bg);
+		border: 1px solid var(--table-border-color);
+		border-radius: var(--border-radius);
+		box-shadow: 0 8px 20px var(--tooltip-shadow);
+	}
+
+	.season-option {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		width: 100%;
+		font-size: 0.78rem;
+		font-weight: 500;
+		text-align: left;
+		color: var(--text-color);
+		background: none;
+		border: none;
+		border-radius: calc(var(--border-radius) - 3px);
+		padding: 0.45rem 0.55rem;
+		min-height: 0;
+		cursor: pointer;
+	}
+
+	.season-option:hover {
+		background: var(--hover-bg-color);
+	}
+
+	.season-option:focus-visible {
+		outline: 2px solid var(--focus-border-color);
+		outline-offset: -2px;
+	}
+
+	.season-option.selected {
+		font-weight: 600;
+		color: var(--value-color);
+	}
+
+	.season-option i {
+		font-size: 0.7rem;
 	}
 
 	.timeline-section {
@@ -678,6 +870,7 @@
 		.stats-grid,
 		.stats-scope,
 		.toolbar,
+		.season-bar,
 		.pagination-section {
 			padding-left: 1rem;
 			padding-right: 1rem;
@@ -709,6 +902,24 @@
 			flex-basis: 100%;
 		}
 
+		.season-bar {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0.3rem;
+		}
+
+		.season-select {
+			width: 100%;
+		}
+
+		.season-trigger {
+			min-height: var(--touch-target-min);
+		}
+
+		.season-option {
+			min-height: 2.4rem;
+		}
+
 		/* Four filter labels cannot share one row at this width: flexing them to
 		   equal widths compressed each below its own text, so labels broke mid-word
 		   ("Stock / added") and ran under the sort button. A 2x2 grid beneath a
@@ -721,12 +932,16 @@
 		}
 
 		.segment {
-			text-align: center;
-			padding: 0.55rem 0.5rem;
+			/* Chips are equal-width grid cells here, so a shared left inset puts every
+			   badge on the same column rather than wherever its label centres it. */
+			justify-content: flex-start;
+			padding: 0.4rem 0.5rem 0.4rem 0.45rem;
 		}
 
 		.segment:first-child {
 			grid-column: 1 / -1;
+			justify-content: center;
+			padding: 0.55rem 0.5rem;
 		}
 
 		.sort-button {
@@ -760,6 +975,7 @@
 		.stats-grid,
 		.stats-scope,
 		.toolbar,
+		.season-bar,
 		.pagination-section {
 			padding-left: 2rem;
 			padding-right: 2rem;

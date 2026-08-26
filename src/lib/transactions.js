@@ -1,7 +1,6 @@
 import { db } from '../firebase';
 import {
 	collection,
-	getCountFromServer,
 	getDocs,
 	onSnapshot,
 	query,
@@ -11,6 +10,7 @@ import {
 	Timestamp
 } from 'firebase/firestore';
 import { requireActiveGroupId } from './activeGroup';
+import { transactionFilterMatches, seasonRange } from './transactionHistory';
 
 /**
  * @typedef {import('../types').Transaction} Transaction
@@ -19,18 +19,6 @@ import { requireActiveGroupId } from './activeGroup';
 // NOTE: there is intentionally no standalone addTransaction here. Ledger
 // records are only written together with their count change, atomically, by
 // the functions in src/lib/items.js — so the two can never drift apart.
-
-/**
- * How many of the newest transactions the history page listens to on load.
- *
- * The ledger is append-only and unbounded, so an unfiltered listener streams
- * every record the group has ever written on every page load. At ~6k records
- * that measured ~3.8 MB (452 KB gzipped) plus ~730 ms of IndexedDB writes to
- * fill the persistent cache — and it grows forever. Bounding the live listener
- * keeps first paint flat regardless of ledger size; anything that needs the
- * whole ledger escalates via `getAllTransactions()`.
- */
-export const RECENT_WINDOW_SIZE = 250;
 
 /**
  * Normalize a transaction document snapshot into a Transaction.
@@ -96,27 +84,43 @@ export async function getHistoricalTransactions(days = 90) {
 }
 
 /**
- * Subscribes to the active group's transaction ledger in real time, newest
- * first. Firestore Timestamps are normalized to JS Dates (an offline write
- * reads back null until it syncs, so fall back to now).
+ * Subscribes to one CNE season of the active group's ledger in real time.
  *
- * The listener is bounded to the newest `limit` records by default so first
- * paint does not scale with ledger size. Ordering and the limit both key off
- * `timestamp` alone, which Firestore indexes automatically — no composite
- * index is required. Pass `{ limit: null }` for an unbounded listener.
+ * A season is the unit the app is actually used in, and it keeps the query
+ * bounded without truncating anything the user asked for: the season loads
+ * whole, so every count, stat and sort on the page covers it completely. It
+ * also stays flat as the ledger grows, since next season's view carries none of
+ * this season's rows — and it leaves out the off-season months where stray test
+ * rows live (see seasonRange).
+ *
+ * `filter` and `sortNewest` are applied by Firestore rather than by the caller,
+ * so switching either re-queries instead of post-processing a superset. That
+ * means the query is only as good as the stored data: rows written before the
+ * `event` field existed must be backfilled or they will not match a stock
+ * filter (src/scripts/backfill-transaction-events.js).
+ *
+ * The season range and the ordering both key off `timestamp`, which Firestore
+ * indexes automatically. Adding a type filter needs a composite index — see
+ * firestore.indexes.json — and fails with `failed-precondition` until one is
+ * built, so callers should surface that rather than showing an empty season.
  * @param {function(Transaction[]): void} onData - Called with each snapshot.
  * @param {function(unknown): void} [onError] - Called on subscription error.
- * @param {{ limit?: number | null }} [options] - Listener options.
+ * @param {{ year: number, filter?: string, sortNewest?: boolean }} options - Listener options.
  * @returns {function(): void} Unsubscribe function.
  */
-export function subscribeToTransactions(onData, onError, options = {}) {
-	const { limit: windowSize = RECENT_WINDOW_SIZE } = options;
+export function subscribeToTransactions(onData, onError, options) {
+	const { year, filter = '', sortNewest = true } = options;
 	const transactionsRef = collection(db, 'groups', requireActiveGroupId(), 'transactions');
+	const { start, end } = seasonRange(year);
 
-	const constraints = [orderBy('timestamp', 'desc')];
-	if (windowSize !== null && windowSize !== undefined) {
-		constraints.push(limit(windowSize));
-	}
+	const constraints = transactionFilterMatches(filter).map(([field, value]) =>
+		where(field, '==', value)
+	);
+	constraints.push(
+		where('timestamp', '>=', Timestamp.fromDate(start)),
+		where('timestamp', '<', Timestamp.fromDate(end)),
+		orderBy('timestamp', sortNewest ? 'desc' : 'asc')
+	);
 
 	return onSnapshot(
 		query(transactionsRef, ...constraints),
@@ -131,38 +135,15 @@ export function subscribeToTransactions(onData, onError, options = {}) {
 }
 
 /**
- * Fetches the group's entire transaction ledger once, newest first.
+ * The year of the oldest transaction in the group, for building the season picker.
  *
- * This is the escalation path behind the bounded listener in
- * `subscribeToTransactions`: search, type filters, oldest-first sorting, deep
- * pagination and CSV export all need to span the whole ledger, so they pull it
- * on demand instead of every page load paying for it. Deliberately a one-shot
- * read rather than a second listener — the bounded listener already delivers
- * realtime updates, and a second unbounded one would reintroduce the cost this
- * exists to avoid.
- * @returns {Promise<Transaction[]>} Every transaction in the group, newest first.
+ * One document read: ordering ascending and taking a single row lets Firestore
+ * answer from the index it already maintains on `timestamp`.
+ * @returns {Promise<number | null>} The earliest year, or null if the ledger is empty.
  */
-export async function getAllTransactions() {
+export async function getEarliestTransactionYear() {
 	const transactionsRef = collection(db, 'groups', requireActiveGroupId(), 'transactions');
-	const querySnapshot = await getDocs(query(transactionsRef, orderBy('timestamp', 'desc')));
-	return querySnapshot.docs.map(mapTransactionDoc);
-}
-
-/**
- * Counts the group's transactions without reading any of them.
- *
- * A server-side aggregation: the response is a single number, not documents, so
- * the bounded view can honestly say "250 of 6,314" without giving up the reason
- * it's bounded. Billed as one document read per 1,000 counted (7 for a ~6.3k
- * ledger) rather than one per document.
- *
- * Server-only — aggregations cannot be served from the persistent local cache,
- * so this rejects when offline. Callers should treat the count as a nicety and
- * fall back to what they have loaded.
- * @returns {Promise<number>} The number of transactions in the group.
- */
-export async function getTransactionCount() {
-	const transactionsRef = collection(db, 'groups', requireActiveGroupId(), 'transactions');
-	const snapshot = await getCountFromServer(transactionsRef);
-	return snapshot.data().count;
+	const snapshot = await getDocs(query(transactionsRef, orderBy('timestamp', 'asc'), limit(1)));
+	if (snapshot.empty) return null;
+	return mapTransactionDoc(snapshot.docs[0]).timestamp.getFullYear();
 }
