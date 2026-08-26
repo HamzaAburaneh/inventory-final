@@ -109,7 +109,7 @@
 						<div class="row-meta">
 							<span><i class="fas fa-tag"></i>{card.label}</span>
 							<span><i class="fas fa-clock"></i>{formatTime(transaction.timestamp)}</span>
-							<span><i class="fas fa-user"></i>{transaction.user}</span>
+							<span class="row-user"><i class="fas fa-user"></i>{transaction.user}</span>
 						</div>
 					</div>
 					<div class="row-change">
@@ -252,7 +252,25 @@
 		color: var(--text-color-dimmed);
 		display: flex;
 		align-items: center;
-		gap: 0.7rem;
+		flex-wrap: wrap;
+		gap: 0.1rem 0.7rem;
+		min-width: 0;
+	}
+
+	/* Each fact stays on one line — without this the labels break mid-word
+	   ("Stock / removed") as soon as the row gets narrow. */
+	.row-meta > span {
+		white-space: nowrap;
+		min-width: 0;
+	}
+
+	/* The user is an email address: one unbreakable token that would otherwise
+	   push the row wider than the card and force the timeline to scroll
+	   sideways. It's the least important fact here, so it's the one that gives. */
+	.row-user {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 100%;
 	}
 
 	.row-meta i {
@@ -314,13 +332,24 @@
 		color: var(--delete);
 	}
 
-	@media (max-width: 520px) {
+	@media (max-width: 640px) {
 		.counts {
 			display: none;
 		}
 
 		.row {
 			gap: 0.7rem;
+			padding: 0.7rem 1rem;
+			align-items: flex-start;
+		}
+
+		.row-ic {
+			/* Aligned to the item name now that the row can be two lines tall. */
+			margin-top: 0.1rem;
+		}
+
+		.day-header {
+			padding: 0.5rem 1rem;
 		}
 	}
 </style>

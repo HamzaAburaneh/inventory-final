@@ -454,7 +454,7 @@
 
 	.history-title {
 		margin: 0;
-		font-size: var(--text-2xl);
+		font-size: 1.15rem;
 		font-weight: var(--font-weight-bold);
 		color: var(--text-color);
 		letter-spacing: -0.025em;
@@ -591,34 +591,38 @@
 		min-width: 180px;
 	}
 
+	/* Discrete bordered chips rather than one shared slab — they match
+	   .sort-button and .export-button, so the whole toolbar reads as one family
+	   of controls instead of a segmented control sitting next to two buttons. */
 	.segmented {
 		display: flex;
-		background: var(--hover-bg-color);
-		border-radius: var(--border-radius);
-		padding: 3px;
-		gap: 2px;
+		flex-wrap: wrap;
+		gap: 0.4rem;
 	}
 
 	.segment {
 		font-size: 0.78rem;
 		font-weight: 500;
-		color: var(--text-color-dimmed);
-		background: transparent;
-		border: none;
-		padding: 0.4rem 0.85rem;
-		border-radius: calc(var(--border-radius) - 2px);
+		color: var(--text-color);
+		background: var(--container-bg);
+		border: 1px solid var(--table-border-color);
+		padding: 0.45rem 0.8rem;
+		border-radius: var(--border-radius);
 		min-height: 0;
 		transition:
 			background-color 0.15s ease-out,
+			border-color 0.15s ease-out,
 			color 0.15s ease-out;
 	}
 
 	.segment:hover:not(.active) {
-		color: var(--text-color);
+		background: var(--hover-bg-color);
+		border-color: var(--hover-border-color);
 	}
 
 	.segment.active {
 		background: var(--add-item-color);
+		border-color: var(--add-item-color);
 		color: var(--add-item-on);
 	}
 
@@ -663,6 +667,40 @@
 	}
 
 	@media (max-width: 640px) {
+		.page-container {
+			max-width: 100%;
+			padding: 0.75rem;
+		}
+
+		/* At 375px, 1.25rem of gutter on each side is 13% of the screen spent on
+		   padding — room the rows need for item names and emails. */
+		.history-header,
+		.stats-grid,
+		.stats-scope,
+		.toolbar,
+		.pagination-section {
+			padding-left: 1rem;
+			padding-right: 1rem;
+		}
+
+		/* Keep Export on the title's row. Wrapping left it on a ragged line of its
+		   own below the scope link, reading as a stray control rather than the
+		   section's action. */
+		.history-header {
+			flex-wrap: nowrap;
+			align-items: flex-start;
+			gap: 0.75rem;
+		}
+
+		.history-heading {
+			flex: 1 1 auto;
+			min-width: 0;
+		}
+
+		.export-button {
+			flex: none;
+		}
+
 		.stats-grid {
 			grid-template-columns: repeat(2, 1fr);
 		}
@@ -671,13 +709,37 @@
 			flex-basis: 100%;
 		}
 
+		/* Four filter labels cannot share one row at this width: flexing them to
+		   equal widths compressed each below its own text, so labels broke mid-word
+		   ("Stock / added") and ran under the sort button. A 2x2 grid beneath a
+		   full-width "All" fits every label on one line. */
 		.segmented {
-			flex: 1;
+			display: grid;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 0.4rem;
+			flex: 1 1 100%;
 		}
 
 		.segment {
-			flex: 1;
 			text-align: center;
+			padding: 0.55rem 0.5rem;
+		}
+
+		.segment:first-child {
+			grid-column: 1 / -1;
+		}
+
+		.sort-button {
+			flex: 1 1 100%;
+			justify-content: center;
+			min-height: var(--touch-target-min);
+		}
+
+		/* An inline link at 0.78rem is a ~12px tap target; give it some height
+		   without disturbing the text flow around it. */
+		.scope-link {
+			display: inline-block;
+			padding: 0.25rem 0;
 		}
 	}
 
