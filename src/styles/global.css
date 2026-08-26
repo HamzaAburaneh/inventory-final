@@ -71,7 +71,13 @@
 	--nav-text-color: #000000;
 	--nav-text-muted: #5f6368;
 	--nav-avatar-text: #ffffff;
-	--nav-danger-text: #b42318;
+	/* Inline text link + error text. General tokens rather than nav-specific ones
+	   because they're used outside the nav too (e.g. the transaction-history scope
+	   notices). The accent blue only reaches ~3.8:1 on the light card surface, so
+	   links take a darker blue here; in dark they track the (high-contrast) accent. */
+	--link-color: #0062cc;
+	--danger-text: #b42318;
+	--nav-danger-text: var(--danger-text);
 	--nav-danger-surface: #fbe9e7;
 	--icon-color: #6c757d;
 	--icon-hover-color: #ffa500;
@@ -217,7 +223,9 @@
 	--nav-text-color: #ffffff;
 	--nav-text-muted: #b6bac2;
 	--nav-avatar-text: #0a0a0a;
-	--nav-danger-text: #ffaaa3;
+	--link-color: var(--add-item-color);
+	--danger-text: #ffaaa3;
+	--nav-danger-text: var(--danger-text);
 	--nav-danger-surface: #321f1e;
 	--input-bg: #1d1d1d;
 	--input-border-color: #2c2c2c;

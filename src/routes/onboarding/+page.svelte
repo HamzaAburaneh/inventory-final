@@ -49,7 +49,7 @@
 		busy = true;
 		try {
 			const { groupId } = await createGroup(user, groupName);
-			groupStore.applyGroup(groupId, 'owner');
+			groupStore.applyGroup(groupId, 'owner', user.uid);
 			notificationStore.showNotification('Group created', 'success');
 			goto('/manageItems');
 		} catch (err) {
@@ -70,7 +70,7 @@
 		busy = true;
 		try {
 			const { groupId } = await joinGroupByCode(user, inviteCode);
-			groupStore.applyGroup(groupId, 'member');
+			groupStore.applyGroup(groupId, 'member', user.uid);
 			notificationStore.showNotification('Joined group', 'success');
 			goto('/manageItems');
 		} catch (err) {

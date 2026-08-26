@@ -1,5 +1,11 @@
 <script>
-	let { transactions = [] } = $props();
+	import { transactionDayKey } from '../lib/transactionHistory';
+
+	// `dayCounts` maps a day key to how many changes that day holds across the whole
+	// filtered set. It has to come from the parent because this component only ever
+	// receives one page: counting its own rows would report "10 changes" for a day
+	// with 65. Optional — without it the header falls back to the rows on hand.
+	let { transactions = [], dayCounts = null } = $props();
 
 	function transactionEvent(transaction) {
 		return transaction.event ?? 'countChange';
@@ -33,10 +39,7 @@
 		};
 	}
 
-	function dayKey(date) {
-		const d = new Date(date);
-		return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-	}
+	const dayKey = transactionDayKey;
 
 	function dayLabel(date) {
 		const d = new Date(date);
@@ -82,10 +85,11 @@
 
 <div class="timeline">
 	{#each groups as group (group.key)}
+		{@const total = dayCounts?.get(group.key) ?? group.items.length}
 		<div class="day-group">
 			<div class="day-header">
 				<b>{group.label}</b>
-				<span>{group.items.length} {group.items.length === 1 ? 'change' : 'changes'}</span>
+				<span>{total.toLocaleString()} {total === 1 ? 'change' : 'changes'}</span>
 			</div>
 			{#each group.items as transaction (transaction.id)}
 				{@const delta = transaction.newCount - transaction.previousCount}
