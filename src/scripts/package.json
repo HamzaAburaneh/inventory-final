@@ -10,7 +10,8 @@
 		"add-members-to-group": "node add-members-to-group.js",
 		"seed-booths-from-items": "node seed-booths-from-items.js",
 		"test": "node test-items.js",
-		"backfill-transaction-events": "node backfill-transaction-events.js"
+		"backfill-transaction-events": "node backfill-transaction-events.js",
+		"reconcile-stock-item": "node reconcile-stock-item.js"
 	},
 	"dependencies": {
 		"firebase": "^10.0.0",

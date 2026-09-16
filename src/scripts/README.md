@@ -2,6 +2,36 @@
 
 This directory contains scripts for managing inventory items.
 
+## Reconcile Stock Item Script
+
+`reconcile-stock-item.js` repairs one item whose `stockByStorage` balances no
+longer add up to its `count`. The app shows such an item as **Check stock** and
+refuses further stock changes on it. The usual cause is an older deployed build
+(without storage locations) changing `count` while the map stays put.
+
+The repair keeps `count` and moves the difference into one location: the item's
+starting location by default, or `--location Freezer|Refrigerator|"Dry Storage"`.
+No ledger row is written because the total does not change. It stamps a fresh
+`stockRevision` so any pending actions re-check their base.
+
+Credentials are the same as the backfill script below (`BACKFILL_EMAIL` /
+`BACKFILL_PASSWORD` in the project-root `.env`, or a service-account key).
+
+```bash
+cd src/scripts
+npm install                                                # first time only
+node reconcile-stock-item.js --item "test item"            # DRY RUN - prints the plan
+node reconcile-stock-item.js --item "test item" --apply    # write the repaired map
+```
+
+| Flag                | Effect                                                               |
+| ------------------- | -------------------------------------------------------------------- |
+| `--item <name\|id>` | Which item to repair. A name must match exactly one item.            |
+| `--location <loc>`  | Location that absorbs the difference (default: starting).            |
+| `--group <id>`      | Restrict the search to one group.                                    |
+| `--apply`           | Write. Without it the script only reports.                           |
+| `--key <path>`      | Service-account JSON, if `GOOGLE_APPLICATION_CREDENTIALS` isn't set. |
+
 ## Backfill Transaction Events Script
 
 `backfill-transaction-events.js` writes `event: 'countChange'` onto ledger rows
