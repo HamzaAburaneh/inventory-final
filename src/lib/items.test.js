@@ -1,444 +1,120 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-
-// Mock Firestore so we can assert that every count mutation pairs the count
-// write with its ledger record inside the SAME transaction/batch (goal #1:
-// a count change must never commit without its matching Transaction record).
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mocks = vi.hoisted(() => ({
-	runTransaction: vi.fn(),
-	writeBatch: vi.fn(),
+	enqueue: vi.fn(async (action) => ({ status: 'queued', ...action })),
 	getDocs: vi.fn(),
-	getDocFromCache: vi.fn(),
 	updateDoc: vi.fn()
 }));
-
 vi.mock('../firebase', () => ({ db: {} }));
-
-vi.mock('firebase/firestore', () => ({
-	// Model Firestore's variadic path API: collection(db, ...segments) and
-	// doc(db, ...segments) — the final segment names the collection / doc id.
-	// Group-scoped paths like `groups/{gid}/items/{id}` therefore resolve to the
-	// item's own collection ('items') and id, not the outer 'groups' segment.
-	collection: vi.fn((_db, ...segments) => {
-		const segs = segments.filter((s) => typeof s === 'string');
-		return { kind: 'collection', name: segs[segs.length - 1] };
-	}),
-	doc: vi.fn((first, ...rest) => {
-		if (first && first.kind === 'collection') {
-			return { kind: 'doc', collection: first.name, id: rest[0] ?? 'auto-id' };
-		}
-		const segs = rest.filter((s) => typeof s === 'string');
-		return { kind: 'doc', collection: segs[segs.length - 2], id: segs[segs.length - 1] };
-	}),
-	getDocFromCache: mocks.getDocFromCache,
-	getDocs: mocks.getDocs,
-	onSnapshot: vi.fn(),
-	query: vi.fn((...args) => args),
-	runTransaction: mocks.runTransaction,
-	serverTimestamp: vi.fn(() => 'SERVER_TIMESTAMP'),
-	Timestamp: { now: vi.fn(() => 'CLIENT_TIMESTAMP') },
-	updateDoc: mocks.updateDoc,
-	where: vi.fn(),
-	writeBatch: mocks.writeBatch
+vi.mock('./stockActionQueue', () => ({
+	enqueueStockAction: mocks.enqueue,
+	getPendingStockActions: async () => []
 }));
-
+vi.mock('firebase/firestore', () => ({
+	collection: (_db, ...path) => ({ path: path.join('/') }),
+	doc: (...args) => ({ id: 'new-id', path: args.filter((x) => typeof x === 'string').join('/') }),
+	getDocs: mocks.getDocs,
+	updateDoc: mocks.updateDoc,
+	onSnapshot: vi.fn()
+}));
 import {
 	adjustItemCount,
 	setItemCount,
-	resetAllItemCounts,
+	transferItemStock,
 	addItemWithTransaction,
 	deleteItemWithTransaction,
+	resetAllItemCounts,
 	updateItemFields
 } from './items';
 import { setActiveGroupId } from './activeGroup';
-
-function fakeTxn(itemData) {
-	return {
-		get: vi.fn(async () => ({
-			exists: () => itemData != null,
-			data: () => itemData
-		})),
-		update: vi.fn(),
-		set: vi.fn(),
-		delete: vi.fn()
-	};
-}
-
-function fakeBatch() {
-	return { set: vi.fn(), update: vi.fn(), delete: vi.fn(), commit: vi.fn(async () => {}) };
-}
-
 beforeEach(() => {
 	vi.clearAllMocks();
-	// The data layer scopes every path to the signed-in user's active group;
-	// tests run without auth, so set one explicitly.
 	setActiveGroupId('test-group');
+	mocks.getDocs.mockResolvedValue({ docs: [] });
 });
-
-describe('adjustItemCount', () => {
-	it('writes the count change and its ledger record in one transaction', async () => {
-		const txn = fakeTxn({ name: 'Fries', count: 10 });
-		mocks.runTransaction.mockImplementation(async (_db, fn) => fn(txn));
-
-		const result = await adjustItemCount('item1', -4, 'hamza@example.com');
-
-		expect(result).toEqual({ previousCount: 10, newCount: 6 });
-		expect(txn.update).toHaveBeenCalledWith(
-			expect.objectContaining({ collection: 'items', id: 'item1' }),
-			{ count: 6 }
-		);
-		expect(txn.set).toHaveBeenCalledTimes(1);
-		expect(txn.set.mock.calls[0][1]).toMatchObject({
-			itemId: 'item1',
-			itemName: 'Fries',
-			type: 'remove',
-			event: 'countChange',
-			previousCount: 10,
-			newCount: 6,
-			user: 'hamza@example.com',
-			timestamp: 'SERVER_TIMESTAMP',
-			// Audit field present on every record; online it equals the timestamp.
-			syncedAt: 'SERVER_TIMESTAMP'
+describe('stock mutation entry points', () => {
+	it('passes deltas and explicit location to durable queue without an absolute stock write', async () => {
+		await adjustItemCount('fries', 5, 'user', 'Freezer');
+		expect(mocks.enqueue).toHaveBeenCalledWith({
+			itemId: 'fries',
+			kind: 'adjust',
+			delta: 5,
+			user: 'user',
+			location: 'Freezer'
 		});
-	});
-
-	it('clamps the new count at zero and records the clamped value', async () => {
-		const txn = fakeTxn({ name: 'Fries', count: 10 });
-		mocks.runTransaction.mockImplementation(async (_db, fn) => fn(txn));
-
-		const result = await adjustItemCount('item1', -50, 'user');
-
-		expect(result).toEqual({ previousCount: 10, newCount: 0 });
-		expect(txn.set.mock.calls[0][1]).toMatchObject({
-			type: 'remove',
-			event: 'countChange',
-			previousCount: 10,
-			newCount: 0
-		});
-	});
-
-	it('writes nothing for a no-op change (no phantom ledger records)', async () => {
-		const txn = fakeTxn({ name: 'Fries', count: 0 });
-		mocks.runTransaction.mockImplementation(async (_db, fn) => fn(txn));
-
-		const result = await adjustItemCount('item1', -5, 'user');
-
-		expect(result).toEqual({ previousCount: 0, newCount: 0 });
-		expect(txn.update).not.toHaveBeenCalled();
-		expect(txn.set).not.toHaveBeenCalled();
-	});
-
-	it('throws when the item does not exist', async () => {
-		const txn = fakeTxn(null);
-		mocks.runTransaction.mockImplementation(async (_db, fn) => fn(txn));
-
-		await expect(adjustItemCount('missing', 3, 'user')).rejects.toThrow('Item not found');
-	});
-});
-
-describe('setItemCount', () => {
-	it('resets to zero with a matching remove record', async () => {
-		const txn = fakeTxn({ name: 'Buns', count: 7 });
-		mocks.runTransaction.mockImplementation(async (_db, fn) => fn(txn));
-
-		const result = await setItemCount('item2', 0, 'user');
-
-		expect(result).toEqual({ previousCount: 7, newCount: 0 });
-		expect(txn.update).toHaveBeenCalledWith(expect.objectContaining({ id: 'item2' }), {
-			count: 0
-		});
-		expect(txn.set.mock.calls[0][1]).toMatchObject({
-			type: 'remove',
-			previousCount: 7,
-			newCount: 0
-		});
-	});
-
-	it('writes nothing when the count is already at the target', async () => {
-		const txn = fakeTxn({ name: 'Buns', count: 0 });
-		mocks.runTransaction.mockImplementation(async (_db, fn) => fn(txn));
-
-		await setItemCount('item2', 0, 'user');
-
-		expect(txn.update).not.toHaveBeenCalled();
-		expect(txn.set).not.toHaveBeenCalled();
-	});
-});
-
-describe('resetAllItemCounts', () => {
-	it('pairs each count reset with its ledger record and skips zero-count items', async () => {
-		mocks.getDocs.mockResolvedValue({
-			docs: [
-				{ id: 'a', ref: 'refA', data: () => ({ name: 'A', count: 5 }) },
-				{ id: 'b', ref: 'refB', data: () => ({ name: 'B', count: 0 }) }
-			]
-		});
-		const batch = fakeBatch();
-		mocks.writeBatch.mockReturnValue(batch);
-
-		const resetCount = await resetAllItemCounts('user');
-
-		expect(resetCount).toBe(1);
-		expect(batch.update).toHaveBeenCalledTimes(1);
-		expect(batch.update).toHaveBeenCalledWith('refA', { count: 0 });
-		expect(batch.set).toHaveBeenCalledTimes(1);
-		expect(batch.set.mock.calls[0][1]).toMatchObject({
-			itemId: 'a',
-			itemName: 'A',
-			type: 'remove',
-			event: 'countChange',
-			previousCount: 5,
-			newCount: 0
-		});
-		expect(batch.commit).toHaveBeenCalledTimes(1);
-	});
-
-	it('commits no batch when every count is already zero', async () => {
-		mocks.getDocs.mockResolvedValue({
-			docs: [{ id: 'a', ref: 'refA', data: () => ({ name: 'A', count: 0 }) }]
-		});
-
-		const resetCount = await resetAllItemCounts('user');
-
-		expect(resetCount).toBe(0);
-		expect(mocks.writeBatch).not.toHaveBeenCalled();
-	});
-});
-
-describe('addItemWithTransaction', () => {
-	it('rejects duplicate names before writing anything', async () => {
-		mocks.getDocs.mockResolvedValue({ empty: false });
-
-		await expect(addItemWithTransaction({ name: 'Fries', count: 3 }, 'user')).rejects.toThrow(
-			'Item with this name already exists.'
-		);
-		expect(mocks.writeBatch).not.toHaveBeenCalled();
-	});
-
-	it('writes the item and its initial add record in one batch', async () => {
-		mocks.getDocs.mockResolvedValue({ empty: true });
-		const batch = fakeBatch();
-		mocks.writeBatch.mockReturnValue(batch);
-
-		const item = { name: 'Fries', count: 3, lowCount: 1, cost: 2.5 };
-		const added = await addItemWithTransaction(item, 'user');
-
-		expect(added).toEqual({ id: 'auto-id', ...item });
-		expect(batch.set).toHaveBeenCalledTimes(2);
-		expect(batch.set.mock.calls[0][1]).toEqual(item);
-		expect(batch.set.mock.calls[1][1]).toMatchObject({
-			itemId: 'auto-id',
-			itemName: 'Fries',
-			type: 'add',
-			event: 'itemCreated',
-			previousCount: 0,
-			newCount: 3,
-			user: 'user'
-		});
-		expect(batch.commit).toHaveBeenCalledTimes(1);
-	});
-});
-
-describe('deleteItemWithTransaction', () => {
-	it('writes the final remove record and the delete in one transaction', async () => {
-		const txn = fakeTxn({ name: 'Fries', count: 7 });
-		mocks.runTransaction.mockImplementation(async (_db, fn) => fn(txn));
-
-		await deleteItemWithTransaction('item1', 'user');
-
-		expect(txn.set.mock.calls[0][1]).toMatchObject({
-			itemId: 'item1',
-			type: 'remove',
-			event: 'itemDeleted',
-			previousCount: 7,
-			newCount: 0
-		});
-		expect(txn.delete).toHaveBeenCalledWith(
-			expect.objectContaining({ collection: 'items', id: 'item1' })
-		);
-	});
-
-	it('does nothing when the item is already gone', async () => {
-		const txn = fakeTxn(null);
-		mocks.runTransaction.mockImplementation(async (_db, fn) => fn(txn));
-
-		await deleteItemWithTransaction('missing', 'user');
-
-		expect(txn.set).not.toHaveBeenCalled();
-		expect(txn.delete).not.toHaveBeenCalled();
-	});
-});
-
-describe('offline mode', () => {
-	function goOffline() {
-		vi.stubGlobal('navigator', { onLine: false });
-	}
-
-	afterEach(() => {
-		vi.unstubAllGlobals();
-	});
-
-	it('queues the count change and its ledger record in one batch from the cached count', async () => {
-		goOffline();
-		mocks.getDocFromCache.mockResolvedValue({
-			exists: () => true,
-			data: () => ({ name: 'Fries', count: 10 })
-		});
-		const batch = fakeBatch();
-		// Simulate a queued commit that will not resolve until reconnect —
-		// the adjust call must still resolve immediately.
-		batch.commit = vi.fn(() => new Promise(() => {}));
-		mocks.writeBatch.mockReturnValue(batch);
-
-		const result = await adjustItemCount('item1', -4, 'user');
-
-		expect(result).toEqual({ previousCount: 10, newCount: 6 });
-		expect(mocks.runTransaction).not.toHaveBeenCalled();
-		expect(batch.update).toHaveBeenCalledWith(
-			expect.objectContaining({ collection: 'items', id: 'item1' }),
-			{ count: 6 }
-		);
-		expect(batch.set).toHaveBeenCalledTimes(1);
-		expect(batch.set.mock.calls[0][1]).toMatchObject({
-			itemId: 'item1',
-			type: 'remove',
-			event: 'countChange',
-			previousCount: 10,
-			newCount: 6,
-			// Offline records carry the device time on `timestamp`, but `syncedAt`
-			// is still a server timestamp — so a wrong device clock is auditable
-			// (its timestamp lands far from syncedAt).
-			timestamp: 'CLIENT_TIMESTAMP',
-			syncedAt: 'SERVER_TIMESTAMP'
-		});
-	});
-
-	it('setItemCount also uses the queued path offline', async () => {
-		goOffline();
-		mocks.getDocFromCache.mockResolvedValue({
-			exists: () => true,
-			data: () => ({ name: 'Buns', count: 7 })
-		});
-		const batch = fakeBatch();
-		batch.commit = vi.fn(() => new Promise(() => {}));
-		mocks.writeBatch.mockReturnValue(batch);
-
-		const result = await setItemCount('item2', 0, 'user');
-
-		expect(result).toEqual({ previousCount: 7, newCount: 0 });
-		expect(mocks.runTransaction).not.toHaveBeenCalled();
-		expect(batch.update).toHaveBeenCalledWith(expect.objectContaining({ id: 'item2' }), {
-			count: 0
-		});
-		expect(batch.set).toHaveBeenCalledTimes(1);
-	});
-
-	it('throws a friendly error when the item is not in the offline cache', async () => {
-		goOffline();
-		mocks.getDocFromCache.mockRejectedValue(new Error('unavailable'));
-
-		await expect(adjustItemCount('item1', 1, 'user')).rejects.toThrow('open it once while online');
-	});
-
-	it('deletes via a queued batch pairing the final remove record', async () => {
-		goOffline();
-		mocks.getDocFromCache.mockResolvedValue({
-			exists: () => true,
-			data: () => ({ name: 'Fries', count: 7 })
-		});
-		const batch = fakeBatch();
-		batch.commit = vi.fn(() => new Promise(() => {}));
-		mocks.writeBatch.mockReturnValue(batch);
-
-		await deleteItemWithTransaction('item1', 'user');
-
-		expect(mocks.runTransaction).not.toHaveBeenCalled();
-		expect(batch.set.mock.calls[0][1]).toMatchObject({
-			type: 'remove',
-			event: 'itemDeleted',
-			previousCount: 7,
-			newCount: 0
-		});
-		expect(batch.delete).toHaveBeenCalledWith(
-			expect.objectContaining({ collection: 'items', id: 'item1' })
-		);
-	});
-});
-
-describe('offline fallback when navigator.onLine lies (iOS PWA in airplane mode)', () => {
-	// navigator.onLine is undefined in the test env → the online path runs; we
-	// make runTransaction fail as "unavailable" to simulate a device that claims
-	// to be online but has no connection.
-	function unavailable() {
-		return Object.assign(new Error('Failed to get document because the client is offline.'), {
-			code: 'unavailable'
-		});
-	}
-
-	it('adjustItemCount falls back to a queued batch', async () => {
-		mocks.runTransaction.mockRejectedValue(unavailable());
-		mocks.getDocFromCache.mockResolvedValue({
-			exists: () => true,
-			data: () => ({ name: 'Fries', count: 10 })
-		});
-		const batch = fakeBatch();
-		batch.commit = vi.fn(() => new Promise(() => {}));
-		mocks.writeBatch.mockReturnValue(batch);
-
-		const result = await adjustItemCount('item1', 5, 'user');
-
-		expect(result).toEqual({ previousCount: 10, newCount: 15 });
-		expect(batch.update).toHaveBeenCalledWith(expect.objectContaining({ id: 'item1' }), {
-			count: 15
-		});
-		expect(batch.set.mock.calls[0][1]).toMatchObject({
-			type: 'add',
-			event: 'countChange',
-			previousCount: 10,
-			newCount: 15,
-			timestamp: 'CLIENT_TIMESTAMP'
-		});
-	});
-
-	it('deleteItemWithTransaction falls back to a queued batch', async () => {
-		mocks.runTransaction.mockRejectedValue(unavailable());
-		mocks.getDocFromCache.mockResolvedValue({
-			exists: () => true,
-			data: () => ({ name: 'Fries', count: 7 })
-		});
-		const batch = fakeBatch();
-		batch.commit = vi.fn(() => new Promise(() => {}));
-		mocks.writeBatch.mockReturnValue(batch);
-
-		await deleteItemWithTransaction('item1', 'user');
-
-		expect(batch.delete).toHaveBeenCalledWith(expect.objectContaining({ id: 'item1' }));
-		expect(batch.set.mock.calls[0][1]).toMatchObject({
-			type: 'remove',
-			event: 'itemDeleted',
-			previousCount: 7
-		});
-	});
-
-	it('re-throws non-connectivity errors instead of queuing', async () => {
-		mocks.runTransaction.mockRejectedValue(new Error('permission-denied'));
-
-		await expect(adjustItemCount('item1', 5, 'user')).rejects.toThrow('permission-denied');
-		expect(mocks.writeBatch).not.toHaveBeenCalled();
-	});
-});
-
-describe('updateItemFields', () => {
-	it('refuses direct count edits (they would bypass the ledger)', async () => {
-		await expect(updateItemFields('item1', { count: 12 })).rejects.toThrow(/transaction record/);
 		expect(mocks.updateDoc).not.toHaveBeenCalled();
 	});
-
-	it('updates non-count fields normally', async () => {
-		await updateItemFields('item1', { cost: 4.2, name: 'Fries XL' });
-
+	it('does not truncate malformed quantities', async () => {
+		await expect(adjustItemCount('fries', '5x', 'user', 'Freezer')).rejects.toThrow();
+		expect(mocks.enqueue).not.toHaveBeenCalled();
+	});
+	it('distinguishes location set from whole-item reset', async () => {
+		await setItemCount('fries', 3, 'user', 'Refrigerator');
+		expect(mocks.enqueue.mock.calls[0][0]).toMatchObject({
+			kind: 'set',
+			quantity: 3,
+			location: 'Refrigerator'
+		});
+		await setItemCount('fries', 0, 'user');
+		expect(mocks.enqueue.mock.calls[1][0]).toMatchObject({ kind: 'reset', quantity: 0 });
+		await expect(setItemCount('fries', 4, 'user')).rejects.toThrow('Choose a location');
+	});
+	it('uses the durable path for transfers and deletion too', async () => {
+		await transferItemStock('fries', 'Freezer', 'Refrigerator', 2, 'user');
+		await deleteItemWithTransaction('fries', 'user');
+		expect(mocks.enqueue.mock.calls.map(([a]) => a.kind)).toEqual(['transfer', 'delete']);
+	});
+	it('creates opening split stock with a derived matching total', async () => {
+		await addItemWithTransaction(
+			{
+				name: 'Fries',
+				count: 5,
+				storageType: 'Freezer',
+				stockByStorage: { Freezer: 3, Refrigerator: 2 }
+			},
+			'user'
+		);
+		expect(mocks.enqueue.mock.calls[0][0]).toMatchObject({
+			kind: 'create',
+			item: { count: 5, stockByStorage: { Freezer: 3, Refrigerator: 2, 'Dry Storage': 0 } }
+		});
+	});
+	it('refuses duplicate names and invalid opening stock', async () => {
+		mocks.getDocs.mockResolvedValue({ docs: [{ id: 'old', data: () => ({ name: 'Fries' }) }] });
+		await expect(
+			addItemWithTransaction({ name: 'fries', count: 0, storageType: 'Freezer' }, 'user')
+		).rejects.toThrow('already exists');
+		await expect(
+			addItemWithTransaction({ name: 'New', count: 5, stockByStorage: { Freezer: 2 } }, 'user')
+		).rejects.toThrow('disagree');
+		expect(mocks.enqueue).not.toHaveBeenCalled();
+	});
+	it('reports per-item reset failures and leaves zero items alone', async () => {
+		mocks.getDocs.mockResolvedValue({
+			docs: [
+				{ id: 'one', data: () => ({ name: 'One', count: 2 }) },
+				{ id: 'empty', data: () => ({ name: 'Empty', count: 0 }) },
+				{ id: 'invalid', data: () => ({ name: 'Invalid', count: -1 }) }
+			]
+		});
+		const outcome = await resetAllItemCounts('user');
+		expect(outcome.status).toBe('attention');
+		expect(outcome.results).toHaveLength(2);
+		expect(mocks.enqueue).toHaveBeenCalledTimes(1);
+	});
+	it.each(['count', 'stockByStorage', 'storageType', 'stockRevision', 'legacyItemIds', 'unknown'])(
+		'blocks direct %s edits',
+		async (field) => {
+			await expect(updateItemFields('fries', { [field]: 1 })).rejects.toThrow(
+				'dedicated inventory'
+			);
+			expect(mocks.updateDoc).not.toHaveBeenCalled();
+		}
+	);
+	it('keeps ordinary metadata editing', async () => {
+		await updateItemFields('fries', { name: 'New fries' });
 		expect(mocks.updateDoc).toHaveBeenCalledWith(
-			expect.objectContaining({ collection: 'items', id: 'item1' }),
-			{ cost: 4.2, name: 'Fries XL' }
+			expect.objectContaining({ path: 'groups/test-group/items/fries' }),
+			{ name: 'New fries' }
 		);
 	});
 });

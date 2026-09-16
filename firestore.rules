@@ -78,6 +78,24 @@ service cloud.firestore {
         allow read, write: if isMember(gid);
       }
 
+      // Immutable receipts make stock retries/cancellation safe across sessions and tabs.
+      match /stockOperations/{operationId} {
+        allow read: if isMember(gid);
+        allow create: if isMember(gid) && request.resource.data.uid == request.auth.uid;
+        allow update, delete: if false;
+      }
+
+      // Reviewed historical exclusions are managed by the maintenance command.
+      match /stockHistoryReviews/{reviewId} {
+        allow read: if isMember(gid);
+        allow write: if isOwner(gid);
+      }
+      match /stockHistoryReviewAudit/{auditId} {
+        allow read: if isMember(gid);
+        allow create: if isOwner(gid);
+        allow update, delete: if false;
+      }
+
       // Group-scoped order drafts, one doc per order day (`orders/{YYYY-MM-DD}`).
       // Any member may read/write: staff build the day's order, the owner opens
       // the same doc to review it. Last write wins, and every save stamps

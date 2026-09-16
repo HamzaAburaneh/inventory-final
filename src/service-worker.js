@@ -4,9 +4,8 @@
 // Build assets and static files are precached on install; page navigations
 // are network-first with a cache fallback, so the app still opens in a dead
 // zone after the first online visit. Firestore/Google traffic is never
-// intercepted — the Firebase SDK does its own offline queueing (see
-// src/firebase.js persistentLocalCache and the offline paths in
-// src/lib/items.js).
+// intercepted. Firestore caches reads; stockActionQueue.js persists stock
+// intentions and replays transactions while the authenticated app is active.
 //
 // SvelteKit only registers this worker in production builds (`npm run build`
 // + preview/deploy) — `npm run dev` is unaffected.

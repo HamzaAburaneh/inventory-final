@@ -1,6 +1,7 @@
 <script>
 	import Navbar from '../components/Navbar.svelte';
 	import OfflineIndicator from '../components/OfflineIndicator.svelte';
+	import { startStockQueue } from '../lib/stockActionQueue.js';
 	import VerifyEmailBanner from '../components/VerifyEmailBanner.svelte';
 	import Notification from '../components/Notification.svelte';
 	import '../styles/global.css';
@@ -46,6 +47,13 @@
 	$effect(() => {
 		if (!ready) return;
 		groupStore.resolve(user);
+	});
+
+	$effect(() => {
+		return startStockQueue(
+			ready ? (user?.uid ?? null) : null,
+			ready && user && group.status === 'ready' ? group.groupId : null
+		);
 	});
 
 	// A protected page must not mount until its group is resolved, or its

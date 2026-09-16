@@ -1,22 +1,30 @@
 <script>
 	import { isOnline } from '../stores/connectivityStore.js';
-	import { queuedWrites } from '../lib/syncQueue.js';
+	import { stockQueueState } from '../lib/stockActionQueue.js';
 
 	const online = $derived($isOnline);
-	const queued = $derived($queuedWrites);
+	const queued = $derived($stockQueueState.actions.length);
+	const attention = $derived(
+		$stockQueueState.actions.some((action) => action.status === 'attention') ||
+			!!$stockQueueState.error
+	);
 
 	// Show while offline, or briefly after reconnecting until the queued writes
 	// finish syncing. Hidden entirely when online with an empty queue.
-	const visible = $derived(!online || queued > 0);
-	const syncing = $derived(online && queued > 0);
+	const visible = $derived(!online || queued > 0 || attention);
+	const syncing = $derived(
+		online && $stockQueueState.actions.some((action) => action.status === 'syncing')
+	);
 
 	const noun = $derived(queued === 1 ? 'change' : 'changes');
 	const label = $derived(
-		syncing
-			? `Syncing ${queued} ${noun}…`
-			: queued > 0
-				? `Offline · ${queued} ${noun} queued`
-				: 'Offline'
+		attention
+			? 'Stock changes need attention'
+			: syncing
+				? `Syncing ${queued} ${noun}…`
+				: queued > 0
+					? `${online ? 'Pending' : 'Offline'} · ${queued} ${noun} queued`
+					: 'Offline'
 	);
 </script>
 
@@ -28,9 +36,7 @@
 {/if}
 
 <style>
-	/* Option 10 — amber pill, bottom center. Light defaults here; dark overrides
-	   below. Theme-dependent colours live in these rules (not inline) so both
-	   themes stay correct. */
+	/* Pending state stays visible across routes using the shared theme palette. */
 	.offline-pill {
 		position: fixed;
 		bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
@@ -45,18 +51,11 @@
 		font-size: 0.8rem;
 		font-weight: 600;
 		white-space: nowrap;
-		background: #fef3c7;
-		border: 1px solid #f5c542;
-		color: #92400e;
-		box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.12);
+		background: var(--container-bg);
+		border: 1px solid var(--table-border-color);
+		color: var(--text-color);
+		box-shadow: 0 0.25rem 0.75rem var(--tooltip-shadow);
 		animation: offline-rise 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
-	}
-
-	:global([data-theme='dark']) .offline-pill {
-		background: #3a2a0e;
-		border-color: #f5c542;
-		color: #fcd34d;
-		box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.5);
 	}
 
 	.offline-pill i {

@@ -4,17 +4,64 @@
 			"collectionGroup": "transactions",
 			"queryScope": "COLLECTION",
 			"fields": [
-				{ "fieldPath": "event", "order": "ASCENDING" },
-				{ "fieldPath": "timestamp", "order": "DESCENDING" }
+				{
+					"fieldPath": "event",
+					"order": "ASCENDING"
+				},
+				{
+					"fieldPath": "timestamp",
+					"order": "DESCENDING"
+				}
 			]
 		},
 		{
 			"collectionGroup": "transactions",
 			"queryScope": "COLLECTION",
 			"fields": [
-				{ "fieldPath": "event", "order": "ASCENDING" },
-				{ "fieldPath": "type", "order": "ASCENDING" },
-				{ "fieldPath": "timestamp", "order": "DESCENDING" }
+				{
+					"fieldPath": "event",
+					"order": "ASCENDING"
+				},
+				{
+					"fieldPath": "type",
+					"order": "ASCENDING"
+				},
+				{
+					"fieldPath": "timestamp",
+					"order": "DESCENDING"
+				}
+			]
+		},
+		{
+			"collectionGroup": "transactions",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{
+					"fieldPath": "event",
+					"order": "ASCENDING"
+				},
+				{
+					"fieldPath": "timestamp",
+					"order": "ASCENDING"
+				}
+			]
+		},
+		{
+			"collectionGroup": "transactions",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{
+					"fieldPath": "event",
+					"order": "ASCENDING"
+				},
+				{
+					"fieldPath": "type",
+					"order": "ASCENDING"
+				},
+				{
+					"fieldPath": "timestamp",
+					"order": "ASCENDING"
+				}
 			]
 		}
 	],

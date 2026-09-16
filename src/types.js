@@ -10,6 +10,9 @@
  *   Stored title-cased as written by the add/edit forms. Some legacy rows hold
  *   lowercase values; display/styling helpers in tableUtils.js are
  *   case-insensitive, so both render correctly.
+ * @property {Record<string, number>} [stockByStorage] - Whole balances in all three canonical locations.
+ * @property {string} [stockRevision] - Last applied stock operation.
+ * @property {string[]} [legacyItemIds] - Retired IDs owned by this product.
  * @property {string[]} [booths] - Optional booth tags (e.g. 'freshly', 'b1', 'jakes').
  */
 
@@ -18,15 +21,24 @@
  * @property {string} id
  * @property {string} itemId
  * @property {string} itemName
- * @property {'add' | 'remove'} type
- * @property {'countChange' | 'itemCreated' | 'itemDeleted'} [event] - Explicit lifecycle event.
+ * @property {'add' | 'remove' | 'transfer' | 'merge'} type
+ * @property {'countChange' | 'itemCreated' | 'itemDeleted' | 'stockTransfer' | 'itemMerged'} [event] - Explicit lifecycle event.
  *   Absent on legacy rows; consumers may infer it heuristically for older data.
+ * @property {string} [operationId]
+ * @property {string} [location]
+ * @property {string} [fromLocation]
+ * @property {string} [toLocation]
+ * @property {number} [quantity]
+ * @property {Record<string, number>} [previousStockByStorage]
+ * @property {Record<string, number>} [newStockByStorage]
+ * @property {string} [relatedItemId]
+ * @property {boolean} [historicalTransfer] - Annotation from persisted review, never rewrites the ledger.
  * @property {number} previousCount
  * @property {number} newCount
- * @property {Date} timestamp - When the change happened (device clock offline, server clock online).
+ * @property {Date} timestamp - Original client entry time; syncedAt is authoritative application time.
  * @property {string} user
  * @property {Date | null} [syncedAt] - Audit field: server clock when the write landed.
- *   Equals timestamp for online writes; for offline writes it's the reconnect time,
+ *   Near timestamp for online writes; for offline writes it's the reconnect time,
  *   so a far gap from timestamp flags a wrong device clock. Null until synced / on legacy rows.
  */
 
