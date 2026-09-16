@@ -1,3 +1,4 @@
+import { preprocessStockHistory } from './stockHistory';
 /**
  * Prediction backtest harness: hold out the last days of the most recent
  * complete fair run, forecast them from prior data only, and score every
@@ -90,6 +91,7 @@ function score(actual, predicted) {
  * @returns {Promise<object>} Backtest report
  */
 export async function runPredictionBacktest(transactions, items, options = {}) {
+	transactions = preprocessStockHistory(transactions, items);
 	const { sampleItemIds, useAI = false, includeLegacyAI = false } = options;
 	let holdoutDays = Math.max(2, Math.min(14, Number(options.holdoutDays) || 7));
 

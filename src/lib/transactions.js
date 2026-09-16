@@ -1,3 +1,5 @@
+import { annotateStockHistory } from './stockHistory';
+import { getStockHistoryReviews, subscribeStockHistoryReviews } from './stockReviews';
 import { db } from '../firebase';
 import {
 	collection,
@@ -32,7 +34,9 @@ import { transactionFilterMatches, seasonRange } from './transactionHistory';
 function mapTransactionDoc(docSnap) {
 	const data = docSnap.data();
 	return {
+		...data,
 		id: docSnap.id,
+		syncedAt: data.syncedAt?.toDate() ?? null,
 		itemId: data.itemId,
 		itemName: data.itemName,
 		type: data.type,
@@ -51,7 +55,8 @@ function mapTransactionDoc(docSnap) {
  */
 export async function getHistoricalTransactions(days = 90) {
 	try {
-		const transactionsRef = collection(db, 'groups', requireActiveGroupId(), 'transactions');
+		const groupId = requireActiveGroupId();
+		const transactionsRef = collection(db, 'groups', groupId, 'transactions');
 		const startDate = new Date();
 		startDate.setDate(startDate.getDate() - days);
 
@@ -63,20 +68,10 @@ export async function getHistoricalTransactions(days = 90) {
 
 		const querySnapshot = await getDocs(q);
 
-		return querySnapshot.docs.map((doc) => {
-			const data = doc.data();
-			return {
-				id: doc.id,
-				...data,
-				event: data.event,
-				// A write queued offline carries a serverTimestamp that reads back as
-				// null in the local cache until it syncs; fall back to now so consumers
-				// that expect a Date don't crash on `.toDate()`.
-				timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
-				// Audit field — null on legacy rows and on offline writes not yet synced.
-				syncedAt: data.syncedAt ? data.syncedAt.toDate() : null
-			};
-		});
+		return annotateStockHistory(
+			querySnapshot.docs.map(mapTransactionDoc),
+			await getStockHistoryReviews(groupId)
+		);
 	} catch (error) {
 		console.error('Error fetching historical transactions: ', error);
 		throw error;
@@ -110,7 +105,8 @@ export async function getHistoricalTransactions(days = 90) {
  */
 export function subscribeToTransactions(onData, onError, options) {
 	const { year, filter = '', sortNewest = true } = options;
-	const transactionsRef = collection(db, 'groups', requireActiveGroupId(), 'transactions');
+	const groupId = requireActiveGroupId();
+	const transactionsRef = collection(db, 'groups', groupId, 'transactions');
 	const { start, end } = seasonRange(year);
 
 	const constraints = transactionFilterMatches(filter).map(([field, value]) =>
@@ -122,16 +118,39 @@ export function subscribeToTransactions(onData, onError, options) {
 		orderBy('timestamp', sortNewest ? 'desc' : 'asc')
 	);
 
-	return onSnapshot(
+	let rows = null;
+	let reviews = null;
+	const emit = () => {
+		if (!rows || !reviews) return;
+		try {
+			onData(annotateStockHistory(rows, reviews));
+		} catch (error) {
+			onError?.(error);
+		}
+	};
+	const stopReviews = subscribeStockHistoryReviews(
+		groupId,
+		(value) => {
+			reviews = value;
+			emit();
+		},
+		onError
+	);
+	const stopRows = onSnapshot(
 		query(transactionsRef, ...constraints),
 		(querySnapshot) => {
-			onData(querySnapshot.docs.map(mapTransactionDoc));
+			rows = querySnapshot.docs.map(mapTransactionDoc);
+			emit();
 		},
 		(error) => {
 			console.error('Error in transactions subscription:', error);
 			if (onError) onError(error);
 		}
 	);
+	return () => {
+		stopRows();
+		stopReviews();
+	};
 }
 
 /**

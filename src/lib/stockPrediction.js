@@ -1,3 +1,4 @@
+import { preprocessStockHistory } from './stockHistory';
 import arimaPackage from 'arima';
 
 // Handle different possible export formats
@@ -138,7 +139,7 @@ function fallbackPrediction(data, forecastDays) {
  * @returns {Object.<string, number[]>} Object with itemId as key and array of daily predictions as value
  */
 export function predictStockLevels(transactions, forecastDays = 14) {
-	const itemSales = groupTransactionsByItem(transactions);
+	const itemSales = groupTransactionsByItem(preprocessStockHistory(transactions));
 	/** @type {Object.<string, number[]>} */
 	const predictions = {};
 

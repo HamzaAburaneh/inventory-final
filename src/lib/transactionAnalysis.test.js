@@ -17,7 +17,7 @@ import {
  */
 function tx(overrides = {}) {
 	return {
-		id: '1',
+		id: crypto.randomUUID(),
 		itemId: 'item1',
 		itemName: 'Item 1',
 		type: 'add',

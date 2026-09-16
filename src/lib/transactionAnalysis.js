@@ -1,3 +1,5 @@
+import { preprocessStockHistory, annotateStockHistory } from './stockHistory';
+import { getStockHistoryReviews } from './stockReviews';
 import { db } from '../firebase';
 import { collection, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
 import { requireActiveGroupId } from './activeGroup';
@@ -5,11 +7,6 @@ import { requireActiveGroupId } from './activeGroup';
 /** @returns {import('firebase/firestore').CollectionReference} The active group's items collection. */
 function itemsCol() {
 	return collection(db, 'groups', requireActiveGroupId(), 'items');
-}
-
-/** @returns {import('firebase/firestore').CollectionReference} The active group's transactions collection. */
-function txCol() {
-	return collection(db, 'groups', requireActiveGroupId(), 'transactions');
 }
 
 /**
@@ -41,7 +38,8 @@ function transactionEvent(transaction) {
  * @returns {Promise<Transaction[]>}
  */
 export async function fetchTransactionsInRange(startDate, endDate) {
-	const transactionsRef = txCol();
+	const groupId = requireActiveGroupId();
+	const transactionsRef = collection(db, 'groups', groupId, 'transactions');
 	const q = query(
 		transactionsRef,
 		where('timestamp', '>=', Timestamp.fromDate(startDate)),
@@ -50,12 +48,20 @@ export async function fetchTransactionsInRange(startDate, endDate) {
 	);
 
 	const querySnapshot = await getDocs(q);
-	return querySnapshot.docs.map((doc) => ({
+	const rows = querySnapshot.docs.map((doc) => ({
 		id: doc.id,
 		...doc.data(),
 		event: doc.data().event,
 		timestamp: doc.data().timestamp.toDate()
 	}));
+	const [reviews, items] = await Promise.all([
+		getStockHistoryReviews(groupId),
+		getDocs(collection(db, 'groups', groupId, 'items'))
+	]);
+	return preprocessStockHistory(
+		annotateStockHistory(rows, reviews),
+		items.docs.map((row) => ({ ...row.data(), id: row.id }))
+	);
 }
 
 // Catalog data changes rarely, so cache the item count for the session. Guarded
@@ -123,6 +129,7 @@ function resolveRange(days, startDate, endDate) {
  * @returns {DailyAnalysis[]}
  */
 export function computeDailyAnalysis(transactions, startDate, endDate) {
+	transactions = preprocessStockHistory(transactions);
 	const dailyMap = new Map();
 
 	transactions.forEach((transaction) => {
@@ -211,6 +218,7 @@ export function computeDailyAnalysis(transactions, startDate, endDate) {
  * @returns {HourlyActivity[]}
  */
 export function computeHourlyActivityPattern(transactions) {
+	transactions = preprocessStockHistory(transactions);
 	const hourlyMap = new Map();
 
 	// Initialize all hours
@@ -243,6 +251,7 @@ export function computeHourlyActivityPattern(transactions) {
  * @returns {TopMover[]}
  */
 export function computeTopMovers(transactions, limit = 10) {
+	transactions = preprocessStockHistory(transactions);
 	const itemMap = new Map();
 
 	transactions.forEach((transaction) => {
@@ -308,6 +317,7 @@ export function computeTopMovers(transactions, limit = 10) {
  * @returns {{totalTransactions: number, totalAdded: number, totalRemoved: number, netChange: number, uniqueItems: number, totalItems: number, inactiveItems: number, newItemsCreated: number, itemsDeleted: number}}
  */
 export function computeSummaryStats(transactions, totalItems) {
+	transactions = preprocessStockHistory(transactions);
 	const uniqueItems = new Set();
 	let totalTransactions = 0;
 	let totalAdded = 0;
@@ -483,65 +493,9 @@ export async function getSummaryStats(startDate, endDate) {
  * @returns {Promise<DailyAnalysis[]>}
  */
 export async function getItemDailyStats(itemId, days = 30) {
-	try {
-		const startDate = new Date();
-		startDate.setDate(startDate.getDate() - days);
-
-		const transactionsRef = txCol();
-		const q = query(
-			transactionsRef,
-			where('itemId', '==', itemId),
-			where('timestamp', '>=', Timestamp.fromDate(startDate)),
-			orderBy('timestamp', 'asc')
-		);
-
-		const querySnapshot = await getDocs(q);
-		const dailyMap = new Map();
-
-		querySnapshot.docs.forEach((doc) => {
-			const data = doc.data();
-			const timestamp = data.timestamp.toDate();
-			const dateKey = timestamp.toISOString().split('T')[0];
-			const changeAmount = data.newCount - data.previousCount;
-
-			if (!dailyMap.has(dateKey)) {
-				dailyMap.set(dateKey, {
-					date: dateKey,
-					totalAdded: 0,
-					totalRemoved: 0,
-					netChange: 0,
-					transactionCount: 0,
-					itemStats: {}
-				});
-			}
-
-			const daily = dailyMap.get(dateKey);
-			daily.transactionCount++;
-
-			if (changeAmount > 0) {
-				daily.totalAdded += changeAmount;
-			} else {
-				daily.totalRemoved += Math.abs(changeAmount);
-			}
-
-			daily.netChange += changeAmount;
-
-			// Add item stats for consistency
-			daily.itemStats[itemId] = {
-				itemId: data.itemId,
-				itemName: data.itemName,
-				added: daily.totalAdded,
-				removed: daily.totalRemoved,
-				netChange: daily.netChange,
-				transactionCount: daily.transactionCount
-			};
-		});
-
-		return Array.from(dailyMap.values()).sort(
-			(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-		);
-	} catch (error) {
-		console.error('Error getting item daily stats:', error);
-		throw error;
-	}
+	const end = new Date();
+	const start = new Date(end);
+	start.setDate(start.getDate() - days);
+	const rows = (await fetchTransactionsInRange(start, end)).filter((row) => row.itemId === itemId);
+	return computeDailyAnalysis(rows, start, end).filter((day) => day.transactionCount > 0);
 }

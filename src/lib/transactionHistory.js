@@ -94,7 +94,8 @@ export function availableYears(earliestYear, latestYear) {
  */
 export function transactionFilterMatches(filter) {
 	if (!filter) return [];
-	if (filter === 'itemCreated' || filter === 'itemDeleted') return [['event', filter]];
+	if (['itemCreated', 'itemDeleted', 'stockTransfer', 'itemMerged'].includes(filter))
+		return [['event', filter]];
 	return [
 		['event', 'countChange'],
 		['type', filter]

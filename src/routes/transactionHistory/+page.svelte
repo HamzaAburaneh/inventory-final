@@ -7,6 +7,7 @@
 		isMissingIndexError
 	} from '../../lib/transactionHistory';
 	import TransactionTimeline from '../../components/TransactionTimeline.svelte';
+	import { isInventoryMovement } from '../../lib/stockHistory.js';
 	import TableSkeleton from '../../components/TableSkeleton.svelte';
 	import Pagination from '../../components/Pagination.svelte';
 	import SearchBar from '../../components/SearchBar.svelte';
@@ -70,7 +71,9 @@
 		{ value: 'add', label: 'Stock added', icon: 'fa-arrow-up' },
 		{ value: 'remove', label: 'Stock removed', icon: 'fa-arrow-down' },
 		{ value: 'itemCreated', label: 'New items', icon: 'fa-box-open' },
-		{ value: 'itemDeleted', label: 'Deleted items', icon: 'fa-trash-can' }
+		{ value: 'itemDeleted', label: 'Deleted items', icon: 'fa-trash-can' },
+		{ value: 'stockTransfer', label: 'Transfers', icon: 'fa-arrows-left-right' },
+		{ value: 'itemMerged', label: 'Merged items', icon: 'fa-object-group' }
 	];
 
 	// Firestore already applied the year and the type filter, so only the search
@@ -90,6 +93,7 @@
 		let added = 0;
 		let removed = 0;
 		for (const transaction of filteredTransactions) {
+			if (!isInventoryMovement(transaction)) continue;
 			const delta = transaction.newCount - transaction.previousCount;
 			if (delta > 0) added += delta;
 			else removed += delta;
@@ -286,14 +290,30 @@
 
 	function csvCell(value) {
 		const str = String(value ?? '');
-		return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+		return /[",\r\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
 	}
 
 	// Export the full filtered/sorted set (not just the current page) as CSV. The
 	// whole selected year is already loaded, so this needs no extra reads and the
 	// file matches exactly what the page is showing.
 	function exportCsv() {
-		const header = ['Item', 'Event', 'Type', 'Previous', 'New', 'Change', 'Timestamp', 'User'];
+		const header = [
+			'Item',
+			'Event',
+			'Type',
+			'Previous',
+			'New',
+			'Change',
+			'Timestamp',
+			'User',
+			'Transaction ID',
+			'Item ID',
+			'Location',
+			'From location',
+			'To location',
+			'Quantity',
+			'Historical transfer review'
+		];
 		const rows = sortedTransactions.map((transaction) => [
 			transaction.itemName,
 			transactionEvent(transaction),
@@ -302,7 +322,14 @@
 			transaction.newCount,
 			transaction.newCount - transaction.previousCount,
 			new Date(transaction.timestamp).toISOString(),
-			transaction.user
+			transaction.user,
+			transaction.id,
+			transaction.itemId,
+			transaction.location,
+			transaction.fromLocation,
+			transaction.toLocation,
+			transaction.quantity,
+			transaction.historicalTransfer ? 'Confirmed historical transfer' : ''
 		]);
 		const csv = [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\n');
 		const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -386,8 +413,9 @@
 				</p>
 			{:else}
 				<p class="stats-scope">
-					Figures cover {typeFilter || searchTermValue ? 'every matching record' : 'every record'} in
-					the {selectedYear} season (Aug 15 – Sep 15).
+					Movement totals exclude transfers, merges and confirmed historical transfers. Figures
+					cover {typeFilter || searchTermValue ? 'every matching record' : 'every record'} in the {selectedYear}
+					season (Aug 15 – Sep 15).
 				</p>
 			{/if}
 

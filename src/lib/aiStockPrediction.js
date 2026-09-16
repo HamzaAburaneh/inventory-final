@@ -1,3 +1,5 @@
+import { inspectItemStock } from './stockLocations';
+import { preprocessStockHistory } from './stockHistory';
 /**
  * AI-Enhanced Stock Prediction Service using OpenRouter — CNE-aware.
  * The deterministic path (ARIMA on this fair's data, else the cross-year /
@@ -118,7 +120,7 @@ function aiCacheKey(item, itemCtx, ctx, model, variant = 'v2') {
 			name: item.name,
 			count: item.count ?? 0,
 			lowCount: item.lowCount ?? null,
-			storageType: item.storageType || ''
+			stockByStorage: inspectItemStock(item).stockByStorage
 		},
 		series: itemCtx.currentSeries,
 		prior: itemCtx.priorAligned.map((m) => [...m.entries()]),
@@ -231,7 +233,7 @@ function buildBatchPrompt(ctx, batch) {
 		const low = item.lowCount ?? 'none';
 		lines.push(`### ${item.id}`);
 		lines.push(
-			`${item.name} — ${item.storageType || 'unspecified storage'} | stock ${item.count ?? 0} cases | low-stock threshold ${low}`
+			`${item.name} — ${JSON.stringify(inspectItemStock(item).stockByStorage)} | total stock ${item.count ?? 0} units | low-stock threshold ${low}`
 		);
 		const soFar = itemCtx.currentSeries
 			.map((e, i) => `d${i + 1} ${e.date.slice(5)}: ${e.qty}`)
@@ -464,6 +466,7 @@ export function predictStockLevelsDeterministic(
 	options = {}
 ) {
 	const now = options.now ? new Date(options.now) : new Date();
+	transactions = preprocessStockHistory(transactions, items);
 	const ctx = buildForecastContext(transactions, items, forecastDays, now);
 	return deterministicFromContext(transactions, items, ctx);
 }
@@ -485,6 +488,7 @@ export async function predictStockLevelsWithAI(
 	options = {}
 ) {
 	const now = options.now ? new Date(options.now) : new Date();
+	transactions = preprocessStockHistory(transactions, items);
 	const ctx = buildForecastContext(transactions, items, forecastDays, now);
 	const deterministic = deterministicFromContext(transactions, items, ctx);
 
@@ -593,6 +597,7 @@ function assembleAIResult(item, itemCtx, ctx, det, validated, model) {
  * @returns {Promise<number[] | null>} Legacy AI prediction or null on failure
  */
 export async function getLegacyAIAnalysis(transactions, item, arimaPrediction, forecastDays) {
+	transactions = preprocessStockHistory(transactions, [item]);
 	if (!OPENROUTER_API_KEY) return null;
 
 	// Faithful to the old prepareHistoricalSales: groups removals by day and

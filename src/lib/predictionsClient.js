@@ -1,6 +1,7 @@
 import { auth } from '../firebase';
 import { getHistoricalTransactions } from './transactions';
 import { getItems } from './items';
+import { requireActiveGroupId } from './activeGroup';
 
 /**
  * Fetches stock predictions from the server API.
@@ -27,6 +28,7 @@ const PREDICTION_HISTORY_DAYS = 400;
  */
 async function postToPredictionsApi(payload) {
 	const user = auth.currentUser;
+	const groupId = requireActiveGroupId();
 	if (!user) {
 		throw new Error('You must be signed in to load predictions.');
 	}
@@ -36,6 +38,8 @@ async function postToPredictionsApi(payload) {
 		getHistoricalTransactions(PREDICTION_HISTORY_DAYS),
 		getItems()
 	]);
+	if (auth.currentUser?.uid !== user.uid || requireActiveGroupId() !== groupId)
+		throw new Error('Workspace changed while loading predictions. Try again.');
 
 	const response = await fetch('/api/stockPredictions', {
 		method: 'POST',

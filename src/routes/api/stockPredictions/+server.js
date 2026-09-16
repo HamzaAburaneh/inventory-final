@@ -1,3 +1,4 @@
+import { preprocessStockHistory } from '$lib/stockHistory';
 import { json } from '@sveltejs/kit';
 import { predictStockLevelsDeterministic, predictStockLevelsWithAI } from '$lib/aiStockPrediction';
 import { runPredictionBacktest } from '$lib/predictionBacktest';
@@ -68,13 +69,14 @@ export const POST = async ({ request }) => {
 		if (!Array.isArray(transactions) || !Array.isArray(items)) {
 			return json({ error: 'transactions and items must be arrays' }, { status: 400 });
 		}
+		const movement = preprocessStockHistory(transactions, items);
 		const timeframe = parseInt(forecastDays, 10) || 14;
 
 		// Backtest mode: hold out the tail of the most recent fair run and score
 		// every prediction method against what actually happened. AI contestants
 		// only run when explicitly requested (they cost OpenRouter credits).
 		if (mode === 'backtest') {
-			const report = await runPredictionBacktest(transactions, items, {
+			const report = await runPredictionBacktest(movement, items, {
 				holdoutDays,
 				sampleItemIds,
 				useAI: useAI === true,
@@ -89,8 +91,8 @@ export const POST = async ({ request }) => {
 		// deterministic result inside predictStockLevelsWithAI.
 		const predictions =
 			useAI === true
-				? await predictStockLevelsWithAI(transactions, items, timeframe)
-				: predictStockLevelsDeterministic(transactions, items, timeframe);
+				? await predictStockLevelsWithAI(movement, items, timeframe)
+				: predictStockLevelsDeterministic(movement, items, timeframe);
 		return json(predictions);
 	} catch (error) {
 		console.error('Error fetching stock predictions:', error);

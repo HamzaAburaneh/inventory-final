@@ -1,3 +1,4 @@
+import { preprocessStockHistory } from './stockHistory';
 /**
  * Pure prediction math for the CNE-aware forecasting pipeline: dated
  * zero-filled demand series, the deterministic cross-year/calendar baseline,
@@ -59,7 +60,7 @@ export function round2(n) {
 export function buildDailySeries(transactions, itemId, start, end) {
 	if (startOfDay(end).getTime() < startOfDay(start).getTime()) return [];
 	const byDay = new Map();
-	for (const t of transactions) {
+	for (const t of preprocessStockHistory(transactions)) {
 		if (t.itemId !== itemId || t.type !== 'remove') continue;
 		const qty = Math.max(0, (Number(t.previousCount) || 0) - (Number(t.newCount) || 0));
 		// Bucket the observed instant in Toronto time; the zero-fill loop below
@@ -201,6 +202,7 @@ export function buildCneBaseline({
  *   priorYears: number, perItem: Map<string, object>}} Context
  */
 export function buildForecastContext(transactions, items, forecastDays, now = new Date()) {
+	transactions = preprocessStockHistory(transactions, items);
 	const window = resolveForecastWindow(now, forecastDays);
 	const runs = segmentIntoFairRuns(transactions);
 	const priorRuns = runs.filter((r) => r.end.getTime() < window.fairStart.getTime());

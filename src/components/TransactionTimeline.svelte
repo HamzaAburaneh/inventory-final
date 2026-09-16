@@ -1,5 +1,6 @@
 <script>
 	import { transactionDayKey } from '../lib/transactionHistory';
+	import { locationLabel } from '../lib/stockLocations.js';
 
 	// `dayCounts` maps a day key to how many changes that day holds across the whole
 	// filtered set. It has to come from the parent because this component only ever
@@ -13,6 +14,24 @@
 
 	function presentation(transaction) {
 		const event = transactionEvent(transaction);
+		if (event === 'stockTransfer' || transaction.historicalTransfer) {
+			return {
+				icon: 'fa-arrows-left-right',
+				iconClass: 'neutral',
+				label: transaction.historicalTransfer
+					? 'Confirmed historical transfer'
+					: 'Stock transferred',
+				deltaClass: 'neutral'
+			};
+		}
+		if (event === 'itemMerged') {
+			return {
+				icon: 'fa-object-group',
+				iconClass: 'neutral',
+				label: 'Item merged',
+				deltaClass: 'neutral'
+			};
+		}
 		if (event === 'itemCreated') {
 			return {
 				icon: 'fa-box-open',
@@ -34,7 +53,7 @@
 		return {
 			icon: positive ? 'fa-arrow-up' : 'fa-arrow-down',
 			iconClass: positive ? 'add' : 'rem',
-			label: positive ? 'Stock added' : 'Stock removed',
+			label: positive ? 'Stock added' : 'Stock removed / issued',
 			deltaClass: positive ? 'pos' : 'neg'
 		};
 	}
@@ -101,6 +120,7 @@
 						class:rem={card.iconClass === 'rem'}
 						class:create={card.iconClass === 'create'}
 						class:delete={card.iconClass === 'delete'}
+						class:neutral={card.iconClass === 'neutral'}
 					>
 						<i class="fas {card.icon}"></i>
 					</div>
@@ -108,6 +128,15 @@
 						<div class="row-name">{transaction.itemName}</div>
 						<div class="row-meta">
 							<span><i class="fas fa-tag"></i>{card.label}</span>
+							{#if transaction.location}<span>{locationLabel(transaction.location)}</span>{/if}
+							{#if transaction.event === 'stockTransfer'}<span
+									>{transaction.quantity} · {locationLabel(transaction.fromLocation)} → {locationLabel(
+										transaction.toLocation
+									)}</span
+								>{/if}
+							{#if transaction.event === 'itemMerged' && transaction.relatedItemId}<span
+									>Related item: {transaction.relatedItemId}</span
+								>{/if}
 							<span><i class="fas fa-clock"></i>{formatTime(transaction.timestamp)}</span>
 							<span class="row-user"><i class="fas fa-user"></i>{transaction.user}</span>
 						</div>
@@ -125,7 +154,11 @@
 							class:create={card.deltaClass === 'create'}
 							class:delete={card.deltaClass === 'delete'}
 						>
-							{delta > 0 ? '+' : delta < 0 ? '−' : ''}{Math.abs(delta)}
+							{#if transaction.event === 'stockTransfer'}Total unchanged{:else}{delta > 0
+									? '+'
+									: delta < 0
+										? '−'
+										: ''}{Math.abs(delta)}{/if}
 						</span>
 					</div>
 				</div>
@@ -200,6 +233,11 @@
 		align-items: center;
 		justify-content: center;
 		font-size: 0.85rem;
+	}
+
+	.row-ic.neutral {
+		color: var(--text-color);
+		background: var(--hover-bg-color);
 	}
 
 	.row-ic.add {

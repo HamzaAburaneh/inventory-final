@@ -1,3 +1,10 @@
+vi.mock('./stockReviews', () => ({
+	getStockHistoryReviews: vi.fn(async () => []),
+	subscribeStockHistoryReviews: vi.fn((_group, callback) => {
+		callback([]);
+		return () => {};
+	})
+}));
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock Firestore so we can assert the SHAPE of the queries this module builds.
@@ -172,6 +179,9 @@ describe('subscribeToTransactions', () => {
 
 		expect(received[0][0]).toEqual({
 			id: 'txn-1',
+			syncedAt: null,
+			historicalTransfer: false,
+			historicalTransferReviewId: null,
 			itemId: 'item-1',
 			itemName: 'Funnel Cake Mix',
 			type: 'add',
