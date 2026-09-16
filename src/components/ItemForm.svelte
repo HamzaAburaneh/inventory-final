@@ -2,6 +2,9 @@
 	import { fade, fly, slide } from 'svelte/transition';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import StorageSelect from './StorageSelect.svelte';
+	import Icon from './Icon.svelte';
+	import { locationLabel } from '../lib/stockLocations.js';
+	import { getStorageTypeIcon } from '../lib/tableUtils.js';
 
 	let { onAdd, booths = [], collapsed = $bindable(true) } = $props();
 
@@ -9,7 +12,7 @@
 
 	let formData = $state({
 		name: '',
-		count: '',
+		stockByStorage: { Freezer: '', Refrigerator: '', 'Dry Storage': '' },
 		lowCount: '',
 		cost: '',
 		storageType: '',
@@ -17,6 +20,17 @@
 	});
 
 	let errors = $state({});
+	let submitting = $state(false);
+	const locations = $derived(
+		formData.storageType === 'Dry Storage'
+			? ['Dry Storage']
+			: formData.storageType
+				? ['Freezer', 'Refrigerator']
+				: []
+	);
+	const openingTotal = $derived(
+		locations.reduce((sum, location) => sum + Number(formData.stockByStorage[location] || 0), 0)
+	);
 
 	const validateField = (field, value) => {
 		const validations = {
@@ -44,16 +58,52 @@
 		validateField(field, value);
 	};
 
-	const handleAdd = () => {
-		if (formData.name.trim() === '') {
-			// Surface the problem inline in the field's error slot rather than a dialog.
-			errors.name = 'Item name cannot be empty';
-			return;
-		}
-
-		onAdd({ formData });
-		formData = { name: '', count: '', lowCount: '', cost: '', storageType: '', booths: [] };
+	const handleAdd = async () => {
+		if (submitting) return;
 		errors = {};
+		if (formData.name.trim().length < 2) errors.name = 'Name must be at least 2 characters';
+		if (!formData.storageType) errors.storageType = 'Choose a starting location';
+		const stockByStorage = { Freezer: 0, Refrigerator: 0, 'Dry Storage': 0 };
+		for (const location of locations) {
+			const amount = Number(formData.stockByStorage[location] || 0);
+			if (!Number.isSafeInteger(amount) || amount < 0)
+				errors.stock = 'Opening balances must be nonnegative whole numbers';
+			stockByStorage[location] = amount;
+		}
+		if (!Number.isSafeInteger(openingTotal)) errors.stock = 'The total is too large';
+		const lowCount = Number(formData.lowCount || 0);
+		if (!Number.isSafeInteger(lowCount) || lowCount < 0)
+			errors.lowCount = 'Use a nonnegative whole number';
+		if (!Number.isFinite(Number(formData.cost || 0)) || Number(formData.cost || 0) < 0)
+			errors.cost = 'Use a nonnegative cost';
+		if (Object.values(errors).some(Boolean)) return;
+		submitting = true;
+		try {
+			const result = await onAdd({
+				formData: {
+					...$state.snapshot(formData),
+					name: formData.name.trim(),
+					stockByStorage,
+					count: openingTotal
+				}
+			});
+			if (result?.status !== 'applied' && result?.status !== 'queued') {
+				errors.submit = result?.error || 'The item was not saved. Check the details and try again.';
+				return;
+			}
+			formData = {
+				name: '',
+				stockByStorage: { Freezer: '', Refrigerator: '', 'Dry Storage': '' },
+				lowCount: '',
+				cost: '',
+				storageType: '',
+				booths: []
+			};
+		} catch (cause) {
+			errors.submit = cause instanceof Error ? cause.message : 'Could not save the item.';
+		} finally {
+			submitting = false;
+		}
 	};
 </script>
 
@@ -98,7 +148,7 @@
 
 	{#if !collapsed}
 		<div id="add-item-form" class="form-content" transition:slide={slideParams}>
-			<div class="form-grid">
+			<fieldset class="form-grid" disabled={submitting}>
 				<!-- Identity -->
 				<section class="form-col">
 					<div class="section-label">
@@ -139,8 +189,9 @@
 						</div>
 
 						<div class="form-group">
-							<span class="form-label" id="storage-label">Storage Type</span>
+							<span class="form-label" id="storage-label">Starting Location</span>
 							<StorageSelect bind:value={formData.storageType} labelId="storage-label" />
+							{#if errors.storageType}<p class="error-message">{errors.storageType}</p>{/if}
 						</div>
 					</div>
 				</section>
@@ -156,34 +207,39 @@
 						<span>Stock</span>
 					</div>
 					<div class="col-fields">
-						<div class="form-group">
-							<label for="count" class="form-label">Current Stock</label>
-							<div class="input-wrapper">
-								<input
-									id="count"
-									class="form-input transition-shadow duration-150 ease-out {errors.count
-										? 'error'
-										: ''}"
-									type="text"
-									bind:value={formData.count}
-									pattern="^[0-9]*$"
-									placeholder="0"
-									oninput={(event) => handleInput(event, 'count')}
-								/>
-							</div>
-							<div class="error-slot">
-								{#if errors.count}
-									<div
-										class="error-message"
-										in:fly={{ y: -8, duration: 200 }}
-										out:fade={{ duration: 100 }}
-										title={errors.count}
-									>
-										{errors.count}
+						{#if locations.length}
+							<div class="opening-row">
+								{#each locations as location (location)}
+									<div class="form-group opening-group" data-location={location}>
+										<label for="opening-{location}" class="form-label opening-label">
+											<Icon name={getStorageTypeIcon(location)} size={13} class="opening-icon" />
+											Opening {locationLabel(location)} stock
+										</label>
+										<input
+											id="opening-{location}"
+											class="form-input"
+											type="number"
+											min="0"
+											step="1"
+											inputmode="numeric"
+											placeholder="0"
+											bind:value={formData.stockByStorage[location]}
+											disabled={submitting}
+										/>
 									</div>
-								{/if}
+								{/each}
+								<div class="opening-total" aria-live="polite">
+									<span class="opening-total-label">
+										<Icon name="package" size={13} class="opening-icon" />
+										Combined total:
+									</span>
+									<strong>{openingTotal}</strong>
+								</div>
 							</div>
-						</div>
+						{:else}
+							<p class="opening-hint">Choose a starting location to enter opening stock.</p>
+						{/if}
+						{#if errors.stock}<p class="error-message">{errors.stock}</p>{/if}
 
 						<div class="stock-pair">
 							<div class="form-group">
@@ -281,12 +337,14 @@
 						{/each}
 					</div>
 				</section>
-			</div>
+			</fieldset>
 
 			<div class="form-footer">
+				{#if errors.submit}<p class="error-message" role="alert">{errors.submit}</p>{/if}
 				<button
 					class="add-button transition-all duration-150 ease-out active:scale-[0.98]"
 					onclick={handleAdd}
+					disabled={submitting}
 				>
 					<svg
 						width="20"
@@ -299,7 +357,7 @@
 						<line x1="12" y1="5" x2="12" y2="19"></line>
 						<line x1="5" y1="12" x2="19" y2="12"></line>
 					</svg>
-					Add Item
+					{submitting ? 'Saving…' : 'Add Item'}
 				</button>
 			</div>
 		</div>
@@ -307,6 +365,15 @@
 </div>
 
 <style>
+	fieldset {
+		min-width: 0;
+		margin: 0;
+		border: 0;
+	}
+	.add-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
 	.form-card {
 		background: var(--container-bg);
 		border-radius: var(--border-radius);
@@ -468,6 +535,86 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 0.55rem;
+	}
+
+	/* Opening balances: one input per allowed location plus a running total tile,
+	   laid out in a row on wide screens and stacked on phones. */
+	.opening-row {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+		gap: 0.55rem;
+		align-items: end;
+		margin-bottom: 0.55rem;
+	}
+
+	.opening-group {
+		--opening-accent: var(--text-color-dimmed);
+	}
+
+	.opening-group[data-location='Freezer'] {
+		--opening-accent: var(--location-freezer);
+	}
+
+	.opening-group[data-location='Refrigerator'] {
+		--opening-accent: var(--location-fridge);
+	}
+
+	.opening-group[data-location='Dry Storage'] {
+		--opening-accent: var(--location-dry);
+	}
+
+	.form-label.opening-label {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+	}
+
+	.form-label.opening-label :global(.opening-icon) {
+		color: var(--opening-accent);
+		flex-shrink: 0;
+	}
+
+	.opening-group .form-input {
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.opening-total {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		min-height: 2.15rem;
+		padding: 0.35rem 0.7rem;
+		border: 1px solid var(--table-border-color);
+		border-radius: var(--border-radius);
+		background: var(--hover-bg-color);
+		font-size: 0.78rem;
+	}
+
+	.opening-total-label {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		font-weight: 600;
+		color: var(--text-color-dimmed);
+	}
+
+	.opening-total-label :global(.opening-icon) {
+		color: var(--add-item-color);
+	}
+
+	.opening-total strong {
+		font-size: 0.95rem;
+		font-weight: 800;
+		font-variant-numeric: tabular-nums;
+		color: var(--text-color);
+	}
+
+	.opening-hint {
+		margin: 0 0 0.55rem;
+		font-size: 0.78rem;
+		color: var(--text-color-dimmed);
 	}
 
 	.form-group {

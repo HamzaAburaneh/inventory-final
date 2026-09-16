@@ -3,13 +3,11 @@
 		formatCost,
 		formatTotalValue,
 		formatBooths,
-		capitalizeWords,
-		getStorageTypeClass,
-		getStorageTypeIcon,
 		getBoothStyle,
 		isLowStock
 	} from '../lib/tableUtils.js';
 	import Icon from './Icon.svelte';
+	import StockLocationChips from './StockLocationChips.svelte';
 
 	let {
 		type,
@@ -121,30 +119,8 @@
 			>
 		</div>
 	</td>
-{:else if type === 'storageType'}
-	<td class="storage-col" data-label="Type">
-		<div class="cell-content">
-			<button
-				class="storage-type-btn"
-				data-tooltip="Edit Storage Type"
-				aria-label="Edit Storage Type"
-				onclick={(e) => {
-					e.preventDefault();
-					e.stopPropagation();
-					handleEdit('storageType', value);
-				}}
-				onmouseenter={onTooltipShow}
-				onmouseleave={onTooltipHide}
-			>
-				<span class="storage-type inline-flex items-center gap-1.5 {getStorageTypeClass(value)}">
-					{#if value}
-						<Icon name={getStorageTypeIcon(value)} size={13} class="shrink-0" />
-					{/if}
-					{capitalizeWords(value)}
-				</span>
-			</button>
-		</div>
-	</td>
+{:else if type === 'stockByStorage'}
+	<td class="storage-col" data-label="Stock Locations"><StockLocationChips {item} /></td>
 {:else if type === 'booths'}
 	<td class="booths-col" data-label="Booths">
 		<div class="cell-content">
@@ -366,74 +342,6 @@
 		color: var(--add-item-color);
 	}
 
-	/* Storage type — clickable badge */
-	.storage-type-btn {
-		background: none;
-		border: none;
-		padding: 0;
-		margin: 0;
-		cursor: pointer;
-		min-height: 0;
-		display: inline-block;
-	}
-
-	.storage-type {
-		padding: 0.2rem 0.6rem;
-		border-radius: 9999px;
-		font-size: 0.75rem;
-		font-weight: 600;
-		transition:
-			transform 0.12s ease-out,
-			filter 0.15s ease-out;
-		white-space: nowrap;
-		width: fit-content;
-		text-align: center;
-	}
-
-	/* Soft-tint palette — light (default) + dark via [data-theme]. */
-	.storage-type.freezer {
-		background: #dbeafe;
-		color: #1e40af;
-	}
-	.storage-type.refrigerator {
-		background: #e0f2fe;
-		color: #075985;
-	}
-	.storage-type.dry-storage {
-		background: #fef3c7;
-		color: #92400e;
-	}
-	.storage-type.unset {
-		background: #e2e8f0;
-		color: #334155;
-	}
-
-	:global([data-theme='dark']) .storage-type.freezer {
-		background: #16294a;
-		color: #93c5fd;
-	}
-	:global([data-theme='dark']) .storage-type.refrigerator {
-		background: #0c3148;
-		color: #7dd3fc;
-	}
-	:global([data-theme='dark']) .storage-type.dry-storage {
-		background: #3a2a0e;
-		color: #fcd34d;
-	}
-	:global([data-theme='dark']) .storage-type.unset {
-		background: #1e293b;
-		color: #cbd5e1;
-	}
-
-	.storage-type-btn:hover .storage-type {
-		filter: brightness(1.05);
-		transform: scale(1.05);
-	}
-
-	.storage-type-btn:active .storage-type {
-		transform: scale(0.96);
-	}
-
 	/* Booth tags — clickable pills */
 	.booths-container {
 		display: flex;
@@ -544,8 +452,6 @@
 	/* Disable the tactile press/hover scaling for reduced-motion users. */
 	@media (prefers-reduced-motion: reduce) {
 		.cell-value-btn:active,
-		.storage-type-btn:hover .storage-type,
-		.storage-type-btn:active .storage-type,
 		.booth-tag-btn:hover,
 		.booth-tag-btn:active,
 		.delete-button:hover,

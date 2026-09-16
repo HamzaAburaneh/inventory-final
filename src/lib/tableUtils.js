@@ -46,25 +46,6 @@ export function formatBooths(booths, boothsById = {}) {
 }
 
 /**
- * Map a storage type to its badge CSS modifier class. The actual soft-tint
- * colors live in TableCell's styles (per-theme via `[data-theme]`).
- * @param {string} storageType - the item's storage type
- * @returns {string} 'freezer' | 'refrigerator' | 'dry-storage' | 'unset'
- */
-export function getStorageTypeClass(storageType) {
-	switch ((storageType || '').toLowerCase()) {
-		case 'freezer':
-			return 'freezer';
-		case 'refrigerator':
-			return 'refrigerator';
-		case 'dry storage':
-			return 'dry-storage';
-		default:
-			return 'unset';
-	}
-}
-
-/**
  * Whether an item is at or below its low-stock threshold.
  * A threshold of 0 (or missing) means "no alert configured", so it never flags.
  * @param {{ count?: number|string, lowCount?: number|string }} item
@@ -117,7 +98,7 @@ export const TABLE_COLUMNS = [
 	{ name: 'lowCount', width: '8%', minWidth: '7rem', icon: 'alert' },
 	{ name: 'cost', width: '8%', minWidth: '5.5rem', icon: 'dollar' },
 	{ name: 'totalValue', width: '10%', minWidth: '8rem', icon: 'coins' },
-	{ name: 'storageType', width: '15%', minWidth: '9rem', icon: 'thermometer' },
+	{ name: 'stockByStorage', width: '15%', minWidth: '9rem', icon: 'thermometer' },
 	{ name: 'booths', width: '20%', minWidth: '9.4rem', icon: 'store' },
 	{ name: '', width: '3%', minWidth: '1.2rem', icon: '' }
 ];
@@ -158,8 +139,8 @@ export function getColumnDisplayName(columnName) {
 			return 'Booths';
 		case 'lowCount':
 			return 'Low Count';
-		case 'storageType':
-			return 'Storage Type';
+		case 'stockByStorage':
+			return 'Stock Locations';
 		default:
 			return columnName.charAt(0).toUpperCase() + columnName.slice(1);
 	}

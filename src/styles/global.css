@@ -87,6 +87,12 @@
 	--event-create-bg: #e4f0ff;
 	--event-delete: #9b2eb6;
 	--event-delete-bg: #f5e5fb;
+	/* Storage-location accents, shared by chips, filters, controls and the
+	   storage dropdown. They alias theme-swapped tokens, so one definition serves
+	   both themes. */
+	--location-freezer: var(--event-create);
+	--location-fridge: var(--event-add);
+	--location-dry: var(--icon-hover-color);
 	--nav-danger-text: var(--danger-text);
 	--nav-danger-surface: #fbe9e7;
 	--icon-color: #6c757d;
@@ -131,6 +137,7 @@
 	--tooltip-text: #ffffff;
 	--tooltip-border: #2b2f33;
 	--tooltip-shadow: rgba(0, 0, 0, 0.22);
+	--modal-backdrop: rgba(0, 0, 0, 0.5);
 
 	/* === Tech/industrial design tokens (homepage revamp) === */
 	--tech-accent: #0066ff;
@@ -286,6 +293,7 @@
 	--tooltip-text: #f2f2f2;
 	--tooltip-border: #565656;
 	--tooltip-shadow: rgba(0, 0, 0, 0.55);
+	--modal-backdrop: rgba(0, 0, 0, 0.65);
 
 	/* === Tech/industrial design tokens (homepage revamp) === */
 	--tech-accent: #ffe260;

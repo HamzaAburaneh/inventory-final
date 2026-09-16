@@ -19,6 +19,35 @@
 
 	const fadeParams = $derived({ duration: prefersReducedMotion.current ? 0 : 200 });
 	const flyParams = $derived({ y: 30, duration: prefersReducedMotion.current ? 0 : 250 });
+	function containFocus(node) {
+		const opener = document.activeElement;
+		const buttons = () => [
+			...node.querySelectorAll('button:not(:disabled), input:not(:disabled), [tabindex="0"]')
+		];
+		buttons()[0]?.focus();
+		const keydown = (event) => {
+			if (event.key === 'Escape') {
+				event.preventDefault();
+				onCancel();
+			}
+			if (event.key !== 'Tab') return;
+			const controls = buttons();
+			const first = controls[0],
+				last = controls[controls.length - 1];
+			if (event.shiftKey && document.activeElement === first) {
+				event.preventDefault();
+				last?.focus();
+			} else if (!event.shiftKey && document.activeElement === last) {
+				event.preventDefault();
+				first?.focus();
+			}
+		};
+		node.addEventListener('keydown', keydown);
+		return () => {
+			node.removeEventListener('keydown', keydown);
+			if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
+		};
+	}
 </script>
 
 {#if visible}
@@ -33,6 +62,7 @@
 	<div class="modal-overlay" in:fade={fadeParams} out:fade={fadeParams}>
 		<div
 			class="confirm-modal"
+			{@attach containFocus}
 			role="dialog"
 			tabindex="-1"
 			aria-modal="true"
@@ -55,7 +85,7 @@
 				<h3>{title}</h3>
 			</div>
 			<div class="modal-body">
-				<p class="modal-message">{@render children?.()}</p>
+				<div class="modal-message">{@render children?.()}</div>
 				{#if chipLabel}
 					<div class="modal-chip">
 						<i class="ti {chipIcon}" aria-hidden="true"></i>
@@ -87,7 +117,7 @@
 	.modal-backdrop {
 		position: fixed;
 		inset: 0;
-		background-color: rgba(0, 0, 0, 0.55);
+		background-color: var(--modal-backdrop);
 		z-index: 9999;
 	}
 
@@ -108,7 +138,7 @@
 		background-color: var(--container-bg);
 		border-radius: 0.75rem;
 		padding: 1.5rem;
-		box-shadow: 0 0.625rem 1.875rem rgba(0, 0, 0, 0.4);
+		box-shadow: var(--nav-dropdown-shadow);
 		border: 1px solid var(--table-border-color);
 	}
 
@@ -128,13 +158,13 @@
 		width: 2rem;
 		height: 2rem;
 		border-radius: 0.5rem;
-		color: #ef4444;
-		background: color-mix(in srgb, #ef4444 18%, transparent);
+		color: var(--event-remove);
+		background: color-mix(in srgb, var(--event-remove) 18%, transparent);
 	}
 
 	:global([data-theme='dark']) .modal-icon {
-		color: #f87171;
-		background: color-mix(in srgb, #f87171 18%, transparent);
+		color: var(--event-remove);
+		background: color-mix(in srgb, var(--event-remove) 18%, transparent);
 	}
 
 	.modal-icon svg {
@@ -166,11 +196,11 @@
 	}
 
 	.modal-message :global(.emphasis) {
-		color: #ef4444;
+		color: var(--event-remove);
 	}
 
 	:global([data-theme='dark']) .modal-message :global(.emphasis) {
-		color: #f87171;
+		color: var(--event-remove);
 	}
 
 	/* Item summary chip with a before → after count badge. */
@@ -214,8 +244,8 @@
 		font-variant-numeric: tabular-nums;
 		padding: 0.15rem 0.6rem;
 		border-radius: 999px;
-		color: #ef4444;
-		background: color-mix(in srgb, #ef4444 18%, var(--container-bg));
+		color: var(--event-remove);
+		background: color-mix(in srgb, var(--event-remove) 18%, var(--container-bg));
 	}
 
 	.modal-chip-change i {
@@ -224,8 +254,8 @@
 	}
 
 	:global([data-theme='dark']) .modal-chip-change {
-		color: #f87171;
-		background: color-mix(in srgb, #f87171 18%, var(--container-bg));
+		color: var(--event-remove);
+		background: color-mix(in srgb, var(--event-remove) 18%, var(--container-bg));
 	}
 
 	.modal-buttons {
@@ -234,6 +264,7 @@
 	}
 
 	.modal-buttons button {
+		min-height: 44px;
 		flex: 1;
 		padding: 0.6rem 1rem;
 		border: none;
@@ -268,32 +299,32 @@
 	/* Single-item reset (warning): soft red that fills solid on hover.
 	   Reset all (danger): solid red from the start to read as the weightier action. */
 	.confirm-btn.warning {
-		background: color-mix(in srgb, #ef4444 18%, transparent);
-		color: #ef4444;
+		background: color-mix(in srgb, var(--event-remove) 18%, transparent);
+		color: var(--event-remove);
 	}
 
 	.confirm-btn.warning:hover {
-		background: #ef4444;
-		color: #fff;
+		background: var(--event-remove);
+		color: var(--add-item-on);
 	}
 
 	:global([data-theme='dark']) .confirm-btn.warning {
-		background: color-mix(in srgb, #f87171 18%, transparent);
-		color: #f87171;
+		background: color-mix(in srgb, var(--event-remove) 18%, transparent);
+		color: var(--event-remove);
 	}
 
 	:global([data-theme='dark']) .confirm-btn.warning:hover {
-		background: #f87171;
-		color: #fff;
+		background: var(--event-remove);
+		color: var(--add-item-on);
 	}
 
 	.confirm-btn.danger {
-		background: #ef4444;
-		color: #fff;
+		background: var(--event-remove);
+		color: var(--add-item-on);
 	}
 
 	.confirm-btn.danger:hover {
-		background: #dc2626;
-		color: #fff;
+		background: var(--danger-text);
+		color: var(--add-item-on);
 	}
 </style>

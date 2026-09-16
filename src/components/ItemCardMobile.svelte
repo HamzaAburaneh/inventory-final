@@ -3,13 +3,11 @@
 		formatCost,
 		formatTotalValue,
 		formatBooths,
-		capitalizeWords,
-		getStorageTypeClass,
-		getStorageTypeIcon,
 		getBoothStyle,
 		isLowStock
 	} from '../lib/tableUtils.js';
 	import Icon from './Icon.svelte';
+	import StockLocationChips from './StockLocationChips.svelte';
 
 	let { item, boothsById = {}, onEdit, onDelete } = $props();
 
@@ -49,6 +47,7 @@
 		</div>
 	</div>
 
+	<StockLocationChips {item} />
 	<!-- Editable fields -->
 	<span class="edit-hint">Tap to edit</span>
 	<div class="edit-panel">
@@ -66,19 +65,6 @@
 			<span class="row-label">Cost</span>
 			<span class="row-value">
 				<span class="row-text" class:is-zero={costIsZero}>{formatCost(item.cost)}</span>
-				<span class="chev"><Icon name="chevron" size={16} /></span>
-			</span>
-		</button>
-
-		<button class="edit-row" onclick={() => edit('storageType', item.storageType)}>
-			<span class="row-label">Type</span>
-			<span class="row-value">
-				<span class="storage-type {getStorageTypeClass(item.storageType)}">
-					{#if item.storageType}
-						<Icon name={getStorageTypeIcon(item.storageType)} size={13} class="shrink-0" />
-					{/if}
-					{item.storageType ? capitalizeWords(item.storageType) : 'Not set'}
-				</span>
 				<span class="chev"><Icon name="chevron" size={16} /></span>
 			</span>
 		</button>
@@ -350,52 +336,6 @@
 		display: inline-flex;
 		flex-shrink: 0;
 		color: var(--mc-icon);
-	}
-
-	/* Storage type badge — soft-tint palette matching the desktop table. */
-	.storage-type {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.375rem;
-		padding: 0.2rem 0.6rem;
-		border-radius: 9999px;
-		font-size: 0.75rem;
-		font-weight: 600;
-		white-space: nowrap;
-	}
-
-	.storage-type.freezer {
-		background: #dbeafe;
-		color: #1e40af;
-	}
-	.storage-type.refrigerator {
-		background: #e0f2fe;
-		color: #075985;
-	}
-	.storage-type.dry-storage {
-		background: #fef3c7;
-		color: #92400e;
-	}
-	.storage-type.unset {
-		background: #e2e8f0;
-		color: #334155;
-	}
-
-	:global([data-theme='dark']) .storage-type.freezer {
-		background: #16294a;
-		color: #93c5fd;
-	}
-	:global([data-theme='dark']) .storage-type.refrigerator {
-		background: #0c3148;
-		color: #7dd3fc;
-	}
-	:global([data-theme='dark']) .storage-type.dry-storage {
-		background: #3a2a0e;
-		color: #fcd34d;
-	}
-	:global([data-theme='dark']) .storage-type.unset {
-		background: #1e293b;
-		color: #cbd5e1;
 	}
 
 	/* Booth tags. */

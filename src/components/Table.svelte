@@ -178,8 +178,8 @@
 							onTooltipHide={handleTooltipHide}
 						/>
 						<TableCell
-							type="storageType"
-							value={item.storageType}
+							type="stockByStorage"
+							value={item.stockByStorage}
 							{item}
 							onEdit={handleEdit}
 							onDelete={handleDelete}

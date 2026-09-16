@@ -8,13 +8,13 @@
 	let {
 		value = $bindable(''),
 		labelId = undefined,
-		placeholder = 'Select storage type...'
+		placeholder = 'Choose starting location…'
 	} = $props();
 
 	const storageTypes = [
-		{ value: 'Freezer', color: '#3B82F6' },
-		{ value: 'Refrigerator', color: '#10B981' },
-		{ value: 'Dry Storage', color: '#F59E0B' }
+		{ value: 'Freezer', color: 'var(--event-create)' },
+		{ value: 'Refrigerator', color: 'var(--event-add)' },
+		{ value: 'Dry Storage', color: 'var(--icon-hover-color)' }
 	];
 
 	const selectedStorage = $derived(storageTypes.find((option) => option.value === value));
@@ -182,6 +182,7 @@
 	}
 
 	.select-trigger {
+		min-height: 44px;
 		width: 100%;
 		display: flex;
 		align-items: center;
@@ -305,10 +306,11 @@
 		background: var(--container-bg);
 		border: 1px solid var(--table-border-color);
 		border-radius: var(--border-radius);
-		box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+		box-shadow: var(--nav-dropdown-shadow);
 	}
 
 	.select-option {
+		min-height: 44px;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;

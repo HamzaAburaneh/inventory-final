@@ -7,6 +7,14 @@
 	import TableSkeleton from '../../components/TableSkeleton.svelte';
 	import ConfirmModal from '../../components/ConfirmModal.svelte';
 	import Pagination from '../../components/Pagination.svelte';
+	import StockLocationFilter from '../../components/StockLocationFilter.svelte';
+	import StockLocationChips from '../../components/StockLocationChips.svelte';
+	import StockLocationControls from '../../components/StockLocationControls.svelte';
+	import StockTransferDialog from '../../components/StockTransferDialog.svelte';
+	import StockQueuePanel from '../../components/StockQueuePanel.svelte';
+	import AnimatedCount from '../../components/AnimatedCount.svelte';
+	import { flashOnChange } from '../../lib/transitions.js';
+	import { matchesStockLocation } from '../../lib/stockLocations.js';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { itemStore } from '../../stores/itemStore';
 	import { createSearchState } from '../../lib/runes/search.svelte.js';
@@ -23,6 +31,9 @@
 	// toggles, page flips) crossfade quickly in place instead.
 	let listReady = $state(false);
 	let statusFilter = $state('all');
+	let locationFilter = $state('all');
+	let transferId = $state(null);
+	const transferItem = $derived(items.find((item) => item.id === transferId));
 
 	const paginationStore = getPaginationStore('manageTransactions');
 	const { currentPage, itemsPerPage, setTotalItems } = paginationStore;
@@ -53,12 +64,13 @@
 		searchedItemsList.filter((item) => stockStatus(item) === 'out').length
 	);
 
-	const filteredItemsList = $derived.by(() => {
-		if (statusFilter === 'all') {
-			return searchedItemsList;
-		}
-		return searchedItemsList.filter((item) => stockStatus(item) === statusFilter);
-	});
+	const filteredItemsList = $derived(
+		searchedItemsList.filter(
+			(item) =>
+				(statusFilter === 'all' || stockStatus(item) === statusFilter) &&
+				matchesStockLocation(item, locationFilter)
+		)
+	);
 
 	$effect(() => {
 		setTotalItems(filteredItemsList.length);
@@ -115,35 +127,25 @@
 
 	const statusLabel = { in: 'In stock', low: 'Low stock', out: 'Out of stock' };
 
-	const storageTag = (item) => {
-		switch ((item.storageType || '').toLowerCase()) {
-			case 'freezer':
-				return { icon: 'ti-snowflake', label: 'Freezer' };
-			case 'refrigerator':
-				return { icon: 'ti-temperature', label: 'Fridge' };
-			case 'dry storage':
-				return { icon: 'ti-box', label: 'Dry' };
-			default:
-				return null;
-		}
+	function notifyOutcome(result, label) {
+		notificationStore.showNotification(
+			result.status === 'applied'
+				? label
+				: result.status === 'queued'
+					? 'Change saved on this device, pending sync.'
+					: 'Change needs attention. Review pending changes.',
+			result.status === 'attention' ? 'error' : 'success'
+		);
+	}
+	const changeCount = async (item, amount, location) => {
+		const result = await itemStore.changeCount(item.id, amount, location);
+		notifyOutcome(result, 'Stock updated successfully!');
+		return result;
 	};
-
-	const changeCount = async (item, amount) => {
-		// The count write and its ledger record are committed atomically inside
-		// itemStore.changeCount — no separate addTransaction call needed here.
-		try {
-			await itemStore.changeCount(item.id, amount);
-			itemStore.setChangeAmount(item.id, 0);
-			notificationStore.showNotification(
-				`Count for "${item.name}" updated successfully!`,
-				'success'
-			);
-		} catch (error) {
-			notificationStore.showNotification(
-				error instanceof Error ? error.message : 'Could not update the count. Please try again.',
-				'error'
-			);
-		}
+	const transferStock = async (id, from, to, quantity) => {
+		const result = await itemStore.transferStock(id, from, to, quantity);
+		notifyOutcome(result, 'Stock transferred successfully!');
+		return result;
 	};
 
 	let confirm = $state({ open: false, kind: null, item: null });
@@ -172,9 +174,8 @@
 
 	const doResetCount = async (item) => {
 		try {
-			await itemStore.resetItemCount(item.id);
-			itemStore.setChangeAmount(item.id, 0);
-			notificationStore.showNotification(`Count for "${item.name}" reset successfully!`, 'success');
+			const result = await itemStore.resetItemCount(item.id);
+			notifyOutcome(result, 'All locations reset successfully!');
 		} catch (error) {
 			notificationStore.showNotification(
 				error instanceof Error ? error.message : 'Could not reset the count. Please try again.',
@@ -187,8 +188,8 @@
 		// Each item's count reset and its ledger record are paired in the same
 		// atomic batch by the data layer.
 		try {
-			await itemStore.resetAllCounts();
-			notificationStore.showNotification('All counts have been reset successfully!', 'success');
+			const result = await itemStore.resetAllCounts();
+			notifyOutcome(result, 'All counts have been reset successfully!');
 		} catch (error) {
 			notificationStore.showNotification(
 				error instanceof Error ? error.message : 'Could not reset all counts. Please try again.',
@@ -196,24 +197,11 @@
 			);
 		}
 	};
-
-	const handleChangeAmountInput = (item, event) => {
-		const input = event.target;
-		const value = input.value.replace(/[^0-9]/g, '');
-
-		if (value === '') {
-			itemStore.setChangeAmount(item.id, 0);
-			input.value = '';
-		} else {
-			const numValue = parseInt(value, 10);
-			itemStore.setChangeAmount(item.id, numValue);
-			input.value = numValue.toString();
-		}
-	};
 </script>
 
 {#if itemsLoaded}
 	<div class="page-container">
+		<StockQueuePanel />
 		<div class="tx-section">
 			<!-- Header -->
 			<div class="tx-header">
@@ -224,7 +212,7 @@
 				<div class="tx-summary">
 					<span class="sum-item"><strong>{searchedItemsList.length}</strong> items</span>
 					<span class="sum-sep">·</span>
-					<span class="sum-item"><strong>{totalUnits}</strong> units</span>
+					<span class="sum-item"><strong><AnimatedCount value={totalUnits} /></strong> units</span>
 					{#if lowStockCount > 0}
 						<button
 							class="sum-chip sum-chip-low"
@@ -259,6 +247,13 @@
 						onClear={() => search.clear()}
 					/>
 				</div>
+				<StockLocationFilter
+					value={locationFilter}
+					onchange={(value) => {
+						locationFilter = value;
+						paginationStore.setCurrentPage(1);
+					}}
+				/>
 				<div class="tx-sort">
 					<span class="sort-label">Sort by</span>
 					<button
@@ -283,11 +278,11 @@
 					</button>
 					<button
 						class="sort-btn"
-						class:active={currentSortColumn === 'storageType'}
-						onclick={() => sortBy('storageType')}
+						class:active={currentSortColumn === 'stockByStorage'}
+						onclick={() => sortBy('stockByStorage')}
 					>
-						<span>Storage</span>
-						{#if currentSortColumn === 'storageType'}
+						<span>Locations</span>
+						{#if currentSortColumn === 'stockByStorage'}
 							<i class="fas {sortAscending ? 'fa-sort-up' : 'fa-sort-down'} sort-arrow"></i>
 						{/if}
 					</button>
@@ -298,9 +293,9 @@
 			<div class="tx-list">
 				<div class="tx-list-head" aria-hidden="true">
 					<span class="h-item">Item</span>
-					<span class="h-storage">Storage</span>
+					<span class="h-storage">Stock locations</span>
 					<span class="h-status">Status</span>
-					<span class="h-count">Count</span>
+					<span class="h-count">Total</span>
 					<span class="h-adjust">Adjust</span>
 				</div>
 
@@ -326,10 +321,10 @@
 				{:else}
 					{#each paginatedItemsList as item, i (item.id)}
 						{@const status = stockStatus(item)}
-						{@const storage = storageTag(item)}
 						<div
 							class="tx-row"
 							style="--stripe-color: var(--st-{status}-color)"
+							use:flashOnChange={item.count}
 							in:fly={{
 								y: listReady ? 0 : 8,
 								duration: reduceMotion ? 0 : listReady ? 150 : 320,
@@ -344,18 +339,19 @@
 							<div class="col-item">
 								<span class="item-name" title={item.name}>{item.name}</span>
 							</div>
-							<div class="col-storage" class:storage-empty={!storage}>
-								{#if storage}
-									<span class="storage-tag">
-										<i class="ti {storage.icon}"></i>
-										{storage.label}
-									</span>
-								{/if}
-							</div>
+							<div class="col-storage"><StockLocationChips {item} /></div>
 							<div class="col-status">
-								<span class="status-badge status-badge-{status}">
-									<span class="status-dot"></span>
-									{statusLabel[status]}
+								<span class="status-stack">
+									{#key status}
+										<span
+											class="status-badge status-badge-{status}"
+											in:fly={{ y: 6, duration: reduceMotion ? 0 : 220, easing: cubicOut }}
+											out:fade={{ duration: reduceMotion ? 0 : 150 }}
+										>
+											<span class="status-dot"></span>
+											{statusLabel[status]}
+										</span>
+									{/key}
 								</span>
 							</div>
 							<div class="col-count">
@@ -364,47 +360,16 @@
 									class:count-out={status === 'out'}
 									class:count-warn={status === 'low'}
 								>
-									{item.count}
+									<AnimatedCount value={item.count} />
 								</span>
 							</div>
 							<div class="col-adjust">
-								<div class="adjuster">
-									<button
-										class="adj-btn adj-minus motion-safe:active:scale-90"
-										onclick={() => changeCount(item, -item.changeAmount)}
-										disabled={item.changeAmount === 0}
-										aria-label="Remove {item.changeAmount || ''} from {item.name}"
-									>
-										−
-									</button>
-									<input
-										type="number"
-										inputmode="numeric"
-										pattern="[0-9]*"
-										placeholder="0"
-										value={item.changeAmount === 0 ? '' : item.changeAmount}
-										oninput={(e) => handleChangeAmountInput(item, e)}
-										class="adj-input"
-										aria-label="Change amount for {item.name}"
-									/>
-									<button
-										class="adj-btn adj-plus motion-safe:active:scale-90"
-										onclick={() => changeCount(item, +item.changeAmount)}
-										disabled={item.changeAmount === 0}
-										aria-label="Add {item.changeAmount || ''} to {item.name}"
-									>
-										+
-									</button>
-									<button
-										class="adj-btn adj-reset motion-safe:active:scale-90"
-										onclick={() => askResetCount(item)}
-										disabled={item.count === 0}
-										aria-label="Reset {item.name} to 0"
-										title="Reset to 0"
-									>
-										<i class="ti ti-rotate-clockwise"></i>
-									</button>
-								</div>
+								<StockLocationControls
+									{item}
+									onchange={changeCount}
+									ontransfer={(item) => (transferId = item.id)}
+									onreset={askResetCount}
+								/>
 							</div>
 						</div>
 					{/each}
@@ -427,6 +392,12 @@
 	<TableSkeleton />
 {/if}
 
+{#if transferItem}<StockTransferDialog
+		item={transferItem}
+		ontransfer={transferStock}
+		onclose={() => (transferId = null)}
+	/>{/if}
+
 <ConfirmModal
 	visible={confirm.open}
 	title={confirm.kind === 'resetAll' ? 'Reset all counts?' : 'Reset item count?'}
@@ -441,38 +412,25 @@
 	onCancel={cancelConfirm}
 >
 	{#if confirm.kind === 'resetAll'}
-		This resets every item back to 0:
+		This clears every storage location for every item. Offline resets wait to sync; intervening
+		stock changes require confirmation again.
 	{:else if confirm.item}
-		You're about to reset:
+		This clears every location for this item. If stock changes before an offline reset syncs, you
+		must review it again.
 	{/if}
 </ConfirmModal>
 
 <style>
-	/* =============================================
-	   Status colours (light) — bold & punchy
-	   ============================================= */
 	.page-container {
-		--st-in-color: #16a34a;
-		--st-low-color: #d97706;
-		--st-out-color: #dc2626;
-		--st-in-bg: #dcfce7;
-		--st-low-bg: #fef3c7;
-		--st-out-bg: #fee2e2;
-		--st-in-text: #15803d;
-		--st-low-text: #b45309;
-		--st-out-text: #b91c1c;
-	}
-
-	:global([data-theme='dark']) .page-container {
-		--st-in-color: #34d399;
-		--st-low-color: #fbbf24;
-		--st-out-color: #f87171;
-		--st-in-bg: rgba(52, 211, 153, 0.14);
-		--st-low-bg: rgba(251, 191, 36, 0.14);
-		--st-out-bg: rgba(248, 113, 113, 0.14);
-		--st-in-text: #4ade80;
-		--st-low-text: #fbbf24;
-		--st-out-text: #f87171;
+		--st-in-color: var(--event-add);
+		--st-low-color: var(--icon-hover-color);
+		--st-out-color: var(--event-remove);
+		--st-in-bg: var(--event-add-bg);
+		--st-low-bg: color-mix(in srgb, var(--icon-hover-color) 15%, var(--container-bg));
+		--st-out-bg: var(--event-remove-bg);
+		--st-in-text: var(--text-color);
+		--st-low-text: var(--text-color);
+		--st-out-text: var(--danger-text);
 	}
 
 	/* =============================================
@@ -489,9 +447,7 @@
 	.tx-section {
 		background: var(--container-bg);
 		border-radius: var(--border-radius);
-		box-shadow:
-			0 1px 3px rgba(0, 0, 0, 0.06),
-			0 4px 12px rgba(0, 0, 0, 0.04);
+		box-shadow: var(--nav-dropdown-shadow);
 		border: 1px solid var(--table-border-color);
 		overflow: hidden;
 		/* Keep row-glide repaints contained to this card instead of the page. */
@@ -643,7 +599,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.35rem;
-		height: 2rem;
+		min-height: 44px;
 		padding: 0 0.75rem;
 		font-size: 0.82rem;
 		font-weight: 700;
@@ -687,7 +643,7 @@
 	.tx-row,
 	.tx-list-head {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) 6.5rem 7rem 4.5rem 10.75rem;
+		grid-template-columns: minmax(8rem, 1fr) minmax(8rem, 0.7fr) 7rem 4rem minmax(17rem, 1fr);
 		align-items: center;
 		gap: 0.85rem;
 		padding: 0.55rem 1.5rem 0.55rem 1.25rem;
@@ -718,7 +674,21 @@
 		background: var(--container-bg);
 		border-left: 4px solid var(--stripe-color);
 		border-bottom: 1px solid var(--table-border-color);
-		transition: background-color 0.12s ease-out;
+		transition:
+			background-color 0.12s ease-out,
+			border-left-color 0.35s ease-out;
+	}
+
+	/* A just-adjusted row washes with its status colour and settles, tying the
+	   chip, balance and total changes together as one event. */
+	.tx-row:global(.is-flashing) {
+		animation: row-flash 900ms ease-out;
+	}
+
+	@keyframes row-flash {
+		from {
+			background-color: color-mix(in srgb, var(--stripe-color) 16%, var(--container-bg));
+		}
 	}
 
 	.tx-row:last-child {
@@ -744,27 +714,17 @@
 		display: block;
 	}
 
-	/* ---- Storage tag — subtle, monochrome ---- */
-	.col-storage {
-		min-width: 0;
-	}
-
-	.storage-tag {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.3rem;
-		font-size: 0.76rem;
-		font-weight: 600;
-		color: var(--text-color-dimmed);
-		white-space: nowrap;
-	}
-
-	.storage-tag i {
-		font-size: 0.9rem;
-		opacity: 0.85;
-	}
-
 	/* ---- Status badge ---- */
+	/* Old and new badges share one cell so a status swap crossfades in place. */
+	.status-stack {
+		display: inline-grid;
+	}
+
+	.status-stack > .status-badge {
+		grid-area: 1 / 1;
+		justify-self: start;
+	}
+
 	.status-badge {
 		display: inline-flex;
 		align-items: center;
@@ -830,111 +790,6 @@
 
 	.count-value.count-warn {
 		color: var(--st-low-text);
-	}
-
-	/* =============================================
-	   Adjuster — prominent
-	   ============================================= */
-	.adjuster {
-		display: inline-flex;
-		align-items: center;
-		border: 1.5px solid var(--table-border-color);
-		border-radius: 999px;
-		overflow: hidden;
-		background: var(--hover-bg-color);
-	}
-
-	.adj-btn {
-		width: 40px;
-		height: 40px;
-		border: none;
-		background: transparent;
-		color: var(--text-color);
-		font-size: 1.35rem;
-		font-weight: 700;
-		line-height: 1;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transition:
-			background-color 0.12s ease-out,
-			color 0.12s ease-out,
-			transform 0.15s ease-out;
-	}
-
-	.adj-minus:hover:not(:disabled) {
-		background: var(--st-out-bg);
-		color: var(--st-out-text);
-	}
-
-	.adj-plus:hover:not(:disabled) {
-		background: var(--st-in-bg);
-		color: var(--st-in-text);
-	}
-
-	.adj-btn:disabled {
-		opacity: 0.25;
-		cursor: not-allowed;
-	}
-
-	.adj-input {
-		width: 44px;
-		height: 40px;
-		min-height: 0;
-		text-align: center;
-		font-size: 0.95rem;
-		font-weight: 700;
-		font-variant-numeric: tabular-nums;
-		color: var(--text-color);
-		background: transparent;
-		border: none;
-		border-left: 1.5px solid var(--table-border-color);
-		border-right: 1.5px solid var(--table-border-color);
-		-moz-appearance: textfield;
-		outline: none;
-	}
-
-	.adj-input::-webkit-outer-spin-button,
-	.adj-input::-webkit-inner-spin-button {
-		-webkit-appearance: none;
-		margin: 0;
-	}
-
-	.adj-input::placeholder {
-		color: var(--text-color-dimmed);
-		font-weight: 400;
-	}
-
-	.adj-input:focus {
-		background: color-mix(in srgb, var(--add-item-color) 8%, var(--hover-bg-color));
-	}
-
-	/* =============================================
-	   Reset — a segment inside the adjuster pill
-	   ============================================= */
-	.adj-reset {
-		border-left: 1.5px solid var(--table-border-color);
-		color: var(--text-color-dimmed);
-	}
-
-	.adj-reset i {
-		font-size: 1rem;
-	}
-
-	.adj-reset:hover:not(:disabled) {
-		background: var(--st-out-bg);
-		color: var(--st-out-text);
-	}
-
-	.adj-reset:disabled {
-		opacity: 0.3;
-		cursor: not-allowed;
-	}
-
-	.adj-reset:focus-visible {
-		outline: 2px solid var(--add-item-color);
-		outline-offset: -2px;
 	}
 
 	/* =============================================
@@ -1036,7 +891,7 @@
 	/* =============================================
 	   Responsive — keep condensed rows on mobile
 	   ============================================= */
-	@media (max-width: 640px) {
+	@media (max-width: 1050px) {
 		.page-container {
 			padding: 0.75rem;
 		}
@@ -1094,11 +949,6 @@
 			flex: 0 0 auto;
 		}
 
-		/* No storage type → don't leave a gap at the start of the meta row. */
-		.col-storage.storage-empty {
-			display: none;
-		}
-
 		.col-adjust {
 			flex: 0 0 100%;
 		}
@@ -1112,33 +962,6 @@
 
 		.count-value {
 			font-size: 1.05rem;
-		}
-
-		/* Full-width adjuster — four equal segments (− · amount · + · reset).
-		   Grid with `minmax(0, 1fr)` columns forces exactly-equal widths; flex
-		   left the <input> segment narrower than the buttons on mobile browsers
-		   (form controls resist flex shrink/grow inconsistently). */
-		.col-adjust .adjuster {
-			display: grid;
-			grid-template-columns: repeat(4, minmax(0, 1fr));
-			width: 100%;
-		}
-
-		.adj-btn,
-		.adj-input {
-			min-width: 0;
-			width: auto;
-			height: 38px;
-		}
-
-		.adj-btn {
-			font-size: 1.3rem;
-		}
-
-		.adj-input {
-			width: 100%;
-			padding: 0;
-			font-size: 0.95rem;
 		}
 
 		/* Footer 3: compact pager + per-page on one row, then a full-width

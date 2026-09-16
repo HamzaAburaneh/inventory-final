@@ -4,7 +4,9 @@
 	import Table from '../../components/Table.svelte';
 	import TableSkeleton from '../../components/TableSkeleton.svelte';
 	import Pagination from '../../components/Pagination.svelte';
-	import StorageSelect from '../../components/StorageSelect.svelte';
+	import StockLocationFilter from '../../components/StockLocationFilter.svelte';
+	import StockQueuePanel from '../../components/StockQueuePanel.svelte';
+	import { matchesStockLocation } from '../../lib/stockLocations.js';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { itemStore } from '../../stores/itemStore';
 	import { createSearchState } from '../../lib/runes/search.svelte.js';
@@ -17,6 +19,7 @@
 	import { onMount } from 'svelte';
 
 	let currentSortColumn = $state('name');
+	let locationFilter = $state('all');
 	let sortAscending = $state(true);
 	let itemsLoaded = $state(false);
 	let booths = $state([]);
@@ -30,7 +33,6 @@
 		count: 'Count',
 		lowCount: 'Low Alert',
 		cost: 'Unit Cost ($)',
-		storageType: 'Storage Type',
 		booths: 'Booths'
 	};
 
@@ -64,7 +66,11 @@
 	}
 
 	const filteredItemsList = $derived(
-		items.filter((item) => item.name.toLowerCase().includes(searchTermValue.toLowerCase()))
+		items.filter(
+			(item) =>
+				item.name.toLowerCase().includes(searchTermValue.toLowerCase()) &&
+				matchesStockLocation(item, locationFilter)
+		)
 	);
 
 	const totalInventoryValue = $derived(
@@ -127,7 +133,7 @@
 	const handleItemAdd = async ({ formData }) => {
 		if (items.some((item) => item.name.toLowerCase() === formData.name.toLowerCase())) {
 			notificationStore.showNotification('Item with this name already exists.', 'error');
-			return;
+			return { status: 'attention', error: 'Item with this name already exists.' };
 		}
 		try {
 			const newItem = {
@@ -137,18 +143,46 @@
 				cost: formData.cost ? parseFloat(parseFloat(formData.cost).toFixed(2)) : 0,
 				booths: formData.booths || []
 			};
-			await itemStore.addItem(newItem);
-			notificationStore.showNotification('Item added successfully!', 'success');
+			const result = await itemStore.addItem(newItem);
+			notificationStore.showNotification(
+				result.status === 'applied'
+					? 'Item added successfully!'
+					: result.status === 'queued'
+						? 'Item creation saved on this device, pending sync.'
+						: 'Item creation needs attention.',
+				result.status === 'attention' ? 'error' : 'success'
+			);
+			return result;
 		} catch (error) {
 			if (error instanceof Error) {
 				notificationStore.showNotification(error.message, 'error');
 			}
+			return {
+				status: 'attention',
+				error: error instanceof Error ? error.message : 'Could not save item.'
+			};
 		}
 	};
 
 	const handleDelete = async (id) => {
-		await itemStore.deleteItem(id);
-		notificationStore.showNotification('Item deleted successfully!', 'success');
+		try {
+			const result = await itemStore.deleteItem(id);
+			notificationStore.showNotification(
+				result.status === 'applied'
+					? 'Item deleted successfully!'
+					: result.status === 'queued'
+						? 'Deletion saved on this device, pending sync.'
+						: 'Deletion needs attention.',
+				result.status === 'attention' ? 'error' : 'success'
+			);
+			return result;
+		} catch (error) {
+			notificationStore.showNotification(
+				error instanceof Error ? error.message : 'Could not delete item.',
+				'error'
+			);
+			return { status: 'attention' };
+		}
 	};
 
 	const handleEdit = async (id, field, oldValue) => {
@@ -165,14 +199,6 @@
 			value: oldValue != null ? oldValue.toString() : '',
 			title: `Edit ${String(field).charAt(0).toUpperCase() + String(field).slice(1)}`
 		};
-
-		// Normalize storage type values for proper dropdown selection
-		if (field === 'storageType' && editData.value) {
-			const normalizedValue = editData.value.toLowerCase();
-			if (normalizedValue === 'dry storage') editData.value = 'Dry Storage';
-			else if (normalizedValue === 'refrigerator') editData.value = 'Refrigerator';
-			else if (normalizedValue === 'freezer') editData.value = 'Freezer';
-		}
 
 		// Handle booths field - keep as array for checkbox editing
 		if (field === 'booths') {
@@ -265,6 +291,7 @@
 
 {#if itemsLoaded}
 	<div class="page-container">
+		<StockQueuePanel />
 		<!-- Form Section -->
 		<div class="form-section">
 			<ItemForm onAdd={handleItemAdd} {booths} />
@@ -289,6 +316,14 @@
 					onClear={handleClearSearch}
 				/>
 			</div>
+
+			<StockLocationFilter
+				value={locationFilter}
+				onchange={(value) => {
+					locationFilter = value;
+					paginationStore.setCurrentPage(1);
+				}}
+			/>
 
 			<div class="table-section">
 				<Table
@@ -337,14 +372,6 @@
 			<line x1="12" y1="1" x2="12" y2="23"></line>
 			<path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
 		</svg>
-	{:else if field === 'storageType'}
-		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-			<path
-				d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
-			></path>
-			<polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-			<line x1="12" y1="22.08" x2="12" y2="12"></line>
-		</svg>
 	{:else}
 		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 			<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
@@ -374,9 +401,7 @@
 			</div>
 			<div class="modal-body">
 				<span class="modal-label">{fieldLabels[editData.field] ?? 'Value'}</span>
-				{#if editData.field === 'storageType'}
-					<StorageSelect bind:value={editData.value} />
-				{:else if editData.field === 'booths'}
+				{#if editData.field === 'booths'}
 					<div class="booths-container">
 						{#each booths as booth (booth.id)}
 							<label class="booth-option">
