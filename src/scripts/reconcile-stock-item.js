@@ -19,10 +19,15 @@
 // account via GOOGLE_APPLICATION_CREDENTIALS / --key.
 //
 // Usage (from src/scripts, after `npm install`):
+//   node reconcile-stock-item.js --audit                            # list every broken item
 //   node reconcile-stock-item.js --item "test item"                 # dry run
 //   node reconcile-stock-item.js --item "test item" --apply         # write
 //   node reconcile-stock-item.js --item <itemId> --location Freezer --apply
+//   node reconcile-stock-item.js --item <itemId> --location Refrigerator --all-in --apply
 //   node reconcile-stock-item.js --item "test item" --group <groupId>
+//
+// --all-in puts the entire count in --location and zeroes the rest, for a map
+// that is a stale snapshot rather than merely short by the difference.
 
 import { readFileSync } from 'fs';
 import { randomUUID } from 'crypto';
@@ -32,6 +37,7 @@ import { config } from 'dotenv';
 import {
 	STORAGE_LOCATIONS,
 	emptyStock,
+	normalizeItemStock,
 	normalizeStorageLocation,
 	stockInteger
 } from '../lib/stockLocations.js';
@@ -152,9 +158,10 @@ async function resolveBackend(args) {
  * Work out the repaired map for one item, or explain why it cannot be repaired.
  * @param {Record<string, unknown>} item - Stored item data.
  * @param {string | undefined} requestedLocation - `--location`, if given.
+ * @param {boolean} [allIn] - Put the whole count in that location instead of only the difference.
  * @returns {{ stockByStorage: Record<string, number>, location: string, difference: number }}
  */
-function planRepair(item, requestedLocation) {
+function planRepair(item, requestedLocation, allIn = false) {
 	const storageType = normalizeStorageLocation(item.storageType);
 	const allowed = storageType === 'Dry Storage' ? ['Dry Storage'] : ['Freezer', 'Refrigerator'];
 	const location = requestedLocation ? normalizeStorageLocation(requestedLocation) : storageType;
@@ -171,6 +178,8 @@ function planRepair(item, requestedLocation) {
 	const count = stockInteger(item.count);
 	const mapped = Object.values(stockByStorage).reduce((sum, value) => sum + value, 0);
 	const difference = count - mapped;
+	if (allIn)
+		return { stockByStorage: { ...emptyStock(), [location]: count }, location, difference };
 	const repaired = stockByStorage[location] + difference;
 	if (repaired < 0)
 		throw new Error(
@@ -179,15 +188,42 @@ function planRepair(item, requestedLocation) {
 	return { stockByStorage: { ...stockByStorage, [location]: repaired }, location, difference };
 }
 
+/**
+ * Read-only pass over every item; prints the ones the app would show as "Check stock".
+ * @param {Backend} backend - Authenticated backend.
+ * @param {string[]} groupIds - Groups to scan.
+ * @returns {Promise<void>}
+ */
+async function audit(backend, groupIds) {
+	let broken = 0;
+	for (const groupId of groupIds)
+		for (const item of await backend.readItems(groupId)) {
+			try {
+				normalizeItemStock({ id: item.id, ...item.data });
+			} catch (error) {
+				broken += 1;
+				console.log(`${item.id} "${item.data.name}" (group ${groupId})`);
+				console.log(
+					`  storageType: ${item.data.storageType}  count: ${item.data.count}  ` +
+						`stockByStorage: ${JSON.stringify(item.data.stockByStorage ?? null)}`
+				);
+				console.log(`  ${error.message}`);
+			}
+		}
+	console.log(broken ? `${broken} item(s) need repair.` : 'Every item passes stock validation.');
+}
+
 async function main() {
 	const args = parseArgs(process.argv.slice(2));
-	if (!args.item || args.item === true)
-		throw new Error('Pass --item <name or id> to choose which item to repair.');
-	const wanted = String(args.item);
+	const auditOnly = args.audit === true;
+	if (!auditOnly && (!args.item || args.item === true))
+		throw new Error('Pass --item <name or id> to choose which item to repair, or --audit.');
 	const apply = args.apply === true;
 	const backend = await resolveBackend(args);
 	console.log(`Authenticated: ${backend.label}`);
 	const groupIds = args.group ? [String(args.group)] : await backend.listGroups();
+	if (auditOnly) return audit(backend, groupIds);
+	const wanted = String(args.item);
 	const matches = [];
 	for (const groupId of groupIds)
 		for (const item of await backend.readItems(groupId))
@@ -203,8 +239,12 @@ async function main() {
 	console.log(`Item ${match.id} "${match.data.name}" in group ${match.groupId}`);
 	console.log(`  stored count: ${match.data.count}`);
 	console.log(`  stored stockByStorage: ${JSON.stringify(match.data.stockByStorage ?? null)}`);
-	const plan = planRepair(match.data, args.location ? String(args.location) : undefined);
-	if (plan.difference === 0) {
+	const plan = planRepair(
+		match.data,
+		args.location ? String(args.location) : undefined,
+		args['all-in'] === true
+	);
+	if (plan.difference === 0 && !args['all-in']) {
 		console.log('Balances already add up to the total. Nothing to do.');
 		return;
 	}
@@ -223,7 +263,11 @@ async function main() {
 	console.log('Written. Reload the app; the item should accept stock changes again.');
 }
 
-main().catch((error) => {
-	console.error(error.message);
-	process.exit(1);
-});
+// The client SDK keeps its sockets open, so exit explicitly once the work is done.
+main().then(
+	() => process.exit(0),
+	(error) => {
+		console.error(error.message);
+		process.exit(1);
+	}
+);

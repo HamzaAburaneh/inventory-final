@@ -92,13 +92,17 @@ export function locationLabel(location) {
 	return location === 'Refrigerator' ? 'Fridge' : location;
 }
 
-/** @param {object} item Item. @param {string} location Filter. @returns {boolean} Positive balance in the location; All also includes empty products. */
+/** @param {object} item Item. @returns {string|null} Location an empty item is listed under, or null when it holds stock or is invalid. */
+export function emptyStockLocation(item) {
+	const state = inspectItemStock(item);
+	return !state.error && state.total === 0 ? state.storageType : null;
+}
+
+/** @param {object} item Item. @param {string} location Filter. @returns {boolean} Positive balance in the location, or an empty item whose starting location it is; All includes everything. */
 export function matchesStockLocation(item, location) {
-	return (
-		!location ||
-		location === 'all' ||
-		inspectItemStock(item).stockByStorage[normalizeStorageLocation(location)] > 0
-	);
+	if (!location || location === 'all') return true;
+	const key = normalizeStorageLocation(location);
+	return inspectItemStock(item).stockByStorage[key] > 0 || emptyStockLocation(item) === key;
 }
 
 /** @param {object} item Item. @returns {string} Stable location sort key. */

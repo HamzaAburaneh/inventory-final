@@ -20,14 +20,17 @@ Credentials are the same as the backfill script below (`BACKFILL_EMAIL` /
 ```bash
 cd src/scripts
 npm install                                                # first time only
+node reconcile-stock-item.js --audit                       # READ ONLY - list every broken item
 node reconcile-stock-item.js --item "test item"            # DRY RUN - prints the plan
 node reconcile-stock-item.js --item "test item" --apply    # write the repaired map
 ```
 
 | Flag                | Effect                                                               |
 | ------------------- | -------------------------------------------------------------------- |
+| `--audit`           | Read-only scan; prints each item the app shows as "Check stock".     |
 | `--item <name\|id>` | Which item to repair. A name must match exactly one item.            |
 | `--location <loc>`  | Location that absorbs the difference (default: starting).            |
+| `--all-in`          | Put the whole `count` in `--location` and zero the others.           |
 | `--group <id>`      | Restrict the search to one group.                                    |
 | `--apply`           | Write. Without it the script only reports.                           |
 | `--key <path>`      | Service-account JSON, if `GOOGLE_APPLICATION_CREDENTIALS` isn't set. |

@@ -40,6 +40,7 @@ Items support `stockByStorage` with a stored combined `count`. `storageType` is 
 starting location and cold/dry family. Legacy rows normalize on read and persist maps
 on their next valid mutation. Cold items support Freezer and Refrigerator; dry items
 support Dry Storage only. Creation accepts opening balances per allowed location.
+An item with no stock anywhere displays and filters under its starting location.
 Duplicate cleanup is implemented as reviewed maintenance tooling with no merge UI.
 Live cleanup has not been applied. See STOCK_LOCATIONS_ROLLOUT.md for rollout requirements.
 Optional per-item unit labels are a future feature; fractional quantities and unit

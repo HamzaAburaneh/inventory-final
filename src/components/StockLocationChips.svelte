@@ -5,7 +5,7 @@
 	import { prefersReducedMotion } from 'svelte/motion';
 	import Icon from './Icon.svelte';
 	import AnimatedCount from './AnimatedCount.svelte';
-	import { inspectItemStock, locationLabel } from '../lib/stockLocations.js';
+	import { emptyStockLocation, inspectItemStock, locationLabel } from '../lib/stockLocations.js';
 	import { getStorageTypeIcon } from '../lib/tableUtils.js';
 	let { item } = $props();
 	// Chips appear with the app's soft rise as a location fills and fade as it
@@ -15,6 +15,8 @@
 	const occupied = $derived(
 		stock.locations.filter((location) => stock.stockByStorage[location] > 0)
 	);
+	// An empty item keeps its starting location visible (and filterable) at 0.
+	const emptyLocation = $derived(emptyStockLocation(item));
 </script>
 
 <div class="stock-chips">
@@ -23,8 +25,17 @@
 			<i class="ti ti-alert-triangle" aria-hidden="true"></i>
 			Check stock
 		</span>
-	{:else if occupied.length === 0}
-		<span class="stock-chip empty" in:fade={{ duration: ms(200), delay: ms(120) }}>No stock</span>
+	{:else if emptyLocation}
+		<span
+			class="stock-chip empty"
+			data-location={emptyLocation}
+			title="No stock in any location"
+			in:fade={{ duration: ms(200), delay: ms(120) }}
+		>
+			<Icon name={getStorageTypeIcon(emptyLocation)} size={13} class="chip-icon" />
+			{locationLabel(emptyLocation)}
+			<strong>0</strong>
+		</span>
 	{:else}
 		{#each occupied as location (location)}
 			<span
@@ -85,6 +96,10 @@
 		background: transparent;
 		border-style: dashed;
 		font-weight: 500;
+	}
+	.stock-chip.empty :global(.chip-icon),
+	.stock-chip.empty strong {
+		opacity: 0.7;
 	}
 	.stock-error {
 		display: inline-flex;

@@ -3,6 +3,7 @@ import {
 	normalizeItemStock,
 	inspectItemStock,
 	matchesStockLocation,
+	emptyStockLocation,
 	stockFingerprint
 } from './stockLocations';
 import { planStockAction } from './stockOperations';
@@ -49,6 +50,17 @@ describe('location normalization', () => {
 		expect(matchesStockLocation(item(0), 'all')).toBe(true);
 		expect(matchesStockLocation(item(2), 'Refrigerator')).toBe(false);
 		expect(matchesStockLocation(item(0, 2), 'Refrigerator')).toBe(true);
+	});
+	it('lists an empty item under its starting location only; invalid items under none', () => {
+		expect(emptyStockLocation(item(0))).toBe('Freezer');
+		expect(emptyStockLocation(item(0, 2))).toBeNull();
+		expect(emptyStockLocation({ count: 0, storageType: 'fridge' })).toBe('Refrigerator');
+		expect(matchesStockLocation(item(0), 'Freezer')).toBe(true);
+		expect(matchesStockLocation(item(0), 'fridge')).toBe(false);
+		const broken = { ...item(0), count: 9 };
+		expect(emptyStockLocation(broken)).toBeNull();
+		expect(matchesStockLocation(broken, 'Freezer')).toBe(false);
+		expect(matchesStockLocation(broken, 'all')).toBe(true);
 	});
 });
 
