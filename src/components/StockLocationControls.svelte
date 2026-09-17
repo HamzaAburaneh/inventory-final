@@ -153,6 +153,7 @@
 	.location-row {
 		--row-accent: var(--text-color-dimmed);
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		justify-content: space-between;
 		gap: 0.5rem;
@@ -179,10 +180,15 @@
 		color: var(--row-accent);
 		flex-shrink: 0;
 	}
+	/* The global `* { min-width: 0 }` lets flex items shrink under their text,
+	   which made the count land on top of the label in a tight column. These
+	   keep their width; a row that still cannot fit wraps the pill below. */
 	.label {
 		white-space: nowrap;
+		flex-shrink: 0;
 	}
 	strong {
+		flex-shrink: 0;
 		color: var(--text-color);
 		font-size: 0.9rem;
 		font-weight: 800;
@@ -190,6 +196,7 @@
 	}
 	.ghost {
 		display: inline-block;
+		flex-shrink: 0;
 		padding: 0 0.35rem;
 		border-radius: 999px;
 		color: var(--event-add);
@@ -207,6 +214,7 @@
 		display: inline-flex;
 		align-items: stretch;
 		flex-shrink: 0;
+		margin-left: auto;
 		height: var(--control-size);
 		border: 1.5px solid var(--table-border-color);
 		border-radius: 999px;

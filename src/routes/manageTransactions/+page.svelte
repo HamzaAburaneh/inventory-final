@@ -643,7 +643,9 @@
 	.tx-row,
 	.tx-list-head {
 		display: grid;
-		grid-template-columns: minmax(8rem, 1fr) minmax(8rem, 0.7fr) 7rem 4rem minmax(17rem, 1fr);
+		/* The adjust track must hold "Dry Storage" + a count + the +/- pill + the
+		   action buttons side by side; below ~22rem the label and count collide. */
+		grid-template-columns: minmax(8rem, 1fr) minmax(8rem, 0.7fr) 7rem 4rem minmax(22rem, 1fr);
 		align-items: center;
 		gap: 0.85rem;
 		padding: 0.55rem 1.5rem 0.55rem 1.25rem;
