@@ -257,3 +257,17 @@ For Svelte component/module work, load `svelte-code-writer` and
 `svelte-core-bestpractices` and use the Svelte MCP documentation/autofixer workflow.
 Use runes for new component state while preserving existing store contracts when
 unrelated to the task. Do not migrate working stores merely for stylistic consistency.
+
+### Svelte MCP server usage
+
+When working on Svelte or SvelteKit topics, use the Svelte MCP server's tools:
+
+1. **list-sections** — call this FIRST to discover all available documentation
+   sections (titles, use_cases, paths). Always start here for Svelte/SvelteKit tasks.
+2. **get-documentation** — after reviewing the `list-sections` results (especially
+   `use_cases`), fetch full documentation for every section relevant to the task.
+   Accepts single or multiple sections.
+3. **svelte-autofixer** — run on any Svelte code you write before delivering it.
+   Keep calling it until it returns no issues or suggestions.
+4. **playground-link** — only call after the user confirms they want one, and never
+   when the code has already been written to files in the project.
