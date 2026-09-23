@@ -42,8 +42,10 @@ on their next valid mutation. Cold items support Freezer and Refrigerator; dry i
 support Dry Storage only. Creation accepts opening balances per allowed location.
 An item with no stock anywhere displays and filters under its starting location.
 Duplicate cleanup is implemented as reviewed maintenance tooling with no merge UI.
-Seven cold freezer/fridge pairs were merged live on 2026-09-22; their historical
-transfer reviews are a separate, owner-approved step. See STOCK_LOCATIONS_ROLLOUT.md for rollout requirements.
+Seven cold freezer/fridge pairs were merged live on 2026-09-22, and 54 of their 2026
+freezer/fridge moves were confirmed as historical transfers. Split moves and unpaired
+additions remain unreviewed. Merging was one-time cleanup: the history page has no merge
+filter, though merge rows still render. See STOCK_LOCATIONS_ROLLOUT.md for requirements.
 Optional per-item unit labels are a future feature; fractional quantities and unit
 conversion are not currently requested.
 

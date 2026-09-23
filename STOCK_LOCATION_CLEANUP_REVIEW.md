@@ -2,7 +2,10 @@
 
 Status: historical review. Seven cold pairs (avocado, bacon, beef barbacoa, beef burger,
 cheese curds, ground beef, pork) were approved and merged on 2026-09-22. Vendor-named
-entries such as the Enercare burgers were not merged.
+entries such as the Enercare burgers were not merged. On the same day the owner confirmed
+54 of their 2026 freezer/fridge moves (equal quantity, within five minutes, either order)
+as historical transfers; three overlapping alternatives, split moves such as −10 → +9 and
++1, and additions with no nearby removal remain unreviewed and still count as demand.
 
 ## Source and limits
 
@@ -93,7 +96,7 @@ importing opening vendor balances. See VENDOR_BALANCES_FEATURE_BRIEF.md.
 3. Read exact source documents/IDs within the intended group, check aliases, and back
    up affected records outside public folders. Refresh counts and expected source state.
 4. Audit relevant transaction histories for reviewed equal-quantity removal/addition
-   pairs within five minutes. This report has not established any historical matches.
+   pairs within five minutes. Done: 54 pairs confirmed on 2026-09-22 (see Status).
 5. Audit saved order references and include any needed explicit resolutions in the plan.
 6. Produce the final ID-based dry-run manifest. Apply only approved pairs, with stale-state
    checks, retry protection, atomic stock/ledger writes, and original history preserved.

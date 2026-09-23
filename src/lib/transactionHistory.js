@@ -96,12 +96,12 @@ export function availableYears(earliestYear, latestYear) {
  * Transfers are the exception: reviewed historical transfers stay stored as
  * their original countChange rows (the ledger is never rewritten), so the
  * season is loaded whole and narrowed by matchesHistoryFilter instead.
- * @param {string} filter - '' | 'add' | 'remove' | 'itemCreated' | 'itemDeleted' | 'stockTransfer' | 'itemMerged'.
+ * @param {string} filter - '' | 'add' | 'remove' | 'itemCreated' | 'itemDeleted' | 'stockTransfer'.
  * @returns {Array<[string, string]>} `[field, value]` pairs; empty for no filter.
  */
 export function transactionFilterMatches(filter) {
 	if (!filter || filter === 'stockTransfer') return [];
-	if (['itemCreated', 'itemDeleted', 'itemMerged'].includes(filter)) return [['event', filter]];
+	if (['itemCreated', 'itemDeleted'].includes(filter)) return [['event', filter]];
 	return [
 		['event', 'countChange'],
 		['type', filter]

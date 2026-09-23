@@ -74,8 +74,7 @@
 		{ value: 'remove', label: 'Stock removed', icon: 'fa-arrow-down' },
 		{ value: 'itemCreated', label: 'New items', icon: 'fa-box-open' },
 		{ value: 'itemDeleted', label: 'Deleted items', icon: 'fa-trash-can' },
-		{ value: 'stockTransfer', label: 'Transfers', icon: 'fa-arrows-left-right' },
-		{ value: 'itemMerged', label: 'Merged items', icon: 'fa-object-group' }
+		{ value: 'stockTransfer', label: 'Transfers', icon: 'fa-arrows-left-right' }
 	];
 
 	// Firestore already applied the year and the type filter, so only the search
