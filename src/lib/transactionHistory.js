@@ -15,8 +15,11 @@
  * six rows swamped every real movement in the stats.
  */
 
+import { inspectItemStock } from './stockLocations.js';
+
 /**
  * @typedef {import('../types').Transaction} Transaction
+ * @typedef {import('../types').Item} Item
  */
 
 // The season window, as month (0-indexed) and day. Wide enough to cover setup
@@ -89,17 +92,107 @@ export function availableYears(earliestYear, latestYear) {
  * written with type 'add' and an itemDeleted row with type 'remove'
  * (src/lib/items.js), so matching on `type` alone would file every item
  * creation under "Stock added".
- * @param {string} filter - '' | 'add' | 'remove' | 'itemCreated' | 'itemDeleted'.
+ *
+ * Transfers are the exception: reviewed historical transfers stay stored as
+ * their original countChange rows (the ledger is never rewritten), so the
+ * season is loaded whole and narrowed by matchesHistoryFilter instead.
+ * @param {string} filter - '' | 'add' | 'remove' | 'itemCreated' | 'itemDeleted' | 'stockTransfer' | 'itemMerged'.
  * @returns {Array<[string, string]>} `[field, value]` pairs; empty for no filter.
  */
 export function transactionFilterMatches(filter) {
-	if (!filter) return [];
-	if (['itemCreated', 'itemDeleted', 'stockTransfer', 'itemMerged'].includes(filter))
-		return [['event', filter]];
+	if (!filter || filter === 'stockTransfer') return [];
+	if (['itemCreated', 'itemDeleted', 'itemMerged'].includes(filter)) return [['event', filter]];
 	return [
 		['event', 'countChange'],
 		['type', filter]
 	];
+}
+
+/**
+ * Apply the part of a type filter that depends on review decisions.
+ *
+ * A confirmed historical transfer is listed under Transfers, not under Stock
+ * added/removed, matching how the page stats and analytics already treat it.
+ * @param {Transaction & { historicalTransfer?: boolean }} transaction - An annotated row.
+ * @param {string} filter - The selected type filter.
+ * @returns {boolean} True when the row belongs in that filter.
+ */
+export function matchesHistoryFilter(transaction, filter) {
+	if (filter === 'stockTransfer')
+		return transaction.event === 'stockTransfer' || transaction.historicalTransfer === true;
+	if (filter === 'add' || filter === 'remove') return transaction.historicalTransfer !== true;
+	return true;
+}
+
+/**
+ * Show each confirmed historical transfer as one transfer row, like a new one.
+ *
+ * Before the freezer/fridge merge a move was logged as a removal from one item
+ * and an addition to its duplicate. The two ledger rows stay untouched as the
+ * audit record; this only folds them together for display, named after the
+ * product that now owns both IDs. Their totals belonged to separate items, so
+ * the row carries no before/after count. A pair with only one side loaded (a
+ * season edge or a narrower filter) is left as its original row.
+ *
+ * The survivor keeps its starting location, so a side logged against it is
+ * there and the retired duplicate's side is the other cold location. Any other
+ * arrangement (chained aliases, unknown items) leaves the locations unset.
+ * @param {Array<Transaction & { historicalTransfer?: boolean, historicalTransferReviewId?: string | null }>} transactions - Annotated rows, in display order.
+ * @param {Item[]} [items] - Current products with their retired IDs.
+ * @returns {Transaction[]} Rows with each complete pair replaced, at its earlier side, by one transfer.
+ */
+export function combineHistoricalTransfers(transactions, items = []) {
+	const owners = new Map();
+	for (const item of items)
+		for (const id of [item.id, ...(item.legacyItemIds ?? [])]) owners.set(id, item);
+	const pairs = new Map();
+	for (const row of transactions) {
+		if (!row.historicalTransfer || !row.historicalTransferReviewId) continue;
+		const pair = pairs.get(row.historicalTransferReviewId) ?? [];
+		pair.push(row);
+		pairs.set(row.historicalTransferReviewId, pair);
+	}
+	const shown = new Set();
+	const out = [];
+	for (const row of transactions) {
+		const pair = pairs.get(row.historicalTransferReviewId);
+		const removal = pair?.find((side) => side.type === 'remove');
+		const addition = pair?.find((side) => side.type === 'add');
+		if (!pair || pair.length !== 2 || !removal || !addition) {
+			out.push(row);
+			continue;
+		}
+		if (shown.has(row.historicalTransferReviewId)) continue;
+		shown.add(row.historicalTransferReviewId);
+		const product = owners.get(removal.itemId);
+		const sameProduct = product && owners.get(addition.itemId) === product;
+		const home = sameProduct ? inspectItemStock(product).storageType : null;
+		const other = { Freezer: 'Refrigerator', Refrigerator: 'Freezer' }[home];
+		let fromLocation = null;
+		let toLocation = null;
+		if (other && removal.itemId === product.id) [fromLocation, toLocation] = [home, other];
+		else if (other && addition.itemId === product.id) [fromLocation, toLocation] = [other, home];
+		const earlier =
+			new Date(removal.timestamp) <= new Date(addition.timestamp) ? removal : addition;
+		out.push({
+			id: `historical-transfer-${row.historicalTransferReviewId}`,
+			itemId: sameProduct ? product.id : removal.itemId,
+			itemName: sameProduct ? product.name : removal.itemName,
+			type: 'transfer',
+			event: 'stockTransfer',
+			historicalTransfer: true,
+			historicalTransferReviewId: row.historicalTransferReviewId,
+			quantity: Number(removal.previousCount) - Number(removal.newCount),
+			fromLocation,
+			toLocation,
+			previousCount: null,
+			newCount: null,
+			timestamp: earlier.timestamp,
+			user: removal.user === addition.user ? removal.user : `${removal.user} / ${addition.user}`,
+			sourceTransactions: [removal, addition]
+		});
+	}
+	return out;
 }
 
 /**

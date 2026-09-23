@@ -12,7 +12,7 @@ import {
 	Timestamp
 } from 'firebase/firestore';
 import { requireActiveGroupId } from './activeGroup';
-import { transactionFilterMatches, seasonRange } from './transactionHistory';
+import { transactionFilterMatches, matchesHistoryFilter, seasonRange } from './transactionHistory';
 
 /**
  * @typedef {import('../types').Transaction} Transaction
@@ -123,7 +123,9 @@ export function subscribeToTransactions(onData, onError, options) {
 	const emit = () => {
 		if (!rows || !reviews) return;
 		try {
-			onData(annotateStockHistory(rows, reviews));
+			onData(
+				annotateStockHistory(rows, reviews).filter((row) => matchesHistoryFilter(row, filter))
+			);
 		} catch (error) {
 			onError?.(error);
 		}

@@ -2,6 +2,7 @@
 	import { subscribeToTransactions, getEarliestTransactionYear } from '../../lib/transactions';
 	import {
 		availableYears,
+		combineHistoricalTransfers,
 		countTransactionsByDay,
 		currentSeasonYear,
 		isMissingIndexError
@@ -13,6 +14,7 @@
 	import SearchBar from '../../components/SearchBar.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { createSearchState } from '../../lib/runes/search.svelte.js';
+	import { itemStore } from '../../stores/itemStore';
 	import { onMount } from 'svelte';
 
 	function transactionEvent(transaction) {
@@ -79,10 +81,15 @@
 	// Firestore already applied the year and the type filter, so only the search
 	// term is left to apply here — it has no server-side equivalent, since
 	// Firestore cannot match a substring.
+	// Confirmed historical freezer/fridge moves were logged as two rows on items
+	// that have since been merged; show each pair as one transfer of the product
+	// that owns both today. The stored rows are unchanged and still go to CSV.
+	const displayTransactions = $derived(combineHistoricalTransfers(transactions, $itemStore));
+
 	const filteredTransactions = $derived.by(() => {
-		if (!searchTermValue) return transactions;
+		if (!searchTermValue) return displayTransactions;
 		const lowerSearchTerm = searchTermValue.toLowerCase();
-		return transactions.filter((transaction) =>
+		return displayTransactions.filter((transaction) =>
 			transaction.itemName.toLowerCase().includes(lowerSearchTerm)
 		);
 	});
@@ -164,6 +171,13 @@
 
 	onMount(() => {
 		startSubscription();
+		try {
+			// Names merged pairs after their current product; without it they fall
+			// back to the removal side's original name.
+			itemStore.loadItems();
+		} catch (error) {
+			console.warn('Items unavailable for history names:', error);
+		}
 		// Not awaited — one document read that only populates the year picker, and
 		// must never delay the rows. Offline it rejects and the picker falls back to
 		// the current year alone.
@@ -314,23 +328,25 @@
 			'Quantity',
 			'Historical transfer review'
 		];
-		const rows = sortedTransactions.map((transaction) => [
-			transaction.itemName,
-			transactionEvent(transaction),
-			transaction.type,
-			transaction.previousCount,
-			transaction.newCount,
-			transaction.newCount - transaction.previousCount,
-			new Date(transaction.timestamp).toISOString(),
-			transaction.user,
-			transaction.id,
-			transaction.itemId,
-			transaction.location,
-			transaction.fromLocation,
-			transaction.toLocation,
-			transaction.quantity,
-			transaction.historicalTransfer ? 'Confirmed historical transfer' : ''
-		]);
+		const rows = sortedTransactions
+			.flatMap((transaction) => transaction.sourceTransactions ?? [transaction])
+			.map((transaction) => [
+				transaction.itemName,
+				transactionEvent(transaction),
+				transaction.type,
+				transaction.previousCount,
+				transaction.newCount,
+				transaction.newCount - transaction.previousCount,
+				new Date(transaction.timestamp).toISOString(),
+				transaction.user,
+				transaction.id,
+				transaction.itemId,
+				transaction.location,
+				transaction.fromLocation,
+				transaction.toLocation,
+				transaction.quantity,
+				transaction.historicalTransfer ? 'Confirmed historical transfer' : ''
+			]);
 		const csv = [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\n');
 		const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
 		const url = URL.createObjectURL(blob);

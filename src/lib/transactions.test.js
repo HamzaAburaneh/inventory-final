@@ -242,3 +242,28 @@ describe('getEarliestTransactionYear', () => {
 		await expect(getEarliestTransactionYear()).rejects.toThrow('offline');
 	});
 });
+
+describe('subscribeToTransactions transfer filter', () => {
+	it('includes reviewed historical transfers and drops unrelated rows', async () => {
+		const { subscribeStockHistoryReviews } = await import('./stockReviews');
+		subscribeStockHistoryReviews.mockImplementationOnce((_group, callback) => {
+			callback([{ id: 'review', confirmed: true, transactionIds: ['r', 'a'] }]);
+			return () => {};
+		});
+		const received = [];
+		subscribeToTransactions((rows) => received.push(rows), undefined, {
+			year: 2026,
+			filter: 'stockTransfer'
+		});
+		expect(wheresOf(mocks.onSnapshot.mock.calls[0]).filter((c) => c.op === '==')).toEqual([]);
+		mocks.onSnapshot.mock.calls[0][1]({
+			docs: [
+				docSnap('r', rawTxn({ type: 'remove' })),
+				docSnap('a', rawTxn()),
+				docSnap('other', rawTxn()),
+				docSnap('moved', rawTxn({ event: 'stockTransfer', type: 'transfer' }))
+			]
+		});
+		expect(received[0].map((row) => row.id)).toEqual(['r', 'a', 'moved']);
+	});
+});

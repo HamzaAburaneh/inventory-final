@@ -6,6 +6,8 @@ import {
 	countTransactionsByDay,
 	transactionDayKey,
 	transactionFilterMatches,
+	matchesHistoryFilter,
+	combineHistoricalTransfers,
 	isMissingIndexError
 } from './transactionHistory';
 
@@ -119,6 +121,24 @@ describe('transactionFilterMatches', () => {
 	});
 });
 
+describe('matchesHistoryFilter', () => {
+	const reviewed = { event: 'countChange', type: 'remove', historicalTransfer: true };
+	const plain = { event: 'countChange', type: 'remove', historicalTransfer: false };
+
+	it('loads the whole season for Transfers, since reviews are not ledger fields', () => {
+		expect(transactionFilterMatches('stockTransfer')).toEqual([]);
+	});
+
+	it('lists new and confirmed historical transfers under Transfers only', () => {
+		expect(matchesHistoryFilter({ event: 'stockTransfer' }, 'stockTransfer')).toBe(true);
+		expect(matchesHistoryFilter(reviewed, 'stockTransfer')).toBe(true);
+		expect(matchesHistoryFilter(plain, 'stockTransfer')).toBe(false);
+		expect(matchesHistoryFilter(reviewed, 'remove')).toBe(false);
+		expect(matchesHistoryFilter(plain, 'remove')).toBe(true);
+		expect(matchesHistoryFilter(reviewed, '')).toBe(true);
+	});
+});
+
 describe('isMissingIndexError', () => {
 	it('recognises the failed-precondition Firestore raises for a missing index', () => {
 		expect(isMissingIndexError({ code: 'failed-precondition' })).toBe(true);
@@ -214,5 +234,73 @@ describe('availableYears', () => {
 	it('never offers a season with no data behind it', () => {
 		// A clock-skewed row dated in the future must not produce an inverted range.
 		expect(availableYears(2030, 2026)).toEqual([2026]);
+	});
+});
+
+describe('combineHistoricalTransfers', () => {
+	const product = {
+		id: 'freezer-burger',
+		name: 'beef burger',
+		storageType: 'Freezer',
+		count: 0,
+		legacyItemIds: ['fridge-burger']
+	};
+	const side = (id, itemId, itemName, type, previousCount, newCount, time) => ({
+		id,
+		itemId,
+		itemName,
+		type,
+		event: 'countChange',
+		previousCount,
+		newCount,
+		timestamp: new Date(`2026-08-26T${time}Z`),
+		user: 'staff',
+		historicalTransfer: true,
+		historicalTransferReviewId: 'review-1'
+	});
+	const removal = side('r', 'freezer-burger', 'beef burger', 'remove', 20, 10, '15:44:04');
+	const addition = side('a', 'fridge-burger', 'Beef burger in fridge', 'add', 0, 10, '15:44:00');
+	const plain = {
+		...removal,
+		id: 'p',
+		historicalTransfer: false,
+		historicalTransferReviewId: null
+	};
+
+	it('folds a pair into one transfer under the current product, at its earlier side', () => {
+		const rows = combineHistoricalTransfers([plain, addition, removal], [product]);
+		expect(rows.map((row) => row.id)).toEqual(['p', 'historical-transfer-review-1']);
+		expect(rows[1]).toMatchObject({
+			itemName: 'beef burger',
+			event: 'stockTransfer',
+			quantity: 10,
+			fromLocation: 'Freezer',
+			toLocation: 'Refrigerator',
+			previousCount: null,
+			timestamp: addition.timestamp,
+			sourceTransactions: [removal, addition]
+		});
+		expect(removal.itemName).toBe('beef burger');
+		expect(addition.itemName).toBe('Beef burger in fridge');
+	});
+
+	it('reads the direction from which side the survivor was logged on', () => {
+		const back = [
+			side('r2', 'fridge-burger', 'Beef burger in fridge', 'remove', 10, 6, '20:00:00'),
+			side('a2', 'freezer-burger', 'beef burger', 'add', 0, 4, '20:00:03')
+		];
+		expect(combineHistoricalTransfers(back, [product])[0]).toMatchObject({
+			fromLocation: 'Refrigerator',
+			toLocation: 'Freezer'
+		});
+	});
+
+	it('keeps an incomplete pair as its original row and omits unknown locations', () => {
+		expect(combineHistoricalTransfers([removal], [product])).toEqual([removal]);
+		expect(combineHistoricalTransfers([removal, addition])[0]).toMatchObject({
+			itemName: 'beef burger',
+			fromLocation: null,
+			toLocation: null
+		});
 	});
 });

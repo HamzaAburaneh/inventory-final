@@ -130,9 +130,10 @@
 							<span><i class="fas fa-tag"></i>{card.label}</span>
 							{#if transaction.location}<span>{locationLabel(transaction.location)}</span>{/if}
 							{#if transaction.event === 'stockTransfer'}<span
-									>{transaction.quantity} · {locationLabel(transaction.fromLocation)} → {locationLabel(
-										transaction.toLocation
-									)}</span
+									>{transaction.quantity}{#if transaction.fromLocation && transaction.toLocation}
+										· {locationLabel(transaction.fromLocation)} → {locationLabel(
+											transaction.toLocation
+										)}{/if}</span
 								>{/if}
 							{#if transaction.event === 'itemMerged' && transaction.relatedItemId}<span
 									>Related item: {transaction.relatedItemId}</span
@@ -142,11 +143,13 @@
 						</div>
 					</div>
 					<div class="row-change">
-						<div class="counts">
-							<span>{transaction.previousCount}</span>
-							<i class="fas fa-arrow-right"></i>
-							<span class="new">{transaction.newCount}</span>
-						</div>
+						{#if transaction.previousCount != null}
+							<div class="counts">
+								<span>{transaction.previousCount}</span>
+								<i class="fas fa-arrow-right"></i>
+								<span class="new">{transaction.newCount}</span>
+							</div>
+						{/if}
 						<span
 							class="delta"
 							class:pos={card.deltaClass === 'pos'}
