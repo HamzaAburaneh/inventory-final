@@ -27,7 +27,7 @@ fits every future customer.
 - Historical freezer-to-fridge movements were recorded as a removal from one item
   and an addition to a duplicate. Those removals are not booth demand. Combining old
   histories can overstate demand. Equal removals/additions for the same product within
-  five minutes are transfer candidates for review, not proof from timing alone.
+  five minutes, in either order, are transfer candidates for review, not proof from timing alone.
 - A permissions redesign is out of scope unless requested. Preserve existing
   owner/member behavior and group isolation.
 
@@ -42,7 +42,8 @@ on their next valid mutation. Cold items support Freezer and Refrigerator; dry i
 support Dry Storage only. Creation accepts opening balances per allowed location.
 An item with no stock anywhere displays and filters under its starting location.
 Duplicate cleanup is implemented as reviewed maintenance tooling with no merge UI.
-Live cleanup has not been applied. See STOCK_LOCATIONS_ROLLOUT.md for rollout requirements.
+Seven cold freezer/fridge pairs were merged live on 2026-09-22; their historical
+transfer reviews are a separate, owner-approved step. See STOCK_LOCATIONS_ROLLOUT.md for rollout requirements.
 Optional per-item unit labels are a future feature; fractional quantities and unit
 conversion are not currently requested.
 

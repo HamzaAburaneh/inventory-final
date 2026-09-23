@@ -48,6 +48,19 @@ it('suggests the inclusive five minute boundary but never confirms it', () => {
 	expect(findHistoricalTransferCandidates([removal, addition], [])).toHaveLength(0);
 });
 
+it('suggests additions logged up to five minutes before the removal', () => {
+	const early = { ...addition, timestamp: new Date('2025-08-20T13:55:00Z') };
+	expect(findHistoricalTransferCandidates([removal, early], links)).toEqual([
+		expect.objectContaining({ transactionIds: ['r', 'a'], fromLocation: 'Freezer' })
+	]);
+	expect(
+		findHistoricalTransferCandidates(
+			[removal, { ...addition, timestamp: new Date('2025-08-20T13:54:59.999Z') }],
+			links
+		)
+	).toHaveLength(0);
+});
+
 it('surfaces ambiguous suggestions and rejects overlapping confirmed decisions', () => {
 	expect(
 		findHistoricalTransferCandidates([removal, addition, { ...addition, id: 'a2' }], links)

@@ -55,7 +55,7 @@ export function preprocessStockHistory(transactions, items = []) {
 		});
 }
 
-/** @param {object[]} transactions Ledger. @param {object[]} links Explicit product/location links ({locations: {[itemId]: location}}). @returns {object[]} Suggestions only, including overlapping matches. */
+/** @param {object[]} transactions Ledger. @param {object[]} links Explicit product/location links ({locations: {[itemId]: location}}). @returns {object[]} Suggestions only, including overlapping matches; staff logged either side first, so both orders within five minutes qualify. */
 export function findHistoricalTransferCandidates(transactions, links) {
 	const candidates = [];
 	const rows = transactions.filter(
@@ -82,7 +82,7 @@ export function findHistoricalTransferCandidates(transactions, links) {
 					addition.itemId === removal.itemId ||
 					!['Freezer', 'Refrigerator'].includes(to) ||
 					from === to ||
-					!(delay >= 0 && delay <= 300000) ||
+					!(Math.abs(delay) <= 300000) ||
 					Number(addition.newCount) - Number(addition.previousCount) !== quantity
 				)
 					continue;

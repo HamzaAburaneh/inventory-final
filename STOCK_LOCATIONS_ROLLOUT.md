@@ -40,7 +40,7 @@ Do not deploy or apply maintenance without the owner's explicit request.
    `historyLinks` entries have `locations: {"originalItemId": "Freezer", "duplicateId":
 "Refrigerator"}` for explicitly confirmed product/location relationships. Running
    the command with `--manifest PATH` is still a dry run and reports equal opposite
-   movements within five minutes as candidates. It makes no database writes.
+   movements within five minutes, in either order, as candidates. It makes no database writes.
 
    A review decision has `id`, unique `operationId`, ordered `transactionIds`
    (removal, addition), full `expectedTransactions` (including IDs), `expectedReview`

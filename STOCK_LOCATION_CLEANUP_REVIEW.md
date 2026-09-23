@@ -1,6 +1,8 @@
 # Proposed one-time freezer/fridge cleanup
 
-Status: read-only review; no inventory changes applied and no merge approval recorded.
+Status: historical review. Seven cold pairs (avocado, bacon, beef barbacoa, beef burger,
+cheese curds, ground beef, pork) were approved and merged on 2026-09-22. Vendor-named
+entries such as the Enercare burgers were not merged.
 
 ## Source and limits
 
