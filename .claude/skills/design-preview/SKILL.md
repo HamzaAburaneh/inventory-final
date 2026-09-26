@@ -1,15 +1,15 @@
 ---
 name: design-preview
-description: Use when proposing any visual/design change (colors, badges, icons, button/pill styles, layout treatments, etc.) in this app. Widget previews are opt-in — only shown when the user says the keyword "previews".
+description: Use when proposing any visual/design change (colors, badges, icons, button/pill styles, layout treatments, etc.) in this app. Widget previews are opt-in — only shown when the user explicitly asks for previews.
 ---
 
-Preview options are **opt-in via keyword**: only run the preview flow below when the user's message contains the keyword **`previews`** (e.g. "show previews", "previews please"). Without the keyword, skip the widget entirely — just make (or propose) the change directly.
+Preview options are opt-in: only run the preview flow below when the user explicitly asks for previews (for example by saying "previews" or writing `/make_a_preview`). Otherwise skip the widget and make (or propose) the change directly.
 
-When the keyword IS present:
+When previews are requested:
 
 - Render options with the inline preview/visualization widget tool (`show_widget`), never as a static description, so the change can actually be seen before it's built.
-- Show **10 options** unless the user asks for a different count.
-- Show **light and dark mode side by side** for every option (the app themes via `[data-theme]`; both must be judged), and use the app's real surfaces (`#ffffff`-ish light, `#121212`-ish dark) so the preview matches production.
+- Show 5 options unless the user asks for a different count.
+- Show light and dark mode side by side for every option (the app themes via `[data-theme]`; both must be judged), using the real surface colors from `src/styles/global.css` so the preview matches production.
 - Number/label each option so the user can pick by number or mix-and-match (e.g. "freezer icon from 3, color from 7").
 - Only after the user picks do you implement it in the codebase.
 
