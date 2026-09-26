@@ -22,7 +22,7 @@
  * @property {string} itemId
  * @property {string} itemName
  * @property {'add' | 'remove' | 'transfer' | 'merge'} type
- * @property {'countChange' | 'itemCreated' | 'itemDeleted' | 'stockTransfer' | 'itemMerged'} [event] - Explicit lifecycle event.
+ * @property {'countChange' | 'itemCreated' | 'itemDeleted' | 'stockTransfer' | 'itemMerged' | 'vendorMovement'} [event] - Explicit lifecycle event.
  *   Absent on legacy rows; consumers may infer it heuristically for older data.
  * @property {string} [operationId]
  * @property {string} [location]
@@ -32,6 +32,9 @@
  * @property {Record<string, number>} [previousStockByStorage]
  * @property {Record<string, number>} [newStockByStorage]
  * @property {string} [relatedItemId]
+ * @property {'lend' | 'borrow' | 'returnIn' | 'returnOut' | 'carryOver'} [vendorAction] - vendorMovement rows only.
+ * @property {string} [vendorLoanId] - vendorMovement rows only.
+ * @property {string} [vendorName] - vendorMovement rows only.
  * @property {boolean} [historicalTransfer] - Annotation from persisted review, never rewrites the ledger.
  * @property {number} previousCount
  * @property {number} newCount
@@ -177,4 +180,50 @@
  * @property {string[]} forecastDates - ISO day keys aligned with `prediction`
  * @property {PlanDay | null} stockOut - Predicted run-out day within the horizon
  * @property {PlanDay | null} reorderBy - Day to place the next order
+ */
+
+/**
+ * A product lent to or borrowed from another vendor
+ * (`groups/{gid}/vendorLoans/{id}`). Counts are whole units of the product's
+ * tracked unit; money is whole cents, valued at `unitPriceCents` captured when
+ * the loan was recorded. What is still owed is derived (see loanBalance in
+ * src/lib/vendorBalances.js), never stored.
+ * @typedef {object} VendorLoan
+ * @property {string} [id]
+ * @property {string} vendorId - Slug of the vendor name; also `vendors/{vendorId}`
+ * @property {string} vendorName
+ * @property {'lent' | 'borrowed'} direction - lent: they owe us; borrowed: we owe them
+ * @property {string | null} itemId - Inventory item whose stock moves, or null for a free-text product
+ * @property {string} productName - Item name at the time, or the free-text product
+ * @property {number | null} unitPriceCents - Agreed value per unit, if known
+ * @property {number} quantity - Units originally lent or borrowed
+ * @property {number} adjustedQuantity - Net corrections to what is owed
+ * @property {number} returnedQuantity - Units repaid in product
+ * @property {number} cashSettledQuantity - Units settled by cash
+ * @property {number} cashPaidCents - Cash received or paid so far
+ * @property {boolean} opening - Carried over from an old vendor-named item (2026-09 only); moved no stock
+ * @property {{ itemId: string, itemName: string, count: number }} [carriedOverFrom] - Old vendor-named item this loan replaced
+ * @property {string} note
+ * @property {string} createdBy
+ * @property {Date} [createdAt]
+ * @property {Date} [updatedAt]
+ * @property {'needsReview' | 'reviewed'} reviewStatus - Independent of repayment
+ * @property {string | null} reviewedBy
+ * @property {string} lastEntryId
+ */
+
+/**
+ * One immutable event on a loan (`vendorLoans/{loanId}/entries/{id}`). The entry ID
+ * is the operation ID, so a retried action finds its entry and does nothing.
+ * @typedef {object} VendorLoanEntry
+ * @property {string} [id]
+ * @property {'loan' | 'return' | 'cash' | 'correction' | 'review'} kind
+ * @property {number} quantity - Units moved, settled or corrected (signed for corrections)
+ * @property {number | null} amountCents - Cash entries only
+ * @property {string | null} location - Stock location for physical movements
+ * @property {string | null} itemId
+ * @property {string | null} stockTransactionId - Linked ledger row when stock moved
+ * @property {string} note
+ * @property {string} user
+ * @property {Date} [timestamp]
  */

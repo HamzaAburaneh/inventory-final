@@ -111,6 +111,7 @@ describe('transactionFilterMatches', () => {
 	it('matches lifecycle filters on event alone', () => {
 		expect(transactionFilterMatches('itemCreated')).toEqual([['event', 'itemCreated']]);
 		expect(transactionFilterMatches('itemDeleted')).toEqual([['event', 'itemDeleted']]);
+		expect(transactionFilterMatches('vendorMovement')).toEqual([['event', 'vendorMovement']]);
 	});
 
 	it('never matches on type alone, which would conflate lifecycle rows', () => {

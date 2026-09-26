@@ -349,6 +349,32 @@
 						Orders
 					</a>
 				</li>
+				<li>
+					<a
+						href={resolve('/vendorBalances')}
+						class="nav-link"
+						class:active={currentPath === '/vendorBalances'}
+						aria-current={currentPath === '/vendorBalances' ? 'page' : undefined}
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+							><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"
+							></path><polyline points="7 23 3 19 7 15"></polyline><path
+								d="M21 13v2a4 4 0 0 1-4 4H3"
+							></path></svg
+						>
+						Vendors
+					</a>
+				</li>
 			{:else}
 				<li>
 					<a
@@ -650,6 +676,30 @@
 						></path></svg
 					>
 					Order Sheet
+				</a>
+				<a
+					href={resolve('/vendorBalances')}
+					class="mob-link"
+					class:active={currentPath === '/vendorBalances'}
+					aria-current={currentPath === '/vendorBalances' ? 'page' : undefined}
+					onclick={closeMenu}
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="15"
+						height="15"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+						><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"
+						></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"
+						></path></svg
+					>
+					Vendor Balances
 				</a>
 				<div class="mob-divider"></div>
 				<a
@@ -1307,6 +1357,16 @@
 		}
 		.mobile-panel {
 			display: none !important;
+		}
+	}
+
+	/* Seven links need the full desktop width; on small tablets tighten them
+	   rather than hiding any. */
+	@media (min-width: 768px) and (max-width: 1099px) {
+		.nav-link {
+			gap: 4px;
+			padding: 0 7px;
+			font-size: 0.75rem;
 		}
 	}
 

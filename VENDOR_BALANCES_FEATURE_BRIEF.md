@@ -1,8 +1,12 @@
-# Planned feature: Vendor Balances
+# Vendor Balances
 
-Status: product brief for a separate future feature. No application implementation,
-live data conversion, or permissions redesign is authorized by this document alone.
-Read AGENTS.md and the current code before turning this into an implementation task.
+Status: v1 implemented at `/vendorBalances` (see AGENTS.md). Owner decisions for v1:
+free-text products are allowed and never move stock; vendor actions are online-only;
+the old vendor-named items were carried over once (2026-09) as opening loans and then
+removed, along with the one-time carry-over tooling; cash settles whole units valued at the unit price captured with
+the loan (the item's cost by default, editable). Not in v1: offline vendor actions and
+reclassifying older ledger removals that were really lending. The brief below is the
+original product intent.
 
 ## Confirmed business workflow
 

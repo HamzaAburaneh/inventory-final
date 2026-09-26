@@ -104,6 +104,19 @@ service cloud.firestore {
         allow read, write: if isMember(gid);
       }
 
+      // Vendor loans (lending to / borrowing from other vendors). Any member may
+      // record and review; review is a business step, not an access level. Loans
+      // are never deleted, so settled ones stay as history, and their entries are
+      // an append-only audit trail whose IDs double as operation IDs.
+      match /vendorLoans/{loanId} {
+        allow read, create, update: if isMember(gid);
+        allow delete: if false;
+        match /entries/{entryId} {
+          allow read, create: if isMember(gid);
+          allow update, delete: if false;
+        }
+      }
+
       // Group-scoped booth list — any member may read (to render item tags),
       // only the owner may add/rename/recolor/delete (workspace configuration).
       match /booths/{boothId} {

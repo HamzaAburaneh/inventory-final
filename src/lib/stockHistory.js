@@ -1,7 +1,7 @@
-/** @param {object} transaction Ledger row. @returns {boolean} Include in movement statistics, preserving unrelated lifecycle behavior. */
+/** @param {object} transaction Ledger row. @returns {boolean} Include in movement statistics, preserving unrelated lifecycle behavior; vendor lending/borrowing moves real stock but is not booth demand. */
 export function isInventoryMovement(transaction) {
 	return (
-		!['stockTransfer', 'itemMerged'].includes(transaction.event) &&
+		!['stockTransfer', 'itemMerged', 'vendorMovement'].includes(transaction.event) &&
 		transaction.type !== 'transfer' &&
 		transaction.historicalTransfer !== true
 	);

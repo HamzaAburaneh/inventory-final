@@ -1,6 +1,7 @@
 <script>
 	import { transactionDayKey } from '../lib/transactionHistory';
 	import { locationLabel } from '../lib/stockLocations.js';
+	import { vendorMovementLabel } from '../lib/vendorBalances.js';
 
 	// `dayCounts` maps a day key to how many changes that day holds across the whole
 	// filtered set. It has to come from the parent because this component only ever
@@ -21,6 +22,14 @@
 				label: transaction.historicalTransfer
 					? 'Confirmed historical transfer'
 					: 'Stock transferred',
+				deltaClass: 'neutral'
+			};
+		}
+		if (event === 'vendorMovement') {
+			return {
+				icon: 'fa-handshake',
+				iconClass: 'neutral',
+				label: vendorMovementLabel(transaction),
 				deltaClass: 'neutral'
 			};
 		}

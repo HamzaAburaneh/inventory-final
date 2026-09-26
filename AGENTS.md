@@ -49,15 +49,22 @@ filter, though merge rows still render. See STOCK_LOCATIONS_ROLLOUT.md for requi
 Optional per-item unit labels are a future feature; fractional quantities and unit
 conversion are not currently requested.
 
-A separate vendor balances/loan ledger is planned, not implemented. Track counterparties,
-products/units, direction, and settlements without making another item per vendor.
-Real product movements affect stock; cash settlements do not. Existing vendor-named
-items need a reviewed interpretation before conversion: their counts may not establish
-current outstanding obligations. Keep this work outside the storage-location feature;
-do not merge vendor-named rows into normal stock or treat lending as booth demand.
-See VENDOR_BALANCES_FEATURE_BRIEF.md for the proposed workflow. Repayment status and
-review status should be separate; settled records should remain available as history
-instead of requiring item deletion. This does not authorize a permissions redesign.
+Vendor balances v1 is implemented at `/vendorBalances`: one loan per product lent or
+borrowed, linked to an inventory item (stock moves) or a free-text product (no stock).
+Returns move stock; cash settles whole units at the unit price captured with the loan
+and never moves stock. Corrections need a reason. Repayment status is derived and
+separate from review status; any new entry returns a loan to Needs review, and
+reviewing changes neither stock nor what is owed. Loans are never deleted. Vendor
+actions are online-only Firestore transactions (no offline queue); the entry ID is the
+operation ID, so retries cannot apply twice. Vendor stock rows use event
+`vendorMovement`, which forecasting and analytics exclude as not booth demand. Any
+member can record and review; this does not authorize a permissions redesign.
+The old vendor-named items ("Corn to compound") were carried over once, in 2026-09:
+each became an opening loan (`opening`, `carriedOverFrom`; no stock move) and the old
+item was deleted with a `vendorMovement`/`carryOver` ledger row. That tooling was then
+removed; the page still displays those loans and rows. Their older ledger
+rows, including real stock removals logged beside them, are not reclassified. See
+VENDOR_BALANCES_FEATURE_BRIEF.md for the full workflow.
 
 Offline stock actions persist in IndexedDB before acknowledgment and replay against
 current Firestore stock. Starting at 10, another device removing 2 followed by a queued
@@ -101,11 +108,14 @@ Broader event configuration and SaaS capabilities are future work.
 - `src/lib/stockPrediction.js`, `predictionCore.js`, `aiStockPrediction.js`,
   `predictionBacktest.js`, and `cneCalendar.js`: forecasting and evaluation.
 - `src/lib/orders.js` and `orderSheet.js`: saved order drafts and order calculations.
+- `src/lib/vendorBalances.js` (pure loan math/planning) and `vendorLoans.js` (Firestore
+  subscription and atomic vendor transactions), used by `VendorLoanDialog`,
+  `VendorSettleDialog` and the vendorBalances route.
 - `src/stores/`: auth, group, items, connectivity, notifications, pagination, and themes.
   Additional UI state helpers live in `src/lib/runes/`.
 - `src/routes/`: landing, login, onboarding, manageItems, manageTransactions,
-  transactionHistory, transactionAnalysis, inventoryPredictions, orders, profile,
-  and `api/stockPredictions`.
+  transactionHistory, transactionAnalysis, inventoryPredictions, orders, vendorBalances,
+  profile, and `api/stockPredictions`.
 - `src/scripts/`: standalone import/maintenance scripts with their own package.json.
 
 ## Data and group boundaries
@@ -120,18 +130,20 @@ before changing a schema.
 - **Transaction:** `id, itemId, itemName, type, previousCount, newCount, timestamp, user`,
   optional `event`, `syncedAt`, `operationId` and location/map/related-item fields.
   Types are `add | remove | transfer | merge`; events include `countChange`,
-  `itemCreated`, `itemDeleted`, `stockTransfer`, `itemMerged`. Client entry time is
+  `itemCreated`, `itemDeleted`, `stockTransfer`, `itemMerged`, `vendorMovement`. Client entry time is
   distinct from authoritative syncedAt. Legacy rows may lack event/audit fields.
 - **Group / GroupMember:** isolated workspace and owner/member records. The app currently
   resolves one active group per user through their profile and group store.
 - **Booth:** group-scoped tag with a stable ID, editable label, and color.
+- **VendorLoan / VendorLoanEntry:** a loan's vendor, direction, product, quantities and
+  captured unit price, plus immutable entries (loan, return, cash, correction, review).
 - **OrderDraft / OrderLine:** daily draft with per-item quantity/inclusion overrides,
   coverage/lead days, and last-editor metadata. Lines are keyed by item ID; deletion
   or future merging must consider those references.
 
 Inventory lives under `groups/{gid}/items` and `groups/{gid}/transactions`, alongside
-`members`, `booths`, `orders`, `stockOperations`, `stockHistoryReviews` and
-`stockHistoryReviewAudit`. `userProfiles/{uid}` records the user's group;
+`members`, `booths`, `orders`, `stockOperations`, `stockHistoryReviews`,
+`stockHistoryReviewAudit` and `vendorLoans` (with `entries`). `userProfiles/{uid}` records the user's group;
 `inviteCodes/{code}` supports joining. Preserve these paths and access boundaries.
 New inventory operations must stay within the active group.
 
@@ -188,8 +200,7 @@ do not require a preview or selection round.
 When requested, use the design-preview skill to show **5 options** by default, with
 light/dark side by side on the app's real surfaces. Number the options and wait for the
 user's choice before implementing the previewed design. Follow an explicitly requested
-different count. This policy replaces the skill's older default of 10 options and
-automatic previews for every visual change.
+different count.
 
 All UI work must support light/dark and desktop/mobile. Use theme variables or
 theme-scoped definitions for backgrounds, text, borders, shadows, focus/hover/active/
@@ -264,14 +275,8 @@ unrelated to the task. Do not migrate working stores merely for stylistic consis
 
 ### Svelte MCP server usage
 
-When working on Svelte or SvelteKit topics, use the Svelte MCP server's tools:
-
-1. **list-sections** — call this FIRST to discover all available documentation
-   sections (titles, use_cases, paths). Always start here for Svelte/SvelteKit tasks.
-2. **get-documentation** — after reviewing the `list-sections` results (especially
-   `use_cases`), fetch full documentation for every section relevant to the task.
-   Accepts single or multiple sections.
-3. **svelte-autofixer** — run on any Svelte code you write before delivering it.
-   Keep calling it until it returns no issues or suggestions.
-4. **playground-link** — only call after the user confirms they want one, and never
-   when the code has already been written to files in the project.
+Use the Svelte MCP server for Svelte/SvelteKit work: `list-sections` and then
+`get-documentation` for sections whose `use_cases` match the task when you need API
+details, and `svelte-autofixer` on any Svelte code you write, re-running it until it
+reports no issues. Call `playground-link` only when the user asks for one, never for
+code already written to project files.
