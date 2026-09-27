@@ -303,6 +303,47 @@ export function groupLoans(loans) {
 }
 
 /**
+ * What a set of loans still owes in dollars. A loan without a unit price has no
+ * value to add, so it is counted apart rather than treated as zero.
+ * @param {VendorLoan[]} loans Stored loans.
+ * @returns {{ cents: number, unpriced: number, count: number }} Priced outstanding
+ *   cents, how many loans had no price, and how many loans there were.
+ */
+export function outstandingTotals(loans) {
+	let cents = 0;
+	let unpriced = 0;
+	for (const loan of loans) {
+		const { outstandingCents } = loanBalance(loan);
+		if (outstandingCents === null) unpriced += 1;
+		else cents += outstandingCents;
+	}
+	return { cents, unpriced, count: loans.length };
+}
+
+/**
+ * Vendor names to suggest when recording a loan: one per counterparty, since
+ * "daniel" and "Daniel" are the same vendor, spelled as on its most recent loan and
+ * sorted A–Z ignoring case.
+ * @param {VendorLoan[]} loans All loans.
+ * @returns {string[]} Display names.
+ */
+export function vendorSuggestions(loans) {
+	const latest = new Map();
+	for (const loan of loans) {
+		const name = cleanVendorName(loan.vendorName);
+		if (!name) continue;
+		const key = loan.vendorId || name.toLowerCase();
+		// A loan that is still saving has no time yet, so it is the newest.
+		const time = loan.createdAt?.getTime?.() ?? Infinity;
+		const seen = latest.get(key);
+		if (!seen || time >= seen.time) latest.set(key, { name, time });
+	}
+	return [...latest.values()]
+		.map((entry) => entry.name)
+		.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
+
+/**
  * Outstanding totals per vendor, one line per product and direction. Different
  * products are never added together, and units stay apart from dollars.
  * @param {VendorLoan[]} loans All loans.

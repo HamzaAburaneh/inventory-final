@@ -93,6 +93,14 @@
 	--location-freezer: var(--event-create);
 	--location-fridge: var(--event-add);
 	--location-dry: var(--icon-hover-color);
+	/* Vendor balances: who owes whom, and loans awaiting review. Also aliases of
+	   theme-swapped tokens. Review is amber, not red: it is a to-do, not an error. */
+	--vendor-owes-us: var(--event-add);
+	--vendor-owes-us-bg: var(--event-add-bg);
+	--vendor-we-owe: var(--event-remove);
+	--vendor-we-owe-bg: var(--event-remove-bg);
+	--review-color: var(--observatory-warn);
+	--review-bg: var(--observatory-warn-soft);
 	--nav-danger-text: var(--danger-text);
 	--nav-danger-surface: #fbe9e7;
 	--icon-color: #6c757d;

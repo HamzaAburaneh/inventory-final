@@ -9,6 +9,8 @@ import {
 	movementSign,
 	planVendorAction,
 	groupLoans,
+	outstandingTotals,
+	vendorSuggestions,
 	vendorSummaries,
 	vendorMovementLabel
 } from './vendorBalances';
@@ -213,6 +215,40 @@ describe('planVendorAction', () => {
 		expect(() => correct(-1, '')).toThrow('Explain');
 		expect(() => correct(-3)).toThrow('already settled');
 		expect(loanBalance(correct(-2).loan)).toMatchObject({ outstanding: 0, status: 'settled' });
+	});
+});
+
+describe('outstandingTotals', () => {
+	it('values what is still outstanding and counts unpriced loans instead of adding zero', () => {
+		const loan = (overrides) => ({
+			...run([lend()]).loan,
+			...overrides
+		});
+		expect(
+			outstandingTotals([
+				loan({ quantity: 5 }),
+				loan({ quantity: 4, returnedQuantity: 1, cashSettledQuantity: 1 }),
+				loan({ itemId: null, productName: 'Forks', unitPriceCents: null, quantity: 3 })
+			])
+		).toEqual({ cents: 7 * 3400, unpriced: 1, count: 3 });
+		expect(outstandingTotals([])).toEqual({ cents: 0, unpriced: 0, count: 0 });
+	});
+});
+
+describe('vendorSuggestions', () => {
+	it('suggests each vendor once, spelled as on its latest loan, sorted A–Z ignoring case', () => {
+		const at = (day) => new Date(`2026-09-${day}T12:00:00Z`);
+		expect(
+			vendorSuggestions([
+				{ vendorId: 'daniel', vendorName: 'daniel', createdAt: at('20') },
+				{ vendorId: 'daniel', vendorName: 'Daniel', createdAt: at('23') },
+				{ vendorId: 'compound', vendorName: ' compound ', createdAt: at('21') },
+				{ vendorId: 'bubble-tea', vendorName: 'bubble tea', createdAt: at('22') },
+				{ vendorId: 'dwight', vendorName: 'dwight', createdAt: at('24') },
+				// Still saving, so it has no time yet and counts as the newest.
+				{ vendorId: 'dwight', vendorName: 'Dwight' }
+			])
+		).toEqual(['bubble tea', 'compound', 'Daniel', 'Dwight']);
 	});
 });
 

@@ -8,7 +8,14 @@
 		recordVendorAction,
 		subscribeToVendorLoans
 	} from '../../lib/vendorLoans';
-	import { formatCents, groupLoans, loanBalance, vendorSummaries } from '../../lib/vendorBalances';
+	import {
+		formatCents,
+		groupLoans,
+		loanBalance,
+		outstandingTotals,
+		vendorSuggestions,
+		vendorSummaries
+	} from '../../lib/vendorBalances';
 	import { locationLabel } from '../../lib/stockLocations';
 	import TableSkeleton from '../../components/TableSkeleton.svelte';
 	import VendorLoanDialog from '../../components/VendorLoanDialog.svelte';
@@ -33,9 +40,7 @@
 	const items = $derived($itemStore);
 	const groups = $derived(groupLoans(loans));
 	const summaries = $derived(vendorSummaries(loans));
-	const vendorNames = $derived(
-		[...new Set(loans.map((loan) => loan.vendorName))].sort((a, b) => a.localeCompare(b))
-	);
+	const vendorNames = $derived(vendorSuggestions(loans));
 
 	const tabs = [
 		{ value: 'owedToUs', label: 'Owed to us' },
@@ -45,18 +50,12 @@
 		{ value: 'vendors', label: 'By vendor' }
 	];
 
-	function totals(list) {
-		let cents = 0;
-		let unpriced = 0;
-		for (const loan of list) {
-			const { outstandingCents } = loanBalance(loan);
-			if (outstandingCents === null) unpriced += 1;
-			else cents += outstandingCents;
-		}
-		return { cents, unpriced, count: list.length };
-	}
-	const owedToUs = $derived(totals(groups.owedToUs));
-	const weOwe = $derived(totals(groups.weOwe));
+	const owedToUs = $derived(outstandingTotals(groups.owedToUs));
+	const weOwe = $derived(outstandingTotals(groups.weOwe));
+	// The net and the bar can only weigh priced loans, so the unpriced ones are named
+	// beside them rather than silently left out.
+	const netCents = $derived(owedToUs.cents - weOwe.cents);
+	const unpriced = $derived(owedToUs.unpriced + weOwe.unpriced);
 
 	const needle = $derived(search.trim().toLowerCase());
 	const matches = (text) => !needle || text.toLowerCase().includes(needle);
@@ -125,6 +124,21 @@
 		return loan.itemId ? (items.find((row) => row.id === loan.itemId) ?? null) : null;
 	}
 
+	function loanCount(totals) {
+		const text = `${totals.count} ${totals.count === 1 ? 'loan' : 'loans'}`;
+		return totals.unpriced ? `${text} · ${totals.unpriced} without a value` : text;
+	}
+
+	function initials(name) {
+		const words = name.trim().split(/\s+/).filter(Boolean);
+		return (
+			words
+				.slice(0, 2)
+				.map((word) => word[0].toUpperCase())
+				.join('') || '?'
+		);
+	}
+
 	function formatDate(date) {
 		return date
 			? date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -170,18 +184,17 @@
 {#snippet loanCard(loan)}
 	{@const balance = loanBalance(loan)}
 	{@const key = `${loan.id}:${loan.lastEntryId}`}
-	<li class="loan">
+	{@const lent = loan.direction === 'lent'}
+	<li class="loan" data-direction={loan.direction}>
+		<div class="avatar" aria-hidden="true">
+			{initials(loan.vendorName)}
+			<span class="avatar-badge">
+				<i class="fas {lent ? 'fa-arrow-right' : 'fa-arrow-left'}"></i>
+			</span>
+		</div>
 		<div class="loan-main">
-			<div class="loan-heading">
-				<span class="direction" data-direction={loan.direction}>
-					<i
-						class="fas {loan.direction === 'lent' ? 'fa-arrow-right' : 'fa-arrow-left'}"
-						aria-hidden="true"
-					></i>
-					{loan.direction === 'lent' ? 'Lent to' : 'Borrowed from'}
-				</span>
-				<strong class="vendor">{loan.vendorName}</strong>
-			</div>
+			<div class="loan-direction">{lent ? 'Owes us' : 'We owe'}</div>
+			<strong class="vendor">{loan.vendorName}</strong>
 			<div class="product">
 				{loan.productName}
 				{#if !loan.itemId}<span class="tag">Not in inventory</span>{/if}
@@ -190,65 +203,79 @@
 					>{:else if loan.opening}<span class="tag">Carried over</span>{/if}
 			</div>
 			<div class="meta">
-				<span class="chip" data-status={balance.status}>{statusLabels[balance.status]}</span>
-				<span class="chip" data-review={loan.reviewStatus}>
-					{loan.reviewStatus === 'reviewed' ? `Reviewed by ${loan.reviewedBy}` : 'Needs review'}
-				</span>
+				{#if loan.reviewStatus === 'reviewed'}
+					<span class="reviewed">
+						<i class="fas fa-check" aria-hidden="true"></i> Reviewed by {loan.reviewedBy}
+					</span>
+				{:else}
+					<span class="needs-review"><span class="dot" aria-hidden="true"></span> Needs review</span
+					>
+				{/if}
+				<span class="status" data-status={balance.status}>{statusLabels[balance.status]}</span>
 				<span>{formatDate(loan.createdAt)} · {loan.createdBy}</span>
 			</div>
 			{#if loan.note}<p class="note">{loan.note}</p>{/if}
 		</div>
 		<div class="loan-balance">
 			<div class="outstanding">
-				<strong>{balance.outstanding}</strong>
-				<span>of {balance.owed} outstanding</span>
+				<strong>{balance.outstanding}</strong><span> / {balance.owed}</span>
 			</div>
+			<div class="outstanding-label">{lent ? 'units they still owe' : 'units we still owe'}</div>
 			{#if balance.outstandingCents !== null}
 				<div class="value">{formatCents(balance.outstandingCents)}</div>
 			{/if}
 			{#if loan.cashPaidCents > 0}
 				<div class="paid">
 					{formatCents(loan.cashPaidCents)}
-					{loan.direction === 'lent' ? 'received' : 'paid'}
+					{lent ? 'received' : 'paid'}
 				</div>
 			{/if}
 		</div>
 		<div class="loan-actions">
-			{#if balance.outstanding > 0}
-				<button
-					type="button"
-					disabled={!$isOnline}
-					onclick={() => (settling = { loan, mode: 'return' })}
-				>
-					<i class="fas fa-box" aria-hidden="true"></i> Returned
-				</button>
-				<button
-					type="button"
-					disabled={!$isOnline}
-					onclick={() => (settling = { loan, mode: 'cash' })}
-				>
-					<i class="fas fa-money-bill-wave" aria-hidden="true"></i> Cash
-				</button>
-			{/if}
-			<button
-				type="button"
-				disabled={!$isOnline}
-				onclick={() => (settling = { loan, mode: 'correction' })}
-			>
-				<i class="fas fa-pen" aria-hidden="true"></i> Correct
-			</button>
 			{#if loan.reviewStatus !== 'reviewed'}
 				<button
 					type="button"
+					class="action"
+					data-kind="review"
 					disabled={!$isOnline}
 					onclick={() => (settling = { loan, mode: 'review' })}
 				>
-					<i class="fas fa-check" aria-hidden="true"></i> Reviewed
+					<i class="fas fa-clipboard-check" aria-hidden="true"></i> Mark reviewed
+				</button>
+			{/if}
+			{#if balance.outstanding > 0}
+				<button
+					type="button"
+					class="action"
+					data-kind="return"
+					disabled={!$isOnline}
+					onclick={() => (settling = { loan, mode: 'return' })}
+				>
+					<i class="fas fa-box-open" aria-hidden="true"></i> Returned
+				</button>
+				<button
+					type="button"
+					class="action"
+					data-kind="cash"
+					disabled={!$isOnline}
+					onclick={() => (settling = { loan, mode: 'cash' })}
+				>
+					<i class="fas fa-coins" aria-hidden="true"></i> Cash
 				</button>
 			{/if}
 			<button
 				type="button"
-				class="ghost"
+				class="action"
+				data-kind="correct"
+				disabled={!$isOnline}
+				onclick={() => (settling = { loan, mode: 'correction' })}
+			>
+				<i class="fas fa-pen-to-square" aria-hidden="true"></i> Correct
+			</button>
+			<button
+				type="button"
+				class="action"
+				data-kind="history"
 				aria-expanded={expandedId === loan.id}
 				onclick={() => toggleHistory(loan)}
 			>
@@ -308,34 +335,60 @@
 				</p>
 			{/if}
 
-			<div class="stats-grid">
-				<div class="stat-card">
-					<div class="stat-label">Owed to us</div>
-					<div class="stat-value">{formatCents(owedToUs.cents)}</div>
-					<div class="stat-note">
-						{owedToUs.count}
-						{owedToUs.count === 1 ? 'loan' : 'loans'}{#if owedToUs.unpriced}
-							· {owedToUs.unpriced} without a value{/if}
+			<div class="summary">
+				<div class="summary-sides">
+					<div class="summary-side" data-direction="lent">
+						<div class="summary-label">
+							<i class="fas fa-hand-holding-dollar" aria-hidden="true"></i> Owed to us
+						</div>
+						<div class="summary-value">{formatCents(owedToUs.cents)}</div>
+						<div class="summary-note">{loanCount(owedToUs)}</div>
+					</div>
+					<div class="summary-net">
+						<div class="summary-note">Net</div>
+						<strong>
+							{netCents > 0 ? '+' : netCents < 0 ? '−' : ''}{formatCents(Math.abs(netCents))}
+						</strong>
+						<div class="summary-note">
+							{netCents > 0 ? 'in our favour' : netCents < 0 ? 'in their favour' : 'even'}
+						</div>
+						{#if unpriced}
+							<div class="summary-note">
+								{unpriced}
+								{unpriced === 1 ? "loan without a value isn't" : "loans without a value aren't"} counted
+							</div>
+						{/if}
+					</div>
+					<div class="summary-side summary-side-end" data-direction="borrowed">
+						<div class="summary-label">
+							We owe <i class="fas fa-file-invoice-dollar" aria-hidden="true"></i>
+						</div>
+						<div class="summary-value">{formatCents(weOwe.cents)}</div>
+						<div class="summary-note">{loanCount(weOwe)}</div>
 					</div>
 				</div>
-				<div class="stat-card">
-					<div class="stat-label">We owe</div>
-					<div class="stat-value">{formatCents(weOwe.cents)}</div>
-					<div class="stat-note">
-						{weOwe.count}
-						{weOwe.count === 1 ? 'loan' : 'loans'}{#if weOwe.unpriced}
-							· {weOwe.unpriced} without a value{/if}
-					</div>
+				<div
+					class={['balance-bar', owedToUs.cents + weOwe.cents === 0 && 'empty']}
+					aria-hidden="true"
+				>
+					{#if owedToUs.cents > 0}
+						<span class="owes-us" style:flex-grow={owedToUs.cents}></span>
+					{/if}
+					{#if weOwe.cents > 0}
+						<span class="we-owe" style:flex-grow={weOwe.cents}></span>
+					{/if}
 				</div>
-				<div class="stat-card">
-					<div class="stat-label">Needs review</div>
-					<div class="stat-value">{groups.needsReview.length}</div>
-					<div class="stat-note">settled or not</div>
-				</div>
-				<div class="stat-card">
-					<div class="stat-label">Vendors</div>
-					<div class="stat-value">{summaries.length}</div>
-					<div class="stat-note">with something outstanding</div>
+				<div class="summary-pills">
+					<span class="pill review">
+						<span class="dot" aria-hidden="true"></span>
+						{groups.needsReview.length}
+						{groups.needsReview.length === 1 ? 'needs' : 'need'} review
+					</span>
+					<span class="pill">
+						<i class="fas fa-store" aria-hidden="true"></i>
+						{summaries.length}
+						{summaries.length === 1 ? 'vendor' : 'vendors'} with something outstanding
+					</span>
 				</div>
 			</div>
 
@@ -386,7 +439,7 @@
 									<ul>
 										{#each vendor.lines as line (`${line.direction}|${line.productName}`)}
 											<li>
-												<span class="direction" data-direction={line.direction}>
+												<span class="direction-chip" data-direction={line.direction}>
 													{line.direction === 'lent' ? 'Owes us' : 'We owe'}
 												</span>
 												<span class="line-product">{line.outstanding} × {line.productName}</span>
@@ -445,11 +498,29 @@
 	}
 
 	.vendor-section {
+		--soft: color-mix(in srgb, var(--text-color) 7%, transparent);
 		background: var(--container-bg);
 		border-radius: var(--border-radius);
 		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 		border: 1px solid var(--table-border-color);
 		overflow: hidden;
+	}
+
+	/* One colour for "owes us" and one for "we owe", wherever direction appears. */
+	[data-direction='lent'] {
+		--dir: var(--vendor-owes-us);
+		--dir-bg: var(--vendor-owes-us-bg);
+	}
+
+	[data-direction='borrowed'] {
+		--dir: var(--vendor-we-owe);
+		--dir-bg: var(--vendor-we-owe-bg);
+	}
+
+	/* Direction-coloured text leans toward the body colour so it stays readable in
+	   both themes, including on its own tint. */
+	[data-direction] {
+		--dir-ink: color-mix(in srgb, var(--dir) 78%, var(--text-color));
 	}
 
 	.vendor-header {
@@ -525,37 +596,116 @@
 		border-bottom: 1px solid var(--table-border-color);
 	}
 
-	.stats-grid {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 0.625rem;
+	/* Summary: what each side owes, the net, and a bar comparing the two. */
+
+	.summary {
+		display: flex;
+		flex-direction: column;
+		gap: 0.7rem;
 		padding: 1rem 1.25rem;
 		border-bottom: 1px solid var(--table-border-color);
 	}
 
-	.stat-card {
-		background: var(--table-header-bg);
-		border: 1px solid var(--table-border-color);
-		border-radius: 10px;
-		padding: 0.7rem 0.8rem;
+	.summary-sides {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+		align-items: end;
+		gap: 1rem;
+	}
+
+	.summary-side {
 		min-width: 0;
 	}
 
-	.stat-label,
-	.stat-note {
+	.summary-side-end {
+		text-align: right;
+	}
+
+	.summary-label {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-size: 0.75rem;
+		font-weight: 700;
+		color: var(--dir-ink);
+	}
+
+	.summary-side-end .summary-label {
+		justify-content: flex-end;
+	}
+
+	.summary-value {
+		margin-top: 0.3rem;
+		font-size: 1.5rem;
+		font-weight: 800;
+		letter-spacing: -0.02em;
+		color: var(--text-color);
+		font-variant-numeric: tabular-nums;
+		overflow-wrap: anywhere;
+	}
+
+	.summary-note {
 		font-size: 0.72rem;
 		font-weight: 500;
 		color: var(--text-color-dimmed);
 	}
 
-	.stat-value {
-		margin-top: 0.25rem;
-		font-size: 1.35rem;
-		font-weight: 700;
-		letter-spacing: -0.02em;
+	.summary-net {
+		text-align: center;
+	}
+
+	.summary-net strong {
+		display: block;
+		font-size: 1.05rem;
 		color: var(--text-color);
 		font-variant-numeric: tabular-nums;
-		overflow-wrap: anywhere;
+	}
+
+	.balance-bar {
+		display: flex;
+		gap: 3px;
+		height: 10px;
+	}
+
+	.balance-bar.empty {
+		border-radius: 999px;
+		background: var(--soft);
+	}
+
+	.balance-bar span {
+		flex: 1 1 0;
+		border-radius: 999px;
+	}
+
+	.balance-bar .owes-us {
+		background: var(--vendor-owes-us);
+	}
+
+	.balance-bar .we-owe {
+		background: var(--vendor-we-owe);
+	}
+
+	.summary-pills {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.2rem 0.65rem;
+		border-radius: 999px;
+		font-size: 0.75rem;
+		font-weight: 700;
+		color: var(--text-color-dimmed);
+		background: var(--soft);
+	}
+
+	.pill.review {
+		color: var(--review-color);
+		background: var(--review-bg);
 	}
 
 	.toolbar {
@@ -648,50 +798,72 @@
 
 	.loans,
 	.vendors {
-		display: flex;
-		flex-direction: column;
+		display: grid;
 		gap: 0.6rem;
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
 
+	.loans {
+		grid-template-columns: minmax(0, 1fr);
+		/* Each card keeps its own height, so opening one card's history doesn't
+		   stretch the card beside it. */
+		align-items: start;
+	}
+
+	.vendors {
+		grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+	}
+
+	/* Loan cards */
+
 	.loan {
 		display: grid;
-		grid-template-columns: 1fr auto;
-		gap: 0.6rem 1rem;
+		grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+		gap: 0.35rem 1rem;
 		padding: 0.85rem 1rem;
 		border: 1px solid var(--table-border-color);
-		border-radius: 10px;
+		border-radius: 12px;
 		background: var(--container-bg);
+	}
+
+	.avatar {
+		position: relative;
+		display: grid;
+		place-items: center;
+		width: 2.75rem;
+		height: 2.75rem;
+		border-radius: 50%;
+		font-size: 0.85rem;
+		font-weight: 800;
+		color: var(--dir-ink);
+		background: var(--dir-bg);
+	}
+
+	.avatar-badge {
+		position: absolute;
+		right: -0.2rem;
+		bottom: -0.2rem;
+		display: grid;
+		place-items: center;
+		width: 1.2rem;
+		height: 1.2rem;
+		border-radius: 50%;
+		font-size: 0.6rem;
+		color: var(--container-bg);
+		background: var(--dir);
+		border: 2px solid var(--container-bg);
 	}
 
 	.loan-main {
 		min-width: 0;
 	}
 
-	.loan-heading {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-	}
-
-	.direction {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.3rem;
-		padding: 0.1rem 0.5rem;
-		border-radius: 999px;
+	.loan-direction {
 		font-size: 0.72rem;
 		font-weight: 700;
-		color: var(--event-create);
-		background: var(--event-create-bg);
-	}
-
-	.direction[data-direction='borrowed'] {
-		color: var(--event-delete);
-		background: var(--event-delete-bg);
+		color: var(--dir-ink);
 	}
 
 	.vendor {
@@ -715,7 +887,7 @@
 		font-size: 0.68rem;
 		font-weight: 600;
 		color: var(--text-color-dimmed);
-		background: var(--hover-bg-color);
+		background: var(--soft);
 	}
 
 	.meta {
@@ -728,27 +900,32 @@
 		color: var(--text-color-dimmed);
 	}
 
-	.chip {
-		padding: 0.1rem 0.5rem;
-		border-radius: 999px;
+	.needs-review {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
 		font-weight: 700;
-		color: var(--text-color-dimmed);
-		background: var(--hover-bg-color);
+		color: var(--review-color);
 	}
 
-	.chip[data-status='settled'] {
+	.reviewed {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		font-weight: 600;
+	}
+
+	.status[data-status='settled'] {
+		font-weight: 600;
 		color: var(--event-add);
-		background: var(--event-add-bg);
 	}
 
-	.chip[data-status='partial'] {
-		color: var(--icon-hover-color);
-		background: color-mix(in srgb, var(--icon-hover-color) 14%, transparent);
-	}
-
-	.chip[data-review='needsReview'] {
-		color: var(--event-remove);
-		background: var(--event-remove-bg);
+	.dot {
+		display: inline-block;
+		width: 0.4rem;
+		height: 0.4rem;
+		border-radius: 50%;
+		background: currentColor;
 	}
 
 	.note {
@@ -764,61 +941,114 @@
 	}
 
 	.outstanding strong {
-		display: block;
-		font-size: 1.5rem;
+		font-size: 1.6rem;
 		line-height: 1.1;
 		color: var(--text-color);
 	}
 
-	.outstanding span,
-	.paid {
-		font-size: 0.74rem;
+	.outstanding span {
+		font-size: 0.85rem;
+		font-weight: 600;
 		color: var(--text-color-dimmed);
 	}
 
+	.outstanding-label,
+	.paid {
+		font-size: 0.72rem;
+		color: var(--text-color-dimmed);
+	}
+
+	.outstanding-label {
+		font-weight: 600;
+	}
+
 	.value {
-		margin-top: 0.2rem;
+		margin-top: 0.15rem;
 		font-size: 0.9rem;
 		font-weight: 700;
 		color: var(--text-color);
 	}
 
 	.loan-actions {
-		grid-column: 1 / -1;
+		grid-column: 2 / -1;
 		display: flex;
 		flex-wrap: wrap;
+		align-items: center;
 		gap: 0.4rem;
+		margin-top: 0.4rem;
 	}
 
-	.loan-actions button {
+	/* Each action has its own colour: a tint with coloured text and icon. */
+	.action {
+		--tone: var(--text-color);
+		--tone-bg: var(--soft);
 		display: inline-flex;
 		align-items: center;
-		gap: 0.35rem;
+		gap: 0.4rem;
 		min-height: 2.1rem;
 		padding: 0.3rem 0.7rem;
-		border: 1px solid var(--table-border-color);
+		border: 1px solid color-mix(in srgb, var(--tone) 28%, transparent);
 		border-radius: var(--border-radius);
-		color: var(--text-color);
-		background: var(--container-bg);
+		color: color-mix(in srgb, var(--tone) 78%, var(--text-color));
+		background: var(--tone-bg);
 		font-size: 0.78rem;
 		font-weight: 600;
+		white-space: nowrap;
 		transition:
 			background-color 0.15s ease-out,
-			border-color 0.15s ease-out;
+			border-color 0.15s ease-out,
+			color 0.15s ease-out;
 	}
 
-	.loan-actions button:hover:not(:disabled) {
-		background: var(--hover-bg-color);
-		border-color: var(--hover-border-color);
+	.action i {
+		color: var(--tone);
 	}
 
-	.loan-actions .ghost {
+	.action:hover:not(:disabled) {
+		background: color-mix(in srgb, var(--tone) 16%, var(--tone-bg));
+		border-color: color-mix(in srgb, var(--tone) 55%, transparent);
+	}
+
+	.action[data-kind='review'] {
+		--tone: var(--review-color);
+		--tone-bg: var(--review-bg);
+	}
+
+	.action[data-kind='return'] {
+		--tone: var(--event-create);
+		--tone-bg: var(--event-create-bg);
+	}
+
+	.action[data-kind='cash'] {
+		--tone: var(--event-add);
+		--tone-bg: var(--event-add-bg);
+	}
+
+	.action[data-kind='correct'] {
+		--tone: var(--event-delete);
+		--tone-bg: var(--event-delete-bg);
+	}
+
+	.action[data-kind='history'] {
 		margin-left: auto;
 		color: var(--text-color-dimmed);
+		border-color: transparent;
+		background: transparent;
+	}
+
+	.action[data-kind='history'] i {
+		color: inherit;
+	}
+
+	.action[data-kind='history']:hover:not(:disabled),
+	.action[data-kind='history'][aria-expanded='true'] {
+		color: var(--text-color);
+		border-color: transparent;
+		background: var(--hover-bg-color);
 	}
 
 	.history {
-		grid-column: 1 / -1;
+		grid-column: 2 / -1;
 		padding: 0.6rem 0.75rem;
 		border-radius: 8px;
 		background: var(--table-header-bg);
@@ -849,10 +1079,7 @@
 		color: var(--text-color-dimmed);
 	}
 
-	.vendors {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-	}
+	/* By vendor */
 
 	.vendor-card {
 		padding: 0.85rem 1rem;
@@ -883,6 +1110,16 @@
 		font-size: 0.84rem;
 	}
 
+	.direction-chip {
+		padding: 0.1rem 0.5rem;
+		border-radius: 999px;
+		font-size: 0.72rem;
+		font-weight: 700;
+		white-space: nowrap;
+		color: var(--dir-ink);
+		background: var(--dir-bg);
+	}
+
 	.line-product {
 		color: var(--text-color);
 		overflow-wrap: anywhere;
@@ -895,15 +1132,16 @@
 	}
 
 	@media (pointer: coarse) {
-		.loan-actions button,
+		.action,
 		.segment {
 			min-height: 2.75rem;
 		}
 	}
 
-	@media (max-width: 768px) {
-		.stats-grid {
-			grid-template-columns: repeat(2, 1fr);
+	/* Two columns on wide screens, so cards don't stretch into empty space. */
+	@media (min-width: 1280px) {
+		.loans {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 	}
 
@@ -914,35 +1152,54 @@
 		}
 
 		.vendor-header,
+		.summary,
 		.toolbar,
-		.stats-grid,
 		.content {
 			padding-left: 0.75rem;
 			padding-right: 0.75rem;
 		}
 
-		.stat-value {
-			font-size: 1.1rem;
+		.summary-sides {
+			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		}
+
+		.summary-net {
+			grid-column: 1 / -1;
+			order: 3;
+		}
+
+		.summary-value {
+			font-size: 1.2rem;
 		}
 
 		.loan {
-			grid-template-columns: 1fr;
+			grid-template-columns: 2.25rem minmax(0, 1fr) auto;
+			gap: 0.35rem 0.7rem;
+			padding: 0.75rem 0.8rem;
 		}
 
-		.loan-balance {
-			display: flex;
-			align-items: baseline;
-			flex-wrap: wrap;
-			gap: 0.35rem 0.75rem;
-			text-align: left;
+		.avatar {
+			width: 2.25rem;
+			height: 2.25rem;
+			font-size: 0.75rem;
 		}
 
 		.outstanding strong {
-			display: inline;
-			margin-right: 0.3rem;
+			font-size: 1.35rem;
 		}
 
-		.loan-actions .ghost {
+		.loan-actions,
+		.history {
+			grid-column: 1 / -1;
+		}
+
+		/* Buttons share each row instead of leaving a ragged edge. */
+		.loan-actions .action {
+			flex: 1 1 auto;
+			justify-content: center;
+		}
+
+		.action[data-kind='history'] {
 			margin-left: 0;
 		}
 	}
