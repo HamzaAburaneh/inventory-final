@@ -1,5 +1,6 @@
 <script>
 	import Icon from './Icon.svelte';
+	import { reveal, smoothResize } from '../lib/resizeMotion.js';
 	import { inspectItemStock, locationLabel } from '../lib/stockLocations.js';
 	import { getStorageTypeIcon } from '../lib/tableUtils.js';
 	let { item, ontransfer, onclose } = $props();
@@ -60,6 +61,7 @@
 
 <dialog
 	{@attach openDialog}
+	{@attach smoothResize({ content: '.body' })}
 	aria-labelledby="stock-transfer-title"
 	onclick={onBackdropClick}
 	oncancel={(event) => {
@@ -68,80 +70,86 @@
 	}}
 >
 	<form onsubmit={submit}>
-		<div class="modal-head">
-			<span class="modal-icon" aria-hidden="true"><Icon name="transfer" size={18} /></span>
-			<div>
-				<h2 id="stock-transfer-title">Transfer stock</h2>
-				<p class="subtitle">{item.name} · Total {stock.total}</p>
+		<div class="body">
+			<div class="modal-head">
+				<span class="modal-icon" aria-hidden="true"><Icon name="transfer" size={18} /></span>
+				<div>
+					<h2 id="stock-transfer-title">Transfer stock</h2>
+					<p class="subtitle">{item.name} · Total {stock.total}</p>
+				</div>
 			</div>
-		</div>
 
-		<div class="direction" role="group" aria-label="Transfer direction">
-			{#each directions as [source, target] (source)}
-				<button
-					type="button"
-					class="direction-btn"
-					aria-pressed={from === source}
+			<div class="direction" role="group" aria-label="Transfer direction">
+				{#each directions as [source, target] (source)}
+					<button
+						type="button"
+						class="direction-btn"
+						aria-pressed={from === source}
+						disabled={busy}
+						onclick={() => (from = source)}
+					>
+						<Icon name={getStorageTypeIcon(source)} size={14} />
+						{locationLabel(source)}
+						<span class="arrow" aria-hidden="true">→</span>
+						<Icon name={getStorageTypeIcon(target)} size={14} />
+						{locationLabel(target)}
+					</button>
+				{/each}
+			</div>
+
+			<div class="field">
+				<label for="transfer-quantity">Quantity ({stock.stockByStorage[from]} available)</label>
+				<input
+					id="transfer-quantity"
+					type="number"
+					min="1"
+					max={stock.stockByStorage[from]}
+					step="1"
+					inputmode="numeric"
+					placeholder="0"
+					bind:value={quantity}
 					disabled={busy}
-					onclick={() => (from = source)}
-				>
-					<Icon name={getStorageTypeIcon(source)} size={14} />
-					{locationLabel(source)}
-					<span class="arrow" aria-hidden="true">→</span>
-					<Icon name={getStorageTypeIcon(target)} size={14} />
-					{locationLabel(target)}
-				</button>
-			{/each}
-		</div>
-
-		<div class="field">
-			<label for="transfer-quantity">Quantity ({stock.stockByStorage[from]} available)</label>
-			<input
-				id="transfer-quantity"
-				type="number"
-				min="1"
-				max={stock.stockByStorage[from]}
-				step="1"
-				inputmode="numeric"
-				placeholder="0"
-				bind:value={quantity}
-				disabled={busy}
-				required
-			/>
-		</div>
-
-		{#if valid}
-			<div class="preview">
-				<div class="preview-cell" data-location={from}>
-					<span class="preview-label">
-						<Icon name={getStorageTypeIcon(from)} size={13} class="preview-icon" />
-						{locationLabel(from)}
-					</span>
-					<span class="preview-change">
-						{stock.stockByStorage[from]}
-						<span class="arrow" aria-hidden="true">→</span>
-						<strong>{stock.stockByStorage[from] - amount}</strong>
-					</span>
-				</div>
-				<div class="preview-cell" data-location={to}>
-					<span class="preview-label">
-						<Icon name={getStorageTypeIcon(to)} size={13} class="preview-icon" />
-						{locationLabel(to)}
-					</span>
-					<span class="preview-change">
-						{stock.stockByStorage[to]}
-						<span class="arrow" aria-hidden="true">→</span>
-						<strong>{stock.stockByStorage[to] + amount}</strong>
-					</span>
-				</div>
-				<p class="preview-total">Total stays {stock.total}.</p>
+					required
+				/>
 			</div>
-		{/if}
-		{#if quantity !== '' && !valid}
-			<p class="error">Enter a positive whole quantity within the source balance.</p>
-		{/if}
-		{#if stock.error || error}<p class="error" role="alert">{stock.error || error}</p>{/if}
-		<p class="hint">Moves stock between storage locations. This is not an issue to a booth.</p>
+
+			{#if valid}
+				<div class="preview" transition:reveal>
+					<div class="preview-cell" data-location={from}>
+						<span class="preview-label">
+							<Icon name={getStorageTypeIcon(from)} size={13} class="preview-icon" />
+							{locationLabel(from)}
+						</span>
+						<span class="preview-change">
+							{stock.stockByStorage[from]}
+							<span class="arrow" aria-hidden="true">→</span>
+							<strong>{stock.stockByStorage[from] - amount}</strong>
+						</span>
+					</div>
+					<div class="preview-cell" data-location={to}>
+						<span class="preview-label">
+							<Icon name={getStorageTypeIcon(to)} size={13} class="preview-icon" />
+							{locationLabel(to)}
+						</span>
+						<span class="preview-change">
+							{stock.stockByStorage[to]}
+							<span class="arrow" aria-hidden="true">→</span>
+							<strong>{stock.stockByStorage[to] + amount}</strong>
+						</span>
+					</div>
+					<p class="preview-total">Total stays {stock.total}.</p>
+				</div>
+			{/if}
+			{#if quantity !== '' && !valid}
+				<p class="error" transition:reveal>
+					Enter a positive whole quantity within the source balance.
+				</p>
+			{/if}
+			{#if stock.error || error}
+				<p class="error" role="alert" transition:reveal>{stock.error || error}</p>
+			{/if}
+			<p class="hint">Moves stock between storage locations. This is not an issue to a booth.</p>
+		</div>
 
 		<div class="actions">
 			<button type="button" class="secondary" disabled={busy} onclick={onclose}>Cancel</button>
@@ -168,10 +176,25 @@
 	dialog::backdrop {
 		background: var(--modal-backdrop);
 	}
-	form {
+	form,
+	.body {
 		display: flex;
 		flex-direction: column;
 		gap: 0.9rem;
+	}
+	/* While the dialog eases to a new height (smoothResize), the form fills it and
+	   the buttons ride its bottom edge instead of jumping. The shadow paints over
+	   the dialog's bottom padding so nothing shows through beneath the buttons. */
+	dialog:global([data-resizing]) form {
+		min-height: 100%;
+	}
+	dialog:global([data-resizing]) .actions {
+		position: sticky;
+		bottom: 1.5rem;
+		z-index: 1;
+		margin-top: auto;
+		background: var(--container-bg);
+		box-shadow: 0 1.5rem 0 var(--container-bg);
 	}
 	h2,
 	p {

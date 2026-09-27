@@ -1,6 +1,7 @@
 <script>
 	import { fade, fly } from 'svelte/transition';
 	import { prefersReducedMotion } from 'svelte/motion';
+	import { smoothResize } from '../lib/resizeMotion.js';
 
 	let {
 		visible = false,
@@ -63,6 +64,7 @@
 		<div
 			class="confirm-modal"
 			{@attach containFocus}
+			{@attach smoothResize({ content: '.modal-body' })}
 			role="dialog"
 			tabindex="-1"
 			aria-modal="true"
@@ -261,6 +263,18 @@
 	.modal-buttons {
 		display: flex;
 		gap: 0.75rem;
+	}
+
+	/* While the card eases to a new height (smoothResize) because live content in
+	   the message changed, the buttons ride its bottom edge instead of jumping. The
+	   shadow paints over the card's bottom padding so nothing shows beneath them. */
+	.confirm-modal:global([data-resizing]) .modal-buttons {
+		position: sticky;
+		bottom: 1.5rem;
+		z-index: 1;
+		margin-top: auto;
+		background: var(--container-bg);
+		box-shadow: 0 1.5rem 0 var(--container-bg);
 	}
 
 	.modal-buttons button {

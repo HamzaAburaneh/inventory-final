@@ -16,6 +16,7 @@
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { applySorting } from '../../lib/items';
 	import { listBooths } from '../../lib/booths';
+	import { smoothResize } from '../../lib/resizeMotion.js';
 	import { onMount } from 'svelte';
 
 	let currentSortColumn = $state('name');
@@ -394,7 +395,11 @@
 		in:fly={{ y: 14, duration: reduceMotion ? 0 : 240 }}
 		out:fly={{ y: 14, duration: reduceMotion ? 0 : 160, easing: cubicIn }}
 	>
-		<form class="edit-modal" onsubmit={confirmEdit}>
+		<form
+			class="edit-modal"
+			onsubmit={confirmEdit}
+			{@attach smoothResize({ content: '.modal-body' })}
+		>
 			<div class="modal-head">
 				<span class="modal-icon" aria-hidden="true">{@render fieldIcon(editData.field)}</span>
 				<h3>{editData.title}</h3>
@@ -800,6 +805,18 @@
 	.modal-buttons {
 		display: flex;
 		gap: 0.75rem;
+	}
+
+	/* While the modal eases to a new height (smoothResize), e.g. when the booth list
+	   changes under it, the buttons ride its bottom edge instead of jumping. The
+	   shadow paints over the bottom padding so nothing shows beneath them. */
+	.edit-modal:global([data-resizing]) .modal-buttons {
+		position: sticky;
+		bottom: 1.5rem;
+		z-index: 1;
+		margin-top: auto;
+		background: var(--container-bg);
+		box-shadow: 0 1.5rem 0 var(--container-bg);
 	}
 
 	.modal-buttons button {
