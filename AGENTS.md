@@ -208,6 +208,18 @@ disabled states, placeholders, autofill, scrollbars, SVGs, and charts. No cross-
 leaks or browser defaults that conflict with the theme. Palette values belong in the
 theme system, not hardcoded into components.
 
+Nothing expands or shrinks with a jump. When building or changing anything that grows
+or collapses (modals, panels, cards, lists, inline messages), use the technique in
+`src/lib/resizeMotion.js`: content that appears or disappears gets `transition:reveal`
+(it also eases a flex/grid parent's gap), and a container whose height follows
+changing content attaches `smoothResize({ content })`, with a `[data-resizing]` rule
+pinning any footer to the moving edge. Both honour reduced motion. All modals comply;
+older inline page elements (e.g. vendor-card History, the stock queue panel) may not
+yet. Dropdown lists never push content: they float over it and drop in toward their
+box. Inside dialogs, use `floatingList` (`src/lib/floatingList.js`, as ItemPicker and
+SuggestInput do), which puts the list in the top layer so a dialog can't clip it and
+opens it upward when there's no room below.
+
 The landing page currently uses full-viewport panels and a fixed section-navigation
 dot rail, with the shared Three.js backdrop also used on login. Preserve keyboard
 navigation and reduced-motion support when changing these features. Looping motion
