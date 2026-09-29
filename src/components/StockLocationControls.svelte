@@ -4,6 +4,7 @@
 	import { prefersReducedMotion } from 'svelte/motion';
 	import Icon from './Icon.svelte';
 	import AnimatedCount from './AnimatedCount.svelte';
+	import { numericInput } from '../lib/numericInput.js';
 	import { inspectItemStock, locationLabel } from '../lib/stockLocations.js';
 	import { getStorageTypeIcon } from '../lib/tableUtils.js';
 	let { item, onchange, ontransfer, onreset } = $props();
@@ -90,6 +91,7 @@
 							inputmode="numeric"
 							placeholder="0"
 							bind:value={amounts[location]}
+							{@attach numericInput()}
 							aria-label="Amount for {item.name} in {locationLabel(location)}"
 							disabled={busy}
 						/>

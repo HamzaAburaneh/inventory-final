@@ -16,6 +16,7 @@
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { applySorting } from '../../lib/items';
 	import { listBooths } from '../../lib/booths';
+	import { numericInput } from '../../lib/numericInput.js';
 	import { smoothResize } from '../../lib/resizeMotion.js';
 	import { onMount } from 'svelte';
 
@@ -35,6 +36,13 @@
 		lowCount: 'Low Alert',
 		cost: 'Unit Cost ($)',
 		booths: 'Booths'
+	};
+
+	// Fields that take a plain number: letters never reach the box, and phones show
+	// a number pad.
+	const numberFields = {
+		cost: { rules: { decimals: 2 }, inputmode: 'decimal' },
+		lowCount: { rules: {}, inputmode: 'numeric' }
 	};
 
 	const paginationStore = getPaginationStore('manageItems');
@@ -436,11 +444,14 @@
 						{/each}
 					</div>
 				{:else}
+					{@const numberField = numberFields[editData.field]}
 					<input
 						type="text"
 						bind:value={editData.value}
 						class="edit-input"
 						placeholder="Enter value..."
+						inputmode={numberField?.inputmode}
+						{@attach numberField && numericInput(numberField.rules)}
 						required
 					/>
 				{/if}

@@ -3,6 +3,7 @@
 	import { prefersReducedMotion } from 'svelte/motion';
 	import StorageSelect from './StorageSelect.svelte';
 	import Icon from './Icon.svelte';
+	import { numericInput } from '../lib/numericInput.js';
 	import { locationLabel } from '../lib/stockLocations.js';
 	import { getStorageTypeIcon } from '../lib/tableUtils.js';
 
@@ -224,6 +225,7 @@
 											inputmode="numeric"
 											placeholder="0"
 											bind:value={formData.stockByStorage[location]}
+											{@attach numericInput()}
 											disabled={submitting}
 										/>
 									</div>

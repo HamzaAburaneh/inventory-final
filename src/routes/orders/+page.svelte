@@ -26,6 +26,7 @@
 		sortRows
 	} from '../../lib/orderSheet.js';
 	import Tooltip from '../../components/Tooltip.svelte';
+	import { numericInput } from '../../lib/numericInput.js';
 	import { clearOrderDraft, saveOrderDraft, subscribeOrderDraft } from '../../lib/orders.js';
 	import { dayFromKey, torontoDayKey } from '../../lib/cneCalendar.js';
 
@@ -823,6 +824,7 @@
 					placeholder="0"
 					value={adjustments[row.id] || ''}
 					disabled={!row.included}
+					{@attach numericInput()}
 					oninput={(e) => onAdjustmentInput(row.id, e)}
 					aria-label={`Adjustment amount for ${row.name}`}
 				/>
