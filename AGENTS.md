@@ -218,7 +218,10 @@ older inline page elements (e.g. vendor-card History, the stock queue panel) may
 yet. Dropdown lists never push content: they float over it and drop in toward their
 box. Inside dialogs, use `floatingList` (`src/lib/floatingList.js`, as ItemPicker and
 SuggestInput do), which puts the list in the top layer so a dialog can't clip it and
-opens it upward when there's no room below.
+opens it upward when there's no room below. A `<dialog>` closes on its backdrop through
+`closeOnBackdrop` (`src/lib/dialogBackdrop.js`), which ignores a drag that starts in the
+card (selecting a box's text). Number and money boxes attach `numericInput`
+(`src/lib/numericInput.js`), which refuses letters and stray symbols as they're typed.
 
 The landing page currently uses full-viewport panels and a fixed section-navigation
 dot rail, with the shared Three.js backdrop also used on login. Preserve keyboard

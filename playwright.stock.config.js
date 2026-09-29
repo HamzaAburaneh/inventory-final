@@ -1,9 +1,10 @@
 import config from './playwright.config.js';
 
-// Stock fixtures create their own isolated servers; the queue fixture is a production bundle.
+// Stock and vendor fixtures create their own isolated servers; the queue fixture is a
+// production bundle.
 export default {
 	...config,
 	webServer: undefined,
 	workers: 1,
-	testMatch: /stock-(locations-ui|queue-emulator)\.test\.js/
+	testMatch: /(stock-(locations-ui|queue-emulator)|vendor-dialogs-ui)\.test\.js/
 };

@@ -2,6 +2,8 @@
 	import Icon from './Icon.svelte';
 	import ItemPicker from './ItemPicker.svelte';
 	import SuggestInput from './SuggestInput.svelte';
+	import { closeOnBackdrop } from '../lib/dialogBackdrop.js';
+	import { numericInput } from '../lib/numericInput.js';
 	import { reveal, smoothResize } from '../lib/resizeMotion.js';
 	import { inspectItemStock, locationLabel } from '../lib/stockLocations.js';
 	import { getStorageTypeIcon } from '../lib/tableUtils.js';
@@ -80,15 +82,9 @@
 		};
 	}
 
-	function onBackdropClick(event) {
-		if (busy || event.target !== event.currentTarget) return;
-		const box = event.currentTarget.getBoundingClientRect();
-		const inside =
-			event.clientX >= box.left &&
-			event.clientX <= box.right &&
-			event.clientY >= box.top &&
-			event.clientY <= box.bottom;
-		if (!inside) onclose();
+	// Escape and a backdrop click cancel, except while a save is in flight.
+	function dismiss() {
+		if (!busy) onclose();
 	}
 
 	async function submit(event) {
@@ -124,11 +120,11 @@
 <dialog
 	{@attach openDialog}
 	{@attach smoothResize({ content: '.body' })}
+	{@attach closeOnBackdrop(dismiss)}
 	aria-labelledby="vendor-loan-title"
-	onclick={onBackdropClick}
 	oncancel={(event) => {
 		event.preventDefault();
-		if (!busy) onclose();
+		dismiss();
 	}}
 >
 	<form onsubmit={submit}>
@@ -246,6 +242,7 @@
 						inputmode="numeric"
 						placeholder="0"
 						bind:value={quantity}
+						{@attach numericInput()}
 						disabled={busy}
 						required
 					/>
@@ -261,6 +258,7 @@
 							autocomplete="off"
 							placeholder="Optional"
 							bind:value={price}
+							{@attach numericInput({ decimals: 2 })}
 							oninput={() => (priceEdited = true)}
 							onblur={() => {
 								if (priceCents != null) price = centsToInput(priceCents);

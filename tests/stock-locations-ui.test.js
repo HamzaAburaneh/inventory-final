@@ -106,6 +106,43 @@ test('clicking the transfer dialog backdrop cancels like Escape', async ({ page 
 	await expect(page.getByLabel('Movement')).toHaveText('null');
 });
 
+test('selecting the quantity and letting go on the backdrop keeps the transfer dialog open', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 1280, height: 900 });
+	await page.getByRole('button', { name: 'Transfer stock', exact: true }).click();
+	const dialog = page.getByRole('dialog');
+	const quantity = page.getByLabel('Quantity (10 available)');
+	await quantity.fill('4');
+	// Drag across the text, out over the backdrop, and let go there.
+	const box = await quantity.boundingBox();
+	await page.mouse.move(box.x + box.width - 6, box.y + box.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(8, 8, { steps: 8 });
+	await page.mouse.up();
+	await expect(dialog).toBeVisible();
+	await expect(quantity).toHaveValue('4');
+	// A real backdrop click still cancels.
+	await page.mouse.click(8, 8);
+	await expect(dialog).not.toBeVisible();
+});
+
+test('number boxes refuse letters and other stray characters', async ({ page }) => {
+	const amount = page.getByLabel('Amount for Fixture fries in Freezer');
+	await amount.pressSequentially('4e+.a-2');
+	await expect(amount).toHaveValue('42');
+	await page.getByRole('button', { name: 'Transfer stock', exact: true }).click();
+	const quantity = page.getByLabel('Quantity (10 available)');
+	await quantity.pressSequentially('e3E');
+	await expect(quantity).toHaveValue('3');
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'Starting Location', exact: true }).click();
+	await page.getByRole('option', { name: 'Freezer', exact: true }).click();
+	const opening = page.getByLabel('Opening Freezer stock');
+	await opening.pressSequentially('1e5');
+	await expect(opening).toHaveValue('15');
+});
+
 for (const theme of ['light', 'dark']) {
 	for (const width of [390, 1280]) {
 		test(`transfer preview, focus return and layout in ${theme} at ${width}px`, async ({

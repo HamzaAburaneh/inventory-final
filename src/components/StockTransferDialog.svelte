@@ -1,5 +1,7 @@
 <script>
 	import Icon from './Icon.svelte';
+	import { closeOnBackdrop } from '../lib/dialogBackdrop.js';
+	import { numericInput } from '../lib/numericInput.js';
 	import { reveal, smoothResize } from '../lib/resizeMotion.js';
 	import { inspectItemStock, locationLabel } from '../lib/stockLocations.js';
 	import { getStorageTypeIcon } from '../lib/tableUtils.js';
@@ -29,18 +31,9 @@
 			if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
 		};
 	}
-	// A click on the dimmed backdrop cancels, like Escape. The backdrop reports the
-	// dialog itself as its target, so use the card's bounds to tell a backdrop
-	// click apart from one on the card's own padding.
-	function onBackdropClick(event) {
-		if (busy || event.target !== event.currentTarget) return;
-		const box = event.currentTarget.getBoundingClientRect();
-		const inside =
-			event.clientX >= box.left &&
-			event.clientX <= box.right &&
-			event.clientY >= box.top &&
-			event.clientY <= box.bottom;
-		if (!inside) onclose();
+	// A click on the dimmed backdrop cancels, like Escape, except while saving.
+	function dismiss() {
+		if (!busy) onclose();
 	}
 	async function submit(event) {
 		event.preventDefault();
@@ -62,11 +55,11 @@
 <dialog
 	{@attach openDialog}
 	{@attach smoothResize({ content: '.body' })}
+	{@attach closeOnBackdrop(dismiss)}
 	aria-labelledby="stock-transfer-title"
-	onclick={onBackdropClick}
 	oncancel={(event) => {
 		event.preventDefault();
-		if (!busy) onclose();
+		dismiss();
 	}}
 >
 	<form onsubmit={submit}>
@@ -108,6 +101,7 @@
 					inputmode="numeric"
 					placeholder="0"
 					bind:value={quantity}
+					{@attach numericInput()}
 					disabled={busy}
 					required
 				/>
