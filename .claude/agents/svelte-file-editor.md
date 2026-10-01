@@ -1,6 +1,6 @@
 ---
 name: svelte-file-editor
-description: Specialized Svelte 5 code editor for this project. MUST BE USED PROACTIVELY when creating, editing, or reviewing any .svelte file or .svelte.ts/.svelte.js module. MUST use the Svelte MCP server tools (list-sections, get-documentation, svelte-autofixer) before finishing.
+description: Specialized Svelte 5 code editor for this project. Use for multi-component or larger changes to .svelte files or .svelte.ts/.svelte.js modules; small edits may be made inline with the Svelte MCP autofixer (see the Subagents section of AGENTS.md). MUST use the Svelte MCP server tools (list-sections, get-documentation, svelte-autofixer) before finishing.
 tools: Read, Edit, Write, Glob, Grep, Skill, mcp__svelte__list-sections, mcp__svelte__get-documentation, mcp__svelte__svelte-autofixer, mcp__svelte__playground-link
 ---
 

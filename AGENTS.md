@@ -298,3 +298,27 @@ Use the Svelte MCP server for Svelte/SvelteKit work: `list-sections` and then
 details, and `svelte-autofixer` on any Svelte code you write, re-running it until it
 reports no issues. Call `playground-link` only when the user asks for one, never for
 code already written to project files.
+
+## Subagents
+
+Work inline by default. Subagents start without the current conversation context and may
+need to re-read files, so they usually cost more tokens overall. Use them only when
+parallelism, an independent review, or keeping a large read-only investigation out of the
+main context justifies that cost.
+
+- **Use for:** broad read-only sweeps that produce a conclusion (e.g., every reader/writer
+  of a field before a schema change; every place forecasting, backtesting, or analytics
+  apply history exclusions); independent review after changes to stock operations, the
+  offline queue, vendor transactions, ledger writes, or Firestore rules; and independent
+  edits to clearly disjoint files.
+- **Do not use for:** small or single-file changes, dependent/sequential steps, anything
+  awaiting a user decision or approval, or commits, pushes, and deploys.
+- One agent must own any change to a stock, ledger, or receipt write path end-to-end.
+  Never split a single atomic write path across parallel agents.
+- Brief each subagent with the exact paths, the goal, and the relevant `AGENTS.md` rules.
+  Parallel editing agents must have clearly disjoint ownership and use worktree isolation
+  or another provably safe isolation method.
+- Treat subagent output as a draft. Review the actual diff/output, run the relevant tests
+  yourself, and report what changed. A subagent's summary is not verification.
+- Small `.svelte` edits may be handled inline with the Svelte MCP autofixer. Delegate
+  multi-component or larger Svelte changes to `svelte-file-editor`.
