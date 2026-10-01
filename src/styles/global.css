@@ -71,6 +71,9 @@
 	--nav-text-color: #000000;
 	--nav-text-muted: #5f6368;
 	--nav-avatar-text: #ffffff;
+	/* Text on the navbar's accent pill, and the raised fill of the current mobile tile. */
+	--nav-on-accent: #ffffff;
+	--nav-raised: #ffffff;
 	/* Inline text link + error text. General tokens rather than nav-specific ones
 	   because they're used outside the nav too (e.g. the transaction-history scope
 	   notices). The accent blue only reaches ~3.8:1 on the light card surface, so
@@ -134,7 +137,7 @@
 	--nav-logo-color: #007bff;
 	--nav-logo-hover-color: #0056b3;
 	--nav-text-hover-color: #0056b3;
-	--nav-hover-bg: #f8f9fa;
+	--nav-hover-bg: rgba(0, 0, 0, 0.06);
 	--nav-drop-down-text-hover-color: #00aaff;
 
 	/* Tooltips read as a raised surface above the page in both themes: a dark
@@ -231,10 +234,8 @@
 	   backdrop should show through the panel. */
 	--home-shell-surface: #f3f7fd;
 	--home-shell-bloom: rgba(0, 102, 255, 0.12);
-	/* Navbar over the landing hero: no seam, no plate. */
-	--nav-landing-surface: transparent;
-	--nav-landing-border: transparent;
-	--nav-landing-scrolled: rgba(255, 255, 255, 0.82);
+	/* The navbar's translucent surface, the same on every page. */
+	--nav-glass: rgba(255, 255, 255, 0.82);
 }
 
 [data-theme='dark'] {
@@ -248,6 +249,8 @@
 	--nav-text-color: #ffffff;
 	--nav-text-muted: #b6bac2;
 	--nav-avatar-text: #0a0a0a;
+	--nav-on-accent: #0a0a0a;
+	--nav-raised: #2a2a2a;
 	--link-color: var(--add-item-color);
 	--danger-text: #ffaaa3;
 	--event-add: #5bcf7e;
@@ -290,7 +293,7 @@
 	--nav-logo-color: #ffe260;
 	--nav-logo-hover-color: #ffd000;
 	--nav-text-hover-color: #ffd000;
-	--nav-hover-bg: #3a3a3a;
+	--nav-hover-bg: rgba(255, 255, 255, 0.08);
 	--input-hover-bg: #3a3a3a;
 	/* Focus outlines/borders track the dark accent (yellow) instead of blue. */
 	--input-focus-border: var(--add-item-color);
@@ -389,9 +392,7 @@
 	   at 8% transparency the drifting motes were visibly crossing the panel. */
 	--home-shell-surface: #121214;
 	--home-shell-bloom: rgba(255, 214, 92, 0.08);
-	--nav-landing-surface: transparent;
-	--nav-landing-border: transparent;
-	--nav-landing-scrolled: rgba(8, 8, 10, 0.78);
+	--nav-glass: rgba(8, 8, 10, 0.78);
 }
 
 /* While the theme is switching, suppress transitions for one frame. Transitions on

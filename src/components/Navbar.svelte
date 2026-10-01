@@ -5,13 +5,47 @@
 	import { authStore } from '../stores/authStore.js';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { slide } from 'svelte/transition';
+	import { fly, slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
+	import { prefersReducedMotion } from 'svelte/motion';
+	import { slidingIndicator } from '../lib/slidingIndicator.js';
 
 	// `user` is the user to render the navbar for. The layout passes the SSR hint
 	// during the brief window before Firebase confirms the session, then the real
 	// authStore user — so this is correct from the first paint with no flash.
 	let { user } = $props();
+
+	// The signed-in pages, in bar order. The bar uses the short label, the mobile
+	// menu the long one.
+	const LINKS = [
+		{ path: '/manageItems', label: 'Items', mobileLabel: 'Item Manager', icon: 'items' },
+		{
+			path: '/manageTransactions',
+			label: 'Ledger',
+			mobileLabel: 'Manage Transactions',
+			icon: 'ledger'
+		},
+		{
+			path: '/transactionHistory',
+			label: 'History',
+			mobileLabel: 'Transaction History',
+			icon: 'history'
+		},
+		{
+			path: '/transactionAnalysis',
+			label: 'Analytics',
+			mobileLabel: 'Transaction Analysis',
+			icon: 'analytics'
+		},
+		{
+			path: '/inventoryPredictions',
+			label: 'Forecast',
+			mobileLabel: 'Inventory Forecast',
+			icon: 'forecast'
+		},
+		{ path: '/orders', label: 'Orders', mobileLabel: 'Order Sheet', icon: 'orders' },
+		{ path: '/vendorBalances', label: 'Vendors', mobileLabel: 'Vendor Balances', icon: 'vendors' }
+	];
 
 	let isOpen = $state(false);
 	let isDropdownOpen = $state(false);
@@ -25,22 +59,10 @@
 
 	const currentPath = $derived($page.url.pathname);
 
-	// The landing hero is designed to run edge-to-edge under a seamless navbar.
-	// Once the page has scrolled off the hero, the surface fades back in so links
-	// stay legible over whatever panel is underneath.
-	const isLanding = $derived(currentPath === '/');
-	let scrolledPastHero = $state(false);
-
-	$effect(() => {
-		if (!isLanding) {
-			scrolledPastHero = false;
-			return;
-		}
-		const onScroll = () => (scrolledPastHero = window.scrollY > 24);
-		onScroll();
-		window.addEventListener('scroll', onScroll, { passive: true });
-		return () => window.removeEventListener('scroll', onScroll);
-	});
+	// Menus drop in toward the bar; reduced motion shows them at once.
+	const motion = $derived(prefersReducedMotion.current ? 0 : 1);
+	const panelDrop = $derived({ y: -6, duration: 180 * motion, easing: cubicOut });
+	const menuSlide = $derived({ duration: 160 * motion, easing: cubicOut });
 
 	const userInitials = $derived(
 		user
@@ -166,12 +188,57 @@
 	});
 </script>
 
-<nav
-	class="navbar"
-	class:landing={isLanding}
-	class:scrolled={scrolledPastHero}
-	aria-label="Main navigation"
->
+{#snippet navIcon(name, size)}
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		width={size}
+		height={size}
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		stroke-width="2"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+		aria-hidden="true"
+	>
+		{#if name === 'items'}
+			<path
+				d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+			></path>
+		{:else if name === 'ledger'}
+			<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"
+			></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"
+			></path>
+		{:else if name === 'history'}
+			<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+		{:else if name === 'analytics'}
+			<line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line
+				x1="6"
+				y1="20"
+				x2="6"
+				y2="14"
+			></line>
+		{:else if name === 'forecast'}
+			<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"
+			></polyline>
+		{:else if name === 'orders'}
+			<circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path
+				d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+			></path>
+		{:else if name === 'vendors'}
+			<path d="M3 9 4.5 4h15L21 9"></path><path d="M3 9h18"></path><path d="M5 9v11h14V9"
+			></path><path d="M10 20v-5h4v5"></path>
+		{:else if name === 'profile'}
+			<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"
+			></circle>
+		{:else if name === 'signout'}
+			<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"
+			></polyline><line x1="21" y1="12" x2="9" y2="12"></line>
+		{/if}
+	</svg>
+{/snippet}
+
+<nav class="navbar" aria-label="Main navigation">
 	<div class="nav-inner">
 		<!-- ── Logo ── -->
 		<a href={resolve('/')} class="brand">
@@ -197,197 +264,36 @@
 			<span class="brand-text">Stock<span class="brand-accent">Sense</span></span>
 		</a>
 
-		<!-- ── Desktop nav links ── -->
-		<ul class="nav-links" role="list" aria-label="Site navigation">
-			{#if user}
-				<li>
-					<a
-						href={resolve('/manageItems')}
-						class="nav-link"
-						class:active={currentPath === '/manageItems'}
-						aria-current={currentPath === '/manageItems' ? 'page' : undefined}
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-							><path
-								d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
-							></path></svg
+		<!-- ── Desktop links: the accent pill glides to the current page ── -->
+		<div class="nav-links-wrap" {@attach slidingIndicator('.nav-link.active', currentPath)}>
+			<span class="nav-indicator" data-sliding-indicator aria-hidden="true"></span>
+			<ul class="nav-links" role="list" aria-label="Site navigation">
+				{#if user}
+					{#each LINKS as link (link.path)}
+						<li>
+							<a
+								href={resolve(link.path)}
+								class={['nav-link', currentPath === link.path && 'active']}
+								aria-current={currentPath === link.path ? 'page' : undefined}
+							>
+								{@render navIcon(link.icon, 15)}
+								{link.label}
+							</a>
+						</li>
+					{/each}
+				{:else}
+					<li>
+						<a
+							href={resolve('/login')}
+							class={['nav-link', currentPath === '/login' && 'active']}
+							aria-current={currentPath === '/login' ? 'page' : undefined}
 						>
-						Items
-					</a>
-				</li>
-				<li>
-					<a
-						href={resolve('/manageTransactions')}
-						class="nav-link"
-						class:active={currentPath === '/manageTransactions'}
-						aria-current={currentPath === '/manageTransactions' ? 'page' : undefined}
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-							><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"
-							></path><polyline points="7 23 3 19 7 15"></polyline><path
-								d="M21 13v2a4 4 0 0 1-4 4H3"
-							></path></svg
-						>
-						Ledger
-					</a>
-				</li>
-				<li>
-					<a
-						href={resolve('/transactionHistory')}
-						class="nav-link"
-						class:active={currentPath === '/transactionHistory'}
-						aria-current={currentPath === '/transactionHistory' ? 'page' : undefined}
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-							><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"
-							></polyline></svg
-						>
-						History
-					</a>
-				</li>
-				<li>
-					<a
-						href={resolve('/transactionAnalysis')}
-						class="nav-link"
-						class:active={currentPath === '/transactionAnalysis'}
-						aria-current={currentPath === '/transactionAnalysis' ? 'page' : undefined}
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-							><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"
-							></line><line x1="6" y1="20" x2="6" y2="14"></line></svg
-						>
-						Analytics
-					</a>
-				</li>
-				<li>
-					<a
-						href={resolve('/inventoryPredictions')}
-						class="nav-link"
-						class:active={currentPath === '/inventoryPredictions'}
-						aria-current={currentPath === '/inventoryPredictions' ? 'page' : undefined}
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-							><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline
-								points="17 6 23 6 23 12"
-							></polyline></svg
-						>
-						Forecast
-					</a>
-				</li>
-				<li>
-					<a
-						href={resolve('/orders')}
-						class="nav-link"
-						class:active={currentPath === '/orders'}
-						aria-current={currentPath === '/orders' ? 'page' : undefined}
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-							><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path
-								d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
-							></path></svg
-						>
-						Orders
-					</a>
-				</li>
-				<li>
-					<a
-						href={resolve('/vendorBalances')}
-						class="nav-link"
-						class:active={currentPath === '/vendorBalances'}
-						aria-current={currentPath === '/vendorBalances' ? 'page' : undefined}
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-							><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"
-							></path><polyline points="7 23 3 19 7 15"></polyline><path
-								d="M21 13v2a4 4 0 0 1-4 4H3"
-							></path></svg
-						>
-						Vendors
-					</a>
-				</li>
-			{:else}
-				<li>
-					<a
-						href={resolve('/login')}
-						class="nav-link"
-						class:active={currentPath === '/login'}
-						aria-current={currentPath === '/login' ? 'page' : undefined}
-					>
-						Login
-					</a>
-				</li>
-			{/if}
-		</ul>
+							Login
+						</a>
+					</li>
+				{/if}
+			</ul>
+		</div>
 
 		<!-- Flex spacer -->
 		<div class="flex-1" aria-hidden="true"></div>
@@ -429,7 +335,7 @@
 						<div
 							class="dropdown"
 							role="presentation"
-							transition:slide={{ duration: 160, easing: cubicOut }}
+							transition:slide={menuSlide}
 							bind:this={dropdownNode}
 							onmouseenter={handleMouseEnter}
 							onmouseleave={handleMouseLeave}
@@ -452,43 +358,13 @@
 										role="menuitem"
 										onclick={handleProfileClick}
 									>
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											width="13"
-											height="13"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											aria-hidden="true"
-											><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle
-												cx="12"
-												cy="7"
-												r="4"
-											></circle></svg
-										>
+										{@render navIcon('profile', 13)}
 										Profile
 									</a>
 								</li>
 								<li role="none">
 									<button class="drop-item drop-signout" role="menuitem" onclick={handleLogout}>
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											width="13"
-											height="13"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											aria-hidden="true"
-											><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline
-												points="16 17 21 12 16 7"
-											></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg
-										>
+										{@render navIcon('signout', 13)}
 										Sign out
 									</button>
 								</li>
@@ -499,7 +375,18 @@
 			{/if}
 		</div>
 
-		<!-- ── Mobile hamburger ── -->
+		<!-- ── Mobile: avatar (to the profile) and the menu button ── -->
+		{#if user}
+			<a
+				href={resolve('/profile')}
+				class="mob-bar-avatar"
+				aria-label="Profile"
+				onclick={handleProfileClick}
+			>
+				<span class="avatar" aria-hidden="true">{userInitials}</span>
+			</a>
+		{/if}
+
 		<button
 			class="burger"
 			type="button"
@@ -518,237 +405,55 @@
 		</button>
 	</div>
 
-	<!-- ── Mobile panel ── -->
+	<!-- ── Mobile panel: floats over the page and drops in toward the bar ── -->
 	{#if isOpen}
-		<div
-			class="mobile-panel"
-			id="mobile-nav"
-			transition:slide|local={{ duration: 260, easing: cubicOut }}
-			bind:this={mobileMenuRef}
-		>
+		<div class="mobile-panel" id="mobile-nav" transition:fly={panelDrop} bind:this={mobileMenuRef}>
 			{#if user}
 				<div class="mob-user-row">
 					<span class="mob-avatar" aria-hidden="true">{userInitials}</span>
-					<div>
+					<div class="mob-id">
 						<p class="mob-name">{user.displayName || ''}</p>
 						<p class="mob-email">{user.email ?? ''}</p>
 					</div>
 				</div>
-				<div class="mob-divider"></div>
-				<a
-					href={resolve('/manageItems')}
-					class="mob-link"
-					class:active={currentPath === '/manageItems'}
-					aria-current={currentPath === '/manageItems' ? 'page' : undefined}
-					onclick={closeMenu}
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="15"
-						height="15"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-						><path
-							d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
-						></path></svg
+
+				<div class="mob-tiles" {@attach slidingIndicator('.mob-tile.active', currentPath)}>
+					<span class="mob-tile-indicator" data-sliding-indicator aria-hidden="true"></span>
+					{#each LINKS as link (link.path)}
+						<a
+							href={resolve(link.path)}
+							class={['mob-tile', currentPath === link.path && 'active']}
+							aria-current={currentPath === link.path ? 'page' : undefined}
+							onclick={closeMenu}
+						>
+							{@render navIcon(link.icon, 18)}
+							<span>{link.mobileLabel}</span>
+						</a>
+					{/each}
+				</div>
+
+				<div class="mob-account">
+					<a
+						href={resolve('/profile')}
+						class="mob-action"
+						onclick={(e) => {
+							closeMenu();
+							handleProfileClick(e);
+						}}
 					>
-					Item Manager
-				</a>
-				<a
-					href={resolve('/manageTransactions')}
-					class="mob-link"
-					class:active={currentPath === '/manageTransactions'}
-					aria-current={currentPath === '/manageTransactions' ? 'page' : undefined}
-					onclick={closeMenu}
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="15"
-						height="15"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-						><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"
-						></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"
-						></path></svg
-					>
-					Manage Transactions
-				</a>
-				<a
-					href={resolve('/transactionHistory')}
-					class="mob-link"
-					class:active={currentPath === '/transactionHistory'}
-					aria-current={currentPath === '/transactionHistory' ? 'page' : undefined}
-					onclick={closeMenu}
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="15"
-						height="15"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-						><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"
-						></polyline></svg
-					>
-					Transaction History
-				</a>
-				<a
-					href={resolve('/transactionAnalysis')}
-					class="mob-link"
-					class:active={currentPath === '/transactionAnalysis'}
-					aria-current={currentPath === '/transactionAnalysis' ? 'page' : undefined}
-					onclick={closeMenu}
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="15"
-						height="15"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-						><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"
-						></line><line x1="6" y1="20" x2="6" y2="14"></line></svg
-					>
-					Transaction Analysis
-				</a>
-				<a
-					href={resolve('/inventoryPredictions')}
-					class="mob-link"
-					class:active={currentPath === '/inventoryPredictions'}
-					aria-current={currentPath === '/inventoryPredictions' ? 'page' : undefined}
-					onclick={closeMenu}
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="15"
-						height="15"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-						><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline
-							points="17 6 23 6 23 12"
-						></polyline></svg
-					>
-					Inventory Forecast
-				</a>
-				<a
-					href={resolve('/orders')}
-					class="mob-link"
-					class:active={currentPath === '/orders'}
-					aria-current={currentPath === '/orders' ? 'page' : undefined}
-					onclick={closeMenu}
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="15"
-						height="15"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-						><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path
-							d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
-						></path></svg
-					>
-					Order Sheet
-				</a>
-				<a
-					href={resolve('/vendorBalances')}
-					class="mob-link"
-					class:active={currentPath === '/vendorBalances'}
-					aria-current={currentPath === '/vendorBalances' ? 'page' : undefined}
-					onclick={closeMenu}
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="15"
-						height="15"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-						><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"
-						></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"
-						></path></svg
-					>
-					Vendor Balances
-				</a>
-				<div class="mob-divider"></div>
-				<a
-					href={resolve('/profile')}
-					class="mob-link"
-					onclick={(e) => {
-						closeMenu();
-						handleProfileClick(e);
-					}}
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="15"
-						height="15"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-						><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"
-						></circle></svg
-					>
-					Profile
-				</a>
-				<button class="mob-link mob-signout" onclick={handleLogout}>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="15"
-						height="15"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-						><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline
-							points="16 17 21 12 16 7"
-						></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg
-					>
-					Sign out
-				</button>
+						{@render navIcon('profile', 16)}
+						Profile
+					</a>
+					<button type="button" class="mob-action mob-signout" onclick={handleLogout}>
+						{@render navIcon('signout', 16)}
+						Sign out
+					</button>
+				</div>
 			{:else}
 				<a
 					href={resolve('/login')}
-					class="mob-link"
-					class:active={currentPath === '/login'}
+					class={['mob-login', currentPath === '/login' && 'active']}
+					aria-current={currentPath === '/login' ? 'page' : undefined}
 					onclick={closeMenu}>Login</a
 				>
 			{/if}
@@ -765,53 +470,38 @@
 	/* ── Surface tokens ────────────────────────── */
 	.navbar {
 		--nb-surface: var(--nav-color);
+		--nb-glass: var(--nav-glass);
 		--nb-border: var(--nav-border-color);
 		--nb-text: var(--nav-text-color);
 		--nb-muted: var(--nav-text-muted);
 		--nb-hover-bg: var(--nav-hover-bg);
 		--nb-accent: var(--tech-accent);
 		--nb-accent-rgb: var(--tech-accent-rgb);
+		--nb-on-accent: var(--nav-on-accent);
+		--nb-raised: var(--nav-raised);
 		--nb-avatar-fg: var(--nav-avatar-text);
 		--nb-danger: var(--nav-danger-text);
 		--nb-danger-bg: var(--nav-danger-surface);
 		--nb-dropdown-shadow: var(--nav-dropdown-shadow);
 	}
 
-	/* ── Shell ─────────────────────────────────── */
+	/* ── Shell: a flat, translucent bar along the top ── */
 	.navbar {
 		position: sticky;
 		top: 0;
 		z-index: 1000;
-		background: var(--nb-surface);
+		background: var(--nb-glass);
+		backdrop-filter: blur(16px);
+		-webkit-backdrop-filter: blur(16px);
 		border-bottom: 1px solid var(--nb-border);
 		overflow: visible;
 		/* No shadow — intentional */
 	}
 
-	/* On `/` the bar sits directly on the hero backdrop with no plate and no
-	   seam; the surface only fades in once the hero has scrolled away. The
-	   border keeps its 1px so the fade never shifts layout. */
-	.navbar.landing {
-		background: var(--nav-landing-surface);
-		border-bottom-color: var(--nav-landing-border);
-		transition:
-			background-color 220ms ease,
-			border-color 220ms ease,
-			backdrop-filter 220ms ease;
-	}
-
-	.navbar.landing.scrolled {
-		background: var(--nav-landing-scrolled);
-		border-bottom-color: var(--nb-border);
-		backdrop-filter: blur(14px);
-		-webkit-backdrop-filter: blur(14px);
-	}
-
-	/* Seamlessness is a stylistic choice, not one worth spending contrast on:
-	   under a high-contrast preference the bar keeps its surface and its edge. */
+	/* Translucency is a stylistic choice, not one worth spending contrast on:
+	   under a high-contrast preference the bar is solid with an edge. */
 	@media (prefers-contrast: more), (prefers-contrast: high) {
-		.navbar.landing,
-		.navbar.landing.scrolled {
+		.navbar {
 			background: var(--nb-surface);
 			border-bottom-color: var(--nb-border);
 			backdrop-filter: none;
@@ -845,7 +535,7 @@
 		gap: 0.55rem;
 		min-height: 48px;
 		flex-shrink: 0;
-		margin-right: 2rem;
+		margin-right: 1.5rem;
 	}
 
 	.brand-mark {
@@ -874,81 +564,93 @@
 	}
 
 	/* ── Nav links ─────────────────────────────── */
-	.nav-links {
+	.nav-links-wrap {
+		position: relative;
 		display: none;
 		align-items: center;
-		gap: 0;
+	}
+
+	.nav-links {
+		display: flex;
+		align-items: center;
+		gap: 2px;
 		list-style: none;
 		margin: 0;
 		padding: 0;
-		height: 100%;
 	}
 
 	.nav-link {
-		/* Sit at full nav height so the indicator can reach the bottom edge */
+		position: relative;
+		z-index: 1;
 		display: inline-flex;
 		align-items: center;
-		gap: 6px;
-		height: 56px;
-		padding: 0 13px;
+		gap: 7px;
+		height: 38px;
+		padding: 0 15px;
+		border-radius: 999px;
 		font-size: 0.8125rem;
-		font-weight: 500;
+		font-weight: 600;
 		letter-spacing: 0.01em;
 		color: var(--nb-muted);
 		text-decoration: none;
 		white-space: nowrap;
-		position: relative;
-		transition: color 0.2s ease;
+		transition:
+			color 0.18s ease,
+			background-color 0.18s ease;
 	}
 
-	.nav-link svg {
-		opacity: 0.6;
-		transition: opacity 0.2s ease;
+	.nav-link :global(svg) {
 		flex-shrink: 0;
 	}
 
-	/* Hover */
-	.nav-link:hover {
+	.nav-link:hover:not(.active) {
 		color: var(--nb-text);
+		background: var(--nb-hover-bg);
 	}
 
-	.nav-link:hover svg {
-		opacity: 0.85;
+	/* The current page is a filled accent pill. The sliding indicator draws it once
+	   it has landed ([data-gliding]); until then the link fills itself, so it is
+	   never invisible (on-accent text over the glass). */
+	.nav-link.active {
+		color: var(--nb-on-accent);
+		background: var(--nb-accent);
 	}
 
-	/* Focus ring */
+	/* `data-gliding` is set at runtime by slidingIndicator, hence :global. */
+	.nav-links-wrap:global([data-gliding]) .nav-link.active {
+		background: transparent;
+	}
+
 	.nav-link:focus-visible {
 		outline: 2px solid var(--nb-accent);
-		outline-offset: -4px;
-		border-radius: 4px;
+		outline-offset: 2px;
 	}
 
-	/*
-	 * Active indicator — a glowing accent dot that sits flush on
-	 * the bottom border of the navbar, centred under the link text.
-	 * The dot + its bloom create a "lit" status-light feel.
-	 */
-	.nav-link.active {
-		color: var(--nb-accent);
-	}
-
-	.nav-link.active svg {
-		opacity: 1;
-		color: var(--nb-accent);
-	}
-
-	.nav-link.active::after {
-		content: '';
+	.nav-indicator,
+	.mob-tile-indicator {
 		position: absolute;
-		bottom: -1px;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 4px;
-		height: 4px;
-		border-radius: 50%;
+		top: 0;
+		left: 0;
+		z-index: 0;
+		opacity: 0;
+		pointer-events: none;
+		transition:
+			transform 340ms cubic-bezier(0.2, 0.8, 0.2, 1),
+			width 340ms cubic-bezier(0.2, 0.8, 0.2, 1),
+			height 340ms cubic-bezier(0.2, 0.8, 0.2, 1),
+			opacity 160ms ease;
+	}
+
+	/* Appearing (first placement, coming back from a page with no link, or after
+	   being hidden) fades in where it lands; it only slides once data-ready is set. */
+	.nav-indicator:not([data-ready]),
+	.mob-tile-indicator:not([data-ready]) {
+		transition: opacity 160ms ease;
+	}
+
+	.nav-indicator {
 		background: var(--nb-accent);
-		/* softer: single tight glow, no wide bloom */
-		box-shadow: 0 0 5px 1px rgba(var(--nb-accent-rgb), 0.3);
+		border-radius: 999px;
 	}
 
 	/* ── Spacer ────────────────────────────────── */
@@ -967,7 +669,7 @@
 		display: none;
 		width: 1px;
 		height: 22px;
-		margin: 0 1.5rem;
+		margin: 0 1.25rem;
 		background: color-mix(in srgb, var(--nb-text) 18%, transparent);
 		flex-shrink: 0;
 	}
@@ -1032,6 +734,7 @@
 		font-size: 0.65rem;
 		font-weight: 700;
 		letter-spacing: 0.04em;
+		line-height: 1;
 		user-select: none;
 	}
 
@@ -1041,7 +744,7 @@
 		top: calc(100% + 10px);
 		right: 0;
 		min-width: 220px;
-		border-radius: 12px;
+		border-radius: 14px;
 		padding: 6px;
 		margin: 0;
 		overflow: hidden;
@@ -1122,7 +825,7 @@
 		text-decoration: none;
 		background: none;
 		border: none;
-		border-radius: 6px;
+		border-radius: 8px;
 		cursor: pointer;
 		text-align: left;
 		transition:
@@ -1145,24 +848,36 @@
 		color: var(--nb-danger);
 	}
 
-	/* ── Burger ────────────────────────────────── */
+	/* ── Mobile bar: avatar and menu button ────── */
+	.mob-bar-avatar {
+		display: flex;
+		margin-right: 10px;
+		border-radius: 50%;
+		text-decoration: none;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.mob-bar-avatar:focus-visible {
+		outline: 2px solid var(--nb-accent);
+		outline-offset: 2px;
+	}
+
 	.burger {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 48px;
-		height: 48px;
+		width: 44px;
+		height: 44px;
 		/* Override global button touch-target rules (min-height 44px + big
 		   padding) that otherwise crush the icon's content box to 0 width. */
 		padding: 0;
 		min-height: 0;
 		min-width: 0;
-		border-radius: 8px;
+		border-radius: 12px;
 		border: 1px solid var(--nb-border);
 		background: transparent;
 		cursor: pointer;
 		flex-shrink: 0;
-		margin-left: auto;
 		transition:
 			background-color 0.18s ease,
 			border-color 0.18s ease;
@@ -1234,19 +949,18 @@
 		right: 0;
 		z-index: 100;
 		background: var(--nb-surface);
-		border-top: 1px solid var(--nb-border);
-		padding: 8px 12px 4px;
+		border-bottom: 1px solid var(--nb-border);
+		padding: 10px 12px 4px;
 		max-height: calc(100dvh - 56px);
 		overflow-y: auto;
 		overscroll-behavior: contain;
-		/* No extra shadow — the bottom border is enough */
 	}
 
 	.mob-user-row {
 		display: flex;
 		align-items: center;
 		gap: 10px;
-		padding: 8px 4px 12px;
+		padding: 4px 4px 12px;
 	}
 
 	.mob-avatar {
@@ -1263,9 +977,13 @@
 		flex-shrink: 0;
 	}
 
+	.mob-id {
+		min-width: 0;
+	}
+
 	.mob-name {
 		font-size: 0.875rem;
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--nb-text);
 		margin: 0;
 	}
@@ -1274,73 +992,173 @@
 		font-size: 0.75rem;
 		color: var(--nb-muted);
 		margin: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
-	.mob-divider {
-		height: 1px;
-		background: var(--nb-border);
-		margin: 4px 0 8px;
+	/* Page tiles; the raised, accent-edged tile glides to the current page. */
+	.mob-tiles {
+		position: relative;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
 	}
 
-	.mob-link {
+	.mob-tile {
+		position: relative;
+		z-index: 1;
 		display: flex;
 		align-items: center;
-		gap: 10px;
-		width: 100%;
-		padding: 0 10px;
-		height: 48px;
-		border-radius: 7px;
-		font-size: 0.875rem;
-		font-weight: 500;
+		gap: 9px;
+		min-height: 50px;
+		padding: 6px 11px;
+		border: 1px solid var(--nb-border);
+		border-radius: 12px;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		line-height: 1.25;
+		color: var(--nb-text);
+		text-decoration: none;
+		-webkit-tap-highlight-color: transparent;
+		transition:
+			background-color 0.15s ease,
+			border-color 0.15s ease;
+	}
+
+	.mob-tile :global(svg) {
+		flex-shrink: 0;
+		color: var(--nb-muted);
+		transition: color 0.15s ease;
+	}
+
+	@media (hover: hover) {
+		.mob-tile:hover:not(.active) {
+			background: var(--nb-hover-bg);
+		}
+	}
+
+	.mob-tile.active {
+		background: var(--nb-raised);
+		border-color: color-mix(in srgb, var(--nb-accent) 60%, transparent);
+	}
+
+	.mob-tiles:global([data-gliding]) .mob-tile.active {
+		background: transparent;
+		border-color: transparent;
+	}
+
+	.mob-tile.active :global(svg) {
+		color: var(--nb-accent);
+	}
+
+	.mob-tile:focus-visible {
+		outline: 2px solid var(--nb-accent);
+		outline-offset: 2px;
+	}
+
+	.mob-tile-indicator {
+		background: var(--nb-raised);
+		border: 1px solid color-mix(in srgb, var(--nb-accent) 60%, transparent);
+		border-radius: 12px;
+	}
+
+	/* Profile and sign out, side by side under the tiles */
+	.mob-account {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+		margin-top: 10px;
+		padding-top: 10px;
+		border-top: 1px solid var(--nb-border);
+	}
+
+	.mob-action {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		height: 44px;
+		min-height: 0;
+		padding: 0 12px;
+		margin: 0;
+		font: inherit;
+		font-size: 0.8125rem;
+		font-weight: 600;
 		color: var(--nb-muted);
 		text-decoration: none;
-		background: none;
+		background: transparent;
 		border: none;
+		border-radius: 12px;
 		cursor: pointer;
-		text-align: left;
+		-webkit-tap-highlight-color: transparent;
 		transition:
 			background-color 0.15s ease,
 			color 0.15s ease;
 	}
 
-	.mob-link:hover {
-		background: var(--nb-hover-bg);
-		color: var(--nb-text);
+	@media (hover: hover) {
+		.mob-action:hover {
+			background: var(--nb-hover-bg);
+			color: var(--nb-text);
+		}
+
+		.mob-signout:hover {
+			background: var(--nb-danger-bg);
+			color: var(--nb-danger);
+		}
 	}
 
-	.mob-link.active {
-		color: var(--nb-accent);
-		background: rgba(var(--nb-accent-rgb), 0.08);
+	.mob-action:focus {
+		outline: none;
 	}
 
-	.mob-link:focus-visible {
+	.mob-action:focus-visible {
 		outline: 2px solid var(--nb-accent);
 		outline-offset: 2px;
 	}
 
-	.mob-signout:hover {
-		background: var(--nb-danger-bg);
-		color: var(--nb-danger);
+	.mob-login {
+		display: flex;
+		align-items: center;
+		height: 48px;
+		padding: 0 14px;
+		border: 1px solid var(--nb-border);
+		border-radius: 12px;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--nb-text);
+		text-decoration: none;
+	}
+
+	.mob-login.active {
+		background: var(--nb-raised);
+		border-color: color-mix(in srgb, var(--nb-accent) 60%, transparent);
+	}
+
+	.mob-login:focus-visible {
+		outline: 2px solid var(--nb-accent);
+		outline-offset: 2px;
 	}
 
 	.mob-footer {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 10px 10px;
-		margin-top: 4px;
+		padding: 12px 10px;
+		margin-top: 10px;
 		border-top: 1px solid var(--nb-border);
 	}
 
 	.mob-footer-label {
 		font-size: 0.75rem;
-		font-weight: 500;
+		font-weight: 600;
 		color: var(--nb-muted);
 	}
 
 	/* ── Responsive ────────────────────────────── */
 	@media (min-width: 768px) {
-		.nav-links {
+		.nav-links-wrap {
 			display: flex;
 		}
 		.nav-controls {
@@ -1352,6 +1170,7 @@
 		.nav-divider {
 			display: block;
 		}
+		.mob-bar-avatar,
 		.burger {
 			display: none;
 		}
@@ -1363,10 +1182,21 @@
 	/* Seven links need the full desktop width; on small tablets tighten them
 	   rather than hiding any. */
 	@media (min-width: 768px) and (max-width: 1099px) {
+		.brand {
+			margin-right: 0.75rem;
+		}
 		.nav-link {
 			gap: 4px;
-			padding: 0 7px;
+			height: 34px;
+			padding: 0 8px;
 			font-size: 0.75rem;
+		}
+		.nav-link :global(svg) {
+			width: 13px;
+			height: 13px;
+		}
+		.nav-divider {
+			margin: 0 0.75rem;
 		}
 	}
 
@@ -1381,11 +1211,18 @@
 			height: 46px;
 		}
 		.nav-link {
-			height: 46px;
+			height: 32px;
 		}
 		.mobile-panel {
 			max-height: calc(100dvh - 46px);
 			overflow-y: auto;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.nav-indicator,
+		.mob-tile-indicator {
+			transition: none;
 		}
 	}
 </style>

@@ -222,6 +222,9 @@ opens it upward when there's no room below. A `<dialog>` closes on its backdrop 
 `closeOnBackdrop` (`src/lib/dialogBackdrop.js`), which ignores a drag that starts in the
 card (selecting a box's text). Number and money boxes attach `numericInput`
 (`src/lib/numericInput.js`), which refuses letters and stray symbols as they're typed.
+A highlight marking the current item among siblings (the navbar's accent pill, the
+mobile menu's current tile) glides between them with `slidingIndicator`
+(`src/lib/slidingIndicator.js`); the item keeps its own highlight until it lands.
 
 The landing page currently uses full-viewport panels and a fixed section-navigation
 dot rail, with the shared Three.js backdrop also used on login. Preserve keyboard

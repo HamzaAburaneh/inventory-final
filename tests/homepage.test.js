@@ -336,8 +336,8 @@ test.describe('Inventory Observatory mobile behavior', () => {
 			openMenuBox.x + openMenuBox.width / 2,
 			openMenuBox.y + openMenuBox.height / 2
 		);
-		// The mobile panel uses a 260ms slide transition; measure the toggle only
-		// after its final hit box is stable so this remains a true pointer test.
+		// The mobile panel drops in over 180ms; measure the toggle only after its
+		// final hit box is stable so this remains a true pointer test.
 		await page.waitForTimeout(300);
 		const themeToggleBox = await page
 			.getByRole('switch', { name: 'Switch to dark mode' })
