@@ -38,7 +38,7 @@ const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 // cache can never serve stale-prompt results.
 const DEFAULT_MODEL = 'anthropic/claude-sonnet-4.5';
 const LEGACY_MODEL = 'openai/gpt-4o';
-const PROMPT_VERSION = 2;
+const PROMPT_VERSION = 3;
 const BATCH_SIZE = 8;
 const MAX_CONCURRENT_BATCHES = 4;
 const REQUEST_TIMEOUT_MS = 45000;
@@ -150,6 +150,14 @@ async function callOpenRouter(body) {
 		throw new Error(`OpenRouter API error: ${response.status}`);
 	}
 	const data = await response.json();
+	// Per-call token accounting, so prompt changes can be costed from the server logs.
+	const usage = data?.usage;
+	if (usage) {
+		const cost = typeof usage.cost === 'number' ? `, cost $${usage.cost.toFixed(4)}` : '';
+		console.info(
+			`OpenRouter usage (${body.model}): ${usage.prompt_tokens ?? '?'} in, ${usage.completion_tokens ?? '?'} out${cost}`
+		);
+	}
 	const content = data?.choices?.[0]?.message?.content;
 	if (typeof content !== 'string' || content.length === 0) {
 		throw new Error('OpenRouter returned an empty completion');
@@ -203,12 +211,14 @@ function buildBatchPrompt(ctx, batch) {
 	const { window } = ctx;
 	const lines = [];
 	lines.push(
-		'You forecast daily demand (in cases) for a food vendor at the Canadian National Exhibition (CNE) in Toronto.'
+		"You forecast daily demand — units issued from storage to the vendor's own booths — for a food vendor at the Canadian National Exhibition (CNE) in Toronto."
 	);
 	lines.push(
 		`FAIR: ${fmtDay(window.fairStart)} to ${fmtDay(window.fairEnd)} (${window.totalDays} days).`
 	);
-	lines.push('UNITS: 1 unit = one CASE or BOX, never a single serving.');
+	lines.push(
+		"UNITS: 1 unit = one of the item's tracked unit (a case, jug, package, etc.; the item name often says which), never a single serving."
+	);
 	lines.push('');
 	lines.push('CROWD MODEL (relative daily demand, quiet weekday = 1.0):');
 	lines.push(
@@ -238,7 +248,7 @@ function buildBatchPrompt(ctx, batch) {
 		const soFar = itemCtx.currentSeries
 			.map((e, i) => `d${i + 1} ${e.date.slice(5)}: ${e.qty}`)
 			.join(', ');
-		lines.push(`This fair so far (fair day, date: cases): ${soFar || 'no days recorded yet'}`);
+		lines.push(`This fair so far (fair day, date: units): ${soFar || 'no days recorded yet'}`);
 		if (itemCtx.priorYears > 0) {
 			const aligned = window.forecastDates
 				.map((d, i) => {
@@ -261,7 +271,7 @@ function buildBatchPrompt(ctx, batch) {
 			lines.push('Last CNE: no prior-fair data for this item.');
 		}
 		lines.push(
-			`Reference baseline (cases/day): [${itemCtx.baseline.prediction.map((v) => round2(v)).join(', ')}]`
+			`Reference baseline (units/day): [${itemCtx.baseline.prediction.map((v) => round2(v)).join(', ')}]`
 		);
 		lines.push('');
 	}
@@ -274,10 +284,10 @@ function buildBatchPrompt(ctx, batch) {
 		'3. Perishable items (Refrigerator / fresh) should not be overstocked in the final days of the fair.'
 	);
 	lines.push(
-		'4. Stay realistic for event food service; if an item clearly is not selling this year, predict low.'
+		'4. Stay realistic for event food service; if an item is clearly not being issued this year, predict low.'
 	);
 	lines.push(
-		'5. reasoning: at most 2 short sentences naming the concrete signals used. drivers: 2-4 short factor tags. confidence: 0-1, conservative when data is thin.'
+		'5. reasoning: a brief plain-language note naming the concrete signals used. drivers: 2-4 short factor tags. confidence: 0-1, conservative when data is thin.'
 	);
 	lines.push('');
 	lines.push('Respond with ONLY a JSON object of this exact shape (no markdown, no commentary):');
