@@ -260,9 +260,10 @@ was verified and any checks that could not be completed.
 - Playwright starts its own fresh production build/preview. Use
   `npm run test:integration` for Chromium; `npm run test:cross-browser` covers Firefox
   and WebKit when warranted. Bare Playwright runs all configured browsers.
-- For UI changes, verify light/dark and desktop/mobile, including interactive states.
-  Section-pager changes also need wheel/trackpad/touch/keyboard verification plus the
-  relevant `sectionPager.test.js` and `home-scroll.test.js` regressions.
+- The user checks UI changes in the browser themselves (light/dark, desktop/mobile,
+  interactive states), so don't start a dev server or preview to verify them; still build
+  for all of those. Section-pager changes need the relevant `sectionPager.test.js` and
+  `home-scroll.test.js` regressions; the user does the wheel/trackpad/touch/keyboard check.
 
 ## Offline behavior and runtime gotchas
 
@@ -286,10 +287,11 @@ was verified and any checks that could not be completed.
 
 ## Svelte skills and tools
 
-For Svelte component/module work, load `svelte-code-writer` and
-`svelte-core-bestpractices` and use the Svelte MCP documentation/autofixer workflow.
-Use runes for new component state while preserving existing store contracts when
-unrelated to the task. Do not migrate working stores merely for stylistic consistency.
+For Svelte component/module work, load `svelte-core-bestpractices` and use the Svelte MCP
+documentation/autofixer workflow; `svelte-code-writer` documents the `@sveltejs/mcp` CLI
+fallback for when the MCP tools are unavailable. Use runes for new component state while
+preserving existing store contracts when unrelated to the task. Do not migrate working
+stores merely for stylistic consistency.
 
 ### Svelte MCP server usage
 

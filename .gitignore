@@ -24,7 +24,6 @@ vite.config.ts.timestamp-*
 
 # Local Claude tooling (machine-local, not shared)
 .claude/launch.json
-.claude/skills/threejs-*/
 
 .private-stock-maintenance/
 firebase-debug.log

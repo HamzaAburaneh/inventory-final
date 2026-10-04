@@ -10,7 +10,7 @@ When previews are requested:
 - Render options with the inline preview/visualization widget tool (`show_widget`), never as a static description, so the change can actually be seen before it's built.
 - Show 5 options unless the user asks for a different count.
 - Show light and dark mode side by side for every option (the app themes via `[data-theme]`; both must be judged), using the real surface colors from `src/styles/global.css` so the preview matches production.
-- Number/label each option so the user can pick by number or mix-and-match (e.g. "freezer icon from 3, color from 7").
+- Number/label each option so the user can pick by number or mix-and-match (e.g. "freezer icon from 3, color from 5").
 - Only after the user picks do you implement it in the codebase.
 
 Always (with or without previews): keep theme-dependent colors in CSS variables / `[data-theme]` rules, not hardcoded inline styles, so both themes stay correct.
