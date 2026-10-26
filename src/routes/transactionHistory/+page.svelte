@@ -1,11 +1,10 @@
 <script>
-	import { subscribeToTransactions, getEarliestTransactionYear } from '../../lib/transactions';
+	import { getEarliestTransactionYear } from '../../lib/transactions';
 	import {
 		availableYears,
 		combineHistoricalTransfers,
 		countTransactionsByDay,
-		currentSeasonYear,
-		isMissingIndexError
+		currentSeasonYear
 	} from '../../lib/transactionHistory';
 	import TransactionTimeline from '../../components/TransactionTimeline.svelte';
 	import { isInventoryMovement } from '../../lib/stockHistory.js';
@@ -14,6 +13,7 @@
 	import SearchBar from '../../components/SearchBar.svelte';
 	import { getPaginationStore } from '../../stores/paginationStore';
 	import { createSearchState } from '../../lib/runes/search.svelte.js';
+	import { createSeasonHistory } from '../../lib/runes/seasonHistory.svelte.js';
 	import { itemStore } from '../../stores/itemStore';
 	import { onMount } from 'svelte';
 
@@ -27,11 +27,7 @@
 	// rows" caveat to explain. It also stays flat as the ledger grows: the largest
 	// season on record is ~2,250 rows, and next season's view carries none of this
 	// season's.
-	//
-	// $state.raw because this array is only ever reassigned wholesale from a
-	// snapshot, never mutated — deep proxying would cost per-property access traps
-	// on every filter, stats pass and sort comparison, and buy nothing.
-	let transactions = $state.raw([]);
+	const history = createSeasonHistory();
 
 	// Between fairs this resolves to the last season that actually ran, so opening
 	// the page in February shows real data instead of an empty current season.
@@ -43,22 +39,12 @@
 	// picker renders immediately rather than popping in.
 	const yearOptions = $derived(availableYears(earliestYear, LATEST_SEASON));
 
-	// Set when a query fails because its composite index is still building. Index
-	// builds are asynchronous, so a fresh deploy can fail this way for a few
-	// minutes and then start working on its own — worth saying, since retrying is
-	// genuinely the right response.
-	let indexPending = $state(false);
-	let loadFailed = $state(false);
-
 	// `ready` reveals the page chrome as soon as the listener is attached (mirrors
-	// manageItems' `itemsLoaded`); `received` flips once the first snapshot lands so
-	// the empty state only shows after real data has come back, not during the wait.
+	// manageItems' `itemsLoaded`).
 	let ready = $state(false);
-	let received = $state(false);
 	let sortNewest = $state(true);
 	// View filter: '' (all) | stock add/remove | item lifecycle events.
 	let typeFilter = $state('');
-	let unsubscribeFromTransactions = null;
 
 	const paginationStore = getPaginationStore('transactionHistory');
 	const { currentPage, itemsPerPage, setTotalItems, setCurrentPage } = paginationStore;
@@ -78,14 +64,21 @@
 		{ value: 'vendorMovement', label: 'Vendors', icon: 'fa-handshake' }
 	];
 
-	// Firestore already applied the year and the type filter, so only the search
-	// term is left to apply here — it has no server-side equivalent, since
-	// Firestore cannot match a substring.
+	// The feed delivers the whole season newest first, so "Oldest" is the same rows
+	// reversed and switching needs no new query. It is reversed before pairs are
+	// combined below, since a combined pair sits where its first side appears.
+	const orderedTransactions = $derived(
+		sortNewest ? history.transactions : [...history.transactions].reverse()
+	);
+
 	// Confirmed historical freezer/fridge moves were logged as two rows on items
 	// that have since been merged; show each pair as one transfer of the product
 	// that owns both today. The stored rows are unchanged and still go to CSV.
-	const displayTransactions = $derived(combineHistoricalTransfers(transactions, $itemStore));
+	const displayTransactions = $derived(combineHistoricalTransfers(orderedTransactions, $itemStore));
 
+	// Firestore already applied the year and the type filter, so only the search
+	// term is left to apply here — it has no server-side equivalent, since
+	// Firestore cannot match a substring.
 	const filteredTransactions = $derived.by(() => {
 		if (!searchTermValue) return displayTransactions;
 		const lowerSearchTerm = searchTermValue.toLowerCase();
@@ -127,47 +120,7 @@
 		return sortedTransactions.slice(startIndex, endIndex);
 	});
 
-	/**
-	 * (Re)attach the live listener for the selected year, filter and sort order.
-	 *
-	 * All three are query parameters, so changing any of them re-queries rather
-	 * than re-processing a superset that was fetched for a different question.
-	 */
-	function startSubscription() {
-		if (unsubscribeFromTransactions) {
-			unsubscribeFromTransactions();
-			unsubscribeFromTransactions = null;
-		}
-		// The rows on screen answer the previous query. Leave them visible so the
-		// list doesn't blank out mid-switch, but don't let `received` claim the new
-		// snapshot has landed.
-		received = false;
-		indexPending = false;
-		loadFailed = false;
-		try {
-			unsubscribeFromTransactions = subscribeToTransactions(
-				(rows) => {
-					transactions = rows;
-					received = true;
-					indexPending = false;
-					loadFailed = false;
-				},
-				(error) => {
-					// Distinguish "the index is still building, try again shortly" from a
-					// real failure — the first fixes itself, the second doesn't.
-					if (isMissingIndexError(error)) indexPending = true;
-					else loadFailed = true;
-					transactions = [];
-					received = true;
-				},
-				{ year: selectedYear, filter: typeFilter, sortNewest }
-			);
-		} catch (error) {
-			console.error('Error setting up transactions subscription:', error);
-			loadFailed = true;
-			received = true;
-		}
-	}
+	const startSubscription = () => history.show({ year: selectedYear, filter: typeFilter });
 
 	onMount(() => {
 		startSubscription();
@@ -190,11 +143,7 @@
 			});
 		ready = true;
 
-		return () => {
-			if (unsubscribeFromTransactions) {
-				unsubscribeFromTransactions();
-			}
-		};
+		return () => history.stop();
 	});
 
 	// A native <select> renders its open list with the OS, not the page — on macOS
@@ -289,11 +238,10 @@
 	}
 
 	function toggleSort() {
+		// No new query: the whole season is already loaded, so reversing it locally
+		// still makes "Oldest" mean the oldest of the season, not of a partial set.
 		sortNewest = !sortNewest;
 		setCurrentPage(1);
-		// A direction on the query, not a client-side re-sort of a partial set — so
-		// "Oldest" means the oldest of the year, which is what it looks like it means.
-		startSubscription();
 	}
 
 	function formatSigned(value) {
@@ -372,13 +320,13 @@
 					<h2 class="history-title">Transaction history</h2>
 					<p class="history-sub">
 						{#if searchTermValue || typeFilter}
-							{filteredTransactions.length.toLocaleString()} of {transactions.length.toLocaleString()}
+							{filteredTransactions.length.toLocaleString()} of {history.transactions.length.toLocaleString()}
 							records in the {selectedYear} season
 						{:else}
-							{transactions.length.toLocaleString()}
-							{transactions.length === 1 ? 'record' : 'records'} in the {selectedYear} season
+							{history.transactions.length.toLocaleString()}
+							{history.transactions.length === 1 ? 'record' : 'records'} in the {selectedYear} season
 						{/if}
-						{#if !received}
+						{#if !history.received}
 							<span class="scope-note"><i class="fas fa-circle-notch fa-spin"></i> loading…</span>
 						{/if}
 					</p>
@@ -414,14 +362,14 @@
 				</div>
 			</div>
 
-			{#if indexPending}
+			{#if history.indexPending}
 				<p class="stats-scope scope-error">
 					<i class="fas fa-triangle-exclamation"></i>
 					This filter needs a database index that is still building. It usually takes a few minutes —
 					try again shortly.
 					<button class="scope-link" onclick={startSubscription}>Retry</button>
 				</p>
-			{:else if loadFailed}
+			{:else if history.loadFailed}
 				<p class="stats-scope scope-error">
 					<i class="fas fa-triangle-exclamation"></i>
 					Couldn't load the {selectedYear} season.
@@ -502,7 +450,7 @@
 			</div>
 
 			<div class="timeline-section">
-				{#if received && filteredTransactions.length === 0}
+				{#if history.received && filteredTransactions.length === 0}
 					<p class="empty-state">No transactions found.</p>
 				{:else}
 					<TransactionTimeline transactions={paginatedTransactions} {dayCounts} />

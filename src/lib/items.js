@@ -125,9 +125,10 @@ export async function getItems() {
 /**
  * Subscribes to real-time updates for all items in the database.
  * @param {function(Item[]): void} callback - Function called when items change.
+ * @param {function(unknown): void} [onError] - Called if the listener fails; it delivers nothing more after that.
  * @returns {function(): void} Unsubscribe function to stop listening.
  */
-export function subscribeToItems(callback) {
+export function subscribeToItems(callback, onError) {
 	const itemsQuery = itemsCol();
 	return onSnapshot(
 		itemsQuery,
@@ -140,6 +141,7 @@ export function subscribeToItems(callback) {
 		},
 		(error) => {
 			console.error('Error in items subscription:', error);
+			onError?.(error);
 		}
 	);
 }

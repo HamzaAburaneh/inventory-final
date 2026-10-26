@@ -30,19 +30,31 @@ function createItemStore() {
 		}
 	});
 	const currentUser = () => get(authStore)?.email || 'Unknown';
+	/** Starts the catalog listener unless one is already running for this account and group. */
 	async function loadItems() {
-		stopListening();
+		// Account and group changes stop the listener, so a running one is already
+		// for this scope and its items are current. Keep them, rather than blanking
+		// the list and re-reading the catalog for every page that asks for items.
+		if (unsubscribeFromItems) return;
 		const uid = listeningUid;
 		const group = listeningGroup;
-		unsubscribeFromItems = subscribeToItems((items) => {
-			if (uid !== listeningUid || group !== listeningGroup) return;
-			store.update((previous) =>
-				items.map((item) => ({
-					...item,
-					changeAmount: previous.find((row) => row.id === item.id)?.changeAmount ?? 0
-				}))
-			);
-		});
+		const stop = subscribeToItems(
+			(items) => {
+				if (uid !== listeningUid || group !== listeningGroup) return;
+				store.update((previous) =>
+					items.map((item) => ({
+						...item,
+						changeAmount: previous.find((row) => row.id === item.id)?.changeAmount ?? 0
+					}))
+				);
+			},
+			() => {
+				// A failed listener delivers nothing more. Stop it, so the next page that
+				// asks for items starts a fresh one instead of reusing a dead one.
+				if (unsubscribeFromItems === stop) stopListening();
+			}
+		);
+		unsubscribeFromItems = stop;
 	}
 	function stopListening() {
 		unsubscribeFromItems?.();

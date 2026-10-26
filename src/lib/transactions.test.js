@@ -14,11 +14,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ledger is large, so it is pinned here.
 const mocks = vi.hoisted(() => ({
 	onSnapshot: vi.fn(),
-	getDocs: vi.fn()
+	getDocs: vi.fn(),
+	groupId: 'group-1'
 }));
 
 vi.mock('../firebase', () => ({ db: {} }));
-vi.mock('./activeGroup', () => ({ requireActiveGroupId: () => 'group-1' }));
+vi.mock('./activeGroup', () => ({ requireActiveGroupId: () => mocks.groupId }));
 
 vi.mock('firebase/firestore', () => ({
 	collection: vi.fn((_db, ...segments) => ({ kind: 'collection', path: segments.join('/') })),
@@ -32,7 +33,15 @@ vi.mock('firebase/firestore', () => ({
 	Timestamp: { fromDate: vi.fn((date) => ({ kind: 'timestamp', date })) }
 }));
 
-import { subscribeToTransactions, getEarliestTransactionYear } from './transactions';
+import { createSeasonHistoryFeed, getEarliestTransactionYear } from './transactions';
+import { subscribeStockHistoryReviews } from './stockReviews';
+
+/** Point a new feed at a season, as the history page does when it opens. */
+const showSeason = (options, onData = () => {}, onError = undefined) => {
+	const feed = createSeasonHistoryFeed(onData, onError);
+	feed.show(options);
+	return feed;
+};
 
 /** Build a fake QueryDocumentSnapshot. */
 const docSnap = (id, data) => ({ id, data: () => data });
@@ -57,13 +66,14 @@ const wheresOf = (call) => constraintsOf(call).filter((c) => c.kind === 'where')
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	mocks.groupId = 'group-1';
 });
 
-describe('subscribeToTransactions', () => {
+describe('createSeasonHistoryFeed', () => {
 	it('bounds the listener to the requested season, not the calendar year', () => {
 		// A calendar year would sweep in the off-season months where test rows live
 		// — including a 500,000 count typed into an item named "#1".
-		subscribeToTransactions(() => {}, undefined, { year: 2026 });
+		showSeason({ year: 2026 });
 
 		const bounds = wheresOf(mocks.onSnapshot.mock.calls[0]).filter((c) => c.field === 'timestamp');
 		expect(bounds).toEqual([
@@ -83,7 +93,7 @@ describe('subscribeToTransactions', () => {
 	});
 
 	it('uses a half-open range, so a boundary instant belongs to one season only', () => {
-		subscribeToTransactions(() => {}, undefined, { year: 2025 });
+		showSeason({ year: 2025 });
 
 		const ops = wheresOf(mocks.onSnapshot.mock.calls[0])
 			.filter((c) => c.field === 'timestamp')
@@ -95,7 +105,7 @@ describe('subscribeToTransactions', () => {
 	it('never adds a row limit, so the season is delivered whole', () => {
 		// The page's stats, day counts and sort all describe the full season; a limit
 		// would silently make every one of those figures a partial answer.
-		subscribeToTransactions(() => {}, undefined, { year: 2026 });
+		showSeason({ year: 2026 });
 
 		expect(constraintsOf(mocks.onSnapshot.mock.calls[0]).some((c) => c.kind === 'limit')).toBe(
 			false
@@ -103,14 +113,14 @@ describe('subscribeToTransactions', () => {
 	});
 
 	it('needs no composite index when unfiltered, keying only off timestamp', () => {
-		subscribeToTransactions(() => {}, undefined, { year: 2026 });
+		showSeason({ year: 2026 });
 
 		const fields = new Set(constraintsOf(mocks.onSnapshot.mock.calls[0]).map((c) => c.field));
 		expect([...fields]).toEqual(['timestamp']);
 	});
 
 	it('applies a stock filter in the query rather than leaving it to the caller', () => {
-		subscribeToTransactions(() => {}, undefined, { year: 2026, filter: 'add' });
+		showSeason({ year: 2026, filter: 'add' });
 
 		const wheres = wheresOf(mocks.onSnapshot.mock.calls[0]);
 		expect(wheres).toContainEqual({
@@ -123,7 +133,7 @@ describe('subscribeToTransactions', () => {
 	});
 
 	it('filters lifecycle events on event alone', () => {
-		subscribeToTransactions(() => {}, undefined, { year: 2026, filter: 'itemDeleted' });
+		showSeason({ year: 2026, filter: 'itemDeleted' });
 
 		const equality = wheresOf(mocks.onSnapshot.mock.calls[0]).filter((c) => c.op === '==');
 		expect(equality).toEqual([{ kind: 'where', field: 'event', op: '==', value: 'itemDeleted' }]);
@@ -132,7 +142,7 @@ describe('subscribeToTransactions', () => {
 	it('never filters on type without also pinning event', () => {
 		// itemCreated rows carry type 'add', so a bare type match would show item
 		// creations under "Stock added".
-		subscribeToTransactions(() => {}, undefined, { year: 2026, filter: 'add' });
+		showSeason({ year: 2026, filter: 'add' });
 
 		expect(wheresOf(mocks.onSnapshot.mock.calls[0]).some((c) => c.field === 'event')).toBe(true);
 	});
@@ -140,7 +150,7 @@ describe('subscribeToTransactions', () => {
 	it('orders equality filters before the range, matching the deployed index', () => {
 		// Firestore composite indexes are field-ordered: (event, type, timestamp).
 		// Emitting the range first would not match firestore.indexes.json.
-		subscribeToTransactions(() => {}, undefined, { year: 2026, filter: 'remove' });
+		showSeason({ year: 2026, filter: 'remove' });
 
 		expect(wheresOf(mocks.onSnapshot.mock.calls[0]).map((c) => c.field)).toEqual([
 			'event',
@@ -150,29 +160,22 @@ describe('subscribeToTransactions', () => {
 		]);
 	});
 
-	it('defaults to newest-first', () => {
-		subscribeToTransactions(() => {}, undefined, { year: 2026 });
+	it('always queries newest-first, leaving "oldest" to a local reverse', () => {
+		// The season arrives whole, so reversing it is exactly the ascending query,
+		// and switching order costs no new read.
+		const feed = showSeason({ year: 2026 });
+		feed.show({ year: 2026, filter: 'add' });
 
-		expect(constraintsOf(mocks.onSnapshot.mock.calls[0])).toContainEqual({
-			kind: 'orderBy',
-			field: 'timestamp',
-			direction: 'desc'
-		});
-	});
-
-	it('reverses the order in the query, so "oldest" means oldest in the season', () => {
-		subscribeToTransactions(() => {}, undefined, { year: 2026, sortNewest: false });
-
-		expect(constraintsOf(mocks.onSnapshot.mock.calls[0])).toContainEqual({
-			kind: 'orderBy',
-			field: 'timestamp',
-			direction: 'asc'
-		});
+		for (const call of mocks.onSnapshot.mock.calls) {
+			expect(constraintsOf(call).filter((c) => c.kind === 'orderBy')).toEqual([
+				{ kind: 'orderBy', field: 'timestamp', direction: 'desc' }
+			]);
+		}
 	});
 
 	it('normalizes snapshots into Transaction objects', () => {
 		const received = [];
-		subscribeToTransactions((rows) => received.push(rows), undefined, { year: 2026 });
+		showSeason({ year: 2026 }, (rows) => received.push(rows));
 
 		const onNext = mocks.onSnapshot.mock.calls[0][1];
 		onNext({ docs: [docSnap('txn-1', rawTxn())] });
@@ -195,7 +198,7 @@ describe('subscribeToTransactions', () => {
 
 	it('falls back to now for an offline write whose serverTimestamp is still null', () => {
 		const received = [];
-		subscribeToTransactions((rows) => received.push(rows), undefined, { year: 2026 });
+		showSeason({ year: 2026 }, (rows) => received.push(rows));
 
 		const onNext = mocks.onSnapshot.mock.calls[0][1];
 		onNext({ docs: [docSnap('txn-1', rawTxn({ timestamp: null }))] });
@@ -207,12 +210,90 @@ describe('subscribeToTransactions', () => {
 		// The page tells a still-building index apart from a real failure, so the
 		// error object has to reach it rather than being swallowed here.
 		const onError = vi.fn();
-		subscribeToTransactions(() => {}, onError, { year: 2026 });
+		showSeason({ year: 2026 }, () => {}, onError);
 
 		const failure = { code: 'failed-precondition' };
 		mocks.onSnapshot.mock.calls[0][2](failure);
 
 		expect(onError).toHaveBeenCalledWith(failure);
+	});
+
+	it('keeps the review listener when the season or filter changes', () => {
+		const stopRows = vi.fn();
+		mocks.onSnapshot.mockReturnValueOnce(stopRows);
+		const feed = showSeason({ year: 2026 });
+		feed.show({ year: 2025, filter: 'add' });
+
+		expect(subscribeStockHistoryReviews).toHaveBeenCalledTimes(1);
+		expect(mocks.onSnapshot).toHaveBeenCalledTimes(2);
+		expect(stopRows).toHaveBeenCalledTimes(1);
+	});
+
+	it('ignores a late snapshot from a replaced query', () => {
+		const received = [];
+		const feed = showSeason({ year: 2026 }, (rows) => received.push(rows));
+		const replaced = mocks.onSnapshot.mock.calls[0][1];
+		feed.show({ year: 2025 });
+
+		replaced({ docs: [docSnap('old', rawTxn())] });
+		expect(received).toEqual([]);
+		mocks.onSnapshot.mock.calls[1][1]({ docs: [docSnap('new', rawTxn())] });
+		expect(received.map((rows) => rows.map((row) => row.id))).toEqual([['new']]);
+	});
+
+	it('holds rows while reviews are missing and restarts a failed review listener on the next show', () => {
+		// Rows without their reviews would show confirmed transfers as ordinary
+		// movements, so a review failure is surfaced, never treated as no reviews.
+		let failReviews;
+		subscribeStockHistoryReviews.mockImplementationOnce((_group, _onData, onReviewError) => {
+			failReviews = onReviewError;
+			return () => {};
+		});
+		const onError = vi.fn();
+		const received = [];
+		const feed = showSeason({ year: 2026 }, (rows) => received.push(rows), onError);
+		failReviews({ code: 'unavailable' });
+		mocks.onSnapshot.mock.calls[0][1]({ docs: [docSnap('txn-1', rawTxn())] });
+
+		expect(onError).toHaveBeenCalledWith({ code: 'unavailable' });
+		expect(received).toEqual([]);
+
+		feed.show({ year: 2026 });
+		mocks.onSnapshot.mock.calls[1][1]({ docs: [docSnap('txn-1', rawTxn())] });
+		expect(subscribeStockHistoryReviews).toHaveBeenCalledTimes(2);
+		expect(received).toHaveLength(1);
+	});
+
+	it('reads the active group on every show, so another workspace gets its own reviews', () => {
+		const stopOldReviews = vi.fn();
+		subscribeStockHistoryReviews.mockImplementationOnce((_group, onData) => {
+			onData([]);
+			return stopOldReviews;
+		});
+		const feed = showSeason({ year: 2026 });
+		mocks.groupId = 'group-2';
+		feed.show({ year: 2026 });
+
+		expect(stopOldReviews).toHaveBeenCalledTimes(1);
+		expect(subscribeStockHistoryReviews.mock.calls.map(([group]) => group)).toEqual([
+			'group-1',
+			'group-2'
+		]);
+		expect(mocks.onSnapshot.mock.calls[1][0].ref.path).toBe('groups/group-2/transactions');
+	});
+
+	it('closes both listeners on stop', () => {
+		const stopRows = vi.fn();
+		const stopReviews = vi.fn();
+		mocks.onSnapshot.mockReturnValueOnce(stopRows);
+		subscribeStockHistoryReviews.mockImplementationOnce((_group, onData) => {
+			onData([]);
+			return stopReviews;
+		});
+		showSeason({ year: 2026 }).stop();
+
+		expect(stopRows).toHaveBeenCalledTimes(1);
+		expect(stopReviews).toHaveBeenCalledTimes(1);
 	});
 });
 
@@ -243,18 +324,20 @@ describe('getEarliestTransactionYear', () => {
 	});
 });
 
-describe('subscribeToTransactions transfer filter', () => {
-	it('includes reviewed historical transfers and drops unrelated rows', async () => {
-		const { subscribeStockHistoryReviews } = await import('./stockReviews');
+describe('createSeasonHistoryFeed transfer filter', () => {
+	it('includes reviewed historical transfers and drops unrelated rows', () => {
 		subscribeStockHistoryReviews.mockImplementationOnce((_group, callback) => {
 			callback([{ id: 'review', confirmed: true, transactionIds: ['r', 'a'] }]);
 			return () => {};
 		});
 		const received = [];
-		subscribeToTransactions((rows) => received.push(rows), undefined, {
-			year: 2026,
-			filter: 'stockTransfer'
-		});
+		showSeason(
+			{
+				year: 2026,
+				filter: 'stockTransfer'
+			},
+			(rows) => received.push(rows)
+		);
 		expect(wheresOf(mocks.onSnapshot.mock.calls[0]).filter((c) => c.op === '==')).toEqual([]);
 		mocks.onSnapshot.mock.calls[0][1]({
 			docs: [

@@ -104,6 +104,8 @@ Broader event configuration and SaaS capabilities are future work.
 - `src/lib/transactions.js`, `transactionHistory.js`, `transactionAnalysis.js`, and
   `transactionAudit.js`: ledger reads, season filters, analytics, and clock auditing.
 - `src/lib/groups.js`, `activeGroup.js`, and `booths.js`: workspaces and booth tags.
+- `src/lib/transactions.js` (`createSeasonHistoryFeed`) and `src/lib/runes/seasonHistory.svelte.js`: the
+  history page's live season feed and its reactive state.
 - `src/lib/predictionsClient.js`: authenticated client reads and prediction API calls.
 - `src/lib/stockPrediction.js`, `predictionCore.js`, `aiStockPrediction.js`,
   `predictionBacktest.js`, and `cneCalendar.js`: forecasting and evaluation.
@@ -112,7 +114,8 @@ Broader event configuration and SaaS capabilities are future work.
   subscription and atomic vendor transactions), used by `VendorLoanDialog`,
   `VendorSettleDialog` and the vendorBalances route.
 - `src/stores/`: auth, group, items, connectivity, notifications, pagination, and themes.
-  Additional UI state helpers live in `src/lib/runes/`.
+  The item store keeps one catalog listener per account/group across pages; `loadItems`
+  reuses it rather than reloading. Additional UI state helpers live in `src/lib/runes/`.
 - `src/routes/`: landing, login, onboarding, manageItems, manageTransactions,
   transactionHistory, transactionAnalysis, inventoryPredictions, orders, vendorBalances,
   profile, and `api/stockPredictions`.
@@ -169,9 +172,11 @@ Normal prediction and backtest modes must agree on demand handling.
   both sides of confirmed historical transfers before run selection, sampling,
   training, actuals and AI inputs. Analytics uses the same exclusions. Unreviewed and
   unrelated legacy/lifecycle behavior stays unchanged; audit names/IDs remain original.
-- History queries are CNE-season-scoped. Event filters depend on stored fields; missing
-  legacy events do not automatically match. Check both sort directions and indexes
-  when extending filters. Preserve device/server timestamp and `syncedAt` semantics.
+- History queries are CNE-season-scoped and always newest-first; the page reverses the
+  loaded season for oldest-first, and its feed keeps the review listener across season
+  and filter changes. Event filters depend on stored fields; missing legacy events do
+  not automatically match. Check both display orders and indexes when extending
+  filters. Preserve device/server timestamp and `syncedAt` semantics.
 
 ## Coding and scope conventions
 

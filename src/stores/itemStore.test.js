@@ -54,3 +54,28 @@ it('clears data on account/group changes and ignores delayed callbacks from the 
 	groupStore.set({ groupId: 'group-two' });
 	expect(get(itemStore)).toEqual([]);
 });
+
+it('reuses the running listener instead of clearing the list and reading the catalog again', async () => {
+	authStore.set({ uid: 'three' });
+	await itemStore.loadItems();
+	const subscriptions = mocks.subscribe.mock.calls.length;
+	mocks.subscribe.mock.calls.at(-1)[0]([{ id: 'curds', count: 4 }]);
+	await itemStore.loadItems();
+	expect(mocks.subscribe).toHaveBeenCalledTimes(subscriptions);
+	expect(get(itemStore)).toMatchObject([{ id: 'curds', count: 4 }]);
+});
+
+it('starts a fresh listener after the running one fails, without reviving stale items', async () => {
+	authStore.set({ uid: 'four' });
+	await itemStore.loadItems();
+	const [onItems, onError] = mocks.subscribe.mock.calls.at(-1);
+	onItems([{ id: 'stale', count: 1 }]);
+	onError(new Error('unavailable'));
+	await itemStore.loadItems();
+	const subscriptions = mocks.subscribe.mock.calls.length;
+	expect(get(itemStore)).toEqual([]);
+	// A late error from the replaced listener must not orphan the new one.
+	onError(new Error('unavailable'));
+	await itemStore.loadItems();
+	expect(mocks.subscribe).toHaveBeenCalledTimes(subscriptions);
+});

@@ -79,7 +79,66 @@ export async function getHistoricalTransactions(days = 90) {
 }
 
 /**
- * Subscribes to one CNE season of the active group's ledger in real time.
+ * The group's history reviews, kept open for as long as the group stays the same.
+ * `onChange` fires with each new snapshot; `value` is null until the first one
+ * arrives and again after a failure, which `ensure` restarts.
+ * @param {function(): void} onChange - Called after `value` changes.
+ * @param {function(unknown): void} [onError] - Called when the listener fails.
+ */
+function createReviewsWatch(onChange, onError) {
+	let groupId = null;
+	let value = null;
+	let stop = null;
+	// Identifies the current listener, so a callback from a replaced one is
+	// ignored even if it arrives late.
+	let token = null;
+
+	const close = () => {
+		stop?.();
+		stop = null;
+		token = null;
+		value = null;
+		groupId = null;
+	};
+
+	return {
+		get value() {
+			return value;
+		},
+		/** Watch this group's reviews, starting over after a failure or a workspace change. */
+		ensure(nextGroupId) {
+			if (nextGroupId !== groupId) close();
+			if (token) return;
+			groupId = nextGroupId;
+			const current = {};
+			token = current;
+			const unsubscribe = subscribeStockHistoryReviews(
+				nextGroupId,
+				(reviews) => {
+					if (token !== current) return;
+					value = reviews;
+					onChange();
+				},
+				(error) => {
+					if (token !== current) return;
+					// A failed listener delivers nothing more; the next ensure starts a fresh one.
+					stop?.();
+					stop = null;
+					token = null;
+					value = null;
+					onError?.(error);
+				}
+			);
+			if (token === current) stop = unsubscribe;
+			else unsubscribe();
+		},
+		close
+	};
+}
+
+/**
+ * A live view of one CNE season of the active group's ledger, which the caller
+ * points at a season and filter with `show` and closes with `stop`.
  *
  * A season is the unit the app is actually used in, and it keeps the query
  * bounded without truncating anything the user asked for: the season loads
@@ -88,39 +147,37 @@ export async function getHistoricalTransactions(days = 90) {
  * this season's rows — and it leaves out the off-season months where stray test
  * rows live (see seasonRange).
  *
- * `filter` and `sortNewest` are applied by Firestore rather than by the caller,
- * so switching either re-queries instead of post-processing a superset. That
- * means the query is only as good as the stored data: rows written before the
- * `event` field existed must be backfilled or they will not match a stock
- * filter (src/scripts/backfill-transaction-events.js).
+ * Rows always arrive newest first. Because the season is complete, oldest first
+ * is the same rows reversed, so the caller flips the order locally rather than
+ * asking Firestore again.
+ *
+ * `filter` is applied by Firestore rather than by the caller, so switching it
+ * re-queries instead of post-processing a superset. That means the query is only
+ * as good as the stored data: rows written before the `event` field existed must
+ * be backfilled or they will not match a stock filter
+ * (src/scripts/backfill-transaction-events.js).
+ *
+ * Rows are only delivered once the history reviews have loaded, since those
+ * decide which rows are historical transfers. The review listener is kept open
+ * across `show` calls, so changing season or filter replaces only the ledger
+ * query. A failed review listener is restarted by the next `show`.
  *
  * The season range and the ordering both key off `timestamp`, which Firestore
  * indexes automatically. Adding a type filter needs a composite index — see
  * firestore.indexes.json — and fails with `failed-precondition` until one is
  * built, so callers should surface that rather than showing an empty season.
- * @param {function(Transaction[]): void} onData - Called with each snapshot.
- * @param {function(unknown): void} [onError] - Called on subscription error.
- * @param {{ year: number, filter?: string, sortNewest?: boolean }} options - Listener options.
- * @returns {function(): void} Unsubscribe function.
+ * @param {function(Transaction[]): void} onData - Called with each complete set of rows.
+ * @param {function(unknown): void} [onError] - Called when either listener fails.
+ * @returns {{ show: function({ year: number, filter?: string }): void, stop: function(): void }} The feed.
  */
-export function subscribeToTransactions(onData, onError, options) {
-	const { year, filter = '', sortNewest = true } = options;
-	const groupId = requireActiveGroupId();
-	const transactionsRef = collection(db, 'groups', groupId, 'transactions');
-	const { start, end } = seasonRange(year);
-
-	const constraints = transactionFilterMatches(filter).map(([field, value]) =>
-		where(field, '==', value)
-	);
-	constraints.push(
-		where('timestamp', '>=', Timestamp.fromDate(start)),
-		where('timestamp', '<', Timestamp.fromDate(end)),
-		orderBy('timestamp', sortNewest ? 'desc' : 'asc')
-	);
-
+export function createSeasonHistoryFeed(onData, onError) {
+	let filter = '';
 	let rows = null;
-	let reviews = null;
+	let stopRows = null;
+	let rowsToken = null;
+
 	const emit = () => {
+		const reviews = reviewsWatch.value;
 		if (!rows || !reviews) return;
 		try {
 			onData(
@@ -130,28 +187,53 @@ export function subscribeToTransactions(onData, onError, options) {
 			onError?.(error);
 		}
 	};
-	const stopReviews = subscribeStockHistoryReviews(
-		groupId,
-		(value) => {
-			reviews = value;
-			emit();
+	const reviewsWatch = createReviewsWatch(emit, onError);
+
+	const closeRows = () => {
+		stopRows?.();
+		stopRows = null;
+		rowsToken = null;
+		rows = null;
+	};
+
+	return {
+		show({ year, filter: nextFilter = '' }) {
+			closeRows();
+			filter = nextFilter;
+			// Read the group on every show, so a workspace change can never mix
+			// another group's reviews into these rows.
+			const groupId = requireActiveGroupId();
+			reviewsWatch.ensure(groupId);
+
+			const { start, end } = seasonRange(year);
+			const constraints = transactionFilterMatches(filter).map(([field, value]) =>
+				where(field, '==', value)
+			);
+			constraints.push(
+				where('timestamp', '>=', Timestamp.fromDate(start)),
+				where('timestamp', '<', Timestamp.fromDate(end)),
+				orderBy('timestamp', 'desc')
+			);
+			const token = {};
+			rowsToken = token;
+			stopRows = onSnapshot(
+				query(collection(db, 'groups', groupId, 'transactions'), ...constraints),
+				(querySnapshot) => {
+					if (rowsToken !== token) return;
+					rows = querySnapshot.docs.map(mapTransactionDoc);
+					emit();
+				},
+				(error) => {
+					if (rowsToken !== token) return;
+					console.error('Error in transactions subscription:', error);
+					onError?.(error);
+				}
+			);
 		},
-		onError
-	);
-	const stopRows = onSnapshot(
-		query(transactionsRef, ...constraints),
-		(querySnapshot) => {
-			rows = querySnapshot.docs.map(mapTransactionDoc);
-			emit();
-		},
-		(error) => {
-			console.error('Error in transactions subscription:', error);
-			if (onError) onError(error);
+		stop() {
+			closeRows();
+			reviewsWatch.close();
 		}
-	);
-	return () => {
-		stopRows();
-		stopReviews();
 	};
 }
 
